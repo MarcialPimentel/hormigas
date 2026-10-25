@@ -1,0 +1,66 @@
+{
+  "_version": "0.1",
+  "_note": "Human-readable formulas. The /shared package implements these exactly; this file is the spec.",
+  "world": {
+    "speed": 1,
+    "regions": 5,
+    "patchesPerRegion": 100,
+    "spotsPerPatch": 12
+  },
+  "cost": "baseCost * costFactor^(level - 1)",
+  "production": {
+    "perHour": "base * level * 1.1^level * (1 + terrainPct/100) * workforceRatio",
+    "workforceRatio": "min(1, workforceSupply / workforceDemand)",
+    "workforceUse": "workforceUse * level * 1.1^level",
+    "workforceSupply": "baseWorkforce + nursery.base * level * 1.1^level"
+  },
+  "storage": {
+    "capacity": "baseStorage * 1.8^level",
+    "protectedPerResource": "1000 * 1.6^honeypotLevel (0 if not built)"
+  },
+  "buildTime": {
+    "chamberSeconds": "(foliage + protein) / (2.5 * (1 + excavationLevel)) / worldSpeed * (1 + terrainBuildTimePct/100)",
+    "foundingBoost": { "levels": [1, 2, 3], "multiplier": 0.25 },
+    "minimumSeconds": 5,
+    "unitSeconds": "(foliage + protein) / (2.5 * (1 + broodHallLevel)) / worldSpeed",
+    "researchSeconds": "(foliage + protein) / (1.0 * (1 + pheromoneChamberLevel)) / worldSpeed"
+  },
+  "distance": {
+    "sameSpot": 5,
+    "samePatch": "1000 + 5 * |spotA - spotB|",
+    "sameRegion": "2700 + 95 * |patchA - patchB|",
+    "otherRegion": "20000 * |regionA - regionB|"
+  },
+  "travel": {
+    "seconds": "10 + (3500 / speedPct) * sqrt(distance * 10 / slowestUnitSpeed) / worldSpeed",
+    "speedPct": "10..100",
+    "nectarFuel": "sum(unitCount * nectarUse) * distance / 35000 * (speedPct/100 + 1)^2"
+  },
+  "combat": {
+    "maxRounds": 6,
+    "glanceThresholdPctOfGuard": 1,
+    "collapseBelowHealthPct": 70,
+    "collapseChance": "1 - currentHealth / maxHealth",
+    "frenzyRefireChance": "(N - 1) / N",
+    "lootPctOfUnprotected": 50,
+    "corpsePctOfDestroyedValue": 30,
+    "corpseResource": "protein",
+    "corpseDecay": { "startAfterHours": 24, "pctPerHour": 10 },
+    "defenseRebuildChance": 0.7
+  },
+  "pvp": {
+    "newPlayerProtectionHours": 72,
+    "strengthProtectionPct": 20,
+    "inactiveAfterDays": 7,
+    "bashLimitPer24h": 4,
+    "lateFoundingBoost": "timeMultiplier = 0.5 + 0.5 * min(1, playerPoints / worldMedianPoints)"
+  },
+  "points": "totalResourcesSpent / 1000",
+  "missions": { "baseSlots": 2 },
+  "forage": {
+    "outcomes": {
+      "food_cache": 35, "dead_beetle": 15, "nothing": 20, "lost_trail": 10,
+      "shortcut": 5, "spider_ambush": 10, "rainstorm": 4, "the_boot": 1
+    }
+  }
+}

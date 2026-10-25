@@ -1,0 +1,12 @@
+{
+  "_version": "0.1",
+  "terrain": {
+    "sunny_meadow": { "name": "Sunny Meadow", "spots": [1, 2],    "space": [120, 150], "mods": { "foliagePct": 20, "nectarPct": -10 } },
+    "sandy_soil":   { "name": "Sandy Soil",   "spots": [3, 4],    "space": [140, 170], "mods": { "buildTimePct": -10 } },
+    "grassland":    { "name": "Grassland",    "spots": [5, 6, 7, 8], "space": [160, 200], "mods": {} },
+    "rotting_log":  { "name": "Rotting Log",  "spots": [9, 10],   "space": [140, 170], "mods": { "proteinPct": 20 } },
+    "creek_bank":   { "name": "Creek Bank",   "spots": [11, 12],  "space": [120, 150], "mods": { "nectarPct": 25, "foliagePct": -10 } }
+  },
+  "startingTerrain": "grassland",
+  "wildsSpot": 13
+}

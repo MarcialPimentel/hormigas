@@ -1,0 +1,14 @@
+{
+  "_version": "0.1",
+  "_note": "health defaults to (foliage + protein) / 10. speed in map units/hour (see formulas.json). frenzy: chance to fire again = (N-1)/N vs that target.",
+  "castes": {
+    "worker":        { "name": "Worker",        "mvp": true,  "cost": { "foliage": 300,  "protein": 100,  "nectar": 0 },    "attack": 5,   "guard": 10,  "health": 40,   "speed": 5000,  "cargo": 1500,  "nectarUse": 10, "unlock": { "brood_hall": 1 },                         "frenzy": {}, "canHaulCorpses": true },
+    "minor_soldier": { "name": "Minor Soldier", "mvp": true,  "cost": { "foliage": 300,  "protein": 100,  "nectar": 0 },    "attack": 50,  "guard": 10,  "health": 40,   "speed": 12500, "cargo": 50,    "nectarUse": 20, "unlock": { "brood_hall": 1 },                         "frenzy": { "worker": 3, "scout": 5 } },
+    "scout":         { "name": "Scout",         "mvp": true,  "cost": { "foliage": 0,    "protein": 100,  "nectar": 0 },    "attack": 0,   "guard": 0,   "health": 10,   "speed": 100000,"cargo": 0,     "nectarUse": 1,  "unlock": { "brood_hall": 1 },                         "frenzy": {} },
+    "major_soldier": { "name": "Major Soldier", "mvp": true,  "cost": { "foliage": 600,  "protein": 400,  "nectar": 100 },  "attack": 150, "guard": 25,  "health": 100,  "speed": 10000, "cargo": 100,   "nectarUse": 75, "unlock": { "brood_hall": 2, "research.brood_science": 1 }, "frenzy": { "minor_soldier": 3, "scout": 5 } },
+    "hauler":        { "name": "Hauler",        "mvp": true,  "cost": { "foliage": 900,  "protein": 300,  "nectar": 0 },    "attack": 5,   "guard": 25,  "health": 120,  "speed": 7500,  "cargo": 7500,  "nectarUse": 50, "unlock": { "brood_hall": 2, "research.brood_science": 2 }, "frenzy": {}, "canHaulCorpses": true },
+    "winged_queen":  { "name": "Winged Queen",  "mvp": false, "cost": { "foliage": 1000, "protein": 2000, "nectar": 1000 }, "attack": 0,   "guard": 10,  "health": 300,  "speed": 2500,  "cargo": 500,   "nectarUse": 100,"unlock": { "brood_hall": 4, "research.nuptial_flight": 1 }, "frenzy": {} },
+    "carrion_beetle":{ "name": "Carrion Beetle","mvp": false, "cost": { "foliage": 1000, "protein": 600,  "nectar": 200 },  "attack": 1,   "guard": 10,  "health": 160,  "speed": 2000,  "cargo": 20000, "nectarUse": 30, "unlock": { "brood_hall": 4, "research.symbiosis": 1 },  "frenzy": {}, "corpsesOnly": true },
+    "bullet_ant":    { "name": "Bullet Ant",    "mvp": false, "cost": { "foliage": 3000, "protein": 2000, "nectar": 500 },  "attack": 500, "guard": 100, "health": 500,  "speed": 10000, "cargo": 500,   "nectarUse": 150,"unlock": { "brood_hall": 6, "research.symbiosis": 3 },  "frenzy": { "major_soldier": 3 } }
+  }
+}

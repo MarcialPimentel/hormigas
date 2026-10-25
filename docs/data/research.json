@@ -1,0 +1,19 @@
+{
+  "_version": "0.1",
+  "_note": "cost(L) = baseCost * 2^(L-1). time(s) = (foliage + protein) / (1.0 * (1 + pheromoneChamberLevel)) / worldSpeed.",
+  "research": {
+    "mandibles":         { "name": "Mandibles",         "mvp": true,  "baseCost": { "foliage": 800,  "protein": 200,  "nectar": 0 },   "unlock": { "pheromone_chamber": 2 }, "effect": { "attackPct": 10 } },
+    "chitin":            { "name": "Chitin",            "mvp": true,  "baseCost": { "foliage": 1000, "protein": 0,    "nectar": 0 },   "unlock": { "pheromone_chamber": 2 }, "effect": { "healthPct": 10 } },
+    "guard_formation":   { "name": "Guard Formation",   "mvp": true,  "baseCost": { "foliage": 200,  "protein": 600,  "nectar": 0 },   "unlock": { "pheromone_chamber": 3 }, "effect": { "guardPct": 10 } },
+    "pheromone_trails":  { "name": "Pheromone Trails",  "mvp": true,  "baseCost": { "foliage": 400,  "protein": 0,    "nectar": 600 }, "unlock": { "pheromone_chamber": 1 }, "effect": { "speedPct": 10 } },
+    "scent_reading":     { "name": "Scent Reading",     "mvp": true,  "baseCost": { "foliage": 200,  "protein": 1000, "nectar": 200 }, "unlock": { "pheromone_chamber": 2 }, "effect": { "scoutLevel": 1 } },
+    "colony_mind":       { "name": "Colony Mind",       "mvp": true,  "baseCost": { "foliage": 0,    "protein": 400,  "nectar": 600 }, "unlock": { "pheromone_chamber": 1 }, "effect": { "missionSlots": 1 } },
+    "foraging_instinct": { "name": "Foraging Instinct", "mvp": true,  "baseCost": { "foliage": 4000, "protein": 8000, "nectar": 4000 },"unlock": { "pheromone_chamber": 3 }, "effect": { "forageSlotsPer2Levels": 1, "forageLuck": 1 } },
+    "brood_science":     { "name": "Brood Science",     "mvp": true,  "baseCost": { "foliage": 400,  "protein": 800,  "nectar": 200 }, "unlock": { "pheromone_chamber": 1 }, "effect": { "unlocksCastes": true } },
+    "deep_digging":      { "name": "Deep Digging",      "mvp": true,  "baseCost": { "foliage": 2000, "protein": 1000, "nectar": 500 }, "unlock": { "pheromone_chamber": 4 }, "effect": { "space": 5 } },
+    "nuptial_flight":    { "name": "Nuptial Flight",    "mvp": false, "baseCost": { "foliage": 4000, "protein": 8000, "nectar": 4000 },"unlock": { "pheromone_chamber": 3 }, "effect": { "coloniesPer2Levels": 1 } },
+    "aphid_husbandry":   { "name": "Aphid Husbandry",   "mvp": false, "baseCost": { "foliage": 1000, "protein": 1000, "nectar": 1000 },"unlock": { "pheromone_chamber": 3 }, "effect": { "nectarPct": 5 } },
+    "symbiosis":         { "name": "Symbiosis",         "mvp": false, "baseCost": { "foliage": 5000, "protein": 5000, "nectar": 3000 },"unlock": { "pheromone_chamber": 5 }, "effect": { "unlocksAllies": true } },
+    "supercolony":       { "name": "Supercolony",       "mvp": false, "baseCost": { "foliage": 10000,"protein": 10000,"nectar": 5000 },"unlock": { "pheromone_chamber": 5 }, "effect": { "unlocksAlliances": true } }
+  }
+}

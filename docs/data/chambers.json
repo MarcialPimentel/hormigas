@@ -1,0 +1,18 @@
+{
+  "_version": "0.1",
+  "_note": "cost(L) = baseCost * costFactor^(L-1). production/workforce(L) = base * L * 1.1^L. storage(L) = baseStorage * 1.8^L. protected(L) = 1000 * 1.6^L per resource.",
+  "chambers": {
+    "queen_chamber":     { "name": "Queen's Chamber",   "baseCost": { "foliage": 400,  "protein": 200,  "nectar": 0 },   "costFactor": 2.0, "unlock": {},                       "effect": { "type": "gate" } },
+    "leaf_garden":       { "name": "Leaf Garden",       "baseCost": { "foliage": 60,   "protein": 15,   "nectar": 0 },   "costFactor": 1.5, "unlock": {},                       "effect": { "type": "produce", "resource": "foliage", "base": 30 }, "workforceUse": 10 },
+    "hunting_grounds":   { "name": "Hunting Grounds",   "baseCost": { "foliage": 48,   "protein": 24,   "nectar": 0 },   "costFactor": 1.6, "unlock": {},                       "effect": { "type": "produce", "resource": "protein", "base": 20 }, "workforceUse": 10 },
+    "nursery":           { "name": "Nursery",           "baseCost": { "foliage": 75,   "protein": 30,   "nectar": 0 },   "costFactor": 1.5, "unlock": {},                       "effect": { "type": "workforce", "base": 20 } },
+    "granary":           { "name": "Granary",           "baseCost": { "foliage": 1000, "protein": 0,    "nectar": 0 },   "costFactor": 2.0, "unlock": { "queen_chamber": 2 },   "effect": { "type": "storage", "resource": "foliage" } },
+    "larder":            { "name": "Larder",            "baseCost": { "foliage": 1000, "protein": 500,  "nectar": 0 },   "costFactor": 2.0, "unlock": { "queen_chamber": 2 },   "effect": { "type": "storage", "resource": "protein" } },
+    "brood_hall":        { "name": "Brood Hall",        "baseCost": { "foliage": 400,  "protein": 200,  "nectar": 100 }, "costFactor": 2.0, "unlock": { "queen_chamber": 2 },   "effect": { "type": "unitSpeed" } },
+    "pheromone_chamber": { "name": "Pheromone Chamber", "baseCost": { "foliage": 200,  "protein": 400,  "nectar": 200 }, "costFactor": 2.0, "unlock": { "queen_chamber": 3 },   "effect": { "type": "researchSpeed" } },
+    "aphid_pasture":     { "name": "Aphid Pasture",     "baseCost": { "foliage": 225,  "protein": 75,   "nectar": 0 },   "costFactor": 1.5, "unlock": { "queen_chamber": 3 },   "effect": { "type": "produce", "resource": "nectar", "base": 10 }, "workforceUse": 20 },
+    "nectar_cellar":     { "name": "Nectar Cellar",     "baseCost": { "foliage": 1000, "protein": 1000, "nectar": 0 },   "costFactor": 2.0, "unlock": { "queen_chamber": 3 },   "effect": { "type": "storage", "resource": "nectar" } },
+    "excavation_works":  { "name": "Excavation Works",  "baseCost": { "foliage": 400,  "protein": 120,  "nectar": 200 }, "costFactor": 2.0, "unlock": { "queen_chamber": 4 },   "effect": { "type": "buildSpeed" } },
+    "honeypot_gallery":  { "name": "Honeypot Gallery",  "baseCost": { "foliage": 2000, "protein": 1000, "nectar": 500 }, "costFactor": 2.0, "unlock": { "queen_chamber": 4 },   "effect": { "type": "protectedStorage" } }
+  }
+}
