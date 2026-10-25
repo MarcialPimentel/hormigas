@@ -1,5 +1,6 @@
 import Fastify, { type FastifyInstance } from 'fastify';
 import cookie from '@fastify/cookie';
+import websocket from '@fastify/websocket';
 import fastifyStatic from '@fastify/static';
 import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
@@ -15,10 +16,12 @@ import './game/missionTypes';
 import './game/combat';
 import './game/forage';
 import { worldRoutes } from './routes/world';
+import { realtimeRoutes } from './realtime';
 
 export async function buildApp(opts: { logger?: boolean } = {}): Promise<FastifyInstance> {
   const app = Fastify({ logger: opts.logger ?? false });
   await app.register(cookie);
+  await app.register(websocket);
 
   app.setErrorHandler((err: any, _req, reply) => {
     if (err instanceof GameError) return reply.status(err.status).send({ error: { code: err.code, message: err.message } });
@@ -28,6 +31,7 @@ export async function buildApp(opts: { logger?: boolean } = {}): Promise<Fastify
   });
 
   app.get('/api/health', async () => ({ ok: true }));
+  await app.register(realtimeRoutes);
   await app.register(authRoutes);
   await app.register(gameRoutes);
   await app.register(worldRoutes);

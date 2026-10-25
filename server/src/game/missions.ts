@@ -32,6 +32,7 @@ import { advance, colonyAt, getPlayer, lockColony, lockOwnColony, saveColony, ty
 import { cancelEvent, onEvent, schedule } from '../events';
 import { getWorld } from '../world';
 import { refreshPoints } from './points';
+import { notify } from '../realtime';
 
 export type MissionType = 'transport' | 'relocate' | 'scout' | 'raid' | 'haul' | 'forage';
 
@@ -228,6 +229,8 @@ export async function sendMission(q: Tx, playerId: number, input: SendInput): Pr
   const m = fromRow(r.rows[0]);
   m.arriveEventId = await schedule(q, world.id, 'mission_arrive', arriveAt, { missionId: m.id });
   await saveMission(q, m);
+  if (targetColony && targetColony.playerId !== playerId)
+    notify(targetColony.playerId, { type: 'incoming', missionType: type, from: player.username, arriveAt, colony: targetColony.name });
   return m;
 }
 
@@ -279,6 +282,7 @@ onEvent('mission_return', async (q, ev) => {
   m.status = 'done';
   await saveMission(q, m);
   await refreshPoints(q, m.playerId);
+  notify(m.playerId, { type: 'returned', missionType: m.type });
 });
 
 // ---------- views ----------

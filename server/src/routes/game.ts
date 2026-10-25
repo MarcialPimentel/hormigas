@@ -11,6 +11,8 @@ import { timeMultiplier } from '../game/boost';
 import { cancelResearch, startResearch } from '../game/research';
 import { enqueueUnits } from '../game/brood';
 import { activeMissions, incomingMissions, missionView } from '../game/missions';
+import { claimQuest, questStatus } from '../game/quests';
+import { isInactive } from '@hormigas/shared';
 
 export function colonyView(c: Colony) {
   return {
@@ -67,6 +69,7 @@ export async function gameRoutes(app: FastifyInstance) {
       colony: current ? colonyView(advance(current, t)) : null,
       missions: (await activeMissions(q, req.playerId)).map(missionView),
       incoming: await incomingMissions(q, req.playerId),
+      quests: await questStatus(q, req.playerId),
       unreadReports: (await q.query('SELECT count(*)::int AS n FROM reports WHERE player_id = $1 AND NOT read', [req.playerId])).rows[0].n,
     };
   });
@@ -97,6 +100,50 @@ export async function gameRoutes(app: FastifyInstance) {
     const body = (req.body ?? {}) as any;
     const c = await tx((q) => enqueueUnits(q, req.playerId, colonyIdParam(req.params), String(body.kind ?? ''), String(body.id ?? ''), Number(body.count)));
     return { ok: true, colony: colonyView(c) };
+  });
+
+  app.post('/api/quests/claim', async (req) => {
+    const body = (req.body ?? {}) as any;
+    const quest = await tx((q) => claimQuest(q, req.playerId, String(body.id ?? ''), Number(body.colonyId)));
+    return { ok: true, reward: quest.reward };
+  });
+
+  app.get('/api/rankings', async (req) => {
+    const qs = req.query as any;
+    const kind = ['total', 'economy', 'research', 'military'].includes(qs.kind) ? qs.kind : 'total';
+    const page = Math.max(1, Number(qs.page) || 1);
+    const size = 50;
+    const q = getPool();
+    const world = await getWorld(q);
+    const t = now();
+    const order = kind === 'total' ? 'points_total' : `(points->>'${kind}')::int`;
+    const r = await q.query(
+      `SELECT id, username, points, points_total, last_active, protected_until,
+              (SELECT count(*)::int FROM colonies c WHERE c.player_id = p.id) AS colonies,
+              rank() OVER (ORDER BY ${order} DESC, id) AS rank
+         FROM players p WHERE world_id = $1 ORDER BY ${order} DESC, id LIMIT $2 OFFSET $3`,
+      [world.id, size, (page - 1) * size],
+    );
+    const mine = await q.query(
+      `SELECT rank FROM (SELECT id, rank() OVER (ORDER BY ${order} DESC, id) AS rank FROM players WHERE world_id = $1) x WHERE id = $2`,
+      [world.id, req.playerId],
+    );
+    const count = (await q.query('SELECT count(*)::int AS n FROM players WHERE world_id = $1', [world.id])).rows[0].n;
+    return {
+      kind,
+      page,
+      pages: Math.max(1, Math.ceil(count / size)),
+      myRank: Number(mine.rows[0]?.rank ?? 0),
+      rows: r.rows.map((x: any) => ({
+        rank: Number(x.rank),
+        playerId: x.id,
+        username: x.username,
+        points: kind === 'total' ? x.points_total : x.points[kind] ?? 0,
+        colonies: x.colonies,
+        inactive: isInactive({ points: x.points_total, protectedUntil: x.protected_until, lastActive: x.last_active }, t),
+        me: x.id === req.playerId,
+      })),
+    };
   });
 
   app.patch('/api/colonies/:id', async (req) => {
