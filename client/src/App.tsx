@@ -8,12 +8,17 @@ import { Overview } from './screens/Overview';
 import { Chambers } from './screens/Chambers';
 import { Brood } from './screens/Brood';
 import { Research } from './screens/Research';
+import { MapScreen } from './screens/Map';
+import { Missions } from './screens/Missions';
+import { Reports } from './screens/Reports';
+import type { Nav } from './nav';
 
 export interface ScreenDef {
   id: string;
   label: string;
   icon: ReactNode;
-  render: (go: (s: string) => void) => ReactNode;
+  render: (nav: Nav) => ReactNode;
+  badge?: number;
 }
 
 const I = (d: string) => (
@@ -36,6 +41,12 @@ export const ICONS = {
 export function App() {
   const { loggedIn, state, colony, selectColony, toasts, setLoggedIn } = useGame();
   const [screen, setScreen] = useState('nest');
+  const [params, setParams] = useState<any>(undefined);
+  const nav: Nav = (id, p) => {
+    setScreen(id);
+    setParams(p);
+    window.scrollTo(0, 0);
+  };
 
   useEffect(() => {
     document.title = 'Hormigas';
@@ -46,10 +57,13 @@ export function App() {
   if (!state || !colony) return <div className="boot">Waking the colony…</div>;
 
   const screens: ScreenDef[] = [
-    { id: 'nest', label: 'Colony', icon: ICONS.nest, render: (go) => <Overview go={go} /> },
+    { id: 'nest', label: 'Colony', icon: ICONS.nest, render: (n) => <Overview go={n} /> },
     { id: 'chambers', label: 'Chambers', icon: ICONS.chambers, render: () => <Chambers /> },
     { id: 'brood', label: 'Brood Hall', icon: ICONS.brood, render: () => <Brood /> },
     { id: 'research', label: 'Research', icon: ICONS.research, render: () => <Research /> },
+    { id: 'map', label: 'Map', icon: ICONS.map, render: (n) => <MapScreen nav={n} start={params} /> },
+    { id: 'missions', label: 'Missions', icon: ICONS.missions, render: () => <Missions draft={params} />, badge: (state.incoming ?? []).filter((i: any) => i.hostile).length },
+    { id: 'reports', label: 'Reports', icon: ICONS.reports, render: () => <Reports />, badge: state.unreadReports },
   ];
   const current = screens.find((s) => s.id === screen) ?? screens[0];
 
@@ -83,13 +97,14 @@ export function App() {
       <ResourceBar />
       <nav className="nav" aria-label="Screens">
         {screens.map((s) => (
-          <button key={s.id} className={s.id === current.id ? 'on' : ''} aria-current={s.id === current.id ? 'page' : undefined} onClick={() => setScreen(s.id)}>
+          <button key={s.id} className={s.id === current.id ? 'on' : ''} aria-current={s.id === current.id ? 'page' : undefined} onClick={() => nav(s.id)}>
             {s.icon}
             <span>{s.label}</span>
+            {s.badge ? <span className="badge" aria-label={`${s.badge} new`}>{s.badge}</span> : null}
           </button>
         ))}
       </nav>
-      <main className="content">{current.render(setScreen)}</main>
+      <main className="content">{current.render(nav)}</main>
       <div className="toasts" aria-live="polite">
         {toasts.map((t) => (
           <div key={t.id} className={`toast ${t.kind}`}>

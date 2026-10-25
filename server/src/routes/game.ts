@@ -10,6 +10,7 @@ import { cancelBuild, startBuild } from '../game/chambers';
 import { timeMultiplier } from '../game/boost';
 import { cancelResearch, startResearch } from '../game/research';
 import { enqueueUnits } from '../game/brood';
+import { activeMissions, incomingMissions, missionView } from '../game/missions';
 
 export function colonyView(c: Colony) {
   return {
@@ -64,6 +65,9 @@ export async function gameRoutes(app: FastifyInstance) {
       },
       colonies: colonies.map((c) => ({ id: c.id, name: c.name, coords: { region: c.region, patch: c.patch, spot: c.spot } })),
       colony: current ? colonyView(advance(current, t)) : null,
+      missions: (await activeMissions(q, req.playerId)).map(missionView),
+      incoming: await incomingMissions(q, req.playerId),
+      unreadReports: (await q.query('SELECT count(*)::int AS n FROM reports WHERE player_id = $1 AND NOT read', [req.playerId])).rows[0].n,
     };
   });
 

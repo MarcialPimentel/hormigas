@@ -10,6 +10,9 @@ import { gameRoutes } from './routes/game';
 // event handlers register themselves on import
 import './game/chambers';
 import './game/research';
+import './game/missions';
+import './game/missionTypes';
+import { worldRoutes } from './routes/world';
 
 export async function buildApp(opts: { logger?: boolean } = {}): Promise<FastifyInstance> {
   const app = Fastify({ logger: opts.logger ?? false });
@@ -25,6 +28,7 @@ export async function buildApp(opts: { logger?: boolean } = {}): Promise<Fastify
   app.get('/api/health', async () => ({ ok: true }));
   await app.register(authRoutes);
   await app.register(gameRoutes);
+  await app.register(worldRoutes);
 
   // Serve the built client in production (single deploy).
   if (config.clientDist && existsSync(config.clientDist)) {
