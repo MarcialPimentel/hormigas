@@ -57,10 +57,16 @@ declare module 'fastify' {
 
 /** preHandler: requires a valid session; sets request.playerId and touches last_active. */
 export async function requireAuth(req: FastifyRequest) {
-  const id = await playerIdFromToken(req.cookies[SESSION_COOKIE]);
+  const token = req.cookies[SESSION_COOKIE];
+  const id = await playerIdFromToken(token);
   if (!id) throw new GameError('unauthorized', 'Please log in.', 401);
   req.playerId = id;
-  await getPool().query('UPDATE players SET last_active = $2 WHERE id = $1', [id, now()]);
+  const t = now();
+  await getPool().query('UPDATE players SET last_active = $2 WHERE id = $1', [id, t]);
+  // sliding sessions: active players stay logged in
+  await getPool().query('UPDATE sessions SET expires_at = $2 WHERE token = $1 AND expires_at < $3', [
+    token, t + config.sessionDays * 86400_000, t + (config.sessionDays / 2) * 86400_000,
+  ]);
 }
 
 export function validateCredentials(username: unknown, password: unknown): { username: string; password: string } {

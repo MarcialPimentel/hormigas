@@ -130,7 +130,17 @@ export function Missions({ draft }: { draft?: MissionDraft }) {
       <Panel title="Send a mission" actions={<span className="muted">{used}/{max} {pool === 'forage' ? 'forage parties' : 'slots'} in use</span>}>
         <div className="seg" role="radiogroup" aria-label="Mission type">
           {ENABLED_MISSIONS.map((t) => (
-            <button key={t} role="radio" aria-checked={type === t} className={type === t ? 'on' : ''} onClick={() => setType(t)}>
+            <button
+              key={t}
+              role="radio"
+              aria-checked={type === t}
+              className={type === t ? 'on' : ''}
+              onClick={() => {
+                setType(t);
+                if (t === 'forage' && target.spot !== WILDS_SPOT) setTarget({ ...colony.coords, spot: WILDS_SPOT });
+                if (t !== 'forage' && target.spot === WILDS_SPOT) setTarget({ ...target, spot: 1 });
+              }}
+            >
               {MISSION_LABEL[t]}
             </button>
           ))}

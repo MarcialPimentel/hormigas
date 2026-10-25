@@ -13,6 +13,7 @@ import './game/research';
 import './game/missions';
 import './game/missionTypes';
 import './game/combat';
+import './game/forage';
 import { worldRoutes } from './routes/world';
 
 export async function buildApp(opts: { logger?: boolean } = {}): Promise<FastifyInstance> {
