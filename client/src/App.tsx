@@ -6,6 +6,8 @@ import { ResourceBar } from './components/ResourceBar';
 import { Login } from './screens/Login';
 import { Overview } from './screens/Overview';
 import { Chambers } from './screens/Chambers';
+import { Brood } from './screens/Brood';
+import { Research } from './screens/Research';
 
 export interface ScreenDef {
   id: string;
@@ -31,9 +33,6 @@ export const ICONS = {
   ranks: I('M8 21V11M16 21V7M12 21V3M4 21h16'),
 };
 
-/** Screens added by later milestones register here. */
-export const extraScreens: ScreenDef[] = [];
-
 export function App() {
   const { loggedIn, state, colony, selectColony, toasts, setLoggedIn } = useGame();
   const [screen, setScreen] = useState('nest');
@@ -49,7 +48,8 @@ export function App() {
   const screens: ScreenDef[] = [
     { id: 'nest', label: 'Colony', icon: ICONS.nest, render: (go) => <Overview go={go} /> },
     { id: 'chambers', label: 'Chambers', icon: ICONS.chambers, render: () => <Chambers /> },
-    ...extraScreens,
+    { id: 'brood', label: 'Brood Hall', icon: ICONS.brood, render: () => <Brood /> },
+    { id: 'research', label: 'Research', icon: ICONS.research, render: () => <Research /> },
   ];
   const current = screens.find((s) => s.id === screen) ?? screens[0];
 

@@ -9,6 +9,7 @@ import { authRoutes } from './routes/auth';
 import { gameRoutes } from './routes/game';
 // event handlers register themselves on import
 import './game/chambers';
+import './game/research';
 
 export async function buildApp(opts: { logger?: boolean } = {}): Promise<FastifyInstance> {
   const app = Fastify({ logger: opts.logger ?? false });
