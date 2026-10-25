@@ -233,3 +233,68 @@ input:focus { border-color: var(--honey); outline: none; }
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; animation: none !important; }
 }
+
+/* ---------- map ---------- */
+.map-nav { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: end; }
+.map-nav label { font-size: 0.8rem; }
+.map-nav input { width: 5.5rem; }
+.map-nav > .btn.ghost:not(.small) { font-size: 1.4rem; line-height: 1; padding: 0.35rem 0.8rem; border-color: var(--seam); }
+.spots { list-style: none; margin: 0 0 0.75rem; padding: 0; display: grid; gap: 2px; }
+.spot { display: grid; grid-template-columns: 2rem 1fr; gap: 0.25rem 0.75rem; align-items: center; padding: 0.55rem 0.6rem; background: var(--soil); border-radius: var(--r-sm); }
+.spot-num { font-family: var(--font-display); font-weight: 800; color: var(--muted); text-align: center; }
+.spot-main { display: grid; min-width: 0; }
+.spot-main strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.spot-actions { grid-column: 2; display: flex; gap: 0.35rem; flex-wrap: wrap; }
+.spot.mine { box-shadow: inset 3px 0 0 var(--honey); }
+.spot.mine .spot-num { color: var(--honey); }
+.spot.inactive strong { color: var(--muted); }
+.spot.wilds { background: transparent; border: 1px dashed var(--seam); }
+.corpses { font-size: 0.8rem; color: var(--protein); }
+@media (min-width: 640px) {
+  .spot { grid-template-columns: 2rem 1fr auto; }
+  .spot-actions { grid-column: auto; justify-content: flex-end; }
+}
+
+/* ---------- missions ---------- */
+.seg { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 0.5rem; }
+.seg button { border: 1px solid var(--seam); background: var(--soil); padding: 0.4rem 0.8rem; border-radius: 999px; cursor: pointer; font-weight: 700; font-size: 0.9rem; color: var(--muted); }
+.seg button.on { background: var(--honey); border-color: var(--honey); color: #2a1d0b; }
+.field { border: 0; padding: 0; margin: 1rem 0 0; }
+.field legend { font-family: var(--font-display); font-weight: 700; margin-bottom: 0.4rem; padding: 0; }
+.coords-input { display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: end; }
+.coords-input label { font-size: 0.8rem; }
+.coords-input input { width: 5.5rem; }
+.pick { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+.pick li { display: flex; justify-content: space-between; align-items: center; gap: 0.75rem; padding: 0.35rem 0.5rem; background: var(--soil); border-radius: var(--r-sm); flex-wrap: wrap; }
+.pick-input { display: flex; gap: 0.3rem; align-items: center; }
+.pick-input input { width: 6.5rem; text-align: right; padding: 0.35rem 0.5rem; }
+.cargo-input { display: flex; gap: 0.6rem; flex-wrap: wrap; align-items: end; }
+.cargo-input label { font-size: 0.85rem; }
+.cargo-input input { width: 8rem; text-align: right; }
+.speed { display: flex; flex-wrap: wrap; gap: 0.75rem 1.5rem; align-items: end; }
+.speed input[type='range'] { flex: 1 1 200px; accent-color: var(--honey); }
+.return-by { font-size: 0.85rem; }
+.summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 0.5rem; margin: 1rem 0; padding: 0.75rem; background: var(--soil); border-radius: var(--r-sm); }
+.summary dt { font-size: 0.75rem; color: var(--muted); }
+.summary dd { margin: 0; font-weight: 700; }
+.problems { margin: 0 0 0.75rem; padding-left: 1.2rem; color: var(--honey); font-size: 0.9rem; }
+.missions { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+.missions li { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 0.4rem 1rem; padding: 0.55rem 0.7rem; background: var(--soil); border-radius: var(--r-sm); }
+.mission-time { display: flex; align-items: center; gap: 0.5rem; }
+
+/* ---------- reports ---------- */
+.reports { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+.report-head { width: 100%; display: flex; justify-content: space-between; gap: 0.75rem; text-align: left; background: var(--soil); border: 0; padding: 0.6rem 0.75rem; cursor: pointer; border-radius: var(--r-sm); }
+.reports .unread .report-title { font-weight: 700; }
+.reports .unread .report-head { box-shadow: inset 3px 0 0 var(--honey); }
+.reports .type-battle.unread .report-head, .reports .type-scouted.unread .report-head { box-shadow: inset 3px 0 0 var(--danger); }
+.report-open { padding: 0.75rem; display: grid; gap: 0.75rem; justify-items: start; }
+.report-body { display: grid; gap: 0.4rem; width: 100%; }
+.report-body h4 { margin: 0.5rem 0 0; font-family: var(--font-display); font-size: 0.95rem; }
+pre.report-body { white-space: pre-wrap; overflow-x: auto; }
+.counts { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 0.15rem 1rem; font-size: 0.9rem; }
+.counts li { display: flex; justify-content: space-between; gap: 0.5rem; border-bottom: 1px dotted var(--seam); }
+
+.badge { position: absolute; transform: translate(14px, -16px); background: var(--danger); color: white; font-size: 0.7rem; min-width: 18px; height: 18px; border-radius: 999px; display: inline-grid; place-items: center; padding: 0 5px; }
+.nav button { position: relative; }
+@media (min-width: 900px) { .badge { position: static; transform: none; justify-self: end; grid-column: 3; } .nav button { grid-template-columns: 26px 1fr auto; } }

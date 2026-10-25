@@ -1,6 +1,8 @@
 import { CHAMBERS, RESEARCH, queueEndsAt, type ChamberId, type ResearchId } from '@hormigas/shared';
 import { useGame } from '../game';
 import { Countdown, Empty } from './ui';
+import { fmtCoords } from '../format';
+import { MISSION_LABEL, type MissionType } from '../nav';
 import type { ReactNode } from 'react';
 
 interface Item {
@@ -47,7 +49,35 @@ export function ActivityList({ go }: { go: (screen: string) => void }) {
       screen: 'brood',
     });
   }
-  for (const it of activityHooks) items.push(...it(state, colony));
+  for (const m of state.missions ?? []) {
+    const out = m.status === 'outbound';
+    items.push({
+      key: `m${m.id}`,
+      startAt: out ? m.departAt : m.arriveAt,
+      endAt: out ? m.arriveAt : m.returnAt,
+      label: (
+        <>
+          {MISSION_LABEL[m.type as MissionType] ?? m.type} {out ? 'arriving at' : 'returning from'} <strong>{fmtCoords(m.target)}</strong>
+        </>
+      ),
+      screen: 'missions',
+    });
+  }
+  for (const i of state.incoming ?? []) {
+    items.push({
+      key: `i${i.id}`,
+      endAt: i.arriveAt,
+      label: i.hostile ? (
+        <>
+          <strong>{i.type === 'raid' ? 'Raid incoming' : 'Enemy scouts incoming'}</strong> from {i.from} ({fmtCoords(i.origin)}){i.type === 'raid' ? ` — ${i.unitCount.toLocaleString()} units` : ''}
+        </>
+      ) : (
+        <>Delivery from {i.from} arriving</>
+      ),
+      screen: 'missions',
+      tone: i.hostile ? 'danger' : undefined,
+    });
+  }
 
   items.sort((a, b) => a.endAt - b.endAt);
   if (items.length === 0) return <Empty>Nothing in progress. Every idle minute is wasted growth — start a build.</Empty>;
@@ -64,6 +94,3 @@ export function ActivityList({ go }: { go: (screen: string) => void }) {
     </ul>
   );
 }
-
-/** Later milestones register more activity sources here (brood queue, missions, raids). */
-export const activityHooks: ((state: any, colony: any) => Item[])[] = [];
