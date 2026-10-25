@@ -298,3 +298,18 @@ export function previewBattle(
     avgLootOnWin: win > 0 ? Math.round(loot / win) : 0,
   };
 }
+
+/** Current size of a corpse field: decays by decay.pctPerHour (of the original) per hour after startAfterHours. */
+export function corpseFieldAmount(protein: number, createdAt: number, t: number): number {
+  const d = C.corpseDecay;
+  const hours = (t - createdAt) / 3600_000;
+  const factor = Math.max(0, Math.min(1, 1 - (d.pctPerHour / 100) * Math.max(0, hours - d.startAfterHours)));
+  return Math.floor(protein * factor);
+}
+
+/** Inverse of corpseFieldAmount's decay factor, for storing a remaining amount without resetting the decay clock. */
+export function corpseDecayFactor(createdAt: number, t: number): number {
+  const d = C.corpseDecay;
+  const hours = (t - createdAt) / 3600_000;
+  return Math.max(0, Math.min(1, 1 - (d.pctPerHour / 100) * Math.max(0, hours - d.startAfterHours)));
+}
