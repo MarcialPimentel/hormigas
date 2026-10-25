@@ -1,6 +1,6 @@
 // Map, missions and reports routes.
 import type { FastifyInstance } from 'fastify';
-import { WORLD, isInactive, isNewPlayerProtected } from '@hormigas/shared';
+import { WORLD, isInactive, isNewPlayerProtected, corpseFieldAmount } from '@hormigas/shared';
 import { getPool, tx } from '../db';
 import { now } from '../clock';
 import { requireAuth } from '../auth';
@@ -52,7 +52,7 @@ export async function worldRoutes(app: FastifyInstance) {
               protected: isNewPlayerProtected({ points: c.points_total, protectedUntil: c.protected_until, lastActive: c.last_active }, t),
             }
           : null,
-        corpses: corpse ? corpseAmount(corpse.protein, corpse.created_at, t) : 0,
+        corpses: corpse ? corpseFieldAmount(corpse.protein, corpse.created_at, t) : 0,
       });
     }
     return { region, patch, spots };
@@ -92,11 +92,16 @@ export async function worldRoutes(app: FastifyInstance) {
     await getPool().query('DELETE FROM reports WHERE player_id = $1 AND id = ANY($2::bigint[])', [req.playerId, ids.map(Number)]);
     return { ok: true };
   });
-}
 
-/** Corpse fields decay 10% (of the original) per hour after 24 h. */
-export function corpseAmount(protein: number, createdAt: number, t: number): number {
-  const hours = (t - createdAt) / 3600_000;
-  const factor = Math.max(0, Math.min(1, 1 - 0.1 * Math.max(0, hours - 24)));
-  return Math.floor(protein * factor);
+  /** Latest scout report you have on a colony spot (for the battle preview). */
+  app.get('/api/intel', async (req) => {
+    const qs = req.query as any;
+    const key = `${Number(qs.region)}:${Number(qs.patch)}:${Number(qs.spot)}`;
+    const r = await getPool().query(
+      "SELECT id, data, created_at FROM reports WHERE player_id = $1 AND type = 'scout' AND title LIKE '%(' || $2 || ')' ORDER BY id DESC LIMIT 1",
+      [req.playerId, key],
+    );
+    const row = r.rows[0];
+    return { intel: row ? { reportId: row.id, at: row.created_at, data: row.data } : null };
+  });
 }

@@ -21,4 +21,4 @@ export const MISSION_HELP: Record<MissionType, string> = {
 };
 
 /** Mission types the server supports right now (grows with each milestone). */
-export const ENABLED_MISSIONS: MissionType[] = ['transport', 'relocate', 'scout'];
+export const ENABLED_MISSIONS: MissionType[] = ['raid', 'scout', 'transport', 'relocate', 'haul'];

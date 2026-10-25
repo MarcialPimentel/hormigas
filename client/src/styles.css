@@ -265,9 +265,10 @@ input:focus { border-color: var(--honey); outline: none; }
 .coords-input label { font-size: 0.8rem; }
 .coords-input input { width: 5.5rem; }
 .pick { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
-.pick li { display: flex; justify-content: space-between; align-items: center; gap: 0.75rem; padding: 0.35rem 0.5rem; background: var(--soil); border-radius: var(--r-sm); flex-wrap: wrap; }
+.pick li { display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; padding: 0.35rem 0.5rem; background: var(--soil); border-radius: var(--r-sm); }
+.pick li > span:first-child { min-width: 0; }
 .pick-input { display: flex; gap: 0.3rem; align-items: center; }
-.pick-input input { width: 6.5rem; text-align: right; padding: 0.35rem 0.5rem; }
+.pick-input input { width: 5.25rem; text-align: right; padding: 0.35rem 0.5rem; }
 .cargo-input { display: flex; gap: 0.6rem; flex-wrap: wrap; align-items: end; }
 .cargo-input label { font-size: 0.85rem; }
 .cargo-input input { width: 8rem; text-align: right; }
@@ -298,3 +299,18 @@ pre.report-body { white-space: pre-wrap; overflow-x: auto; }
 .badge { position: absolute; transform: translate(14px, -16px); background: var(--danger); color: white; font-size: 0.7rem; min-width: 18px; height: 18px; border-radius: 999px; display: inline-grid; place-items: center; padding: 0 5px; }
 .nav button { position: relative; }
 @media (min-width: 900px) { .badge { position: static; transform: none; justify-self: end; grid-column: 3; } .nav button { grid-template-columns: 26px 1fr auto; } }
+
+/* ---------- combat ---------- */
+.preview { margin-top: 1rem; padding: 0.75rem; border: 1px solid var(--seam); border-radius: var(--r-sm); display: grid; gap: 0.5rem; }
+.preview-head { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem; }
+.odds { display: flex; height: 10px; border-radius: 999px; overflow: hidden; background: var(--soil); }
+.odds .win { background: var(--leaf); }
+.odds .draw { background: var(--muted); }
+.odds .loss { background: var(--danger); }
+.summary.tight { margin: 0; }
+.battle .outcome { font-family: var(--font-display); font-weight: 700; font-size: 1.1rem; }
+.battle .outcome.good { color: var(--leaf); }
+.battle .outcome.bad { color: var(--danger); }
+.sides { display: grid; gap: 1rem; }
+@media (min-width: 640px) { .sides { grid-template-columns: 1fr 1fr; } }
+.sides section { display: grid; gap: 0.35rem; align-content: start; }
