@@ -32,7 +32,7 @@
     "otherRegion": "20000 * |regionA - regionB|"
   },
   "travel": {
-    "seconds": "10 + (3500 / speedPct) * sqrt(distance * 10 / slowestUnitSpeed) / worldSpeed",
+    "seconds": "(10 + (3500 / (speedPct / 10)) * sqrt(distance * 10 / slowestUnitSpeed)) / worldSpeed",
     "speedPct": "10..100",
     "nectarFuel": "sum(unitCount * nectarUse) * distance / 35000 * (speedPct/100 + 1)^2"
   },
