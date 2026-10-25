@@ -212,6 +212,18 @@ input:focus { border-color: var(--honey); outline: none; }
 .table th:first-child, .table td:first-child { text-align: left; }
 .table thead th { font-size: 0.8rem; color: var(--muted); font-weight: 700; }
 
+/* ---------- units ---------- */
+.stats { display: flex; flex-wrap: wrap; gap: 0.25rem 1rem; margin: 0.45rem 0 0; font-size: 0.85rem; }
+.stats div { display: flex; gap: 0.3rem; }
+.stats .wide { flex-basis: 100%; }
+.stats dt { color: var(--muted); }
+.stats dd { margin: 0; font-weight: 700; }
+.count-form { display: flex; gap: 0.4rem; align-items: center; flex-wrap: nowrap; }
+.count-form input { width: 6.5rem; text-align: right; padding: 0.45rem 0.55rem; }
+.queue { display: grid; gap: 0.4rem; }
+.queue-item { display: flex; justify-content: space-between; gap: 0.75rem; flex-wrap: wrap; padding: 0.5rem 0.75rem; background: var(--soil); border-radius: var(--r-sm); }
+.queue-item:first-child { box-shadow: inset 3px 0 0 var(--honey); }
+
 /* ---------- toasts ---------- */
 .toasts { position: fixed; z-index: 20; left: 50%; transform: translateX(-50%); bottom: calc(var(--nav-h) + 12px + env(safe-area-inset-bottom)); display: grid; gap: 0.5rem; width: min(92vw, 420px); }
 .toast { padding: 0.65rem 0.9rem; border-radius: var(--r-sm); background: var(--raised); border-left: 4px solid var(--ok); box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35); }

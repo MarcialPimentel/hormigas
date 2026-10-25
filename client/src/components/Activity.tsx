@@ -1,4 +1,4 @@
-import { CHAMBERS, RESEARCH, type ChamberId, type ResearchId } from '@hormigas/shared';
+import { CHAMBERS, RESEARCH, queueEndsAt, type ChamberId, type ResearchId } from '@hormigas/shared';
 import { useGame } from '../game';
 import { Countdown, Empty } from './ui';
 import type { ReactNode } from 'react';
@@ -35,6 +35,16 @@ export function ActivityList({ go }: { go: (screen: string) => void }) {
       endAt: j.endAt,
       label: <>Researching <strong>{RESEARCH[j.research as ResearchId].name}</strong> {j.level}</>,
       screen: 'research',
+    });
+  }
+  const qEnd = queueEndsAt(colony.unitQueue);
+  if (qEnd) {
+    const left = colony.unitQueue.reduce((s, i) => s + i.count - i.done, 0);
+    items.push({
+      key: 'brood',
+      endAt: qEnd,
+      label: <>Brood Hall raising <strong>{left.toLocaleString()}</strong> {left === 1 ? 'unit' : 'units'}</>,
+      screen: 'brood',
     });
   }
   for (const it of activityHooks) items.push(...it(state, colony));

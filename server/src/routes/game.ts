@@ -8,6 +8,8 @@ import { processDueEvents } from '../events';
 import { getWorld } from '../world';
 import { cancelBuild, startBuild } from '../game/chambers';
 import { timeMultiplier } from '../game/boost';
+import { cancelResearch, startResearch } from '../game/research';
+import { enqueueUnits } from '../game/brood';
 
 export function colonyView(c: Colony) {
   return {
@@ -73,6 +75,23 @@ export async function gameRoutes(app: FastifyInstance) {
 
   app.post('/api/colonies/:id/build/cancel', async (req) => {
     const c = await tx((q) => cancelBuild(q, req.playerId, colonyIdParam(req.params)));
+    return { ok: true, colony: colonyView(c) };
+  });
+
+  app.post('/api/research', async (req) => {
+    const body = (req.body ?? {}) as any;
+    await tx((q) => startResearch(q, req.playerId, Number(body.colonyId), String(body.research ?? '')));
+    return { ok: true };
+  });
+
+  app.post('/api/research/cancel', async (req) => {
+    await tx((q) => cancelResearch(q, req.playerId));
+    return { ok: true };
+  });
+
+  app.post('/api/colonies/:id/brood', async (req) => {
+    const body = (req.body ?? {}) as any;
+    const c = await tx((q) => enqueueUnits(q, req.playerId, colonyIdParam(req.params), String(body.kind ?? ''), String(body.id ?? ''), Number(body.count)));
     return { ok: true, colony: colonyView(c) };
   });
 
