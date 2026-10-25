@@ -8,10 +8,15 @@
     "client"
   ],
   "scripts": {
+    "dev": "concurrently -k -n server,client -c yellow,green \"npm run dev -w server\" \"npm run dev -w client\"",
+    "build": "npm run build -w client",
+    "start": "npm start -w server",
+    "migrate": "npm run migrate -w server",
     "test": "npm run test --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present"
   },
   "devDependencies": {
+    "concurrently": "^10.0.6",
     "typescript": "^5.6.3",
     "vitest": "^2.1.4"
   }

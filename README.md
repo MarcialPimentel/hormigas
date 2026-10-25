@@ -5,15 +5,39 @@
 Inspired by the offline-progression loop of classic browser strategy games, without the pay-to-win.
 
 ## Status
-Design phase — **GDD v0.1**. No code yet.
+MVP in development — see the [roadmap](docs/15-roadmap.md) and the milestone issues.
+
+## Run it locally
+
+You need **Node.js 22+** and **Docker Desktop** (for the database).
+
+```bash
+git clone https://github.com/MarcialPimentel/hormigas.git
+cd hormigas
+docker compose up -d     # starts PostgreSQL (and creates the test database)
+npm install
+npm run dev              # server on :3000, client on http://localhost:5173
+```
+
+Open **http://localhost:5173**, found a colony, and play. Open a second browser (or a private window) to make a second player.
+
+The world is created on first start at **×5 speed** (set `WORLD_SPEED` in `.env` before the first start to change it; see `.env.example`).
+To start over with a fresh world: `docker compose down -v && docker compose up -d`.
+
+### Other commands
+| Command | What it does |
+|---|---|
+| `npm test` | Runs all tests (needs the database running) |
+| `npm run typecheck` | Type-checks every package |
+| `npm run build` then `npm start` | Production mode: one server on :3000 serving the built client |
 
 ## Repo layout
 ```
 /docs      ← game design document (start with 00-vision.md)
 /docs/data ← numbers: costs, stats, formulas (read by the shared rules package)
-/shared    ← (planned) TypeScript game rules shared by client and server
-/server    ← (planned) API, database, event processor
-/client    ← (planned) UI + nest view
+/shared    ← TypeScript game rules shared by client and server
+/server    ← API, database, event processor (Fastify + PostgreSQL)
+/client    ← UI (Vite + React)
 ```
 
 ## Design doc index

@@ -7,7 +7,7 @@ export const config = {
   worldName: process.env.WORLD_NAME ?? 'The Backyard',
   /** Set to "true" in production behind HTTPS so cookies are Secure. */
   secureCookies: process.env.SECURE_COOKIES === 'true',
-  /** Folder with the built client to serve (optional). */
-  clientDist: process.env.CLIENT_DIST ?? '',
+  /** Folder with the built client to serve, if it exists (npm workspaces run the server from /server). */
+  clientDist: process.env.CLIENT_DIST ?? '../client/dist',
   sessionDays: 30,
 };

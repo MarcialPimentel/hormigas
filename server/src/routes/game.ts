@@ -7,6 +7,7 @@ import { advance, getPlayer, playerColonies, lockOwnColony, saveColony, type Col
 import { processDueEvents } from '../events';
 import { getWorld } from '../world';
 import { cancelBuild, startBuild } from '../game/chambers';
+import { timeMultiplier } from '../game/boost';
 
 export function colonyView(c: Colony) {
   return {
@@ -57,6 +58,7 @@ export async function gameRoutes(app: FastifyInstance) {
         researchJob: player.researchJob,
         points: player.points,
         protectedUntil: player.protectedUntil,
+        timeMultiplier: await timeMultiplier(q, world.id, player.points.total, t),
       },
       colonies: colonies.map((c) => ({ id: c.id, name: c.name, coords: { region: c.region, patch: c.patch, spot: c.spot } })),
       colony: current ? colonyView(advance(current, t)) : null,
