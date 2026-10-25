@@ -1,7 +1,18 @@
 // Game state: fetched from the server, then advanced locally every second with the shared rules.
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { syncColony, queueEndsAt, type ColonyState } from '@hormigas/shared';
+import {
+  CHAMBERS,
+  RESEARCH,
+  RESOURCE_IDS,
+  queueEndsAt,
+  storageCapacity,
+  syncColony,
+  type ChamberId,
+  type ColonyState,
+  type ResearchId,
+} from '@hormigas/shared';
 import { api, ApiError } from './api';
+import { pushNotification, setTitleBadge } from './notify';
 
 export interface ServerColony extends ColonyState {
   id: number;
@@ -141,7 +152,85 @@ export function GameProvider({ children }: { children: ReactNode }) {
     return () => document.removeEventListener('visibilitychange', onVis);
   }, [loggedIn, refresh]);
 
+  // live push from the server: refresh immediately, notify about reports / incoming / returns
+  useEffect(() => {
+    if (!loggedIn) return;
+    let ws: WebSocket | null = null;
+    let closed = false;
+    let retry = 1000;
+    const connect = () => {
+      const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+      ws = new WebSocket(`${proto}://${location.host}/api/ws`);
+      ws.onopen = () => (retry = 1000);
+      ws.onmessage = (ev) => {
+        let msg: any;
+        try {
+          msg = JSON.parse(ev.data);
+        } catch {
+          return;
+        }
+        if (msg.type === 'hello') return;
+        refresh();
+        if (msg.type === 'report') pushNotification(msg.report.title, undefined, `report-${msg.report.id}`);
+        if (msg.type === 'incoming' && (msg.missionType === 'raid' || msg.missionType === 'scout')) {
+          const text = msg.missionType === 'raid' ? `Raid incoming from ${msg.from}!` : `Enemy scouts heading for ${msg.colony}`;
+          if (!pushNotification(text, `Arrives ${new Date(msg.arriveAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`, 'incoming'))
+            toast('error', text);
+        }
+      };
+      ws.onclose = () => {
+        if (closed) return;
+        setTimeout(connect, retry);
+        retry = Math.min(retry * 2, 30_000);
+      };
+    };
+    connect();
+    return () => {
+      closed = true;
+      ws?.close();
+    };
+  }, [loggedIn, refresh, toast]);
+
+  // notifications for things that finished while the tab was in the background
+  const prev = useRef<ServerState | null>(null);
+  useEffect(() => {
+    const p = prev.current;
+    prev.current = state;
+    if (!p || !state || !p.colony || !state.colony || p.colony.id !== state.colony.id) return;
+    if (p.colony.buildJob && !state.colony.buildJob && (state.colony.chambers as any)[p.colony.buildJob.chamber] === p.colony.buildJob.level)
+      pushNotification(`${CHAMBERS[p.colony.buildJob.chamber as ChamberId].name} reached level ${p.colony.buildJob.level}`, undefined, 'build');
+    if (p.player.researchJob && !state.player.researchJob && (state.player.research as any)[p.player.researchJob.research] === p.player.researchJob.level)
+      pushNotification(`Research complete: ${RESEARCH[p.player.researchJob.research as ResearchId].name} ${p.player.researchJob.level}`, undefined, 'research');
+    if (p.colony.unitQueue.length > 0 && state.colony.unitQueue.length === 0) pushNotification('The Brood Hall has finished raising units', undefined, 'brood');
+  }, [state]);
+
   const colony = useMemo(() => (state?.colony ? syncColony(state.colony, now) : null), [state, now]);
+
+  // storage full
+  const fullRef = useRef<Set<string>>(new Set());
+  const fullInit = useRef<number | null>(null);
+  useEffect(() => {
+    if (!colony) return;
+    const first = fullInit.current !== colony.id; // don't notify for storage that was already full on load
+    fullInit.current = colony.id;
+    const caps = storageCapacity(colony.chambers);
+    for (const r of RESOURCE_IDS) {
+      const full = colony.resources[r] >= caps[r];
+      const key = `${colony.id}:${r}`;
+      if (full && !fullRef.current.has(key)) {
+        if (!first) pushNotification(`${r[0].toUpperCase()}${r.slice(1)} storage is full`, 'Production has stopped. Spend it or build more storage.', `full-${r}`);
+        fullRef.current.add(key);
+      } else if (!full) fullRef.current.delete(key);
+    }
+  }, [colony]);
+
+  // tab title: unread reports + hostile incoming
+  useEffect(() => {
+    if (!state) return setTitleBadge(0);
+    const hostile = (state.incoming ?? []).filter((i: any) => i.hostile);
+    const raid = hostile.some((i: any) => i.type === 'raid');
+    setTitleBadge((state.unreadReports ?? 0) + hostile.length, raid ? 'Raid incoming!' : hostile.length ? 'Scouts incoming' : undefined);
+  }, [state]);
 
   const selectColony = useCallback((id: number) => {
     try {

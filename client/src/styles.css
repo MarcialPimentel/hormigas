@@ -314,3 +314,29 @@ pre.report-body { white-space: pre-wrap; overflow-x: auto; }
 .sides { display: grid; gap: 1rem; }
 @media (min-width: 640px) { .sides { grid-template-columns: 1fr 1fr; } }
 .sides section { display: grid; gap: 0.35rem; align-content: start; }
+
+/* ---------- nest view ---------- */
+.nest { position: relative; border-radius: var(--r-md); overflow: hidden; border: 1px solid var(--seam); background: #271c14; }
+.nest canvas { display: block; }
+.nest-chamber { position: absolute; background: transparent; border: 0; border-radius: 50%; cursor: pointer; padding: 0; }
+.nest-chamber:hover, .nest-chamber:focus-visible { box-shadow: 0 0 0 2px var(--honey); }
+.nest-label {
+  position: absolute; left: 50%; top: 100%; transform: translate(-50%, 2px);
+  font-size: 0.68rem; font-weight: 700; white-space: nowrap; color: var(--sand); opacity: 0.85;
+  text-shadow: 0 1px 2px #000;
+}
+.nest-chamber.ghost .nest-label { color: var(--muted); font-weight: 400; }
+.nest-chamber.building .nest-label { color: var(--honey); }
+.nest-away { position: absolute; right: 10px; top: 6px; font-size: 0.75rem; color: var(--sand); background: rgba(35, 26, 20, 0.8); padding: 2px 8px; border-radius: 999px; }
+@media (max-width: 520px) { .nest-label { font-size: 0.6rem; } }
+
+/* ---------- quests ---------- */
+.quest { display: flex; flex-wrap: wrap; gap: 0.75rem 1.25rem; align-items: center; justify-content: space-between; padding: 1rem; border-radius: var(--r-md); border: 1px dashed var(--honey); background: rgba(232, 178, 58, 0.06); }
+.quest.ready { border-style: solid; background: rgba(232, 178, 58, 0.12); }
+.quest-main { flex: 1 1 260px; display: grid; gap: 0.25rem; }
+.quest-side { display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem; }
+
+/* ---------- rankings ---------- */
+.ranks td:first-child { color: var(--muted); width: 3rem; }
+.ranks tr.me td { color: var(--honey); font-weight: 700; }
+.pager { display: flex; gap: 0.75rem; align-items: center; justify-content: center; margin: 0.5rem 0; }

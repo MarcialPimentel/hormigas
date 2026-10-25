@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { api } from './api';
 import { useGame } from './game';
 import { fmtCoords } from './format';
@@ -11,6 +11,7 @@ import { Research } from './screens/Research';
 import { MapScreen } from './screens/Map';
 import { Missions } from './screens/Missions';
 import { Reports } from './screens/Reports';
+import { Rankings } from './screens/Rankings';
 import type { Nav } from './nav';
 
 export interface ScreenDef {
@@ -48,10 +49,6 @@ export function App() {
     window.scrollTo(0, 0);
   };
 
-  useEffect(() => {
-    document.title = 'Hormigas';
-  }, []);
-
   if (loggedIn === null) return <div className="boot">Waking the colony…</div>;
   if (!loggedIn) return <Login />;
   if (!state || !colony) return <div className="boot">Waking the colony…</div>;
@@ -64,6 +61,7 @@ export function App() {
     { id: 'map', label: 'Map', icon: ICONS.map, render: (n) => <MapScreen nav={n} start={params} /> },
     { id: 'missions', label: 'Missions', icon: ICONS.missions, render: () => <Missions draft={params} />, badge: (state.incoming ?? []).filter((i: any) => i.hostile).length },
     { id: 'reports', label: 'Reports', icon: ICONS.reports, render: () => <Reports />, badge: state.unreadReports },
+    { id: 'rankings', label: 'Rankings', icon: ICONS.ranks, render: () => <Rankings /> },
   ];
   const current = screens.find((s) => s.id === screen) ?? screens[0];
 

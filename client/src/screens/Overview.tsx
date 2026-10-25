@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { lazy, Suspense, useState } from 'react';
 import {
   RESOURCE_IDS,
   TERRAIN,
@@ -15,10 +15,15 @@ import { fmtClock, fmtCoords, fmtDuration, fmtFull } from '../format';
 import { RESOURCE_LABEL } from '../describe';
 import { Panel, ResDot } from '../components/ui';
 import { ActivityList } from '../components/Activity';
+import { QuestCard } from '../components/QuestCard';
+import { disableNotifications, enableNotifications, notificationsEnabled, notificationsSupported } from '../notify';
 
-export function Overview({ go }: { go: (screen: string) => void }) {
-  const { colony, state, now, act } = useGame();
+const NestView = lazy(() => import('../components/NestView').then((m) => ({ default: m.NestView })));
+
+export function Overview({ go }: { go: (screen: string, params?: any) => void }) {
+  const { colony, state, now, act, toast } = useGame();
   const [editing, setEditing] = useState(false);
+  const [notifyOn, setNotifyOn] = useState(notificationsEnabled());
   const [name, setName] = useState('');
   if (!colony || !state) return null;
 
@@ -31,6 +36,10 @@ export function Overview({ go }: { go: (screen: string) => void }) {
 
   return (
     <div className="stack">
+      <Suspense fallback={<div className="nest" style={{ height: 280 }} />}>
+        <NestView nav={go} />
+      </Suspense>
+      <QuestCard nav={go} />
       <Panel>
         <div className="colony-head">
           {editing ? (
@@ -105,6 +114,33 @@ export function Overview({ go }: { go: (screen: string) => void }) {
           {safe > 0 ? ` The Honeypot Gallery protects ${fmtFull(safe)} of each resource from raids.` : ''}
         </p>
       </Panel>
+
+      {notificationsSupported() && (
+        <Panel title="Notifications">
+          <div className="active-job">
+            <p className="muted small" style={{ flex: '1 1 260px' }}>
+              {notifyOn
+                ? 'On. You get a browser notification for raids, scouts, reports and finished work while this tab is in the background.'
+                : 'Off. Turn on to hear about incoming raids and finished work while this tab is in the background.'}
+            </p>
+            <button
+              className={`btn ${notifyOn ? 'ghost' : 'primary'} small`}
+              onClick={async () => {
+                if (notifyOn) {
+                  disableNotifications();
+                  setNotifyOn(false);
+                } else {
+                  const ok = await enableNotifications();
+                  setNotifyOn(ok);
+                  if (!ok) toast('error', 'Notifications are blocked in your browser settings.');
+                }
+              }}
+            >
+              {notifyOn ? 'Turn off' : 'Turn on'}
+            </button>
+          </div>
+        </Panel>
+      )}
     </div>
   );
 }
