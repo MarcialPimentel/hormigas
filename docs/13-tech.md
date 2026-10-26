@@ -54,8 +54,9 @@ corpse_fields(world_id, region, patch, spot, protein, created_at)
 - Reject client-sent timestamps; server time only.
 - One account per person (terms of service); detect obvious multi-accounting later.
 
-## Hosting (early)
-- Single small server + managed Postgres. Low cost for testing.
+## Hosting
+- One small DigitalOcean droplet running Docker Compose: Caddy (HTTPS) → the Hormigas container → Postgres on the same box. Live at https://hormigas.marz.gg. Details in [DEPLOY.md](DEPLOY.md).
+- Exactly one server instance. The event worker runs in-process with the API.
 - Compute-don't-tick keeps load proportional to *player actions*, not player count.
 
 ## Open Questions
