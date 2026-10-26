@@ -3,7 +3,7 @@ import {
   CHAMBERS, CHAMBER_IDS, CASTES, CASTE_IDS, DEFENSES, DEFENSE_IDS, RESEARCH, RESEARCH_IDS, TERRAIN, TERRAIN_IDS,
   chamberCost, chamberBuildSeconds, researchCost, researchSeconds, unitSeconds,
   workforce, productionPerHour, storageCapacity, protectedAmount, accrue,
-  spaceUsed, spaceMax, missingRequirements, isUnlocked, res,
+  spaceUsed, spaceMax, missingRequirements, isUnlocked, res, shortfalls, explainShortfall,
 } from '../src';
 
 describe('data integrity', () => {
@@ -33,7 +33,7 @@ describe('costs and times', () => {
   it('chamber cost grows by costFactor', () => {
     expect(chamberCost('leaf_garden', 1)).toEqual(res(60, 15, 0));
     expect(chamberCost('leaf_garden', 2)).toEqual(res(90, 22.5, 0));
-    expect(chamberCost('queen_chamber', 3)).toEqual(res(1600, 800, 0));
+    expect(chamberCost('queen_chamber', 3)).toEqual(res(1000, 500, 0));
   });
   it('research cost doubles', () => {
     expect(researchCost('mandibles', 3)).toEqual(res(3200, 800, 0));
@@ -65,19 +65,31 @@ describe('costs and times', () => {
 
 describe('workforce and production', () => {
   it('base income with no chambers', () => {
-    expect(productionPerHour({}, 'grassland')).toEqual(res(30, 15, 0));
+    expect(productionPerHour({}, 'grassland')).toEqual(res(60, 30, 0));
+    expect(productionPerHour({}, 'grassland', 5)).toEqual(res(300, 150, 0));
   });
   it('production scales with level and terrain', () => {
     const p = productionPerHour({ leaf_garden: 1, nursery: 1 }, 'grassland');
-    expect(p.foliage).toBeCloseTo(30 + 30 * 1.1, 5);
+    expect(p.foliage).toBeCloseTo(60 + 30 * 1.1, 5);
     const sunny = productionPerHour({ leaf_garden: 1, nursery: 1 }, 'sunny_meadow');
-    expect(sunny.foliage).toBeCloseTo(30 + 30 * 1.1 * 1.2, 5);
+    expect(sunny.foliage).toBeCloseTo(60 + 30 * 1.1 * 1.2, 5);
   });
   it('workforce shortage reduces production proportionally', () => {
     const wf = workforce({ leaf_garden: 5, hunting_grounds: 5 });
     expect(wf.ratio).toBeLessThan(1);
     const p = productionPerHour({ leaf_garden: 5, hunting_grounds: 5 }, 'grassland');
-    expect(p.foliage).toBeCloseTo(30 + 30 * 5 * Math.pow(1.1, 5) * wf.ratio, 5);
+    expect(p.foliage).toBeCloseTo(60 + 30 * 5 * Math.pow(1.1, 5) * wf.ratio, 5);
+  });
+});
+
+describe('shortfalls', () => {
+  it('explains storage, missing income, and waiting', () => {
+    const caps = res(10000, 10000, 10000);
+    const rate = res(100, 50, 0);
+    expect(explainShortfall(shortfalls(res(20000, 0, 0), res(0, 0, 0), caps, rate))).toBe("Costs 20.0k Foliage, but your Granary only holds 10.0k.");
+    expect(explainShortfall(shortfalls(res(0, 0, 100), res(0, 0, 0), caps, rate))).toBe("Needs 100 more Nectar. You don't produce Nectar yet.");
+    expect(explainShortfall(shortfalls(res(200, 0, 0), res(100, 0, 0), caps, rate))).toBe('Needs 100 more Foliage (about 1h).');
+    expect(shortfalls(res(1, 1, 1), res(5, 5, 5), caps, rate)).toEqual([]);
   });
 });
 

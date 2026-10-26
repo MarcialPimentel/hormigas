@@ -14,7 +14,7 @@ import {
 import type { Tx } from '../db';
 import { now } from '../clock';
 import { GameError } from '../errors';
-import { advance, getPlayer, lockColony, lockOwnColony, saveColony, savePlayerResearch } from '../colony';
+import { advance, requireAffordable, getPlayer, lockColony, lockOwnColony, saveColony, savePlayerResearch } from '../colony';
 import { cancelEvent, onEvent, schedule } from '../events';
 import { getWorld } from '../world';
 import { timeMultiplier } from './boost';
@@ -38,7 +38,7 @@ export async function startResearch(q: Tx, playerId: number, colonyId: number, r
 
   const level = lvl(player.research, id) + 1;
   const cost = researchCost(id, level);
-  if (!canAfford(c.resources, cost)) throw new GameError('cant_afford', 'Not enough resources.');
+  requireAffordable(c, cost);
 
   const world = await getWorld(q);
   const secs = researchSeconds(id, level, {

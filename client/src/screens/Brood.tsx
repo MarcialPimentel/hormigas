@@ -19,6 +19,7 @@ import { api } from '../api';
 import { useGame } from '../game';
 import { fmtDuration, fmtFull, fmtNum } from '../format';
 import { Cost, Countdown, Panel } from '../components/ui';
+import { whyShort } from '../describe';
 
 export const CASTE_BLURB: Record<string, string> = {
   worker: 'Cheap all-rounders. Carry loot and haul corpses.',
@@ -124,7 +125,7 @@ export function Brood() {
             else if (missing.length) blocked = `Needs ${missing.map((m) => `${m.name} ${m.need}`).join(', ')}`;
             else if (colony.buildJob?.chamber === 'brood_hall') blocked = 'Brood Hall is being enlarged';
             else if (cap === 0) blocked = `Limit ${def.max} per colony`;
-            else if (n > maxN) blocked = maxAfford < n ? 'Not enough resources' : 'Over the limit';
+            else if (n > maxN) blocked = maxAfford < n ? whyShort(colony, scale(def.cost, n), state.world.speed) : 'Over the limit';
             return (
               <li key={id} className={`row${missing.length ? ' locked' : ''}`}>
                 <div className="row-main">

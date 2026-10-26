@@ -340,3 +340,8 @@ pre.report-body { white-space: pre-wrap; overflow-x: auto; }
 .ranks td:first-child { color: var(--muted); width: 3rem; }
 .ranks tr.me td { color: var(--honey); font-weight: 700; }
 .pager { display: flex; gap: 0.75rem; align-items: center; justify-content: center; margin: 0.5rem 0; }
+.quest.big { border-color: var(--honey); border-width: 2px; }
+.quest.big h2 { color: var(--honey); }
+.reports .type-milestone .report-head { box-shadow: inset 3px 0 0 var(--honey); }
+.reports .type-milestone .report-title { color: var(--honey); }
+.milestone-text { font-size: 1rem; line-height: 1.6; max-width: 60ch; }

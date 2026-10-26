@@ -26,10 +26,10 @@ export function subCounts<T extends Record<string, number | undefined>>(a: T, b:
 }
 
 /** Bring a colony's resources and Brood Hall queue forward to time `to`. Never moves backwards. */
-export function syncColony<S extends ColonyState>(state: S, to: number): S {
+export function syncColony<S extends ColonyState>(state: S, to: number, worldSpeed = 1): S {
   if (to <= state.lastUpdated) return state;
   const seconds = (to - state.lastUpdated) / 1000;
-  const resources = accrue(state.resources, productionPerHour(state.chambers, state.terrain), storageCapacity(state.chambers), seconds);
+  const resources = accrue(state.resources, productionPerHour(state.chambers, state.terrain, worldSpeed), storageCapacity(state.chambers), seconds);
   const adv = advanceUnitQueue(state.unitQueue, to);
   return {
     ...state,

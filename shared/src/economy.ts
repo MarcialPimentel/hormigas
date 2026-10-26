@@ -94,8 +94,8 @@ export function workforce(chambers: ChamberLevels): Workforce {
   return { supply: Math.round(supply), demand: Math.round(demand), ratio };
 }
 
-/** Resources produced per hour by a colony (base income + chambers × terrain × workforce ratio). */
-export function productionPerHour(chambers: ChamberLevels, terrain: TerrainId): Resources {
+/** Resources produced per hour by a colony (base income + chambers × terrain × workforce ratio) × world speed. */
+export function productionPerHour(chambers: ChamberLevels, terrain: TerrainId, worldSpeed = 1): Resources {
   const out = res(
     RESOURCES_DATA.baseIncomePerHour.foliage,
     RESOURCES_DATA.baseIncomePerHour.protein,
@@ -110,7 +110,7 @@ export function productionPerHour(chambers: ChamberLevels, terrain: TerrainId): 
     const terrainPct = (mods[`${r}Pct` as 'foliagePct'] ?? 0) / 100;
     out[r] += (def.effect.base ?? 0) * growth(lvl(chambers, id)) * (1 + terrainPct) * ratio;
   }
-  return out;
+  return scale(out, worldSpeed);
 }
 
 // ---------- storage ----------
@@ -177,3 +177,57 @@ export function missingRequirements(req: Requirements, chambers: ChamberLevels, 
 
 export const isUnlocked = (req: Requirements, chambers: ChamberLevels, research: ResearchLevels): boolean =>
   missingRequirements(req, chambers, research).length === 0;
+
+// ---------- why can't I afford it? ----------
+
+const STORE_NAME: Record<ResourceId, string> = { foliage: 'Granary', protein: 'Larder', nectar: 'Nectar Cellar' };
+const RES_NAME: Record<ResourceId, string> = { foliage: 'Foliage', protein: 'Protein', nectar: 'Nectar' };
+
+export interface Shortfall {
+  resource: ResourceId;
+  need: number;
+  have: number;
+  /** storage: cost exceeds what storage can hold; no_income: none produced; wait: just needs time */
+  kind: 'storage' | 'no_income' | 'wait';
+  cap: number;
+  /** seconds until affordable at current income (wait only) */
+  eta?: number;
+}
+
+/** What is missing to pay `cost`, and why. Empty when affordable. */
+export function shortfalls(cost: Resources, have: Resources, caps: Resources, perHour: Resources): Shortfall[] {
+  const out: Shortfall[] = [];
+  for (const r of RESOURCE_IDS) {
+    if (have[r] + 1e-9 >= cost[r]) continue;
+    const base = { resource: r, need: cost[r], have: have[r], cap: caps[r] };
+    if (cost[r] > caps[r]) out.push({ ...base, kind: 'storage' });
+    else if (perHour[r] <= 0) out.push({ ...base, kind: 'no_income' });
+    else out.push({ ...base, kind: 'wait', eta: ((cost[r] - have[r]) / perHour[r]) * 3600 });
+  }
+  return out;
+}
+
+const n = (v: number) => {
+  const a = Math.abs(v);
+  if (a < 10_000) return Math.ceil(v).toLocaleString('en-US');
+  if (a < 1_000_000) return `${(v / 1000).toFixed(1)}k`;
+  return `${(v / 1_000_000).toFixed(2)}M`;
+};
+const dur = (s: number) => {
+  const m = Math.ceil(s / 60);
+  if (m < 60) return `${m}m`;
+  const h = Math.floor(m / 60);
+  if (h < 48) return m % 60 ? `${h}h ${m % 60}m` : `${h}h`;
+  return `${Math.floor(h / 24)}d ${h % 24}h`;
+};
+
+/** One plain-language sentence explaining the most important shortfall. */
+export function explainShortfall(list: Shortfall[]): string {
+  if (list.length === 0) return '';
+  const order = { storage: 0, no_income: 1, wait: 2 } as const;
+  const s = [...list].sort((a, b) => order[a.kind] - order[b.kind] || (b.eta ?? 0) - (a.eta ?? 0))[0];
+  const name = RES_NAME[s.resource];
+  if (s.kind === 'storage') return `Costs ${n(s.need)} ${name}, but your ${STORE_NAME[s.resource]} only holds ${n(s.cap)}.`;
+  if (s.kind === 'no_income') return `Needs ${n(s.need - s.have)} more ${name}. You don't produce ${name} yet.`;
+  return `Needs ${n(s.need - s.have)} more ${name} (about ${dur(s.eta!)}).`;
+}

@@ -25,13 +25,13 @@ All costs and times are exponential by level. Values below are defaults; per-ite
 - **Production per hour:** `rate(L) = base × L × 1.1^L` — grows a bit faster than linear, so upgrades always feel worth it, but costs outpace it.
 - **Build time (seconds):** `t = (foliage + protein) / (2.5 × (1 + excavationLevel)) / worldSpeed`
   - **Founding boost:** levels 1–3 of any chamber take ×0.25 time. Minimum 5 s.
-- **World speed:** 1 for the main world. Test worlds can run ×5–×20.
+- **World speed:** 1 for the main world. Test worlds can run ×5–×20. World speed multiplies **production and all timers** (builds, research, units, travel).
 
 Why exponential: costs rising faster than production is what moves the player from "click constantly" to "plan and wait" naturally, without hard gates.
 
 ## Unlock order (first pass)
 1. Queen's Chamber L1 (start) → Leaf Garden, Hunting Grounds, Nursery
-2. Queen's Chamber L2 → Granary, Larder, Brood Hall (castes: Worker, Minor Soldier, Scout)
+2. Queen's Chamber L2 → Granary, Larder, Brood Hall (castes: Worker, Minor Soldier, Scout). The Brood Hall costs Nectar, so it can only be built after step 3 — on purpose: Nectar is the first big goal.
 3. Queen's Chamber L3 → Pheromone Chamber (research), Aphid Pasture, Nectar Cellar
 4. Brood Hall L2 + research → Major Soldier, Hauler, first defenses
 5. Queen's Chamber L4 → Excavation Works, Honeypot Gallery
@@ -39,9 +39,14 @@ Why exponential: costs rising faster than production is what moves the player fr
 
 The **Queen's Chamber** is the master gate: its level unlocks new chamber types, keeping the early UI small and adding options at a steady rate.
 
-## Onboarding quest chain (first 10 minutes)
-1. Upgrade Leaf Garden → 2. Build Nursery → 3. Build Hunting Grounds → 4. Upgrade Queen's Chamber → 5. Raise 3 Workers → 6. Send a forage mission → 7. Scout a neighbor.
-Each quest rewards a small resource bundle and points at the next UI element. The chain doubles as the tutorial.
+## Founding tasks (first few hours)
+The chain builds toward the first big milestone, **discovering Nectar**, then teaches castes and missions:
+
+1. Build a Leaf Garden → 2. Build a Nursery → 3. Build Hunting Grounds → 4. Queen's Chamber 2 → 5. Leaf Garden 3 → 6. Queen's Chamber 3 → **7. Discover Nectar (Aphid Pasture)** ⭐ → 8. Build a Brood Hall → 9. Raise 3 Workers → 10. Send a forage party → 11. Scout a neighbor.
+
+Each task rewards a resource bundle and has a "Show me" button. After the chain, players work out their own path (see [16-milestones](16-milestones.md#philosophy)). The first Aphid Pasture triggers a milestone report.
+
+See [16-milestones](16-milestones.md) for the full timeline and the targets the pacing test enforces.
 
 ## Points & ranking
 - 1 point per 1,000 resources spent (all types counted equally in v0.1).

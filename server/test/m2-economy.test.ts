@@ -55,7 +55,7 @@ describe('colony & idle economy', () => {
     await setColony(colonyId, { foliage: 0, protein: 0, nectar: 0, last_updated: clock.t });
     await clock.advance(3600_000);
     const s = await p.get('/api/state');
-    const rate = productionPerHour({ queen_chamber: 1 }, 'grassland');
+    const rate = productionPerHour({ queen_chamber: 1 }, 'grassland', s.world.speed);
     expect(s.colony.resources.foliage).toBeCloseTo(rate.foliage, 3);
     expect(s.colony.resources.protein).toBeCloseTo(rate.protein, 3);
   });
@@ -118,5 +118,36 @@ describe('colony & idle economy', () => {
   it('renames a colony', async () => {
     const r = await p.patch(`/api/colonies/${colonyId}`, { name: 'Hill of Leaves' });
     expect(r.colony.name).toBe('Hill of Leaves');
+  });
+});
+
+describe('balance pass', () => {
+  it('world speed speeds up production, not just timers', async () => {
+    const q = await newPlayer(app, 'speedy');
+    const s = await q.get('/api/state');
+    await setColony(s.colony.id, { foliage: 0, protein: 0, nectar: 0, last_updated: clock.t });
+    await clock.advance(3600_000);
+    const after = await q.get('/api/state');
+    expect(after.colony.resources.foliage).toBeCloseTo(60 * s.world.speed, 3);
+  });
+
+  it('unaffordable builds explain what is missing', async () => {
+    const q = await newPlayer(app, 'explainer');
+    const s = await q.get('/api/state');
+    await setColony(s.colony.id, { foliage: 0, protein: 0, nectar: 0, last_updated: clock.t, chambers: { queen_chamber: 2 } });
+    const r = await q.post(`/api/colonies/${s.colony.id}/build`, { chamber: 'brood_hall' });
+    expect(r.error.code).toBe('cant_afford');
+    expect(r.error.message).toMatch(/You don't produce Nectar yet/);
+  });
+
+  it('first Aphid Pasture announces the Nectar milestone once', async () => {
+    const q = await newPlayer(app, 'honeydew');
+    const s = await q.get('/api/state');
+    await setColony(s.colony.id, { foliage: 1e5, protein: 1e5, nectar: 0, last_updated: clock.t, chambers: { queen_chamber: 3 } });
+    const b = await q.post(`/api/colonies/${s.colony.id}/build`, { chamber: 'aphid_pasture' });
+    await clock.advance(b.colony.buildJob.endAt - clock.t + 10);
+    const reps = (await q.get('/api/reports')).reports.filter((x: any) => x.type === 'milestone');
+    expect(reps).toHaveLength(1);
+    expect(reps[0].title).toMatch(/Nectar/);
   });
 });

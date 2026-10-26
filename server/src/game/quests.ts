@@ -29,7 +29,7 @@ export async function questStatus(q: Q, playerId: number) {
     finished: false,
     claimed: claimed.length,
     total: QUESTS.length,
-    quest: { id: quest.id, title: quest.title, hint: quest.hint, screen: quest.screen, reward: quest.reward, ready },
+    quest: { id: quest.id, title: quest.title, hint: quest.hint, screen: quest.screen, reward: quest.reward, milestone: quest.milestone ?? null, ready },
   };
 }
 

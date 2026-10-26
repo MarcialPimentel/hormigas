@@ -1,6 +1,11 @@
 // Human-readable descriptions of what chambers do at a given level.
 import {
   CHAMBERS,
+  explainShortfall,
+  productionPerHour,
+  shortfalls,
+  storageCapacity,
+  type Resources,
   RESOURCES_DATA,
   TERRAIN,
   type ChamberId,
@@ -28,14 +33,14 @@ export const CHAMBER_BLURB: Record<ChamberId, string> = {
 };
 
 /** What a chamber provides at `level` (level 0 = nothing). */
-export function chamberEffect(id: ChamberId, level: number, terrain: TerrainId): string {
+export function chamberEffect(id: ChamberId, level: number, terrain: TerrainId, worldSpeed = 1): string {
   const def = CHAMBERS[id];
   const e = def.effect;
   switch (e.type) {
     case 'produce': {
       const r = e.resource!;
       const pct = (TERRAIN[terrain].mods[`${r}Pct` as 'foliagePct'] ?? 0) / 100;
-      return `${fmtNum((e.base ?? 0) * growth(level) * (1 + pct))} ${RESOURCE_LABEL[r]}/h · uses ${fmtNum((def.workforceUse ?? 0) * growth(level))} workforce`;
+      return `${fmtNum((e.base ?? 0) * growth(level) * (1 + pct) * worldSpeed)} ${RESOURCE_LABEL[r]}/h · uses ${fmtNum((def.workforceUse ?? 0) * growth(level))} workforce`;
     }
     case 'workforce':
       return `+${fmtNum((e.base ?? 0) * growth(level))} workforce`;
@@ -54,4 +59,9 @@ export function chamberEffect(id: ChamberId, level: number, terrain: TerrainId):
       return unlocks.length ? `Unlocks ${unlocks.join(', ')}` : `Level ${level}`;
     }
   }
+}
+
+/** Plain-language reason a colony can't pay `cost`, or '' if it can. */
+export function whyShort(colony: { chambers: any; terrain: TerrainId; resources: Resources }, cost: Resources, worldSpeed: number): string {
+  return explainShortfall(shortfalls(cost, colony.resources, storageCapacity(colony.chambers), productionPerHour(colony.chambers, colony.terrain, worldSpeed)));
 }

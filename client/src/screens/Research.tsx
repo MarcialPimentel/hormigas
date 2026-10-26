@@ -12,6 +12,7 @@ import { api } from '../api';
 import { useGame } from '../game';
 import { fmtDuration } from '../format';
 import { Cost, Countdown, Panel } from '../components/ui';
+import { whyShort } from '../describe';
 
 export const RESEARCH_BLURB: Record<string, string> = {
   mandibles: 'Stronger jaws. +10% attack per level for all units and defenses.',
@@ -65,7 +66,7 @@ export function Research() {
             if (missing.length) blocked = `Needs ${missing.map((m) => `${m.name} ${m.need}`).join(', ')}`;
             else if (job) blocked = job.research === id ? 'Researching now' : 'Another research is running';
             else if (colony.buildJob?.chamber === 'pheromone_chamber') blocked = 'Pheromone Chamber is being enlarged';
-            else if (!canAfford(colony.resources, cost)) blocked = 'Not enough resources';
+            else if (!canAfford(colony.resources, cost)) blocked = whyShort(colony, cost, state.world.speed);
             return (
               <li key={id} className={`row${missing.length ? ' locked' : ''}`}>
                 <div className="row-main">

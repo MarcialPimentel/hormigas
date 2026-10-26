@@ -29,6 +29,7 @@ To start over with a fresh world: `docker compose down -v && docker compose up -
 |---|---|
 | `npm test` | Runs all tests (needs the database running) |
 | `npm run typecheck` | Type-checks every package |
+| `npm run sim` | Prints the milestone map for an engaged player (`npm run sim -- 5` for ×5) |
 | `npm run build` then `npm start` | Production mode: one server on :3000 serving the built client |
 
 ## Repo layout
@@ -59,6 +60,7 @@ To start over with a fresh world: `docker compose down -v && docker compose up -
 | 13 | [Tech](docs/13-tech.md) | Stack, architecture, server authority |
 | 14 | [Monetization](docs/14-monetization.md) | Fairness principles |
 | 15 | [Roadmap](docs/15-roadmap.md) | MVP → v1 → later |
+| 16 | [Milestone Map](docs/16-milestones.md) | When players hit each milestone, pacing targets |
 
 ## Doc conventions
 - **Numbers live in `docs/data/`**, reasoning lives in the markdown. If they disagree, the data file wins and the doc gets fixed.

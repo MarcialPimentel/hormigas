@@ -9,7 +9,7 @@
   },
   "cost": "baseCost * costFactor^(level - 1)",
   "production": {
-    "perHour": "base * level * 1.1^level * (1 + terrainPct/100) * workforceRatio",
+    "perHour": "(baseIncome + base * level * 1.1^level * (1 + terrainPct/100) * workforceRatio) * worldSpeed",
     "workforceRatio": "min(1, workforceSupply / workforceDemand)",
     "workforceUse": "workforceUse * level * 1.1^level",
     "workforceSupply": "baseWorkforce + nursery.base * level * 1.1^level"

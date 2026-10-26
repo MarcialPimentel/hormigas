@@ -25,6 +25,9 @@ export async function getWorld(q: Q): Promise<World> {
   return cached;
 }
 
+/** World speed for synchronous rules code. getWorld() runs at startup and on every sign-up, so the cache is warm. */
+export const cachedWorldSpeed = (): number => cached?.speed ?? 1;
+
 export function clearWorldCache() {
   cached = null;
 }

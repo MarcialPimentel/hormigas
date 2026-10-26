@@ -97,6 +97,8 @@ function ReportBody({ r }: { r: Report }) {
       );
     case 'battle':
       return <BattleReport data={d} />;
+    case 'milestone':
+      return <p className="report-body milestone-text">{d.text}</p>;
     case 'haul':
       return (
         <p className="report-body">
