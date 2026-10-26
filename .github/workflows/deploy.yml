@@ -1,0 +1,63 @@
+# Goes in the hormigas repo. After CI passes on main, builds the Docker image
+# on GitHub's machines, pushes it to GitHub Container Registry, then tells the
+# droplet to pull it and restart Hormigas.
+#
+# Repo secrets needed (Settings -> Secrets and variables -> Actions):
+#   DROPLET_HOST     the droplet's IP address
+#   DROPLET_SSH_KEY  the private half of the deploy key (hormigas-deploy)
+
+name: Deploy
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch: # lets you redeploy by hand from the Actions tab
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
+            ghcr.io/marcialpimentel/hormigas:latest
+            ghcr.io/marcialpimentel/hormigas:${{ github.event.workflow_run.head_sha || github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Restart Hormigas on the droplet
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.DROPLET_HOST }}
+          username: deploy
+          key: ${{ secrets.DROPLET_SSH_KEY }}
+          script: |
+            cd /opt/hub
+            docker compose pull hormigas
+            docker compose up -d hormigas
+            docker image prune -f
