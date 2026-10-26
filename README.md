@@ -32,6 +32,9 @@ To start over with a fresh world: `docker compose down -v && docker compose up -
 | `npm run sim` | Prints the milestone map for an engaged player (`npm run sim -- 5` for ×5) |
 | `npm run build` then `npm start` | Production mode: one server on :3000 serving the built client |
 
+## Deploy it
+See [docs/DEPLOY.md](docs/DEPLOY.md): one Docker image plus a Postgres database. Step-by-step for Railway (~$5–10/month).
+
 ## Repo layout
 ```
 /docs      ← game design document (start with 00-vision.md)

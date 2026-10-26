@@ -13,7 +13,7 @@ export type Q = Pick<pg.PoolClient, 'query'>;
 let pool: pg.Pool | null = null;
 
 export function getPool(url = config.databaseUrl): pg.Pool {
-  if (!pool) pool = new pg.Pool({ connectionString: url, max: 10 });
+  if (!pool) pool = new pg.Pool({ connectionString: url, max: 10, ssl: config.databaseSsl ? { rejectUnauthorized: false } : undefined });
   return pool;
 }
 
