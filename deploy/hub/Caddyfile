@@ -1,0 +1,13 @@
+# Caddy gets and renews HTTPS certificates automatically and passes
+# WebSockets through without extra settings.
+# Each site needs a DNS A record pointing at the droplet's IP.
+
+hormigas.marz.gg {
+	encode gzip
+	reverse_proxy hormigas:3000
+}
+
+# Next project, for example:
+# guildie.marz.gg {
+# 	reverse_proxy guildie:3000
+# }

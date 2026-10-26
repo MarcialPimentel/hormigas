@@ -33,7 +33,7 @@ To start over with a fresh world: `docker compose down -v && docker compose up -
 | `npm run build` then `npm start` | Production mode: one server on :3000 serving the built client |
 
 ## Deploy it
-See [docs/DEPLOY.md](docs/DEPLOY.md): one Docker image plus a Postgres database. Step-by-step for Railway (~$5–10/month).
+Live at **https://hormigas.marz.gg**. Every merge to `main` that passes CI deploys automatically to a DigitalOcean droplet. See [docs/DEPLOY.md](docs/DEPLOY.md) for how it works, everyday commands, and how to rebuild the server. The server's own config files are in [`deploy/`](deploy/).
 
 ## Repo layout
 ```

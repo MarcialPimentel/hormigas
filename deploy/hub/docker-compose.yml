@@ -1,0 +1,61 @@
+# The hub: one droplet, one reverse proxy, one Postgres, one service per game.
+# Lives at /opt/hub on the droplet. Start or update everything with:
+#   docker compose up -d
+#
+# To add another project later: add a service below, a block to the Caddyfile,
+# and (if it needs a database) run ./add-database.sh <name>.
+
+services:
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+
+  db:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      HORMIGAS_DB_PASSWORD: ${HORMIGAS_DB_PASSWORD}
+    volumes:
+      - db_data:/var/lib/postgresql/data
+      - ./postgres-init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    # No ports published: only the other containers can reach the database.
+
+  hormigas:
+    image: ghcr.io/marcialpimentel/hormigas:latest
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgres://hormigas:${HORMIGAS_DB_PASSWORD}@db:5432/hormigas
+      WORLD_NAME: ${HORMIGAS_WORLD_NAME:-The Backyard}
+      # Production defaults already apply: world speed x1, secure cookies,
+      # trusted proxy headers (Caddy sits in front).
+    depends_on:
+      db:
+        condition: service_healthy
+    # Give in-flight game events time to finish on each deploy (the server handles SIGTERM).
+    stop_grace_period: 30s
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:3000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+volumes:
+  caddy_data:
+  caddy_config:
+  db_data:
