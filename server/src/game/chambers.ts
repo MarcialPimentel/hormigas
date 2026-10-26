@@ -16,11 +16,12 @@ import {
 import type { Tx } from '../db';
 import { now } from '../clock';
 import { GameError } from '../errors';
-import { advance, getPlayer, lockOwnColony, lockColony, saveColony } from '../colony';
+import { advance, requireAffordable, getPlayer, lockOwnColony, lockColony, saveColony } from '../colony';
 import { cancelEvent, onEvent, schedule } from '../events';
 import { getWorld } from '../world';
 import { timeMultiplier } from './boost';
 import { refreshPoints } from './points';
+import { addReport } from './reports';
 
 export async function startBuild(q: Tx, playerId: number, colonyId: number, chamber: string) {
   if (!CHAMBER_IDS.includes(chamber as ChamberId)) throw new GameError('bad_chamber', 'Unknown chamber.');
@@ -42,7 +43,7 @@ export async function startBuild(q: Tx, playerId: number, colonyId: number, cham
 
   const level = lvl(c.chambers, id) + 1;
   const cost = chamberCost(id, level);
-  if (!canAfford(c.resources, cost)) throw new GameError('cant_afford', 'Not enough resources.');
+  requireAffordable(c, cost);
 
   const world = await getWorld(q);
   const mult = await timeMultiplier(q, world.id, player.points.total, t);
@@ -80,4 +81,13 @@ onEvent('build_complete', async (q, ev) => {
   c.buildJob = null;
   await saveColony(q, c);
   await refreshPoints(q, c.playerId);
+  if (job.chamber === 'aphid_pasture' && job.level === 1) {
+    const first = await q.query("SELECT 1 FROM reports WHERE player_id = $1 AND type = 'milestone' AND data->>'id' = 'nectar'", [c.playerId]);
+    if (!first.rowCount)
+      await addReport(q, c.worldId, c.playerId, 'milestone', 'Your colony discovered Nectar', {
+        id: 'nectar',
+        colony: c.name,
+        text: 'The first aphids are grazing in the pasture, and honeydew is flowing into the nest. Nectar fuels every journey beyond the nest and the castes you raise. The Brood Hall can now be built.',
+      }, ev.due_at);
+  }
 });

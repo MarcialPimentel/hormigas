@@ -1,5 +1,10 @@
 // Loading, saving and advancing colonies & players.
 import {
+  canAfford,
+  explainShortfall,
+  productionPerHour,
+  shortfalls,
+  storageCapacity,
   syncColony,
   type ChamberId,
   type ColonyState,
@@ -8,7 +13,8 @@ import {
   type Resources,
 } from '@hormigas/shared';
 import type { Q } from './db';
-import { notFound, forbidden } from './errors';
+import { notFound, forbidden, GameError } from './errors';
+import { cachedWorldSpeed } from './world';
 
 export interface BuildJob {
   chamber: ChamberId;
@@ -97,7 +103,14 @@ export async function saveColony(q: Q, c: Colony) {
   );
 }
 
-export const advance = (c: Colony, to: number): Colony => syncColony(c, to);
+export const advance = (c: Colony, to: number): Colony => syncColony(c, to, cachedWorldSpeed());
+
+/** Throw a plain-language error if the colony can't pay `cost`. */
+export function requireAffordable(c: Colony, cost: Resources) {
+  if (canAfford(c.resources, cost)) return;
+  const why = explainShortfall(shortfalls(cost, c.resources, storageCapacity(c.chambers), productionPerHour(c.chambers, c.terrain, cachedWorldSpeed())));
+  throw new GameError('cant_afford', why || 'Not enough resources.');
+}
 
 // ---------- players ----------
 

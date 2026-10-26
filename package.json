@@ -13,11 +13,13 @@
     "start": "npm start -w server",
     "migrate": "npm run migrate -w server",
     "test": "npm run test --workspaces --if-present",
-    "typecheck": "npm run typecheck --workspaces --if-present"
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "sim": "tsx shared/sim/cli.ts"
   },
   "devDependencies": {
     "concurrently": "^10.0.6",
     "typescript": "^5.6.3",
-    "vitest": "^2.1.4"
+    "vitest": "^2.1.4",
+    "tsx": "^4.19.2"
   }
 }

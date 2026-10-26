@@ -18,7 +18,7 @@ import {
 import type { Tx } from '../db';
 import { now } from '../clock';
 import { GameError } from '../errors';
-import { advance, getPlayer, lockOwnColony, saveColony } from '../colony';
+import { advance, requireAffordable, getPlayer, lockOwnColony, saveColony } from '../colony';
 import { getWorld } from '../world';
 import { timeMultiplier } from './boost';
 
@@ -50,7 +50,7 @@ export async function enqueueUnits(q: Tx, playerId: number, colonyId: number, ki
   }
 
   const cost = scale(def.cost, count);
-  if (!canAfford(c.resources, cost)) throw new GameError('cant_afford', 'Not enough resources.');
+  requireAffordable(c, cost);
 
   const world = await getWorld(q);
   const perUnitMs = Math.round(

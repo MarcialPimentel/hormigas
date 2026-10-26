@@ -5,9 +5,9 @@ import { RESOURCE_LABEL } from '../describe';
 import { ResDot } from './ui';
 
 export function ResourceBar() {
-  const { colony } = useGame();
-  if (!colony) return null;
-  const rate = productionPerHour(colony.chambers, colony.terrain);
+  const { colony, state } = useGame();
+  if (!colony || !state) return null;
+  const rate = productionPerHour(colony.chambers, colony.terrain, state.world.speed);
   const cap = storageCapacity(colony.chambers);
   const wf = workforce(colony.chambers);
   const safe = protectedAmount(colony.chambers);

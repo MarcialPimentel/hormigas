@@ -2,13 +2,38 @@
   "_version": "0.1",
   "_note": "First-pass placeholders. Tune in playtesting.",
   "resources": {
-    "foliage":   { "name": "Foliage",   "tier": "bulk", "stored": true },
-    "protein":   { "name": "Protein",   "tier": "mid",  "stored": true },
-    "nectar":    { "name": "Nectar",    "tier": "rare", "stored": true, "missionFuel": true },
-    "workforce": { "name": "Workforce", "tier": "capacity", "stored": false }
+    "foliage": {
+      "name": "Foliage",
+      "tier": "bulk",
+      "stored": true
+    },
+    "protein": {
+      "name": "Protein",
+      "tier": "mid",
+      "stored": true
+    },
+    "nectar": {
+      "name": "Nectar",
+      "tier": "rare",
+      "stored": true,
+      "missionFuel": true
+    },
+    "workforce": {
+      "name": "Workforce",
+      "tier": "capacity",
+      "stored": false
+    }
   },
-  "startingResources": { "foliage": 500, "protein": 500, "nectar": 0 },
-  "baseIncomePerHour": { "foliage": 30, "protein": 15, "nectar": 0 },
+  "startingResources": {
+    "foliage": 500,
+    "protein": 500,
+    "nectar": 0
+  },
+  "baseIncomePerHour": {
+    "foliage": 60,
+    "protein": 30,
+    "nectar": 0
+  },
   "baseWorkforce": 20,
   "baseStorage": 10000
 }

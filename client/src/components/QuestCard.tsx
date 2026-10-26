@@ -56,10 +56,11 @@ export function QuestCard({ nav }: { nav: Nav }) {
 
   const quest = q.quest;
   return (
-    <section className={`quest${quest.ready ? ' ready' : ''}`}>
+    <section className={`quest${quest.ready ? ' ready' : ''}${quest.milestone ? ' big' : ''}`}>
       <div className="quest-main">
         <p className="quest-step muted small">
           Founding task {q.claimed + 1} of {q.total}
+          {quest.milestone ? ' · first big milestone' : ''}
         </p>
         <h2>{quest.title}</h2>
         <p className="muted">{quest.hint}</p>

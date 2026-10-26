@@ -204,7 +204,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
     if (p.colony.unitQueue.length > 0 && state.colony.unitQueue.length === 0) pushNotification('The Brood Hall has finished raising units', undefined, 'brood');
   }, [state]);
 
-  const colony = useMemo(() => (state?.colony ? syncColony(state.colony, now) : null), [state, now]);
+  const colony = useMemo(() => (state?.colony ? syncColony(state.colony, now, state.world.speed) : null), [state, now]);
 
   // storage full
   const fullRef = useRef<Set<string>>(new Set());

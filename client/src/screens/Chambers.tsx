@@ -12,7 +12,7 @@ import {
 import { api } from '../api';
 import { useGame } from '../game';
 import { fmtDuration } from '../format';
-import { CHAMBER_BLURB, chamberEffect } from '../describe';
+import { CHAMBER_BLURB, chamberEffect, whyShort } from '../describe';
 import { Cost, Countdown, Panel } from '../components/ui';
 
 const GROUPS: { title: string; ids: ChamberId[] }[] = [
@@ -76,7 +76,7 @@ export function Chambers() {
               else if (used >= max) blocked = 'No space left';
               else if (id === 'brood_hall' && colony.unitQueue.length > 0) blocked = 'Brood Hall is raising units';
               else if (id === 'pheromone_chamber' && state.player.researchJob) blocked = 'Research in progress';
-              else if (!affordable) blocked = 'Not enough resources';
+              else if (!affordable) blocked = whyShort(colony, cost, state.world.speed);
               return (
                 <li key={id} className={`row${locked ? ' locked' : ''}`}>
                   <div className="row-main">
@@ -87,10 +87,10 @@ export function Chambers() {
                     <p className="blurb">{CHAMBER_BLURB[id]}</p>
                     {!locked && (
                       <p className="effect">
-                        {level > 0 && CHAMBERS[id].effect.type !== 'gate' && <span>{chamberEffect(id, level, colony.terrain)}</span>}
+                        {level > 0 && CHAMBERS[id].effect.type !== 'gate' && <span>{chamberEffect(id, level, colony.terrain, state.world.speed)}</span>}
                         <span className="next">
                           {level > 0 ? 'Next: ' : 'At level 1: '}
-                          {chamberEffect(id, next, colony.terrain)}
+                          {chamberEffect(id, next, colony.terrain, state.world.speed)}
                         </span>
                       </p>
                     )}

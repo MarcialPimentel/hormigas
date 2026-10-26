@@ -40,10 +40,20 @@ describe('onboarding quests', () => {
 
   it('mission-based quests count missions ever sent', async () => {
     await setColony(c.id, {
-      chambers: { queen_chamber: 2, leaf_garden: 1, nursery: 1, hunting_grounds: 1, brood_hall: 1 },
+      chambers: { queen_chamber: 3, leaf_garden: 3, nursery: 1, hunting_grounds: 1, aphid_pasture: 1, brood_hall: 1 },
       units: { worker: 5, scout: 1 }, nectar: 10000, last_updated: clock.t,
     });
-    for (const id of ['nursery', 'hunt', 'queen', 'brood', 'workers']) {
+    const s0 = await p.get('/api/state');
+    expect(s0.quests.quest.id).toBe('nursery');
+    for (const id of ['nursery', 'hunt', 'queen2', 'grow', 'queen3']) {
+      const r = await p.post('/api/quests/claim', { id, colonyId: c.id });
+      expect(r.ok).toBe(true);
+    }
+    // the Nectar task is flagged as the first big milestone
+    const s1 = await p.get('/api/state');
+    expect(s1.quests.quest.id).toBe('nectar');
+    expect(s1.quests.quest.milestone).toBeTruthy();
+    for (const id of ['nectar', 'brood', 'workers']) {
       const r = await p.post('/api/quests/claim', { id, colonyId: c.id });
       expect(r.ok).toBe(true);
     }
