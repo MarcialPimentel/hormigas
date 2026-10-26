@@ -1,6 +1,6 @@
 import { buildApp } from './app';
 import { config } from './config';
-import { getPool } from './db';
+import { closePool, getPool } from './db';
 import { migrate } from './migrate';
 import { startEventLoop } from './events';
 import { getWorld } from './world';
@@ -10,16 +10,29 @@ async function main() {
   const applied = await migrate();
   if (applied.length) console.log(`Migrations applied: ${applied.join(', ')}`);
   const world = await getWorld(getPool());
-  console.log(`World "${world.name}" (speed ×${world.speed})`);
+  console.log(`World "${world.name}" (speed ×${world.speed})${config.production ? ' — production' : ''}`);
   const app = await buildApp({ logger: true });
-  startEventLoop();
+  const stopEvents = startEventLoop();
   // keep rankings / strength protection current
-  const pointsTimer = () =>
+  let pointsTimer: NodeJS.Timeout;
+  const refresh = () =>
     refreshAllPoints(getPool())
       .catch((e) => console.error('points refresh failed', e))
-      .finally(() => setTimeout(pointsTimer, 60_000));
-  setTimeout(pointsTimer, 5_000);
+      .finally(() => (pointsTimer = setTimeout(refresh, 60_000)));
+  pointsTimer = setTimeout(refresh, 5_000);
   await app.listen({ port: config.port, host: config.host });
+
+  // Hosts stop the old instance with SIGTERM on every deploy: finish in-flight work, then exit.
+  const shutdown = async (signal: string) => {
+    console.log(`${signal} received, shutting down`);
+    stopEvents();
+    clearTimeout(pointsTimer);
+    await app.close().catch(() => {});
+    await closePool().catch(() => {});
+    process.exit(0);
+  };
+  process.once('SIGTERM', () => shutdown('SIGTERM'));
+  process.once('SIGINT', () => shutdown('SIGINT'));
 }
 
 main().catch((e) => {
