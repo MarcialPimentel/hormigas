@@ -18,7 +18,9 @@ const [, maxHours] = NEST_EVENTS_DATA.everyHours;
 
 const pending = async (colonyId: number) =>
   (await getPool().query("SELECT * FROM events WHERE NOT done AND type = 'nest_event' AND (payload->>'colonyId')::int = $1", [colonyId])).rows;
-const eventReports = async () => (await p.get('/api/reports?limit=100')).reports.filter((r: any) => r.type === 'nest_event');
+// read from the database, not the API: an API call counts as the player being active
+const eventReports = async () =>
+  (await getPool().query("SELECT title, data FROM reports WHERE type = 'nest_event' ORDER BY id")).rows;
 
 beforeAll(async () => {
   ({ app, clock } = await setupTest());
