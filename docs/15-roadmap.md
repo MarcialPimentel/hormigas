@@ -8,12 +8,12 @@ Keep the MVP **brutally small**. Its only job is to answer: *is the core loop fu
 ## MVP — "Does the loop work?"
 **Content**
 - One world, one species.
-- Chambers: Queen's Chamber, Leaf Garden, Hunting Grounds, Nursery, Granary, Larder, Brood Hall, Pheromone Chamber, Aphid Pasture, Nectar Cellar, Honeypot Gallery.
+- Chambers: Queen's Chamber, Leaf Garden, Hunting Grounds, Nursery, Granary, Larder, Brood Hall, Pheromone Chamber, Aphid Pasture, Nectar Cellar, Excavation Works, Honeypot Gallery.
 - Castes: Worker, Minor Soldier, Major Soldier, Scout, Hauler.
 - Defenses: Soil Wall, Pit Trap, Acid Sentry.
 - Research: Mandibles, Chitin, Guard Formation, Pheromone Trails, Scent Reading, Colony Mind, Foraging Instinct, Brood Science, Deep Digging.
 - Missions: Raid, Scout, Transport, Relocate, Haul Corpses, Forage.
-- PvP rules: new-colony protection, strength protection, bash limit, Honeypot protection.
+- PvP rules: new-colony protection, strength protection, bash limit, Honeypot protection, Late Founding Boost (catch-up).
 - One colony per player.
 
 **Systems**
@@ -24,6 +24,7 @@ Keep the MVP **brutally small**. Its only job is to answer: *is the core loop fu
 - Simple schematic Nest View
 - Browser notifications + tab badges
 - Onboarding quest chain
+- In-game feedback button (playtest signal)
 
 **Success criteria**
 - Playtesters return on their own for 7+ days.
@@ -46,7 +47,6 @@ Keep the MVP **brutally small**. Its only job is to answer: *is the core loop fu
 - Supercolonies (alliances): chat, joint raids, hold position
 - Ally species: Carrion Beetle, Bullet Ant
 - Aphid herding (raidable livestock economy)
-- Late Founding Boost (catch-up)
 - More defenses (Narrow Tunnel, Sticky Resin)
 - Vacation mode
 

@@ -11,8 +11,15 @@ import {
   res,
   scoutDetail,
   scoutDetectionChance,
+  WILDS_SPOT,
+  corpseFieldAmount,
+  forageFindCap,
+  forageOddsSummary,
+  isInactive,
   type CasteId,
 } from '@hormigas/shared';
+import type { Tx } from '../db';
+import type { ArrivalOutcome, Mission } from './missions';
 import { GameError } from '../errors';
 import { advance, getColony, getPlayer, lockColony, saveColony } from '../colony';
 import { defineMission } from './missions';
@@ -68,13 +75,16 @@ defineMission('relocate', {
 
 defineMission('scout', {
   allowsCargo: false,
+  allowsWilds: true,
   slot: 'mission',
-  async validate({ targetColony, player, units }) {
+  async validate({ targetColony, player, units, target }) {
+    if (presentUnits(units).some((u) => u !== 'scout')) throw new GameError('scouts_only', 'Only Scouts can be sent to scout.');
+    if (target.spot === WILDS_SPOT) return; // surveying the wilds is always allowed
     if (!targetColony) throw new GameError('bad_target', 'There is no colony there to scout.');
     if (targetColony.playerId === player.id) throw new GameError('bad_target', "You don't need to scout your own colony.");
-    if (presentUnits(units).some((u) => u !== 'scout')) throw new GameError('scouts_only', 'Only Scouts can be sent to scout.');
   },
   async arrive(q, m, at) {
+    if (m.target.spot === WILDS_SPOT) return surveyWilds(q, m, at);
     if (!m.targetColonyId) return { home: true };
     const target = advance(await getColony(q, m.targetColonyId), at);
     const attacker = await getPlayer(q, m.playerId);
@@ -119,5 +129,43 @@ defineMission('scout', {
     return { home: true };
   },
 });
+
+const WILDS_TEXT = [
+  'Tall grass, dead leaves and the smell of rain. Plenty of hiding places for food, and for things that eat ants.',
+  'A tangle of roots and fallen seeds. Your scouts marked a few promising trails.',
+  'Damp soil under a flat stone. Beetles live here, and something with too many legs.',
+  'Sun-baked ground with the odd crumb. The scouts came back thirsty but hopeful.',
+];
+
+/** Scouts can survey the wilds of any patch: forage odds, what lives in the patch, corpses lying around. */
+async function surveyWilds(q: Tx, m: Mission, at: number): Promise<ArrivalOutcome> {
+  const player = await getPlayer(q, m.playerId);
+  const luck = lvl(player.research, 'foraging_instinct');
+  const { region, patch } = m.target;
+  const cols = await q.query(
+    `SELECT p.id, p.points_total, p.protected_until, p.last_active
+       FROM colonies c JOIN players p ON p.id = c.player_id
+      WHERE c.world_id = $1 AND c.region = $2 AND c.patch = $3`,
+    [m.worldId, region, patch],
+  );
+  const others = cols.rows.filter((r: any) => r.id !== m.playerId);
+  const inactive = others.filter((r: any) => isInactive({ points: r.points_total, protectedUntil: r.protected_until, lastActive: r.last_active }, at)).length;
+  const corpses = (await q.query('SELECT protein, created_at FROM corpse_fields WHERE world_id = $1 AND region = $2 AND patch = $3', [m.worldId, region, patch])).rows
+    .reduce((sum: number, r: any) => sum + corpseFieldAmount(r.protein, r.created_at, at), 0);
+  const rng = createRng(randomSeed());
+  const data = {
+    wilds: true,
+    coords: m.target,
+    text: WILDS_TEXT[Math.floor(rng() * WILDS_TEXT.length)],
+    odds: forageOddsSummary(luck),
+    findCap: forageFindCap(player.points.total, luck),
+    colonies: others.length,
+    inactive,
+    corpses: Math.floor(corpses),
+  };
+  m.result = { wilds: true };
+  await addReport(q, m.worldId, m.playerId, 'scout', `Scout report: the wilds (${coordsKey(m.target)})`, data, at);
+  return { home: true };
+}
 
 export const UNIT_NAME = (id: string) => CASTES[id as CasteId]?.name ?? id;

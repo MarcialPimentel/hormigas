@@ -13,7 +13,7 @@ export const MISSION_LABEL: Record<MissionType, string> = {
 
 export const MISSION_HELP: Record<MissionType, string> = {
   raid: 'Attack a colony. Win, and your survivors carry home loot.',
-  scout: 'Send Scouts to see what a colony has. Only Scouts can go.',
+  scout: 'Send Scouts to see what a colony has, or to survey the wilds (spot 13). Only Scouts can go.',
   transport: 'Carry resources to any colony. Your units come back.',
   relocate: 'Move units and resources to another of your colonies. They stay there.',
   haul: 'Collect battlefield corpses as Protein. Workers and Haulers can carry them.',

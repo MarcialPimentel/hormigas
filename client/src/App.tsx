@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { api } from './api';
 import { useGame } from './game';
 import { fmtCoords } from './format';
@@ -12,6 +12,8 @@ import { MapScreen } from './screens/Map';
 import { Missions } from './screens/Missions';
 import { Reports } from './screens/Reports';
 import { Rankings } from './screens/Rankings';
+import { FeedbackAdmin } from './screens/FeedbackAdmin';
+import { FeedbackButton } from './components/Feedback';
 import type { Nav } from './nav';
 
 export interface ScreenDef {
@@ -37,12 +39,20 @@ export const ICONS = {
   missions: I('M4 18c4-1 6-5 8-9s5-5 8-5M16 4h4v4M4 18l2 2'),
   reports: I('M6 3h9l4 4v14H6zM14 3v5h5M9 12h7M9 16h7'),
   ranks: I('M8 21V11M16 21V7M12 21V3M4 21h16'),
+  feedback: I('M4 5h16v11H9l-5 4V5ZM8 9.5h8M8 12.5h5'),
 };
 
 export function App() {
   const { loggedIn, state, colony, selectColony, toasts, setLoggedIn } = useGame();
   const [screen, setScreen] = useState('nest');
   const [params, setParams] = useState<any>(undefined);
+  const [openFeedback, setOpenFeedback] = useState(0);
+  const isAdmin = !!state?.player.isAdmin;
+  // Admins see how much feedback is waiting, without opening the screen first.
+  useEffect(() => {
+    if (isAdmin) api.get('/api/admin/feedback').then((r) => setOpenFeedback(r.open)).catch(() => {});
+  }, [isAdmin]);
+  const onFeedbackCount = useCallback((n: number) => setOpenFeedback(n), []);
   const nav: Nav = (id, p) => {
     setScreen(id);
     setParams(p);
@@ -63,6 +73,7 @@ export function App() {
     { id: 'reports', label: 'Reports', icon: ICONS.reports, render: () => <Reports />, badge: state.unreadReports },
     { id: 'rankings', label: 'Rankings', icon: ICONS.ranks, render: () => <Rankings /> },
   ];
+  if (isAdmin) screens.push({ id: 'feedback', label: 'Feedback', icon: ICONS.feedback, render: () => <FeedbackAdmin onCount={onFeedbackCount} />, badge: openFeedback });
   const current = screens.find((s) => s.id === screen) ?? screens[0];
 
   return (
@@ -82,15 +93,18 @@ export function App() {
             <span className="muted colony-label">{colony.name}</span>
           )}
         </div>
-        <button
-          className="btn ghost small"
-          onClick={async () => {
-            await api.post('/api/auth/logout');
-            setLoggedIn(false);
-          }}
-        >
-          Log out
-        </button>
+        <div className="topbar-actions">
+          <FeedbackButton screen={current.id} />
+          <button
+            className="btn ghost small"
+            onClick={async () => {
+              await api.post('/api/auth/logout');
+              setLoggedIn(false);
+            }}
+          >
+            Log out
+          </button>
+        </div>
       </header>
       <ResourceBar />
       <nav className="nav" aria-label="Screens">

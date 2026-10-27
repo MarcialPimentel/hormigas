@@ -85,7 +85,7 @@ export function MapScreen({ nav, start }: { nav: Nav; start?: { region: number; 
                     {wilds ? (
                       <>
                         <strong>The wilds</strong>
-                        <span className="muted small">Unclaimed ground at the edge of the patch. Send foragers here.</span>
+                        <span className="muted small">Unclaimed ground at the edge of the patch. Send foragers here, or Scouts to see what's out there.</span>
                       </>
                     ) : c ? (
                       <>
@@ -103,6 +103,7 @@ export function MapScreen({ nav, start }: { nav: Nav; start?: { region: number; 
                   </div>
                   <div className="spot-actions">
                     {wilds && can('forage') && <button className="btn small" onClick={() => nav('missions', { type: 'forage', target: coords })}>Forage</button>}
+                    {wilds && <button className="btn ghost small" onClick={() => nav('missions', { type: 'scout', target: coords })}>Scout</button>}
                     {s.corpses > 0 && can('haul') && <button className="btn small" onClick={() => nav('missions', { type: 'haul', target: coords })}>Haul</button>}
                     {c && !c.mine && (
                       <>

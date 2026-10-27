@@ -13,7 +13,7 @@
 | Mission | MVP | What it does |
 |---|---|---|
 | **Raid** | ✅ | Attack a colony; loot on win |
-| **Scout** | ✅ | Send Scouts to gather a report |
+| **Scout** | ✅ | Send Scouts to gather a report on a colony, or to survey the wilds (below) |
 | **Transport** | ✅ | Move resources to any colony; units return |
 | **Relocate** | ✅ | Move units + resources to one of your own colonies; units stay |
 | **Haul Corpses** | ✅ | Collect a corpse field (Workers / Carrion Beetles) |
@@ -37,6 +37,17 @@ Sent to the wild edge of a patch (spot 13). Outcome rolled on arrival:
 | The Boot | 1% | Whole party lost |
 
 Foraging Instinct research shifts odds toward good outcomes. Every result has short flavor text — this is where the game's personality shows.
+
+- **The first expedition always finds food.** A player's first party to reach the wilds rolls a Food cache worth at least 70% of what it can carry, and loses nobody. Sending foragers is a founding task, so it has to land well; the gamble starts with the second trip. A recalled party doesn't use up the guarantee.
+- **Players see the odds.** The forage screen shows the chances after Foraging Instinct, grouped as finds food / back early / comes back empty / loses ants, with every outcome one tap away. A flop should read as bad luck, not a bug.
+
+## Surveying the wilds
+Scouts can scout the wilds of any patch, not only colonies. A survey always succeeds and the Scouts come home. The report shows:
+- the forage odds there and the largest find a party could bring back;
+- how many other colonies live in the patch, and how many are inactive;
+- how much Protein is lying around in corpse fields.
+
+It gives Scouts a job that doesn't depend on neighbors, and lets a player in an empty patch finish the founding tasks. NPC nests (planned) will give empty patches something to scout and raid as well.
 
 ## Army saving (the core skill)
 Units at home are at risk while you're offline. The counter-play is sending your army on a long Transport/Relocate/Forage mission timed to return when you're back. The UI should support this directly:

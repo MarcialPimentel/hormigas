@@ -17,6 +17,7 @@ import './game/missionTypes';
 import './game/combat';
 import './game/forage';
 import { worldRoutes } from './routes/world';
+import { feedbackRoutes } from './routes/feedback';
 import { realtimeRoutes } from './realtime';
 
 export async function buildApp(opts: { logger?: boolean } = {}): Promise<FastifyInstance> {
@@ -39,6 +40,7 @@ export async function buildApp(opts: { logger?: boolean } = {}): Promise<Fastify
   await app.register(authRoutes);
   await app.register(gameRoutes);
   await app.register(worldRoutes);
+  await app.register(feedbackRoutes);
 
   // Serve the built client in production (single deploy).
   if (config.clientDist && existsSync(config.clientDist)) {

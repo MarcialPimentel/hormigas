@@ -13,7 +13,7 @@
 
 ## Production
 - Each production chamber produces per hour: `base × L × 1.1^L × terrainMod`.
-- The Queen's Chamber gives a small free base income (+30 Foliage, +15 Protein /h) so a colony is never fully stalled.
+- The Queen's Chamber gives a small free base income (+60 Foliage, +30 Protein /h) so a colony is never fully stalled.
 - Production is calculated on demand by the server (see [13-tech](13-tech.md)), never ticked.
 
 ## Workforce (the "energy" constraint)
