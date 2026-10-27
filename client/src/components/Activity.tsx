@@ -70,6 +70,9 @@ export function ActivityList({ go }: { go: (screen: string) => void }) {
       label: i.hostile ? (
         <>
           <strong>{i.type === 'raid' ? 'Raid incoming' : 'Enemy scouts incoming'}</strong> from {i.from} ({fmtCoords(i.origin)}){i.type === 'raid' ? ` — ${i.unitCount.toLocaleString()} units` : ''}
+          {i.wild && i.type === 'raid' && (
+            <span className="muted small"> Wild ants. Keep soldiers at home to fight them off, or send your army away until they've gone.</span>
+          )}
         </>
       ) : (
         <>Delivery from {i.from} arriving</>

@@ -42,7 +42,7 @@ The **Queen's Chamber** is the master gate: its level unlocks new chamber types,
 ## Founding tasks (first few hours)
 The chain builds toward the first big milestone, **discovering Nectar**, then teaches castes and missions:
 
-1. Build a Leaf Garden → 2. Build a Nursery → 3. Build Hunting Grounds → 4. Queen's Chamber 2 → 5. Leaf Garden 3 → 6. Queen's Chamber 3 → **7. Discover Nectar (Aphid Pasture)** ⭐ → 8. Build a Brood Hall → 9. Raise 3 Workers → 10. Send a forage party (the first one always finds food) → 11. Send out a Scout (a neighbor, or the wilds if the patch is empty).
+1. Build a Leaf Garden → 2. Build a Nursery → 3. Build Hunting Grounds → 4. Queen's Chamber 2 → 5. Leaf Garden 3 → 6. Queen's Chamber 3 → **7. Discover Nectar (Aphid Pasture)** ⭐ → 8. Build a Brood Hall → 9. Raise 3 Workers → 10. Send a forage party (the first one always finds food) → 11. Send out a Scout (the wild nest, a neighbor, or the wilds) → 12. Raid the wild nest (see [17-wild-nests](17-wild-nests.md)).
 
 Each task rewards a resource bundle and has a "Show me" button. After the chain, players work out their own path (see [16-milestones](16-milestones.md#philosophy)). The first Aphid Pasture triggers a milestone report.
 

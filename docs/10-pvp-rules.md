@@ -9,6 +9,9 @@ PvP is **open early**. The rules below exist so that open PvP doesn't turn new p
 - A brand-new account is protected for **72 hours** or until it sends its first Raid, whichever comes first.
 - Protected colonies can still be scouted (they learn the game's threats safely).
 
+## Wild nests
+Wild nests (NPC colonies, see [17-wild-nests](17-wild-nests.md)) have no new-colony or strength protection, but the bash limit applies. Raiding a nest does **not** end your own new-colony protection. Nests raid back gently, never at protected or inactive players, at most once per player per 24 h.
+
 ## Strength protection
 - You can't raid a colony whose owner has **less than 20%** of your points.
 - Exception: **inactive** players (no login for 7+ days) can be raided regardless — they're the world's PvE farmland. They're marked on the map.

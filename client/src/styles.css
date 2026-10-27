@@ -389,3 +389,7 @@ pre.report-body { white-space: pre-wrap; overflow-x: auto; }
 .kind-bug { color: var(--danger); }
 .kind-idea { color: var(--leaf); }
 .kind-confusing { color: var(--honey); }
+
+/* ---------- wild nests ---------- */
+.spot.wild-nest { box-shadow: inset 3px 0 0 var(--protein); }
+.wild-tag { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--protein); margin-left: 0.35rem; white-space: nowrap; }

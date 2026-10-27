@@ -1,6 +1,7 @@
 // Raids (combat, loot, corpses, defense rebuild) and corpse hauling.
 import {
   BLOCK_MESSAGES,
+  BASH_LIMIT_PER_24H,
   canRaid,
   corpseDecayFactor,
   corpseFieldAmount,
@@ -24,7 +25,8 @@ import {
 } from '@hormigas/shared';
 import type { Q, Tx } from '../db';
 import { GameError } from '../errors';
-import { advance, getPlayer, lockColony, saveColony, type Player } from '../colony';
+import { advance, getColony, getPlayer, lockColony, saveColony, type Player } from '../colony';
+import { syncNest } from './nests';
 import { defineMission } from './missions';
 import { addReport } from './reports';
 import { refreshPoints } from './points';
@@ -63,8 +65,15 @@ defineMission('raid', {
     if (!targetColony) throw new GameError('bad_target', 'There is no colony there to raid.');
     if (targetColony.playerId === player.id) throw new GameError('bad_target', "You can't raid your own colony.");
     if (!presentUnits(units).some((u) => CASTES[u].attack > 0)) throw new GameError('no_fighters', 'Send at least one unit that can fight.');
+    const recentWins = await raidsInLast24h(q, player.id, targetColony.id, t);
+    if (targetColony.npc) {
+      // Wild nests: no protection of any kind, but the bash limit still applies.
+      // Raiding one is PvE practice, so it doesn't end your own new-colony protection (docs/17-wild-nests.md).
+      if (recentWins >= BASH_LIMIT_PER_24H) throw new GameError('bash_limit', BLOCK_MESSAGES.bash_limit);
+      return;
+    }
     const target = await getPlayer(q, targetColony.playerId);
-    const block = canRaid(pvpState(player), pvpState(target), t, await raidsInLast24h(q, player.id, targetColony.id, t));
+    const block = canRaid(pvpState(player), pvpState(target), t, recentWins);
     if (block) throw new GameError(block, BLOCK_MESSAGES[block]);
     // Raiding ends your own new-colony protection.
     if (player.protectedUntil > t) await q.query('UPDATE players SET protected_until = $2 WHERE id = $1', [player.id, t]);
@@ -73,9 +82,12 @@ defineMission('raid', {
   async arrive(q, m, at) {
     if (!m.targetColonyId) return { home: true };
     let target = await lockColony(q, m.targetColonyId);
-    target = advance(target, at);
+    target = target.npc ? await syncNest(q, target, at) : advance(target, at);
     const attacker = await getPlayer(q, m.playerId);
     const defender = await getPlayer(q, target.playerId);
+    // Wild nests fight under their nest's name and get no reports or points.
+    const attackerName = attacker.isNpc ? (await getColony(q, m.originColonyId)).name : attacker.username;
+    const defenderName = defender.isNpc ? target.name : defender.username;
     const seed = randomSeed();
     const rng = createRng(seed);
 
@@ -113,14 +125,16 @@ defineMission('raid', {
       at: coordsKey(m.target),
       target: m.target,
       attacker: {
-        name: attacker.username,
+        name: attackerName,
+        wild: attacker.isNpc,
         origin: m.origin,
         units: startAttacker,
         lost: nonZero(result.attackerLost),
         bonuses: { mandibles: attacker.research.mandibles ?? 0, chitin: attacker.research.chitin ?? 0, guard_formation: attacker.research.guard_formation ?? 0 },
       },
       defender: {
-        name: defender.username,
+        name: defenderName,
+        wild: defender.isNpc,
         colony: target.name,
         units: startDefender,
         defenses: startDefenses,
@@ -135,11 +149,13 @@ defineMission('raid', {
     };
     m.result = { winner: result.winner, loot, corpses };
     const verb = result.winner === 'attacker' ? 'won' : result.winner === 'defender' ? 'lost' : 'drew';
-    await addReport(q, m.worldId, attacker.id, 'battle', `Raid on ${target.name} (${coordsKey(m.target)}): you ${verb}`, { ...data, perspective: 'attacker' }, at);
+    if (!attacker.isNpc)
+      await addReport(q, m.worldId, attacker.id, 'battle', `Raid on ${target.name} (${coordsKey(m.target)}): you ${verb}`, { ...data, perspective: 'attacker' }, at);
     const dverb = result.winner === 'defender' ? 'held' : result.winner === 'attacker' ? 'was raided' : 'held (draw)';
-    await addReport(q, m.worldId, defender.id, 'battle', `${target.name} ${dverb} — attack by ${attacker.username}`, { ...data, perspective: 'defender' }, at);
-    await refreshPoints(q, defender.id);
-    await refreshPoints(q, attacker.id);
+    if (!defender.isNpc)
+      await addReport(q, m.worldId, defender.id, 'battle', `${target.name} ${dverb} — attack by ${attackerName}`, { ...data, perspective: 'defender' }, at);
+    if (!defender.isNpc) await refreshPoints(q, defender.id);
+    if (!attacker.isNpc) await refreshPoints(q, attacker.id);
     return { home: presentUnits(m.units).length > 0 };
   },
 });

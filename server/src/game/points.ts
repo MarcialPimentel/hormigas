@@ -24,6 +24,6 @@ export async function refreshPoints(q: Q, playerId: number) {
 
 /** Periodic refresh for everyone (rankings, protection checks). */
 export async function refreshAllPoints(q: Q) {
-  const r = await q.query('SELECT id FROM players');
+  const r = await q.query('SELECT id FROM players WHERE NOT is_npc');
   for (const row of r.rows) await refreshPoints(q, row.id);
 }

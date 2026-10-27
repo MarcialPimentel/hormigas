@@ -125,14 +125,14 @@ export async function gameRoutes(app: FastifyInstance) {
       `SELECT id, username, points, points_total, last_active, protected_until,
               (SELECT count(*)::int FROM colonies c WHERE c.player_id = p.id) AS colonies,
               rank() OVER (ORDER BY ${order} DESC, id) AS rank
-         FROM players p WHERE world_id = $1 ORDER BY ${order} DESC, id LIMIT $2 OFFSET $3`,
+         FROM players p WHERE world_id = $1 AND NOT is_npc ORDER BY ${order} DESC, id LIMIT $2 OFFSET $3`,
       [world.id, size, (page - 1) * size],
     );
     const mine = await q.query(
-      `SELECT rank FROM (SELECT id, rank() OVER (ORDER BY ${order} DESC, id) AS rank FROM players WHERE world_id = $1) x WHERE id = $2`,
+      `SELECT rank FROM (SELECT id, rank() OVER (ORDER BY ${order} DESC, id) AS rank FROM players WHERE world_id = $1 AND NOT is_npc) x WHERE id = $2`,
       [world.id, req.playerId],
     );
-    const count = (await q.query('SELECT count(*)::int AS n FROM players WHERE world_id = $1', [world.id])).rows[0].n;
+    const count = (await q.query('SELECT count(*)::int AS n FROM players WHERE world_id = $1 AND NOT is_npc', [world.id])).rows[0].n;
     return {
       kind,
       page,

@@ -10,7 +10,11 @@ const can = (t: MissionType) => ENABLED_MISSIONS.includes(t);
 
 interface Spot {
   spot: number;
-  colony: null | { id: number; name: string; owner: string; points: number; mine: boolean; inactive: boolean; protected: boolean };
+  colony: null | {
+    id: number; name: string; owner: string; points: number; mine: boolean; inactive: boolean; protected: boolean;
+    /** set for wild nests (docs/17-wild-nests.md) */
+    wild?: { species: string; level: number; style: string };
+  };
   corpses: number;
 }
 
@@ -79,13 +83,20 @@ export function MapScreen({ nav, start }: { nav: Nav; start?: { region: number; 
               const terrain = wilds ? null : TERRAIN[terrainForSpot(s.spot)];
               const c = s.colony;
               return (
-                <li key={s.spot} className={`spot${c?.mine ? ' mine' : ''}${wilds ? ' wilds' : ''}${c?.inactive ? ' inactive' : ''}`}>
+                <li key={s.spot} className={`spot${c?.mine ? ' mine' : ''}${wilds ? ' wilds' : ''}${c?.inactive ? ' inactive' : ''}${c?.wild ? ' wild-nest' : ''}`}>
                   <span className="spot-num" title={terrain?.name}>{s.spot}</span>
                   <div className="spot-main">
                     {wilds ? (
                       <>
                         <strong>The wilds</strong>
                         <span className="muted small">Unclaimed ground at the edge of the patch. Send foragers here, or Scouts to see what's out there.</span>
+                      </>
+                    ) : c?.wild ? (
+                      <>
+                        <strong>
+                          {c.name} <span className="wild-tag">Wild nest · Level {c.wild.level}</span>
+                        </strong>
+                        <span className="muted small">{c.owner}. {c.wild.style}</span>
                       </>
                     ) : c ? (
                       <>
@@ -109,7 +120,7 @@ export function MapScreen({ nav, start }: { nav: Nav; start?: { region: number; 
                       <>
                         <button className="btn small" onClick={() => nav('missions', { type: 'scout', target: coords })}>Scout</button>
                         {can('raid') && <button className="btn small" onClick={() => nav('missions', { type: 'raid', target: coords })}>Raid</button>}
-                        <button className="btn ghost small" onClick={() => nav('missions', { type: 'transport', target: coords })}>Send</button>
+                        {!c.wild && <button className="btn ghost small" onClick={() => nav('missions', { type: 'transport', target: coords })}>Send</button>}
                       </>
                     )}
                     {c?.mine && c.id !== colony.id && (
@@ -121,7 +132,7 @@ export function MapScreen({ nav, start }: { nav: Nav; start?: { region: number; 
             })}
           </ul>
         )}
-        <p className="muted small">You are at {fmtCoords(colony.coords)}. Neighbors in your patch are the closest friends — and threats.</p>
+        <p className="muted small">You are at {fmtCoords(colony.coords)}. Neighbors in your patch are the closest friends — and threats. Every patch with colonies also has a wild nest: scout it, raid it, and watch out for its raids.</p>
       </Panel>
     </div>
   );

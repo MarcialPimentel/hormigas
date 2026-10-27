@@ -79,3 +79,8 @@ export async function setPlayer(playerId: number, fields: Record<string, unknown
   }
   await getPool().query(`UPDATE players SET ${sets.join(', ')} WHERE id = $1`, vals);
 }
+
+/** Stop wild nests from raiding (for tests about player-vs-player combat that run the clock forward). */
+export async function calmWildNests() {
+  await getPool().query("UPDATE events SET done = true WHERE type = 'nest_raid'");
+}
