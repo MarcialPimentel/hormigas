@@ -16,6 +16,7 @@ import { RESOURCE_LABEL } from '../describe';
 import { Panel, ResDot } from '../components/ui';
 import { ActivityList } from '../components/Activity';
 import { QuestCard } from '../components/QuestCard';
+import { AwayCard } from '../components/AwayCard';
 import { disableNotifications, enableNotifications, notificationsEnabled, notificationsSupported } from '../notify';
 
 const NestView = lazy(() => import('../components/NestView').then((m) => ({ default: m.NestView })));
@@ -39,6 +40,7 @@ export function Overview({ go }: { go: (screen: string, params?: any) => void })
       <Suspense fallback={<div className="nest" style={{ height: 280 }} />}>
         <NestView nav={go} />
       </Suspense>
+      <AwayCard go={go} />
       <QuestCard nav={go} />
       <Panel>
         <div className="colony-head">

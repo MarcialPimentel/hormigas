@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { FastifyInstance } from 'fastify';
+import { getPool } from '../src/db';
 import { setupTest, teardownTest, newPlayer, setColony, calmWildNests, type Client } from './helpers';
 
 let app: FastifyInstance;
@@ -40,7 +41,8 @@ describe('forage', () => {
       if (!r.ok) throw new Error(JSON.stringify(r));
       await clock.advance(6 * 3600_000);
     }
-    const reports = (await p.get('/api/reports?limit=100')).reports.filter((x: any) => x.type === 'forage');
+    // read straight from the database: nest events (Build 3) file reports too, so the API's newest-100 page can miss some
+    const reports = (await getPool().query("SELECT data FROM reports WHERE type = 'forage' ORDER BY id")).rows;
     expect(reports.length).toBeGreaterThanOrEqual(60);
     for (const rep of reports) {
       outcomes.add(rep.data.outcome);

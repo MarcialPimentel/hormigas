@@ -326,7 +326,7 @@ export function missionView(m: Mission) {
 /** Hostile or friendly missions heading to the player's colonies (attacker's units hidden unless scouts). */
 export async function incomingMissions(q: Q, playerId: number) {
   const r = await q.query(
-    `SELECT m.id, m.type, m.arrive_at, m.target_colony_id, m.origin_region, m.origin_patch, m.origin_spot, m.units,
+    `SELECT m.id, m.type, m.depart_at, m.arrive_at, m.target_colony_id, m.origin_region, m.origin_patch, m.origin_spot, m.units,
             CASE WHEN p.is_npc THEN o.name ELSE p.username END AS username, p.is_npc
        FROM missions m JOIN colonies c ON c.id = m.target_colony_id JOIN players p ON p.id = m.player_id
        JOIN colonies o ON o.id = m.origin_colony_id
@@ -336,6 +336,8 @@ export async function incomingMissions(q: Q, playerId: number) {
   return r.rows.map((row: any) => ({
     id: row.id,
     type: row.type,
+    /** when it set off, so the nest view can show how far along it is */
+    departAt: row.depart_at,
     arriveAt: row.arrive_at,
     targetColonyId: row.target_colony_id,
     origin: { region: row.origin_region, patch: row.origin_patch, spot: row.origin_spot },

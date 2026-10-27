@@ -8,6 +8,7 @@ import researchJson from '../../docs/data/research.json';
 import terrainJson from '../../docs/data/terrain.json';
 import formulasJson from '../../docs/data/formulas.json';
 import npcJson from '../../docs/data/npc.json';
+import nestEventsJson from '../../docs/data/nest-events.json';
 
 export const RESOURCE_IDS = ['foliage', 'protein', 'nectar'] as const;
 export type ResourceId = (typeof RESOURCE_IDS)[number];
@@ -135,6 +136,8 @@ export const WILDS_SPOT = terrainJson.wildsSpot;
 export const FORMULAS = formulasJson;
 /** Wild nests (docs/17-wild-nests.md). Typed in nests.ts. */
 export const NPC_DATA = npcJson;
+/** Small random events inside the nest (docs/04-colony.md). Typed in nestEvents.ts. */
+export const NEST_EVENTS_DATA = nestEventsJson;
 
 /** Units that exist in the MVP (data also contains designed-but-later units). */
 export const MVP_CASTES = CASTE_IDS.filter((id) => CASTES[id].mvp);

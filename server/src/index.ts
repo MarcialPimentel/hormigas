@@ -6,6 +6,7 @@ import { startEventLoop } from './events';
 import { getWorld } from './world';
 import { refreshAllPoints } from './game/points';
 import { ensureWildNests } from './game/nests';
+import { ensureNestEvents } from './game/nestEvents';
 import { now } from './clock';
 
 async function main() {
@@ -15,6 +16,8 @@ async function main() {
   console.log(`World "${world.name}" (speed ×${world.speed})${config.production ? ' — production' : ''}`);
   const nests = await tx((q) => ensureWildNests(q, world.id, now()));
   if (nests) console.log(`Wild nests spawned in ${nests} patch${nests === 1 ? '' : 'es'}`);
+  const armed = await tx((q) => ensureNestEvents(q, world.id, now()));
+  if (armed) console.log(`Nest events scheduled for ${armed} colon${armed === 1 ? 'y' : 'ies'}`);
   const app = await buildApp({ logger: true });
   const stopEvents = startEventLoop();
   // keep rankings / strength protection current

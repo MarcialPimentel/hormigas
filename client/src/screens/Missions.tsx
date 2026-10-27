@@ -23,7 +23,7 @@ import { api } from '../api';
 import { useGame } from '../game';
 import { fmtClock, fmtCoords, fmtDuration, fmtFull, fmtNum } from '../format';
 import { RESOURCE_LABEL } from '../describe';
-import { Countdown, Empty, Panel, ResDot } from '../components/ui';
+import { Countdown, Empty, Panel, ResDot, Trip } from '../components/ui';
 import { ENABLED_MISSIONS, MISSION_HELP, MISSION_LABEL, type MissionType } from '../nav';
 import { BattlePreview } from '../components/BattlePreview';
 import { ForageOdds } from '../components/ForageOdds';
@@ -281,8 +281,9 @@ export function MissionList() {
               </span>
             </div>
             <div className="mission-time">
+              <Trip departAt={m.departAt} arriveAt={m.arriveAt} returnAt={m.returnAt} status={m.status} cargo={m.cargo} />
               <span className="muted small">{out ? 'Arrives' : 'Home'}</span>
-              <Countdown startAt={out ? m.departAt : m.arriveAt} endAt={out ? m.arriveAt : m.returnAt} />
+              <Countdown endAt={out ? m.arriveAt : m.returnAt} />
               {out && now < m.arriveAt && (
                 <button className="btn ghost small" onClick={() => act(() => api.post(`/api/missions/${m.id}/recall`), 'Mission recalled.')}>
                   Recall
