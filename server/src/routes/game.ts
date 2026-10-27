@@ -12,6 +12,7 @@ import { cancelResearch, startResearch } from '../game/research';
 import { enqueueUnits } from '../game/brood';
 import { activeMissions, incomingMissions, missionView } from '../game/missions';
 import { claimQuest, questStatus } from '../game/quests';
+import { hasForagedBefore } from '../game/forage';
 import { isInactive } from '@hormigas/shared';
 
 export function colonyView(c: Colony) {
@@ -64,6 +65,9 @@ export async function gameRoutes(app: FastifyInstance) {
         points: player.points,
         protectedUntil: player.protectedUntil,
         timeMultiplier: await timeMultiplier(q, world.id, player.points.total, t),
+        isAdmin: player.isAdmin,
+        /** The next forage party is sure to find food (docs/09-missions.md). */
+        firstForage: !(await hasForagedBefore(q, req.playerId)),
       },
       colonies: colonies.map((c) => ({ id: c.id, name: c.name, coords: { region: c.region, patch: c.patch, spot: c.spot } })),
       colony: current ? colonyView(advance(current, t)) : null,

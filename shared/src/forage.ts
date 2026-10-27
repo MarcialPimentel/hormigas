@@ -34,6 +34,24 @@ export function rollForageOutcome(rng: Rng, luck: number): ForageOutcome {
   return 'nothing';
 }
 
+/** Outcome chances in percent (sum 100) after Foraging Instinct luck, for showing players the odds. */
+export function forageOdds(luck: number): Record<ForageOutcome, number> {
+  const w = forageWeights(luck);
+  const sum = FORAGE_OUTCOMES.reduce((a, k) => a + w[k], 0);
+  return Object.fromEntries(FORAGE_OUTCOMES.map((k) => [k, (w[k] / sum) * 100])) as Record<ForageOutcome, number>;
+}
+
+/** The odds grouped the way players think about them. Percentages, sum 100. */
+export function forageOddsSummary(luck: number) {
+  const o = forageOdds(luck);
+  return {
+    food: o.food_cache + o.dead_beetle,
+    empty: o.nothing + o.lost_trail,
+    losses: o.spider_ambush + o.rainstorm + o.the_boot,
+    early: o.shortcut,
+  };
+}
+
 /** Max resources a single expedition can find, so huge cargo fleets don't break the economy. */
 export const forageFindCap = (playerPoints: number, luck: number) => Math.round((3000 + 25 * playerPoints) * (1 + 0.1 * luck));
 
@@ -58,15 +76,19 @@ const TEXT: Record<ForageOutcome, string[]> = {
   the_boot: ['A shadow. A boot. Nothing remains of the party.'],
 };
 
-export function resolveForage(rng: Rng, opts: { cargo: number; playerPoints: number; luck: number }): ForageResult {
-  const outcome = rollForageOutcome(rng, opts.luck);
+export function resolveForage(
+  rng: Rng,
+  opts: { cargo: number; playerPoints: number; luck: number; /** a player's first expedition always finds food */ firstTrip?: boolean },
+): ForageResult {
+  const outcome: ForageOutcome = opts.firstTrip ? 'food_cache' : rollForageOutcome(rng, opts.luck);
   const cap = Math.min(opts.cargo, forageFindCap(opts.playerPoints, opts.luck));
   let found = res();
   let lossFraction = 0;
   let returnTimeFactor = 1;
   switch (outcome) {
     case 'food_cache': {
-      const amount = cap * (0.4 + rng() * 0.6);
+      // a first trip is a good one: at least 70% of what the party can carry
+      const amount = cap * (opts.firstTrip ? 0.7 + rng() * 0.3 : 0.4 + rng() * 0.6);
       // mostly foliage, some protein, a little nectar
       found = res(Math.floor(amount * 0.55), Math.floor(amount * 0.3), Math.floor(amount * 0.15));
       break;

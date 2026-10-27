@@ -54,6 +54,7 @@ Deploy needs two repository secrets: `DROPLET_HOST` (the droplet's IP) and `DROP
 | Back up now | `./backup.sh` |
 | Open a database shell | `docker compose exec db psql -U postgres -d hormigas` |
 | Restore a backup (replaces data!) | `zcat backups/all-YYYY-MM-DD.sql.gz \| docker compose exec -T db psql -U postgres` |
+| Let a player read feedback (admin) | `docker compose exec db psql -U postgres -d hormigas -c "UPDATE players SET is_admin = true WHERE lower(username) = lower('NAME')"`, then reload the game |
 
 ## Rules for the live server
 

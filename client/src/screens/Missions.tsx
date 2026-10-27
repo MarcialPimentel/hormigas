@@ -26,6 +26,7 @@ import { RESOURCE_LABEL } from '../describe';
 import { Countdown, Empty, Panel, ResDot } from '../components/ui';
 import { ENABLED_MISSIONS, MISSION_HELP, MISSION_LABEL, type MissionType } from '../nav';
 import { BattlePreview } from '../components/BattlePreview';
+import { ForageOdds } from '../components/ForageOdds';
 
 export interface MissionDraft {
   type?: MissionType;
@@ -66,7 +67,8 @@ export function Missions({ draft }: { draft?: MissionDraft }) {
   const cargoAmounts = Object.fromEntries(RESOURCE_IDS.map((r) => [r, cargoAllowed ? Math.floor(Number(cargo[r]) || 0) : 0])) as Record<'foliage' | 'protein' | 'nectar', number>;
   const cargoTotal = cargoAmounts.foliage + cargoAmounts.protein + cargoAmounts.nectar;
   const capacity = groupCargo(chosen, { corpses: type === 'haul' });
-  const valid = validCoords(target, type === 'forage');
+  const wildsOk = type === 'forage' || type === 'scout';
+  const valid = validCoords(target, wildsOk);
   const dist = valid ? distance(colony.coords, target) : 0;
   const speed = groupSpeed(chosen, research);
   const oneWay = speed > 0 && valid ? travelSeconds(dist, speed, speedPct, state.world.speed) : 0;
@@ -77,7 +79,7 @@ export function Missions({ draft }: { draft?: MissionDraft }) {
   const max = pool === 'forage' ? forageSlots(research) : missionSlots(research);
 
   const problems: string[] = [];
-  if (!valid) problems.push(type === 'forage' ? 'Pick a real patch.' : 'Pick a real colony spot (spots 1–12).');
+  if (!valid) problems.push(wildsOk ? 'Pick a real patch.' : 'Pick a real colony spot (spots 1–12).');
   if (type === 'forage' && valid && target.spot !== WILDS_SPOT) problems.push(`Foragers go to the wilds (spot ${WILDS_SPOT}).`);
   if (presentUnits(chosen).length === 0) problems.push('Choose units to send.');
   for (const [k, n] of Object.entries(chosen)) if (n! > lvl(colony.units, k as CasteId)) problems.push(`Only ${lvl(colony.units, k as CasteId)} ${CASTES[k as CasteId].name} at home.`);
@@ -138,7 +140,7 @@ export function Missions({ draft }: { draft?: MissionDraft }) {
               onClick={() => {
                 setType(t);
                 if (t === 'forage' && target.spot !== WILDS_SPOT) setTarget({ ...colony.coords, spot: WILDS_SPOT });
-                if (t !== 'forage' && target.spot === WILDS_SPOT) setTarget({ ...target, spot: 1 });
+                if (t !== 'forage' && t !== 'scout' && target.spot === WILDS_SPOT) setTarget({ ...target, spot: 1 });
               }}
             >
               {MISSION_LABEL[t]}
@@ -156,13 +158,26 @@ export function Missions({ draft }: { draft?: MissionDraft }) {
                 <input type="number" min={1} value={target[k]} onChange={(e) => setTarget({ ...target, [k]: Math.floor(Number(e.target.value)) || 1 })} />
               </label>
             ))}
-            {type === 'forage' && target.spot !== WILDS_SPOT && (
+            {wildsOk && target.spot !== WILDS_SPOT && (
               <button className="btn ghost small" onClick={() => setTarget({ ...colony.coords, spot: WILDS_SPOT })}>
                 My patch's wilds
               </button>
             )}
           </div>
+          {type === 'scout' && target.spot === WILDS_SPOT && (
+            <p className="muted small">Scouts will survey the wilds: what foragers can expect there, who lives in the patch, and any corpses lying around.</p>
+          )}
         </fieldset>
+
+        {type === 'forage' && (
+          <fieldset className="field">
+            <legend>What foragers might find</legend>
+            {state.player.firstForage && (
+              <p className="first-forage small">Your first forage party is sure to come back with food.</p>
+            )}
+            <ForageOdds luck={lvl(research, 'foraging_instinct')} />
+          </fieldset>
+        )}
 
         <fieldset className="field">
           <legend>Units</legend>

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   distance, travelSeconds, missionFuel, groupSpeed, groupCargo, missionSlots, speedForReturnIn,
   scoutDetail, terrainForSpot, validCoords, canRaid, lateFoundingMultiplier, NEW_PLAYER_PROTECTION_MS,
-  INACTIVE_AFTER_MS, computePoints, rollForageOutcome, resolveForage, forageWeights, createRng, FORAGE_OUTCOMES,
+  INACTIVE_AFTER_MS, computePoints, rollForageOutcome, resolveForage, forageWeights, forageOdds, forageOddsSummary, createRng, FORAGE_OUTCOMES,
 } from '../src';
 
 describe('map', () => {
@@ -108,6 +108,23 @@ describe('forage', () => {
     expect(Object.keys(counts).sort()).toEqual([...FORAGE_OUTCOMES].sort());
     expect(counts.food_cache / 20000).toBeGreaterThan(0.32);
     expect(counts.food_cache / 20000).toBeLessThan(0.38);
+  });
+  it('odds are shown as percentages that match the table', () => {
+    const o = forageOdds(0);
+    expect(Object.values(o).reduce((a, b) => a + b, 0)).toBeCloseTo(100, 6);
+    expect(o.food_cache).toBeCloseTo(35, 6);
+    const s = forageOddsSummary(0);
+    expect(s).toEqual({ food: 50, empty: 30, losses: 15, early: 5 });
+    expect(forageOddsSummary(3).food).toBeGreaterThan(50);
+  });
+  it('a first trip always finds plenty of food and loses nobody', () => {
+    const rng = createRng(3);
+    for (let i = 0; i < 200; i++) {
+      const r = resolveForage(rng, { cargo: 4500, playerPoints: 0, luck: 0, firstTrip: true });
+      expect(r.outcome).toBe('food_cache');
+      expect(r.lossFraction).toBe(0);
+      expect(r.found.foliage + r.found.protein + r.found.nectar).toBeGreaterThanOrEqual(0.7 * 3000 - 3);
+    }
   });
   it('finds are capped by cargo', () => {
     const rng = createRng(1);

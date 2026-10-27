@@ -6,6 +6,7 @@ import { fmtClock, fmtCoords, fmtFull } from '../format';
 import { RESOURCE_LABEL } from '../describe';
 import { Empty, Panel, ResDot } from '../components/ui';
 import { BattleReport } from '../components/BattleReport';
+import { ForageOdds } from '../components/ForageOdds';
 
 interface Report {
   id: number;
@@ -48,10 +49,32 @@ export function ResLine({ r }: { r?: Record<string, number> }) {
   );
 }
 
+/** A Scout's survey of a patch's wilds. */
+function WildsReport({ d }: { d: any }) {
+  const { state } = useGame();
+  const luck = state?.player.research.foraging_instinct ?? 0;
+  return (
+    <div className="report-body">
+      <p>{d.text}</p>
+      <h4>Foraging here</h4>
+      <ForageOdds luck={luck} compact />
+      <p className="muted small">A party can bring home up to {fmtFull(d.findCap)} resources, if it can carry them.</p>
+      <h4>The patch</h4>
+      <p>
+        {d.colonies === 0
+          ? 'No other colonies live in this patch yet.'
+          : `${d.colonies} other ${d.colonies === 1 ? 'colony lives' : 'colonies live'} in this patch${d.inactive ? `, ${d.inactive} of them inactive` : ''}.`}{' '}
+        {d.corpses > 0 ? `About ${fmtFull(d.corpses)} Protein in corpses is lying around, ready to haul.` : 'No corpses lying around.'}
+      </p>
+    </div>
+  );
+}
+
 function ReportBody({ r }: { r: Report }) {
   const d = r.data;
   switch (r.type) {
     case 'scout':
+      if (d.wilds) return <WildsReport d={d} />;
       return (
         <div className="report-body">
           <p>
@@ -160,7 +183,7 @@ export function Reports() {
       {!reports ? (
         <p className="muted">Loading…</p>
       ) : reports.length === 0 ? (
-        <Empty>No reports yet. Scout a neighbor or send a forage party to get your first one.</Empty>
+        <Empty>No reports yet. Send a Scout or a forage party to get your first one.</Empty>
       ) : (
         <ul className="reports">
           {reports.map((r) => (

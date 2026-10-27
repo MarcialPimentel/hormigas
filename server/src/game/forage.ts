@@ -1,5 +1,6 @@
 // Forage expeditions into the wilds (spot 13 of any patch).
 import { WILDS_SPOT, coordsKey, createRng, groupCargo, lvl, randomSeed, resolveForage, type CasteId, type UnitCounts } from '@hormigas/shared';
+import type { Q } from '../db';
 import { GameError } from '../errors';
 import { getPlayer } from '../colony';
 import { defineMission } from './missions';
@@ -27,7 +28,8 @@ defineMission('forage', {
   async arrive(q, m, at) {
     const player = await getPlayer(q, m.playerId);
     const luck = lvl(player.research, 'foraging_instinct');
-    const r = resolveForage(createRng(randomSeed()), { cargo: groupCargo(m.units), playerPoints: player.points.total, luck });
+    const firstTrip = !(await hasForagedBefore(q, m.playerId, m.id));
+    const r = resolveForage(createRng(randomSeed()), { cargo: groupCargo(m.units), playerPoints: player.points.total, luck, firstTrip });
 
     const lost: UnitCounts = {};
     if (r.lossFraction > 0) {
@@ -58,3 +60,12 @@ defineMission('forage', {
     return { home: true, returnFactor: r.returnTimeFactor };
   },
 });
+
+/** Has this player had a forage party reach the wilds before? (Recalled parties don't count.) */
+export async function hasForagedBefore(q: Q, playerId: number, exceptMissionId = 0): Promise<boolean> {
+  const r = await q.query(
+    "SELECT 1 FROM missions WHERE player_id = $1 AND type = 'forage' AND id <> $2 AND result ? 'outcome' LIMIT 1",
+    [playerId, exceptMissionId],
+  );
+  return r.rows.length > 0;
+}

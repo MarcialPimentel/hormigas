@@ -33,6 +33,10 @@ export interface ServerState {
     points: { total: number; economy: number; research: number; military: number };
     protectedUntil: number;
     timeMultiplier: number;
+    /** Can read player feedback (the Feedback screen). */
+    isAdmin: boolean;
+    /** The next forage party is sure to find food. */
+    firstForage: boolean;
   };
   colonies: { id: number; name: string; coords: { region: number; patch: number; spot: number } }[];
   colony: ServerColony | null;

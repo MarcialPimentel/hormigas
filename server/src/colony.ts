@@ -134,9 +134,11 @@ export interface Player {
   research: ResearchLevels;
   researchJob: ResearchJob | null;
   points: { total: number; economy: number; research: number; military: number };
+  /** Can read player feedback. Set by hand in the database (docs/DEPLOY.md). */
+  isAdmin: boolean;
 }
 
-const PCOLS = 'id, world_id, username, created_at, last_active, protected_until, research, research_job, points';
+const PCOLS = 'id, world_id, username, created_at, last_active, protected_until, research, research_job, points, is_admin';
 
 function playerFromRow(r: any): Player {
   return {
@@ -149,6 +151,7 @@ function playerFromRow(r: any): Player {
     research: r.research,
     researchJob: r.research_job,
     points: r.points,
+    isAdmin: r.is_admin,
   };
 }
 
