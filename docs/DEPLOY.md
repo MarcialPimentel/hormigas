@@ -87,4 +87,4 @@ The Postgres init script only runs when the data volume is empty. If the first s
 
 ## Other hosts
 
-Render, Fly.io, Railway or any other Docker host work too: build the same `Dockerfile`, attach Postgres, set `DATABASE_URL`, and expose the port. The health check path is `/api/health`. Avoid free tiers that sleep after inactivity, because the game's timers and live notifications stop when the server sleeps.
+Render, Fly.io, Railway or any other Docker host work too: build the same `Dockerfile`, attach Postgres, set `DATABASE_URL`, and expose the port. The health check path is `/api/health`. Free tiers that sleep after inactivity don't break the game: nothing ticks, so the first request after a sleep catches the world up and resolves every finished build, raid and journey in order. What they do cost is a slow first load while the server wakes, and free databases that expire can wipe the world.
