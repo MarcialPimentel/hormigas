@@ -1,10 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { WORLD, WILDS_SPOT, TERRAIN, terrainForSpot } from '@hormigas/shared';
 import { api } from '../api';
 import { useGame } from '../game';
-import { fmtCoords, fmtNum } from '../format';
-import { Panel } from '../components/ui';
-import { ENABLED_MISSIONS, type MissionType, type Nav } from '../nav';
+import { fmtCoords, fmtDuration, fmtNum } from '../format';
+import { Panel, Trip } from '../components/ui';
+import { ENABLED_MISSIONS, MISSION_LABEL, type MissionType, type Nav } from '../nav';
 
 const can = (t: MissionType) => ENABLED_MISSIONS.includes(t);
 
@@ -16,6 +16,41 @@ interface Spot {
     wild?: { species: string; level: number; style: string };
   };
   corpses: number;
+}
+
+type Coords = { region: number; patch: number; spot: number };
+const same = (a: Coords, b: Coords) => a.region === b.region && a.patch === b.patch && a.spot === b.spot;
+
+/** Parties moving to or from one spot: ours heading there or back, and anyone heading from there to us. */
+function Movements({ at, home }: { at: Coords; home: Coords }) {
+  const { state, colony, now } = useGame();
+  const rows: ReactNode[] = [];
+  const inT = (at: number) => (at - now > 0 ? `in ${fmtDuration(at - now)}` : 'now');
+  for (const m of state?.missions ?? []) {
+    if (!same(m.target, at)) continue;
+    const out = m.status === 'outbound';
+    rows.push(
+      <li key={`m${m.id}`}>
+        <Trip departAt={m.departAt} arriveAt={m.arriveAt} returnAt={m.returnAt} status={m.status} cargo={m.cargo} />
+        <span>
+          Your {(MISSION_LABEL[m.type as MissionType] ?? m.type).toLowerCase()} party {out ? `arrives ${inT(m.arriveAt)}` : `is heading home, back ${inT(m.returnAt)}`}
+        </span>
+      </li>,
+    );
+  }
+  for (const i of state?.incoming ?? []) {
+    const toHere = same(at, home) && i.targetColonyId === colony?.id;
+    if (!same(i.origin, at) && !toHere) continue;
+    const what = i.type === 'raid' ? 'Raid' : i.type === 'scout' ? 'Scouts' : 'Delivery';
+    rows.push(
+      <li key={`i${i.id}`} className={i.hostile ? 'danger' : ''}>
+        <Trip departAt={i.departAt} arriveAt={i.arriveAt} status="outbound" incoming hostile={i.hostile} />
+        <span>{toHere ? `${what} from ${i.from} arrives ${inT(i.arriveAt)}` : `${what} heading to your colony, arrives ${inT(i.arriveAt)}`}</span>
+      </li>,
+    );
+  }
+  if (rows.length === 0) return null;
+  return <ul className="spot-moves">{rows}</ul>;
 }
 
 export function MapScreen({ nav, start }: { nav: Nav; start?: { region: number; patch: number } }) {
@@ -111,6 +146,7 @@ export function MapScreen({ nav, start }: { nav: Nav; start?: { region: number; 
                       <span className="muted">Empty {terrain?.name.toLowerCase()}</span>
                     )}
                     {s.corpses > 0 && <span className="corpses">{fmtNum(s.corpses)} protein in corpses</span>}
+                    <Movements at={coords} home={colony.coords} />
                   </div>
                   <div className="spot-actions">
                     {wilds && can('forage') && <button className="btn small" onClick={() => nav('missions', { type: 'forage', target: coords })}>Forage</button>}

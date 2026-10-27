@@ -1,6 +1,6 @@
 import { CHAMBERS, RESEARCH, queueEndsAt, type ChamberId, type ResearchId } from '@hormigas/shared';
 import { useGame } from '../game';
-import { Countdown, Empty } from './ui';
+import { Countdown, Empty, Trip } from './ui';
 import { fmtCoords } from '../format';
 import { MISSION_LABEL, type MissionType } from '../nav';
 import type { ReactNode } from 'react';
@@ -12,6 +12,8 @@ interface Item {
   label: ReactNode;
   screen: string;
   tone?: 'danger';
+  /** a party on the move: shown as a little walking track instead of a progress bar */
+  trip?: ReactNode;
 }
 
 /** Everything with a timer: construction, research, brood queue, missions, incoming raids. */
@@ -53,6 +55,7 @@ export function ActivityList({ go }: { go: (screen: string) => void }) {
     const out = m.status === 'outbound';
     items.push({
       key: `m${m.id}`,
+      trip: <Trip departAt={m.departAt} arriveAt={m.arriveAt} returnAt={m.returnAt} status={m.status} cargo={m.cargo} />,
       startAt: out ? m.departAt : m.arriveAt,
       endAt: out ? m.arriveAt : m.returnAt,
       label: (
@@ -66,6 +69,7 @@ export function ActivityList({ go }: { go: (screen: string) => void }) {
   for (const i of state.incoming ?? []) {
     items.push({
       key: `i${i.id}`,
+      trip: <Trip departAt={i.departAt} arriveAt={i.arriveAt} status="outbound" incoming hostile={i.hostile} />,
       endAt: i.arriveAt,
       label: i.hostile ? (
         <>
@@ -90,7 +94,10 @@ export function ActivityList({ go }: { go: (screen: string) => void }) {
         <li key={i.key} className={i.tone === 'danger' ? 'danger' : ''}>
           <button className="activity-link" onClick={() => go(i.screen)}>
             <span>{i.label}</span>
-            <Countdown startAt={i.startAt} endAt={i.endAt} />
+            <span className="activity-time">
+              {i.trip}
+              <Countdown startAt={i.trip ? undefined : i.startAt} endAt={i.endAt} />
+            </span>
           </button>
         </li>
       ))}

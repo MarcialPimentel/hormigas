@@ -60,3 +60,54 @@ export function Panel({ title, children, actions }: { title?: ReactNode; childre
 export function Empty({ children }: { children: ReactNode }) {
   return <p className="empty">{children}</p>;
 }
+
+const TRIP_LOAD: Record<string, string> = { foliage: 'var(--leaf)', protein: 'var(--protein)', nectar: 'var(--honey)' };
+
+/**
+ * A party on its way: home on the left, the target on the right. Outbound it walks right; coming home
+ * it walks back left, carrying coloured cargo. `incoming` parties walk from the right toward home.
+ */
+export function Trip({
+  departAt,
+  arriveAt,
+  returnAt,
+  status,
+  cargo,
+  incoming,
+  hostile,
+}: {
+  departAt?: number;
+  arriveAt: number;
+  returnAt?: number;
+  status: 'outbound' | 'returning';
+  cargo?: Record<string, number>;
+  incoming?: boolean;
+  hostile?: boolean;
+}) {
+  const { now } = useGame();
+  const k = (a: number | undefined, b: number | undefined) => (a && b && b > a ? Math.min(1, Math.max(0, (now - a) / (b - a))) : 0.5);
+  let pos: number;
+  let back = false;
+  if (incoming) {
+    pos = 100 - 100 * k(departAt, arriveAt);
+    back = true;
+  } else if (status === 'outbound') pos = 100 * k(departAt, arriveAt);
+  else {
+    pos = 100 - 100 * k(arriveAt, returnAt);
+    back = true;
+  }
+  const loads = !incoming && status === 'returning' ? Object.keys(TRIP_LOAD).filter((r) => (cargo?.[r] ?? 0) > 0) : [];
+  return (
+    <span className={`trip${hostile ? ' hostile' : ''}`} aria-hidden="true">
+      <span className="trip-home" />
+      <span className="trip-line">
+        <span className={`trip-party${back ? ' back' : ''}`} style={{ left: `${pos}%` }}>
+          {[0, 1, 2].map((i) => (
+            <i key={i} style={loads.length ? ({ '--load': TRIP_LOAD[loads[i % loads.length]] } as any) : undefined} className={loads.length ? 'loaded' : ''} />
+          ))}
+        </span>
+      </span>
+      <span className="trip-target" />
+    </span>
+  );
+}
