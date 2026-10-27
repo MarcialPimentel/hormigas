@@ -64,6 +64,7 @@ Live at **https://hormigas.marz.gg**. Every merge to `main` that passes CI deplo
 | 14 | [Monetization](docs/14-monetization.md) | Fairness principles |
 | 15 | [Roadmap](docs/15-roadmap.md) | MVP → v1 → later |
 | 16 | [Milestone Map](docs/16-milestones.md) | When players hit each milestone, pacing targets |
+| 17 | [Wild Nests](docs/17-wild-nests.md) | NPC colonies in every patch: levels, species, raids |
 
 ## Doc conventions
 - **Numbers live in `docs/data/`**, reasoning lives in the markdown. If they disagree, the data file wins and the doc gets fixed.

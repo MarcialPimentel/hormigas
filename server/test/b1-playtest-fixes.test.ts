@@ -2,7 +2,7 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { FastifyInstance } from 'fastify';
 import { QUESTS } from '@hormigas/shared';
-import { setupTest, teardownTest, newPlayer, setColony, setPlayer, type Client } from './helpers';
+import { setupTest, teardownTest, newPlayer, setColony, setPlayer, calmWildNests, type Client } from './helpers';
 
 let app: FastifyInstance;
 let clock: Awaited<ReturnType<typeof setupTest>>['clock'];
@@ -16,6 +16,7 @@ beforeAll(async () => {
   admin = await newPlayer(app, 'marz');
   c = (await p.get('/api/state')).colony;
   wilds = { ...c.coords, spot: 13 };
+  await calmWildNests();
 });
 afterAll(async () => teardownTest(app));
 
@@ -53,7 +54,9 @@ describe('scouting the wilds', () => {
   });
 
   it('scouting an empty colony spot is still refused', async () => {
-    const empty = { ...c.coords, spot: c.coords.spot === 1 ? 2 : 1 };
+    const map = await p.get(`/api/map?region=${c.coords.region}&patch=${c.coords.patch}`);
+    const free = map.spots.find((s: any) => !s.colony && s.spot !== 13);
+    const empty = { ...c.coords, spot: free.spot };
     const r = await p.post('/api/missions', { colonyId: c.id, type: 'scout', target: empty, units: { scout: 1 } });
     expect(r.error.code).toBe('bad_target');
   });

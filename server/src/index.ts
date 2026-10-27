@@ -1,16 +1,20 @@
 import { buildApp } from './app';
 import { config } from './config';
-import { closePool, getPool } from './db';
+import { closePool, getPool, tx } from './db';
 import { migrate } from './migrate';
 import { startEventLoop } from './events';
 import { getWorld } from './world';
 import { refreshAllPoints } from './game/points';
+import { ensureWildNests } from './game/nests';
+import { now } from './clock';
 
 async function main() {
   const applied = await migrate();
   if (applied.length) console.log(`Migrations applied: ${applied.join(', ')}`);
   const world = await getWorld(getPool());
   console.log(`World "${world.name}" (speed ×${world.speed})${config.production ? ' — production' : ''}`);
+  const nests = await tx((q) => ensureWildNests(q, world.id, now()));
+  if (nests) console.log(`Wild nests spawned in ${nests} patch${nests === 1 ? '' : 'es'}`);
   const app = await buildApp({ logger: true });
   const stopEvents = startEventLoop();
   // keep rankings / strength protection current

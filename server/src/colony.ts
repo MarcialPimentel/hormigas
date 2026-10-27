@@ -2,6 +2,7 @@
 import {
   canAfford,
   explainShortfall,
+  nestAt,
   productionPerHour,
   shortfalls,
   storageCapacity,
@@ -9,6 +10,7 @@ import {
   type ChamberId,
   type ColonyState,
   type ResearchId,
+  type NestState,
   type ResearchLevels,
   type Resources,
 } from '@hormigas/shared';
@@ -36,9 +38,11 @@ export interface Colony extends ColonyState {
   baseSpace: number;
   buildJob: BuildJob | null;
   createdAt: number;
+  /** Set for wild nests (NPC colonies), null for player colonies. */
+  npc: NestState | null;
 }
 
-const COLS = 'id, world_id, player_id, name, region, patch, spot, terrain, base_space, foliage, protein, nectar, last_updated, chambers, units, defenses, build_job, unit_queue, created_at';
+const COLS = 'id, world_id, player_id, name, region, patch, spot, terrain, base_space, foliage, protein, nectar, last_updated, chambers, units, defenses, build_job, unit_queue, created_at, npc';
 
 function fromRow(r: any): Colony {
   return {
@@ -59,6 +63,7 @@ function fromRow(r: any): Colony {
     buildJob: r.build_job,
     unitQueue: r.unit_queue,
     createdAt: r.created_at,
+    npc: r.npc ?? null,
   };
 }
 
@@ -94,16 +99,23 @@ export async function colonyAt(q: Q, worldId: number, region: number, patch: num
 export async function saveColony(q: Q, c: Colony) {
   await q.query(
     `UPDATE colonies SET name=$2, foliage=$3, protein=$4, nectar=$5, last_updated=$6, chambers=$7, units=$8, defenses=$9,
-       build_job=$10, unit_queue=$11 WHERE id=$1`,
+       build_job=$10, unit_queue=$11, npc=$12 WHERE id=$1`,
     [
       c.id, c.name, c.resources.foliage, c.resources.protein, c.resources.nectar, c.lastUpdated,
       JSON.stringify(c.chambers), JSON.stringify(c.units), JSON.stringify(c.defenses),
-      c.buildJob ? JSON.stringify(c.buildJob) : null, JSON.stringify(c.unitQueue),
+      c.buildJob ? JSON.stringify(c.buildJob) : null, JSON.stringify(c.unitQueue), c.npc ? JSON.stringify(c.npc) : null,
     ],
   );
 }
 
-export const advance = (c: Colony, to: number): Colony => syncColony(c, to, cachedWorldSpeed());
+/** Bring a colony up to time `to`. Wild nests regrow instead of producing (docs/17-wild-nests.md). */
+export const advance = (c: Colony, to: number): Colony => {
+  if (c.npc) {
+    const live = nestAt(c.npc, c, to, cachedWorldSpeed());
+    return { ...c, ...live, lastUpdated: to, npc: { ...c.npc, at: to } };
+  }
+  return syncColony(c, to, cachedWorldSpeed());
+};
 
 /** Throw a plain-language error if the colony can't pay `cost`. */
 export function requireAffordable(c: Colony, cost: Resources) {
@@ -136,9 +148,11 @@ export interface Player {
   points: { total: number; economy: number; research: number; military: number };
   /** Can read player feedback. Set by hand in the database (docs/DEPLOY.md). */
   isAdmin: boolean;
+  /** The hidden owner of every wild nest (docs/17-wild-nests.md). */
+  isNpc: boolean;
 }
 
-const PCOLS = 'id, world_id, username, created_at, last_active, protected_until, research, research_job, points, is_admin';
+const PCOLS = 'id, world_id, username, created_at, last_active, protected_until, research, research_job, points, is_admin, is_npc';
 
 function playerFromRow(r: any): Player {
   return {
@@ -152,6 +166,7 @@ function playerFromRow(r: any): Player {
     researchJob: r.research_job,
     points: r.points,
     isAdmin: r.is_admin,
+    isNpc: r.is_npc,
   };
 }
 

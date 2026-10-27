@@ -46,6 +46,7 @@ missions(id, world_id, player_id, type, origin, target, units, cargo, depart_at,
 events(...)
 reports(id, world_id, player_id, type, data, created_at, read)
 corpse_fields(world_id, region, patch, spot, protein, created_at)
+-- wild nests: colonies.npc (species, level, at) on colonies owned by the world's players.is_npc player
 ```
 
 ## Security / anti-cheat basics

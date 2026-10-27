@@ -10,6 +10,8 @@ export interface QuestProgressInput {
   units: Partial<Record<CasteId, number>>;
   /** mission types you have ever sent */
   missionsSent: string[];
+  /** raids you have won against wild nests */
+  wildRaidsWon?: number;
 }
 
 export interface Quest {
@@ -44,7 +46,15 @@ export const QUESTS: Quest[] = [
   { id: 'brood', title: 'Build a Brood Hall', hint: 'Castes and defenses are raised in the Brood Hall.', screen: 'chambers', reward: res(600, 300, 100), done: (p) => ch(p, 'brood_hall') >= 1 },
   { id: 'workers', title: 'Raise 3 Workers', hint: 'Workers carry food home and haul corpses.', screen: 'brood', reward: res(400, 200, 150), done: (p) => (p.units.worker ?? 0) >= 3 },
   { id: 'forage', title: 'Send a forage party', hint: 'Missions → Forage. Send a few Workers into the wilds and see what they find.', screen: 'missions', reward: res(500, 500, 200), done: (p) => p.missionsSent.includes('forage') },
-  { id: 'scout', title: 'Send out a Scout', hint: 'Raise a Scout, then pick a neighbor on the Map and press Scout. No neighbors yet? Scout the wilds (spot 13) to see what lives at the edge of your patch.', screen: 'map', reward: res(1000, 1000, 500), done: (p) => p.missionsSent.includes('scout') },
+  { id: 'scout', title: 'Send out a Scout', hint: 'Raise a Scout, then open the Map and scout the wild nest in your patch, a neighbor, or the wilds (spot 13).', screen: 'map', reward: res(1000, 1000, 500), done: (p) => p.missionsSent.includes('scout') },
+  {
+    id: 'wild_raid',
+    title: 'Raid the wild nest',
+    hint: 'Every patch has a nest of wild ants. Scout it, check the battle preview, then send Minor Soldiers. Bring a few Workers to carry the loot home.',
+    screen: 'map',
+    reward: res(1500, 1000, 500),
+    done: (p) => (p.wildRaidsWon ?? 0) > 0,
+  },
 ];
 
 /** The next quest to work on (first not yet claimed), or null when the chain is finished. */

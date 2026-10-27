@@ -15,6 +15,7 @@ Keep the MVP **brutally small**. Its only job is to answer: *is the core loop fu
 - Missions: Raid, Scout, Transport, Relocate, Haul Corpses, Forage.
 - PvP rules: new-colony protection, strength protection, bash limit, Honeypot protection, Late Founding Boost (catch-up).
 - One colony per player.
+- Wild nests: one NPC colony per patch with players, raidable, raiding back gently ([17-wild-nests](17-wild-nests.md)).
 
 **Systems**
 - Accounts & login

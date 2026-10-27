@@ -4,6 +4,7 @@ import { now } from '../clock';
 import { GameError } from '../errors';
 import { hashPassword, verifyPassword, createSession } from '../auth';
 import { getWorld, pickStartingSpot } from '../world';
+import { ensureNest } from './nests';
 
 export async function register(q: Tx, username: string, password: string) {
   const world = await getWorld(q);
@@ -27,6 +28,8 @@ export async function register(q: Tx, username: string, password: string) {
     [world.id, playerId, `${username}'s Nest`, spot.region, spot.patch, spot.spot, STARTING_TERRAIN, spot.baseSpace,
       start.foliage, start.protein, start.nectar, t, JSON.stringify({ queen_chamber: 1 })],
   );
+  // every patch with players has a wild nest (docs/17-wild-nests.md)
+  await ensureNest(q, world.id, spot.region, spot.patch, t);
   const token = await createSession(q, playerId);
   return { playerId, token };
 }

@@ -78,7 +78,13 @@ function ReportBody({ r }: { r: Report }) {
       return (
         <div className="report-body">
           <p>
-            {d.colony} ({fmtCoords(d.coords)}), owned by {d.owner}.{' '}
+            {d.wild ? (
+              <>
+                {d.colony} ({fmtCoords(d.coords)}), a level {d.wild.level} nest of wild {d.owner}. <span className="muted">{d.wild.style}</span>{' '}
+              </>
+            ) : (
+              <>{d.colony} ({fmtCoords(d.coords)}), owned by {d.owner}.{' '}</>
+            )}
             {d.caught ? <strong className="warn">Your scouts were caught after reporting back what they saw.</strong> : null}
           </p>
           <h4>Resources</h4>

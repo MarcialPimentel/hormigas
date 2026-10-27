@@ -218,19 +218,35 @@ export async function sendMission(q: Tx, playerId: number, input: SendInput): Pr
   colony.units = subCounts(colony.units, units);
   await saveColony(q, colony);
 
-  const arriveAt = t + secs * 1000;
+  return launchMission(q, {
+    worldId: world.id, playerId, type, origin: colony, target, targetColony, units, cargo, speedPct, fuel,
+    departAt: t, arriveAt: t + secs * 1000, senderName: player.username,
+  });
+}
+
+/** Write a mission that has already been paid for and schedule its arrival. Used by players and by wild nests. */
+export async function launchMission(
+  q: Tx,
+  o: {
+    worldId: number; playerId: number; type: MissionType; origin: Colony; target: Coords; targetColony: Colony | null;
+    units: UnitCounts; cargo: Resources; speedPct: number; fuel: number; departAt: number; arriveAt: number;
+    /** shown to the target in "incoming" notices */
+    senderName: string;
+  },
+): Promise<Mission> {
+  const { origin, target } = o;
   const r = await q.query(
     `INSERT INTO missions (world_id, player_id, type, origin_colony_id, origin_region, origin_patch, origin_spot,
        target_region, target_patch, target_spot, target_colony_id, units, cargo, speed_pct, fuel, depart_at, arrive_at, status, created_at)
      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,'outbound',$16) RETURNING *`,
-    [world.id, playerId, type, colony.id, origin.region, origin.patch, origin.spot, target.region, target.patch, target.spot,
-      targetColony?.id ?? null, JSON.stringify(units), JSON.stringify(cargo), speedPct, fuel, t, arriveAt],
+    [o.worldId, o.playerId, o.type, origin.id, origin.region, origin.patch, origin.spot, target.region, target.patch, target.spot,
+      o.targetColony?.id ?? null, JSON.stringify(o.units), JSON.stringify(o.cargo), o.speedPct, o.fuel, o.departAt, o.arriveAt],
   );
   const m = fromRow(r.rows[0]);
-  m.arriveEventId = await schedule(q, world.id, 'mission_arrive', arriveAt, { missionId: m.id });
+  m.arriveEventId = await schedule(q, o.worldId, 'mission_arrive', o.arriveAt, { missionId: m.id });
   await saveMission(q, m);
-  if (targetColony && targetColony.playerId !== playerId)
-    notify(targetColony.playerId, { type: 'incoming', missionType: type, from: player.username, arriveAt, colony: targetColony.name });
+  if (o.targetColony && o.targetColony.playerId !== o.playerId)
+    notify(o.targetColony.playerId, { type: 'incoming', missionType: o.type, from: o.senderName, arriveAt: o.arriveAt, colony: o.targetColony.name });
   return m;
 }
 
@@ -310,8 +326,10 @@ export function missionView(m: Mission) {
 /** Hostile or friendly missions heading to the player's colonies (attacker's units hidden unless scouts). */
 export async function incomingMissions(q: Q, playerId: number) {
   const r = await q.query(
-    `SELECT m.id, m.type, m.arrive_at, m.target_colony_id, m.origin_region, m.origin_patch, m.origin_spot, p.username, m.units
+    `SELECT m.id, m.type, m.arrive_at, m.target_colony_id, m.origin_region, m.origin_patch, m.origin_spot, m.units,
+            CASE WHEN p.is_npc THEN o.name ELSE p.username END AS username, p.is_npc
        FROM missions m JOIN colonies c ON c.id = m.target_colony_id JOIN players p ON p.id = m.player_id
+       JOIN colonies o ON o.id = m.origin_colony_id
       WHERE c.player_id = $1 AND m.player_id <> $1 AND m.status = 'outbound' ORDER BY m.arrive_at`,
     [playerId],
   );
@@ -322,6 +340,8 @@ export async function incomingMissions(q: Q, playerId: number) {
     targetColonyId: row.target_colony_id,
     origin: { region: row.origin_region, patch: row.origin_patch, spot: row.origin_spot },
     from: row.username,
+    /** a wild nest, not a player */
+    wild: row.is_npc,
     hostile: row.type === 'raid' || row.type === 'scout',
     unitCount: Object.values(row.units as Record<string, number>).reduce((a, b) => a + b, 0),
   }));

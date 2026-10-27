@@ -1,13 +1,14 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { FastifyInstance } from 'fastify';
 import { chamberCost, productionPerHour } from '@hormigas/shared';
-import { setupTest, teardownTest, newPlayer, setColony, type Client } from './helpers';
+import { setupTest, teardownTest, newPlayer, setColony, calmWildNests, type Client } from './helpers';
 
 let app: FastifyInstance;
 let clock: Awaited<ReturnType<typeof setupTest>>['clock'];
 
 beforeAll(async () => {
   ({ app, clock } = await setupTest());
+  await calmWildNests();
 });
 afterAll(async () => teardownTest(app));
 

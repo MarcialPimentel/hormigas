@@ -1,0 +1,61 @@
+{
+  "_version": "0.1",
+  "_note": "Wild nests (NPC colonies), docs/17-wild-nests.md. Level = highest level whose minPatchPoints <= the points of the strongest active player in the patch; never goes down. Times are hours at world speed 1 (divide by world speed).",
+  "levels": [
+    {"level": 1, "minPatchPoints": 0, "stock": {"foliage": 1600, "protein": 1000, "nectar": 400}},
+    {"level": 2, "minPatchPoints": 20, "stock": {"foliage": 4000, "protein": 2800, "nectar": 1200}},
+    {"level": 3, "minPatchPoints": 60, "stock": {"foliage": 6000, "protein": 4200, "nectar": 1800}},
+    {"level": 4, "minPatchPoints": 200, "stock": {"foliage": 10000, "protein": 7000, "nectar": 3000}},
+    {"level": 5, "minPatchPoints": 600, "stock": {"foliage": 15000, "protein": 10500, "nectar": 4500}},
+    {"level": 6, "minPatchPoints": 1500, "stock": {"foliage": 22000, "protein": 16000, "nectar": 7000}}
+  ],
+  "species": {
+    "pavement": {
+      "name": "Pavement Ants", "nest": "Pavement Ant Nest", "terrains": ["sunny_meadow", "creek_bank"],
+      "style": "Swarm: many Workers and Minor Soldiers. Major Soldiers cut through them.",
+      "levels": [
+        {"units": {"worker": 2, "minor_soldier": 2}, "defenses": {}},
+        {"units": {"worker": 4, "minor_soldier": 5}, "defenses": {}},
+        {"units": {"worker": 8, "minor_soldier": 12, "major_soldier": 1}, "defenses": {}},
+        {"units": {"worker": 12, "minor_soldier": 25, "major_soldier": 4}, "defenses": {"pit_trap": 1}},
+        {"units": {"worker": 20, "minor_soldier": 50, "major_soldier": 12}, "defenses": {"pit_trap": 2}},
+        {"units": {"worker": 30, "minor_soldier": 90, "major_soldier": 35}, "defenses": {"pit_trap": 5, "acid_sentry": 1}}
+      ]
+    },
+    "fire": {
+      "name": "Fire Ants", "nest": "Fire Ant Mound", "terrains": ["sandy_soil"],
+      "style": "Aggressive: few but strong soldiers, Acid Sentries later. Send cheap Minor Soldiers, not Majors, into the acid.",
+      "levels": [
+        {"units": {"minor_soldier": 3}, "defenses": {}},
+        {"units": {"minor_soldier": 6}, "defenses": {}},
+        {"units": {"minor_soldier": 8, "major_soldier": 3}, "defenses": {}},
+        {"units": {"minor_soldier": 12, "major_soldier": 10}, "defenses": {"acid_sentry": 1}},
+        {"units": {"minor_soldier": 20, "major_soldier": 25}, "defenses": {"acid_sentry": 2}},
+        {"units": {"minor_soldier": 35, "major_soldier": 60}, "defenses": {"acid_sentry": 4}}
+      ]
+    },
+    "carpenter": {
+      "name": "Carpenter Ants", "nest": "Carpenter Ant Gallery", "terrains": ["rotting_log"],
+      "style": "Fortress: walls and pit traps, few soldiers. Bring numbers; the defenses rebuild.",
+      "levels": [
+        {"units": {"worker": 2, "minor_soldier": 1}, "defenses": {"pit_trap": 1}},
+        {"units": {"worker": 3, "minor_soldier": 2}, "defenses": {"pit_trap": 2}},
+        {"units": {"minor_soldier": 5, "major_soldier": 1}, "defenses": {"pit_trap": 4}},
+        {"units": {"minor_soldier": 8, "major_soldier": 4}, "defenses": {"pit_trap": 6, "soil_wall": 1}},
+        {"units": {"minor_soldier": 15, "major_soldier": 12}, "defenses": {"pit_trap": 10, "soil_wall": 1, "acid_sentry": 2}},
+        {"units": {"minor_soldier": 25, "major_soldier": 30}, "defenses": {"pit_trap": 20, "soil_wall": 1, "acid_sentry": 4}}
+      ]
+    }
+  },
+  "regrowHours": 24,
+  "raids": {
+    "_note": "Raids by wild nests on players in their patch. Gentle: a fraction of the nest's soldiers, slow so players see them coming.",
+    "everyHours": [16, 32],
+    "partyShare": 0.3,
+    "minParty": {"minor_soldier": 2},
+    "maxPartyValuePctOfTargetPoints": 10,
+    "speedPct": 10,
+    "perPlayerCooldownHours": 24,
+    "revengeWeight": 2
+  }
+}

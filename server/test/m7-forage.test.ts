@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { FastifyInstance } from 'fastify';
-import { setupTest, teardownTest, newPlayer, setColony, type Client } from './helpers';
+import { setupTest, teardownTest, newPlayer, setColony, calmWildNests, type Client } from './helpers';
 
 let app: FastifyInstance;
 let clock: Awaited<ReturnType<typeof setupTest>>['clock'];
@@ -12,6 +12,7 @@ beforeAll(async () => {
   p = await newPlayer(app, 'forager');
   c = (await p.get('/api/state')).colony;
   await setColony(c.id, { nectar: 1e6, last_updated: clock.t, units: { worker: 1000, minor_soldier: 100 } });
+  await calmWildNests(); // this test runs 15 days of game time; keep nest raids out of it
 });
 afterAll(async () => teardownTest(app));
 

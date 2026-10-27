@@ -48,7 +48,8 @@ export function simulate(opts: { worldSpeed?: number; days?: number; stepSeconds
   let res: Resources = { ...RESOURCES_DATA.startingResources };
   const ch: Partial<Record<ChamberId, number>> = { queen_chamber: 1 };
   const rs: Partial<Record<ResearchId, number>> = {};
-  const units = { worker: 0, scout: 0 };
+  const units = { worker: 0, scout: 0, minor_soldier: 0 };
+  let wildRaidsWon = 0;
   const sent: string[] = [];
   let claimed = 0;
   let build: { id: ChamberId; level: number; end: number } | null = null;
@@ -107,11 +108,13 @@ export function simulate(opts: { worldSpeed?: number; days?: number; stepSeconds
 
   function act() {
     // claim finished founding tasks
-    while (claimed < QUESTS.length && QUESTS[claimed].done({ chambers: ch, units, missionsSent: sent })) {
+    while (claimed < QUESTS.length && QUESTS[claimed].done({ chambers: ch, units, missionsSent: sent, wildRaidsWon })) {
       res = add(res, QUESTS[claimed].reward);
       claimed++;
     }
-    if (!build) {
+    // after scouting, save up for the raid on the wild nest instead of building
+    const savingForRaid = sent.includes('scout') && units.minor_soldier < 8;
+    if (!build && !savingForRaid) {
       for (const id of wishlist()) {
         const r = tryBuild(id);
         if (r !== 'skip') break;
@@ -134,6 +137,15 @@ export function simulate(opts: { worldSpeed?: number; days?: number; stepSeconds
       if (units.worker < 3 && canAfford(res, w)) { res = sub(res, w); units.worker = 3; }
       if (units.worker >= 3 && !sent.includes('forage') && res.nectar >= 10) { res = sub(res, { foliage: 0, protein: 0, nectar: 10 }); sent.push('forage'); }
       if (units.scout < 1 && canAfford(res, CASTES.scout.cost) && res.nectar >= 5) { res = sub(res, CASTES.scout.cost); units.scout = 1; sent.push('scout'); }
+      // founding task: raid the level-1 wild nest with 8 Minor Soldiers (docs/17-wild-nests.md)
+      const army = scale(CASTES.minor_soldier.cost, 8);
+      if (sent.includes('scout') && units.minor_soldier < 8 && canAfford(res, army) && res.nectar >= 20) {
+        res = sub(res, add(army, { foliage: 0, protein: 0, nectar: 20 }));
+        units.minor_soldier = 8;
+        sent.push('raid');
+        wildRaidsWon = 1;
+        hit('wild_raid', 'First raid on the wild nest');
+      }
     }
   }
 

@@ -28,9 +28,12 @@ Exact formulas in `data/formulas.json`. Distance should make **neighbors** your 
 - New players are placed in the least-populated region, in a patch with free spots, avoiding patches full of very strong players where possible.
 - Terrain at start: always **Grassland** (no modifiers) to keep the first experience even.
 
+## Wild nests
+Every patch with players also holds one **wild nest**, a rival colony of another ant species on a non-Grassland spot. It spawns when the patch's first player arrives. See [17-wild-nests](17-wild-nests.md).
+
 ## Map screen
 - Browse by region → patch.
-- Each spot shows: colony name, owner, rank band, status icons (inactive, protected, vacation, corpse field present).
+- Each spot shows: colony name, owner, rank band, status icons (inactive, protected, vacation, corpse field present). A wild nest shows its species and level instead of an owner.
 
 ## Open Questions
 - Region names and visual identity per region?

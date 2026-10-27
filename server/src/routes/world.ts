@@ -1,6 +1,7 @@
 // Map, missions and reports routes.
 import type { FastifyInstance } from 'fastify';
-import { WORLD, isInactive, isNewPlayerProtected, corpseFieldAmount } from '@hormigas/shared';
+import { WORLD, SPECIES, isInactive, isNewPlayerProtected, corpseFieldAmount, nestLevelFor } from '@hormigas/shared';
+import { leaderOf } from '../game/nests';
 import { getPool, tx } from '../db';
 import { now } from '../clock';
 import { requireAuth } from '../auth';
@@ -25,7 +26,7 @@ export async function worldRoutes(app: FastifyInstance) {
     const world = await getWorld(q);
     const t = now();
     const r = await q.query(
-      `SELECT c.id, c.name, c.spot, c.player_id, p.username, p.points_total, p.protected_until, p.last_active
+      `SELECT c.id, c.name, c.spot, c.player_id, c.npc, p.username, p.points_total, p.protected_until, p.last_active
          FROM colonies c JOIN players p ON p.id = c.player_id
         WHERE c.world_id = $1 AND c.region = $2 AND c.patch = $3 ORDER BY c.spot`,
       [world.id, region, patch],
@@ -34,13 +35,31 @@ export async function worldRoutes(app: FastifyInstance) {
     const corpses = hasCorpses
       ? (await q.query('SELECT spot, protein, created_at FROM corpse_fields WHERE world_id = $1 AND region = $2 AND patch = $3', [world.id, region, patch])).rows
       : [];
+    // a wild nest's level follows the strongest active player in its patch
+    const leader = leaderOf(r.rows.filter((x: any) => !x.npc), t);
     const spots = [];
     for (let spot = 1; spot <= WORLD.spotsPerPatch + 1; spot++) {
       const c = r.rows.find((x: any) => x.spot === spot);
       const corpse = corpses.find((x: any) => x.spot === spot);
       spots.push({
         spot,
-        colony: c
+        colony: c?.npc
+          ? {
+              id: c.id,
+              name: c.name,
+              playerId: c.player_id,
+              owner: SPECIES[c.npc.species as keyof typeof SPECIES].name,
+              points: 0,
+              mine: false,
+              inactive: false,
+              protected: false,
+              wild: {
+                species: c.npc.species,
+                level: nestLevelFor(leader, c.npc.level),
+                style: SPECIES[c.npc.species as keyof typeof SPECIES].style,
+              },
+            }
+          : c
           ? {
               id: c.id,
               name: c.name,

@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { FastifyInstance } from 'fastify';
 import { QUESTS } from '@hormigas/shared';
-import { setupTest, teardownTest, newPlayer, setColony, setPlayer, type Client } from './helpers';
+import { setupTest, teardownTest, newPlayer, setColony, setPlayer, calmWildNests, type Client } from './helpers';
 
 let app: FastifyInstance;
 let clock: Awaited<ReturnType<typeof setupTest>>['clock'];
@@ -13,6 +13,7 @@ beforeAll(async () => {
   p = await newPlayer(app, 'newbie');
   other = await newPlayer(app, 'veteran');
   c = (await p.get('/api/state')).colony;
+  await calmWildNests();
 });
 afterAll(async () => teardownTest(app));
 
@@ -64,8 +65,10 @@ describe('onboarding quests', () => {
     const oc = (await other.get('/api/state')).colony;
     await p.post('/api/missions', { colonyId: c.id, type: 'scout', target: oc.coords, units: { scout: 1 } });
     expect((await p.post('/api/quests/claim', { id: 'scout', colonyId: c.id })).ok).toBe(true);
+    // the last task, raiding the wild nest, is covered in b2-wild-nests.test.ts
     const s = await p.get('/api/state');
-    expect(s.quests.finished).toBe(true);
+    expect(s.quests.quest.id).toBe('wild_raid');
+    expect(s.quests.quest.ready).toBe(false);
   });
 });
 

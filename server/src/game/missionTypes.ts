@@ -16,12 +16,14 @@ import {
   forageFindCap,
   forageOddsSummary,
   isInactive,
+  SPECIES,
   type CasteId,
 } from '@hormigas/shared';
 import type { Tx } from '../db';
 import type { ArrivalOutcome, Mission } from './missions';
 import { GameError } from '../errors';
 import { advance, getColony, getPlayer, lockColony, saveColony } from '../colony';
+import { syncNest } from './nests';
 import { defineMission } from './missions';
 import { addReport } from './reports';
 import { refreshPoints } from './points';
@@ -32,6 +34,7 @@ defineMission('transport', {
   async validate({ targetColony, colony }) {
     if (!targetColony) throw new GameError('bad_target', 'There is no colony there.');
     if (targetColony.id === colony.id) throw new GameError('bad_target', 'Pick a different colony.');
+    if (targetColony.npc) throw new GameError('bad_target', "Wild ants don't accept deliveries.");
   },
   async arrive(q, m, at) {
     if (!m.targetColonyId) return { home: true };
@@ -86,7 +89,8 @@ defineMission('scout', {
   async arrive(q, m, at) {
     if (m.target.spot === WILDS_SPOT) return surveyWilds(q, m, at);
     if (!m.targetColonyId) return { home: true };
-    const target = advance(await getColony(q, m.targetColonyId), at);
+    const found = await getColony(q, m.targetColonyId);
+    const target = found.npc ? await syncNest(q, await lockColony(q, found.id), at) : advance(found, at);
     const attacker = await getPlayer(q, m.playerId);
     const defender = await getPlayer(q, target.playerId);
     const scouts = lvl(m.units, 'scout');
@@ -99,7 +103,8 @@ defineMission('scout', {
 
     const data: any = {
       colony: target.name,
-      owner: defender.username,
+      owner: defender.isNpc ? SPECIES[target.npc!.species].name : defender.username,
+      ...(target.npc ? { wild: { species: target.npc.species, level: target.npc.level, style: SPECIES[target.npc.species].style } } : {}),
       coords: target ? { region: target.region, patch: target.patch, spot: target.spot } : m.target,
       detail,
       detectionChance: chance,
@@ -115,7 +120,7 @@ defineMission('scout', {
     }
     m.result = { reportDetail: detail, caught };
     await addReport(q, m.worldId, m.playerId, 'scout', `Scout report: ${target.name} (${coordsKey(m.target)})`, data, at);
-    await addReport(
+    if (!defender.isNpc) await addReport(
       q, m.worldId, target.playerId, 'scouted',
       caught ? `Your colony killed ${scouts} enemy ${scouts === 1 ? 'scout' : 'scouts'}` : `Enemy scouts spotted near ${target.name}`,
       { colony: target.name, from: attacker.username, origin: m.origin, scouts, caught },
