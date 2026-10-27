@@ -17,6 +17,7 @@ import './game/missionTypes';
 import './game/combat';
 import './game/forage';
 import './game/nests';
+import './game/nestEvents';
 import { worldRoutes } from './routes/world';
 import { feedbackRoutes } from './routes/feedback';
 import { realtimeRoutes } from './realtime';

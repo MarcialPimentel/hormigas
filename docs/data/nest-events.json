@@ -1,0 +1,45 @@
+{
+  "_version": "0.1",
+  "_note": "Small random events inside the nest, docs/04-colony.md (Nest events). Only good or harmless. Times are hours at world speed 1 (divide by world speed). A gift is giftHours of the colony's current production of that resource (at least minGift), never more than fits in storage. Colonies of inactive players get no events.",
+  "everyHours": [16, 32],
+  "giftHours": 1,
+  "minGift": 40,
+  "events": {
+    "lost_beetle": {
+      "weight": 22,
+      "resource": "protein",
+      "title": "A lost beetle wandered into the nest",
+      "text": "A beetle took a wrong turn down your entrance. It did not take a second one."
+    },
+    "aphid_boom": {
+      "weight": 22,
+      "resource": "nectar",
+      "title": "Aphid boom on the nearby stems",
+      "text": "The aphids are thriving this week. Your herders came home sticky and proud."
+    },
+    "leaf_fall": {
+      "weight": 22,
+      "resource": "foliage",
+      "title": "A gust dropped fresh leaves by the entrance",
+      "text": "No cutting, no carrying from afar: the wind did the hard part today."
+    },
+    "rain_drums": {
+      "weight": 12,
+      "resource": null,
+      "title": "Rain drummed on the soil",
+      "text": "The colony pulled in close and waited it out. The tunnels held. Nobody minded the quiet."
+    },
+    "nuptial_flight": {
+      "weight": 12,
+      "resource": null,
+      "title": "Winged ants rose from a neighbouring nest",
+      "text": "Your workers stopped to watch the nuptial flight. Somewhere, new colonies are starting."
+    },
+    "old_tunnel": {
+      "weight": 10,
+      "resource": null,
+      "title": "Diggers broke into an old, empty tunnel",
+      "text": "Someone lived here long ago. Your scouts sniffed every corner and found only stories."
+    }
+  }
+}
