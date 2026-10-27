@@ -151,6 +151,17 @@ function ReportBody({ r }: { r: Report }) {
           )}
         </div>
       );
+    case 'nest_event':
+      return (
+        <div className="report-body">
+          <p>{d.text}</p>
+          {d.found && RESOURCE_IDS.some((k) => d.found[k] > 0) && (
+            <p>
+              Added to your stores: <ResLine r={d.found} />
+            </p>
+          )}
+        </div>
+      );
     default:
       return <pre className="report-body small">{JSON.stringify(d, null, 2)}</pre>;
   }

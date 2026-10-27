@@ -21,6 +21,16 @@ export function fmtDuration(ms: number): string {
   return `${sec}s`;
 }
 
+/** Rough "how long ago/how long": hours and minutes, no seconds (e.g. "3h 20m", "45m"). */
+export function fmtAgo(ms: number): string {
+  const m = Math.max(1, Math.round(ms / 60_000));
+  const d = Math.floor(m / 1440);
+  const h = Math.floor((m % 1440) / 60);
+  if (d > 0) return `${d}d ${h}h`;
+  if (h > 0) return `${h}h ${m % 60}m`;
+  return `${m}m`;
+}
+
 export function fmtClock(epochMs: number): string {
   const d = new Date(epochMs);
   const today = new Date();

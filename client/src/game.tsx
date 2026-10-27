@@ -13,6 +13,8 @@ import {
 } from '@hormigas/shared';
 import { api, ApiError } from './api';
 import { pushNotification, setTitleBadge } from './notify';
+import { emitMoment } from './moments';
+import { useAway, type AwaySummary } from './away';
 
 export interface ServerColony extends ColonyState {
   id: number;
@@ -63,6 +65,9 @@ interface GameCtx {
   toasts: Toast[];
   toast: (kind: Toast['kind'], text: string) => void;
   setLoggedIn: (v: boolean) => void;
+  /** What changed since the player's last visit (null if nothing, or dismissed) */
+  away: AwaySummary | null;
+  dismissAway: () => void;
 }
 
 const Ctx = createContext<GameCtx | null>(null);
@@ -175,7 +180,10 @@ export function GameProvider({ children }: { children: ReactNode }) {
         }
         if (msg.type === 'hello') return;
         refresh();
-        if (msg.type === 'report') pushNotification(msg.report.title, undefined, `report-${msg.report.id}`);
+        if (msg.type === 'report') {
+          if (!pushNotification(msg.report.title, undefined, `report-${msg.report.id}`) && document.visibilityState === 'visible') toast('ok', msg.report.title);
+          if (msg.report.type === 'nest_event' && msg.report.kind) emitMoment({ kind: 'nest_event', event: msg.report.kind });
+        }
         if (msg.type === 'incoming' && (msg.missionType === 'raid' || msg.missionType === 'scout')) {
           const text = msg.missionType === 'raid' ? `Raid incoming from ${msg.from}!` : `Enemy scouts heading for ${msg.colony}`;
           if (!pushNotification(text, `Arrives ${new Date(msg.arriveAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`, 'incoming'))
@@ -195,20 +203,49 @@ export function GameProvider({ children }: { children: ReactNode }) {
     };
   }, [loggedIn, refresh, toast]);
 
-  // notifications for things that finished while the tab was in the background
+  // things that just finished: animate them, and say so (a notification in the background, a pop-up in view)
   const prev = useRef<ServerState | null>(null);
   useEffect(() => {
     const p = prev.current;
     prev.current = state;
     if (!p || !state || !p.colony || !state.colony || p.colony.id !== state.colony.id) return;
-    if (p.colony.buildJob && !state.colony.buildJob && (state.colony.chambers as any)[p.colony.buildJob.chamber] === p.colony.buildJob.level)
-      pushNotification(`${CHAMBERS[p.colony.buildJob.chamber as ChamberId].name} reached level ${p.colony.buildJob.level}`, undefined, 'build');
+    const say = (title: string, tag: string) => {
+      if (!pushNotification(title, undefined, tag) && document.visibilityState === 'visible') toast('ok', title);
+    };
+    const was = p.colony.chambers as Record<string, number>;
+    const is = state.colony.chambers as Record<string, number>;
+    for (const id of Object.keys(is)) {
+      if ((is[id] ?? 0) <= (was[id] ?? 0)) continue;
+      emitMoment({ kind: 'levelup', chamber: id, level: is[id] });
+      say(`${CHAMBERS[id as ChamberId]?.name ?? id} reached level ${is[id]}`, 'build');
+    }
     if (p.player.researchJob && !state.player.researchJob && (state.player.research as any)[p.player.researchJob.research] === p.player.researchJob.level)
-      pushNotification(`Research complete: ${RESEARCH[p.player.researchJob.research as ResearchId].name} ${p.player.researchJob.level}`, undefined, 'research');
-    if (p.colony.unitQueue.length > 0 && state.colony.unitQueue.length === 0) pushNotification('The Brood Hall has finished raising units', undefined, 'brood');
-  }, [state]);
+      say(`Research complete: ${RESEARCH[p.player.researchJob.research as ResearchId].name} ${p.player.researchJob.level}`, 'research');
+    if (p.colony.unitQueue.length > 0 && state.colony.unitQueue.length === 0) say('The Brood Hall has finished raising units', 'brood');
+
+    const count = (u: Record<string, number>) => Object.values(u).reduce((a, b) => a + (b ?? 0), 0);
+    const before = new Map<number, any>((p.missions ?? []).map((m: any) => [m.id, m]));
+    const after = new Set<number>((state.missions ?? []).map((m: any) => m.id));
+    for (const m of state.missions ?? []) {
+      if (!before.has(m.id) && m.status === 'outbound' && m.originColonyId === state.colony.id) emitMoment({ kind: 'depart', missionId: m.id, units: count(m.units) });
+    }
+    for (const m of before.values()) {
+      if (!after.has(m.id) && m.status === 'returning' && m.originColonyId === state.colony.id)
+        emitMoment({ kind: 'return', units: count(m.units), cargo: m.cargo ?? { foliage: 0, protein: 0, nectar: 0 } });
+    }
+  }, [state, toast]);
 
   const colony = useMemo(() => (state?.colony ? syncColony(state.colony, now, state.world.speed) : null), [state, now]);
+
+  // units hatching in the Brood Hall (the queue advances locally every second)
+  const queued = useRef<{ id: number; left: number; len: number } | null>(null);
+  useEffect(() => {
+    if (!colony) return;
+    const left = colony.unitQueue.reduce((s, i) => s + i.count - i.done, 0);
+    const q = queued.current;
+    queued.current = { id: colony.id, left, len: colony.unitQueue.length };
+    if (q && q.id === colony.id && left < q.left && colony.unitQueue.length <= q.len) emitMoment({ kind: 'units', count: q.left - left });
+  }, [colony]);
 
   // storage full
   const fullRef = useRef<Set<string>>(new Set());
@@ -261,7 +298,9 @@ export function GameProvider({ children }: { children: ReactNode }) {
     [refresh, toast],
   );
 
-  const value: GameCtx = { state, colony, now, loggedIn, refresh, selectColony, act, toasts, toast, setLoggedIn };
+  const { away, dismissAway } = useAway(state, colony, now);
+
+  const value: GameCtx = { state, colony, now, loggedIn, refresh, selectColony, act, toasts, toast, setLoggedIn, away, dismissAway };
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
 
