@@ -77,6 +77,51 @@ export async function worldRoutes(app: FastifyInstance) {
     return { region, patch, spots };
   });
 
+  /** Which patches of a region have colonies: counts only, so players can find each other without seeing more. */
+  app.get('/api/map/region', async (req) => {
+    const region = Number((req.query as any).region);
+    if (!(Number.isInteger(region) && region >= 1 && region <= WORLD.regions)) throw new GameError('bad_coords', 'That region does not exist.');
+    const world = await getWorld(getPool());
+    const r = await getPool().query(
+      `SELECT patch,
+              count(*) FILTER (WHERE npc IS NULL)::int AS colonies,
+              bool_or(npc IS NOT NULL) AS wild,
+              bool_or(npc IS NULL AND player_id = $3) AS mine
+         FROM colonies WHERE world_id = $1 AND region = $2 GROUP BY patch ORDER BY patch`,
+      [world.id, region, req.playerId],
+    );
+    return { region, patches: r.rows.map((x: any) => ({ patch: x.patch, colonies: x.colonies, wild: x.wild, mine: x.mine })) };
+  });
+
+  /**
+   * The next patch, going one way through the world (region by region), that holds another player's colony.
+   * Wild nests don't count: every inhabited patch has one. Wraps around the world.
+   */
+  app.get('/api/map/nearest', async (req) => {
+    const qs = req.query as any;
+    const region = Number(qs.region);
+    const patch = Number(qs.patch);
+    const dir = Number(qs.dir) < 0 ? -1 : 1;
+    if (!(region >= 1 && region <= WORLD.regions && patch >= 1 && patch <= WORLD.patchesPerRegion))
+      throw new GameError('bad_coords', 'That patch does not exist.');
+    const q = getPool();
+    const world = await getWorld(q);
+    const P = WORLD.patchesPerRegion;
+    const here = (region - 1) * P + patch;
+    const idx = `((region - 1) * ${P} + patch)`;
+    const pick = async (where: string, args: number[]) =>
+      (
+        await q.query(
+          `SELECT region, patch FROM colonies
+            WHERE world_id = $1 AND npc IS NULL AND player_id <> $2 AND ${where}
+            ORDER BY ${idx} ${dir > 0 ? 'ASC' : 'DESC'} LIMIT 1`,
+          [world.id, req.playerId, ...args],
+        )
+      ).rows[0];
+    const row = (await pick(`${idx} ${dir > 0 ? '>' : '<'} $3`, [here])) ?? (await pick(`${idx} <> $3`, [here]));
+    return { found: row ? { region: row.region, patch: row.patch } : null };
+  });
+
   app.post('/api/missions', async (req) => {
     const m = await tx((q) => sendMission(q, req.playerId, (req.body ?? {}) as any));
     return { ok: true, mission: missionView(m) };
