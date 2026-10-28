@@ -46,13 +46,38 @@ An ant needs about 14–18px of length on screen to read as an ant. There are tw
 - **Whole nest:** sprites at 11px (workers) to 15px (queens). Small, but on phone screens (2× pixels) they read as ants.
 - **Chamber close-up:** tap a chamber to see portraits at 40–70px.
 
-## Chambers (next)
+## Chambers
 Built in layers, not one picture each, so they can grow with level and show how full they are:
-1. **Shell:** the hand-dug hollow, with soil texture and roots, scaling with level.
-2. **Contents:** piles that grow with stored amount (cut leaves, prey, swollen honeypot ants, fungus, eggs and larvae).
-3. **Signature detail:** one thing per chamber that names it at a glance (the queen, the fungus garden).
+1. **Shell:** the hand-dug hollow (a wobbly outline with a packed, flat floor), a packed-soil wall flecked with grit, roots reaching in from above, and the tunnel mouth.
+2. **Contents:** what the chamber holds or does, sitting on the floor.
+3. **Signature detail:** the one thing that names it at a glance.
+
+Level 1 stand-ins exist for all twelve (`client/src/art/chambers.ts`):
+
+| Chamber | Signature |
+|---|---|
+| Queen's Chamber | The queen, lying with her eggs, a worker attending |
+| Leaf Garden | A spongy pale fungus mound with leaf bits worked in (leafcutters farm fungus, they don't eat leaves) |
+| Hunting Grounds | A beetle on its back, hauled in; a soldier on guard |
+| Nursery | C-shaped larvae being fed |
+| Granary | Cut leaves and round leaf discs in a heap |
+| Larder | Prey cut into pieces: chunks, legs, a torn wing |
+| Brood Hall | Eggs, larvae and cocoons sorted into piles |
+| Pheromone Chamber | Dotted violet scent trails and a faint glow |
+| Aphid Pasture | A root through the ceiling with aphids on it, honeydew dripping |
+| Nectar Cellar | Pooled honeydew and droplets |
+| Excavation Works | Spoil heaped on the floor, a new tunnel being cut through the wall |
+| Honeypot Gallery | Honeypot ants (repletes) hanging from the ceiling, gasters swollen with honeydew |
+
+Contents use the resource colours (leaf, protein, honey), so a chamber's job reads from colour alone. At nest size (about 90px wide) the queen, fungus, leaves, honeypots and aphid root still read; the Hunting Grounds, Pheromone Chamber and Excavation Works are weak that small and will need a bolder silhouette when the art moves into the whole-nest view.
+
+In the game: the close-up draws the full art; the whole-nest view draws each chamber's art without the wall, roots or tunnel mouth (the nest has its own tunnels), fitted to the chamber's hollow.
+
+**Next:** contents that grow with level and fill (more leaves as the Granary fills, more repletes as the gallery grows), and bolder silhouettes for the chambers that are weak at nest size.
 
 ## Assets
+Chambers come from `client/src/art/chambers.ts`; `npx tsx art/chambers/build.ts` writes each to `art/chambers/<id>.svg` with a `preview.html` sheet (every chamber large, and at nest size). Edit `chambers.ts`, not the SVGs.
+
 Ants come from one parametric body plan in `client/src/art/ants.ts`, which the game uses directly: the nest view rasterises four walk poses per caste into textures, and the close-up draws portraits as SVG. `npx tsx art/ants/build.ts` writes the same ants to `art/ants/` as `<caste>-sprite.svg`, `<caste>-portrait.svg` and `preview.html` (open it in a browser to review all castes at every size). Edit `ants.ts`, not the SVGs. Cosmetic ant palettes ([14-monetization.md](14-monetization.md)) are palette swaps on the same parts.
 
 ## Open Questions

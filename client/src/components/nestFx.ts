@@ -265,7 +265,7 @@ export function createFx(w: number, h: number, geo: Geo, chambers: ChamberLevels
       const f = clamp01(c.resources[r] / cap[r]);
       const [x, y] = centre(id);
       const { rx, ry } = sz(id);
-      fillEllipse(under, x, y, rx - 1.5, ry - 1.5, f, RES_COLOR[r], 0.38);
+      fillEllipse(under, x, y, rx - 1.5, ry - 1.5, f, RES_COLOR[r], 0.16);
       if (f >= 0.999) under.ellipse(x, y, rx + 2, ry + 2).stroke({ width: 2, color: RES_COLOR[r], alpha: reduced ? 0.8 : 0.45 + 0.4 * Math.sin(t / 280) });
     }
 

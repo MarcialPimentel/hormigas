@@ -9,7 +9,7 @@ const CASTE_LIST = Object.keys(CASTES) as Caste[];
 
 let canvases: Promise<Record<Caste, HTMLCanvasElement[]>> | null = null;
 
-async function rasterise(svg: string, w: number, h: number) {
+export async function rasterise(svg: string, w: number, h: number) {
   const img = new Image();
   img.src = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
   await img.decode();
