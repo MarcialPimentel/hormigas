@@ -1,0 +1,1085 @@
+<meta charset="utf-8">
+<title>Hormigas in 3D</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=Atkinson+Hyperlegible:wght@400;700&display=swap">
+<style>
+/* Layout: the colony as a specimen block you can turn (the 3D mock-up) first, then the proposal as one
+   readable column, with tables and swatch grids breaking out where they need room.
+   Light theme = a field-guide plate (lichen paper); dark theme = the game's own soil. */
+:root {
+  --bg: #E9ECE0;        /* lichen paper */
+  --panel: #F6F7F0;
+  --panel-2: #DFE3D3;
+  --ink: #2B1D13;       /* ant ink */
+  --muted: #5A4F3C;
+  --leaf: #3B6522;      /* links, primary */
+  --on-leaf: #F6F7F0;
+  --honey: #E8B23A;     /* fills only, dark text on top */
+  --danger: #9E3426;
+  --line: rgba(43, 29, 19, .14);
+  --shadow: 0 1px 2px rgba(43,29,19,.08), 0 8px 24px rgba(43,29,19,.08);
+  --display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --body: "Atkinson Hyperlegible", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --measure: 68ch;
+  --radius: 14px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #1D1611; --panel: #2A2018; --panel-2: #33271D; --ink: #EFE4D2; --muted: #B3A089;
+    --leaf: #A9CB78; --on-leaf: #1D1611; --honey: #E8B23A; --danger: #EE7D6E;
+    --line: rgba(239,228,210,.14); --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.25);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #1D1611; --panel: #2A2018; --panel-2: #33271D; --ink: #EFE4D2; --muted: #B3A089;
+  --leaf: #A9CB78; --on-leaf: #1D1611; --honey: #E8B23A; --danger: #EE7D6E;
+  --line: rgba(239,228,210,.14); --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.25);
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body {
+  background: var(--bg); color: var(--ink);
+  font: 17px/1.55 var(--body);
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 20px 64px;
+  -webkit-font-smoothing: antialiased;
+}
+.wrap { max-width: 1120px; margin: 0 auto; display: grid; gap: 56px; }
+.col { max-width: var(--measure); }
+h1, h2, h3 { font-family: var(--display); font-weight: 700; line-height: 1.1; margin: 0; text-wrap: balance; letter-spacing: -.01em; }
+h1 { font-size: clamp(40px, 7vw, 76px); font-weight: 800; }
+h2 { font-size: clamp(26px, 3.6vw, 36px); }
+h3 { font-size: 20px; }
+p { margin: 0; }
+a { color: var(--leaf); }
+.eyebrow { font-size: 13px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--leaf); }
+.lead { font-size: 19px; max-width: 62ch; }
+.muted { color: var(--muted); }
+.small { font-size: 14px; }
+section { display: grid; gap: 18px; }
+.stack { display: grid; gap: 10px; align-content: start; }
+code { font-size: .9em; background: var(--panel-2); padding: 1px 5px; border-radius: 5px; }
+:focus-visible { outline: 3px solid var(--leaf); outline-offset: 2px; border-radius: 6px; }
+header.hero { display: grid; gap: 14px; }
+.hero h1 span { color: var(--leaf); }
+
+/* ---------- the 3D stage ---------- */
+.stage {
+  position: relative; height: clamp(460px, 76vh, 720px); max-width: 100%;
+  border-radius: 20px; overflow: hidden; background: #A9CFE0;
+  border: 1px solid var(--line); box-shadow: var(--shadow); font-family: var(--body);
+}
+.stage canvas { display: block; width: 100%; height: 100%; touch-action: pan-y; cursor: grab; }
+.stage canvas.pointing { cursor: pointer; }
+.stage-fallback { position: absolute; inset: 0; display: grid; place-items: center; text-align: center; padding: 24px; color: #2B1D13; font-weight: 700; }
+.stage.ready .stage-fallback { display: none; }
+/* HUD sits on the scene, so it uses fixed in-world colors that read on sky and soil in both themes */
+.hud { --h-panel: rgba(246,247,240,.93); --h-ink: #2B1D13; --h-leaf: #3B6522; position: absolute; pointer-events: none; }
+.hud * { pointer-events: auto; }
+.hud-top { top: 12px; left: 12px; right: 12px; display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-start; }
+.pill { display: inline-flex; align-items: center; gap: 6px; background: var(--h-panel); color: var(--h-ink); border-radius: 999px; padding: 4px 12px 4px 4px; font-weight: 700; font-size: 15px; box-shadow: 0 2px 8px rgba(43,29,19,.18); font-variant-numeric: tabular-nums; }
+.pill svg { width: 26px; height: 26px; }
+.hud-top .spacer { flex: 1; }
+.hbtn { font: 700 14px var(--body); color: var(--h-ink); background: var(--h-panel); border: 0; border-radius: 999px; padding: 8px 14px; min-height: 38px; box-shadow: 0 2px 8px rgba(43,29,19,.18); cursor: pointer; }
+.hbtn:hover { background: #FFFFFF; }
+.hud-chips { left: 12px; right: 12px; bottom: 12px; display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+.chip { font: 700 14px var(--body); color: #F6F7F0; background: rgba(29,22,17,.8); border: 0; border-radius: 999px; padding: 9px 14px; min-height: 40px; cursor: pointer; }
+.chip:hover { background: rgba(29,22,17,.94); }
+.chip b { color: #F2C861; }
+.chip.alarm b { color: #FF9C8C; }
+.toast { top: 62px; left: 50%; transform: translateX(-50%); width: min(460px, calc(100% - 24px)); background: #2B1D13; color: #F6F7F0; border-radius: 14px; padding: 12px 16px; font-weight: 700; font-size: 15px; line-height: 1.35; box-shadow: 0 8px 24px rgba(0,0,0,.3); transition: opacity .25s, transform .25s; }
+.toast[data-show="0"] { opacity: 0; transform: translateX(-50%) translateY(-8px); pointer-events: none; }
+.toast em { font-style: normal; color: #F2C861; }
+.sheet { left: 12px; right: 12px; bottom: 12px; margin: 0 auto; max-width: 460px; background: var(--h-panel); color: var(--h-ink); border-radius: 18px; border-top: 4px solid #E8B23A; padding: 14px 16px 16px; box-shadow: 0 10px 30px rgba(29,22,17,.3); display: grid; gap: 10px; }
+.sheet h3 { font-size: 21px; color: #2B1D13; }
+.sheet h3 small { font-family: var(--body); font-weight: 400; font-size: 15px; color: #5A4F3C; }
+.sheet p { font-size: 15px; line-height: 1.4; }
+.sheet .row { display: flex; gap: 10px; align-items: center; }
+.sheet .close { margin-left: auto; font: 700 22px var(--body); width: 40px; height: 40px; border: 0; border-radius: 50%; background: rgba(43,29,19,.08); color: #2B1D13; cursor: pointer; flex: none; }
+.big { font: 700 17px var(--body); color: #2B1D13; background: #E8B23A; border: 0; border-radius: 14px; min-height: 50px; padding: 12px 18px; cursor: pointer; width: 100%; box-shadow: 0 3px 0 #9C7419; }
+.big:active { transform: translateY(2px); box-shadow: 0 1px 0 #9C7419; }
+.big:disabled { opacity: .55; cursor: default; }
+.wlabel { position: absolute; left: 0; top: 0; pointer-events: none; background: rgba(29,22,17,.84); color: #F6F7F0; font: 700 12.5px var(--body); padding: 3px 9px; border-radius: 999px; white-space: nowrap; font-variant-numeric: tabular-nums; transform: translate(-50%, -100%); }
+.wlabel.dig { color: #F2C861; box-shadow: inset 0 0 0 1px #E8B23A; }
+.wlabel.raid { background: rgba(70,20,16,.92); color: #FFC4B9; box-shadow: inset 0 0 0 1px #E2685A; }
+.wlabel.name { background: rgba(246,247,240,.95); color: #2B1D13; font-size: 14px; box-shadow: inset 0 0 0 1.5px #E8B23A; padding: 4px 11px; }
+.wlabel.name small { font-weight: 400; color: #5A4F3C; }
+.wlabel.gold { background: #E8B23A; color: #2B1D13; font-size: 15px; }
+.pop { animation: pop 1.4s ease-out forwards; }
+@keyframes pop { 0% { opacity: 0; margin-top: 6px; } 15% { opacity: 1; } 100% { opacity: 0; margin-top: -46px; } }
+@media (prefers-reduced-motion: reduce) { .pop { animation-duration: .01s; } .toast { transition: none; } }
+@media (max-width: 560px) { .wlabel.room { display: none; } .pill { font-size: 13px; padding-right: 9px; } .pill svg { width: 22px; height: 22px; } }
+
+/* ---------- content blocks ---------- */
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 20px; min-width: 0; }
+.grid2 { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); }
+.grid3 { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr)); }
+.tag { justify-self: start; display: inline-block; font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; padding: 3px 9px; border-radius: 999px; background: var(--leaf); color: var(--on-leaf); }
+.tag.alt { background: transparent; color: var(--muted); border: 1.5px solid var(--line); }
+ul.clean { margin: 0; padding-left: 20px; display: grid; gap: 6px; }
+.tablebox { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel); }
+table { border-collapse: collapse; width: 100%; min-width: 640px; font-size: 15px; }
+th, td { text-align: left; vertical-align: top; padding: 11px 14px; border-bottom: 1px solid var(--line); }
+th { font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 700; background: var(--panel-2); }
+tr:last-child td { border-bottom: 0; }
+td .was { color: var(--muted); }
+.swatches { display: grid; gap: 10px; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
+.sw { border-radius: 12px; padding: 14px 12px 10px; min-height: 96px; display: grid; align-content: end; gap: 2px; border: 1px solid rgba(43,29,19,.14); }
+.sw b { font-size: 15px; }
+.sw span { font-size: 13px; opacity: .88; font-variant-numeric: tabular-nums; }
+.specimen { display: grid; gap: 6px; }
+.specimen .d { font-family: var(--display); font-size: clamp(30px, 5vw, 46px); font-weight: 750; line-height: 1.05; }
+/* icons sit on a constant light tile, so the art reads in both themes */
+.tile { --t: 72px; width: var(--t); height: var(--t); flex: none; border-radius: 16px; background: #F7F4EA; border: 2.5px solid #2B1D13; box-shadow: inset 0 0 0 4px #F7F4EA, inset 0 0 0 6px #C9D8A6, 0 3px 0 rgba(43,29,19,.25); display: grid; place-items: center; }
+.tile svg { width: 78%; height: 78%; }
+.icons { display: flex; flex-wrap: wrap; gap: 18px; }
+.icons figure { margin: 0; display: grid; justify-items: center; gap: 8px; font-size: 14px; font-weight: 700; }
+.rows { display: grid; gap: 10px; }
+.mrow { display: flex; align-items: center; gap: 14px; background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 10px 12px; box-shadow: var(--shadow); }
+.mrow .tile { --t: 54px; border-radius: 12px; }
+.mrow .info { flex: 1; min-width: 0; display: grid; gap: 2px; }
+.mrow .name { font-weight: 700; font-size: 17px; }
+.mrow .sub { font-size: 14px; color: var(--muted); }
+.mrow .act { flex: none; font: 700 15px var(--body); background: var(--honey); color: #2B1D13; border: 0; border-radius: 12px; min-height: 44px; padding: 8px 14px; cursor: pointer; white-space: nowrap; }
+@media (max-width: 480px) { .mrow { gap: 10px; padding: 10px; } .mrow .tile { --t: 44px; } .mrow .name { font-size: 16px; } }
+.layers { display: grid; gap: 8px; }
+.layer { border-radius: 12px; padding: 12px 16px; border: 1.5px solid var(--line); background: var(--panel); display: grid; gap: 2px; }
+.layer b { font-size: 16px; }
+.layer span { font-size: 14px; color: var(--muted); }
+.layer.new { border-color: var(--leaf); border-width: 2px; }
+.layer.same { background: var(--panel-2); border-style: dashed; }
+ol.steps { margin: 0; padding: 0; list-style: none; display: grid; gap: 12px; counter-reset: s; }
+ol.steps > li { counter-increment: s; display: grid; grid-template-columns: 44px 1fr; gap: 14px; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px; }
+ol.steps > li::before { content: counter(s); font-family: var(--display); font-weight: 800; font-size: 22px; width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; background: var(--leaf); color: var(--on-leaf); }
+ol.steps h3 { margin-bottom: 4px; }
+.decide { border: 2px solid var(--leaf); }
+.prompt { font-family: ui-monospace, "Cascadia Mono", Menlo, monospace; font-size: 14px; line-height: 1.5; background: var(--panel-2); border: 1px solid var(--line); border-radius: 12px; padding: 14px; white-space: pre-wrap; overflow-wrap: anywhere; }
+footer { font-size: 14px; color: var(--muted); }
+</style>
+
+<div class="wrap">
+
+<header class="hero">
+  <p class="eyebrow">Hormigas · art direction proposal · 3D exploration · draft for Marz</p>
+  <h1>The colony as a <span>block of earth</span></h1>
+  <p class="lead">What Hormigas could look like in 3D: your nest as a slab of soil cut open at the front, like an ant farm on a museum plinth. The chambers and tunnels are carved into the cut face, the surface sits on top, and you can turn the block to see it's solid. Play with it first; the proposal and the decisions I need are below.</p>
+</header>
+
+<div class="stage" id="stage">
+  <canvas id="world" aria-label="A 3D block of soil on a plinth, cut open at the front to show an ant colony: twelve chambers joined by tunnels, ants walking, grass and a fallen leaf on top. Use the buttons at the bottom to interact."></canvas>
+  <div class="stage-fallback" id="fallback">Digging the nest…</div>
+
+  <div class="hud hud-top">
+    <span class="pill" title="Foliage">{{ICON:foliage}}<span id="r-foliage">9,000</span></span>
+    <span class="pill" title="Protein">{{ICON:protein}}<span id="r-protein">7,693</span></span>
+    <span class="pill" title="Nectar">{{ICON:nectar}}<span id="r-nectar">773</span></span>
+    <span class="pill" title="Workforce">{{ICON:workforce}}<span id="r-work">253/293</span></span>
+    <span class="spacer"></span>
+    <button class="hbtn" id="btn-time" type="button">Night</button>
+    <button class="hbtn" id="btn-reset" type="button">Reset view</button>
+  </div>
+
+  <div class="hud toast" id="toast" role="status" aria-live="polite" data-show="0"></div>
+  <div id="labels" class="hud" style="inset:0;pointer-events:none"></div>
+
+  <div class="hud sheet" id="sheet-chamber" hidden>
+    <div class="row"><h3 id="sc-title">Granary <small>level 3</small></h3><button class="close" type="button" data-close="sheet-chamber" aria-label="Close">×</button></div>
+    <p id="sc-desc">Stores foliage. Holds 9,000 of 22,000.</p>
+    <button class="big" id="btn-dig" type="button">Dig deeper</button>
+  </div>
+
+  <div class="hud hud-chips" id="chips">
+    <button class="chip" type="button" data-act="granary">Dig the <b>Granary</b></button>
+    <button class="chip" type="button" data-act="forage">Send <b>foragers</b></button>
+    <button class="chip alarm" type="button" data-act="raid">Raid <b>incoming</b></button>
+    <button class="chip" type="button" data-act="flight">Nuptial <b>flight</b></button>
+    <button class="chip" type="button" data-act="meet">Meet an <b>ant</b></button>
+  </div>
+</div>
+<p class="small muted" style="margin-top:-44px">Drag sideways to turn the block; on a computer, drag up and down to tilt. Pinch, or Ctrl and the mouse wheel, to zoom. Tap a chamber or an ant. Everything is built from plain shapes in code; real models would replace some later. Numbers are fake and sped up: in the game the server decides every result.</p>
+
+<section>
+  <p class="eyebrow">1 · The short version</p>
+  <h2>Five calls, one direction</h2>
+  <div class="grid3">
+    <div class="card stack"><span class="tag">World</span><h3>An ant farm you can turn</h3><p>A slab of soil cut open at the front. The front stays a readable cross-section, exactly like today, but with real depth, light and shadow. You turn it a little, never fly around inside.</p></div>
+    <div class="card stack"><span class="tag">Palette</span><h3>Keep the soil, add daylight</h3><p>The soil, amber ants and food colours stay. The world gets a sky that follows your clock, glowing chambers at night, and the menus get a light "field-guide paper" theme to match.</p></div>
+    <div class="card stack"><span class="tag">Interaction</span><h3>Same verbs, more physical</h3><p>Every system already has a place in the nest. In 3D, parties walk out across the surface, raids march in, diggers haul soil up the shaft. Menus open from the world; the server still decides.</p></div>
+    <div class="card stack"><span class="tag">Technology</span><h3>Three.js beside the 2D nest</h3><p>Add Three.js as a lazy-loaded scene on the Colony screen only. The PixiJS nest stays as the fallback for old phones, no WebGL and Motion off. No change to the server.</p></div>
+    <div class="card stack"><span class="tag">Art</span><h3>Code first, a few hero models</h3><p>Ants stay procedural (one body plan, legs animated in code, no rigging). The soil and chambers are built in code. Only a handful of hero props would be made as 3D models.</p></div>
+  </div>
+</section>
+
+<section>
+  <p class="eyebrow">2 · The world</p>
+  <h2>Two ways to add depth</h2>
+  <div class="grid2">
+    <div class="card stack"><span class="tag">A · Recommended</span><h3>The specimen slab</h3><p>The nest is a block of earth on a plinth, cut open at the front. Chambers are carved hollows you see into; tunnels are grooves; the surface on top carries parties, raids and events. A gentle orbit (about ±50°) shows it's solid without losing the cross-section.</p><ul class="clean small"><li><b>Fits:</b> it is literally an ant farm, the thing every player already pictures. The cross-section that makes the 2D nest readable is untouched.</li><li><b>Costs:</b> a new renderer, 3D versions of the chamber art, and more care on cheap phones.</li></ul></div>
+    <div class="card stack"><span class="tag alt">B · Low-change</span><h3>2.5D: keep PixiJS, fake the depth</h3><p>Stay in 2D and add depth with lighting: carved chamber rims, soft shadows, parallax soil layers, a glow at night. Ants and chambers stay as they are now.</p><ul class="clean small"><li><b>Fits:</b> almost no new code risk; every phone already runs it.</li><li><b>Costs:</b> it will never feel like a place you can turn, and it's the look every other browser game has.</li></ul></div>
+  </div>
+  <p class="col muted">Not proposed: a free camera that flies through the tunnels. It loses the at-a-glance read of the whole colony, which is the core of a check-in game, and it is far more work. There is no rename map this time: the setting and names don't change.</p>
+</section>
+
+<section>
+  <p class="eyebrow">3 · Palette</p>
+  <h2>Soil, amber and daylight</h2>
+  <p class="col">The game's dark soil theme stays as the night (dark) menu theme. New: world colours for the 3D block, and a light menu theme taken from field-guide paper, so the dark-mode question in the nest-view doc gets an answer: both, following the player's device.</p>
+  <h3>The world</h3>
+  <div class="swatches">
+    <div class="sw" style="background:#6B4F37;color:#F6F7F0"><b>Topsoil</b><span>#6B4F37 · strata 1</span></div>
+    <div class="sw" style="background:#4A3726;color:#F6F7F0"><b>Subsoil</b><span>#4A3726 · strata 2</span></div>
+    <div class="sw" style="background:#33261A;color:#F6F7F0"><b>Deep soil</b><span>#33261A · strata 3</span></div>
+    <div class="sw" style="background:#1C140E;color:#F6F7F0"><b>Hollow</b><span>#1C140E · cavity backs</span></div>
+    <div class="sw" style="background:#6F9A3E;color:#1D1611"><b>Grass</b><span>#6F9A3E · surface</span></div>
+    <div class="sw" style="background:#C98B52;color:#1D1611"><b>Worker</b><span>#C98B52 · ants</span></div>
+    <div class="sw" style="background:#C4473A;color:#F6F7F0"><b>Raider</b><span>#C4473A · other colonies</span></div>
+    <div class="sw" style="background:#FFCF5A;color:#2B1D13"><b>Honey glow</b><span>#FFCF5A · lights at night</span></div>
+    <div class="sw" style="background:#C59BFF;color:#2B1D13"><b>Scent glow</b><span>#C59BFF · research</span></div>
+  </div>
+  <p class="small muted">Leaf, protein and honey keep their meaning: they colour cargo and stores, never ant bodies. World colours never become menu text.</p>
+  <h3>Menus, day and night</h3>
+  <div class="swatches">
+    <div class="sw" style="background:#E9ECE0;color:#2B1D13"><b>Paper</b><span>#E9ECE0 · day page</span></div>
+    <div class="sw" style="background:#F6F7F0;color:#2B1D13"><b>Card</b><span>#F6F7F0 · day panels</span></div>
+    <div class="sw" style="background:#2B1D13;color:#F6F7F0"><b>Ant ink</b><span>#2B1D13 · day text 13.6:1</span></div>
+    <div class="sw" style="background:#3B6522;color:#F6F7F0"><b>Leaf</b><span>#3B6522 · day links 5.7:1</span></div>
+    <div class="sw" style="background:#1D1611;color:#EFE4D2"><b>Soil</b><span>#1D1611 · night page</span></div>
+    <div class="sw" style="background:#2A2018;color:#EFE4D2"><b>Burrow</b><span>#2A2018 · night panels</span></div>
+    <div class="sw" style="background:#EFE4D2;color:#1D1611"><b>Sand</b><span>#EFE4D2 · night text 14.2:1</span></div>
+    <div class="sw" style="background:#E8B23A;color:#2B1D13"><b>Honey</b><span>#E8B23A · buttons, ink on top 8.4:1</span></div>
+  </div>
+  <p class="small muted">Every text colour was checked against every background it sits on; all pass WCAG AA (4.5:1 or better). Honey is only ever a fill with dark text on it, never text.</p>
+</section>
+
+<section>
+  <p class="eyebrow">4 · Type and icons</p>
+  <h2>Keep the type, give resources a face</h2>
+  <div class="grid2">
+    <div class="card specimen">
+      <span class="tag alt">Display · Bricolage Grotesque</span>
+      <span class="d">The Granary is full</span>
+      <span class="tag alt" style="margin-top:10px">Body · Atkinson Hyperlegible</span>
+      <p>Your foragers are 40 seconds from home with 120 foliage. A raid from Rojas arrives in 4 minutes.</p>
+      <p class="small muted">Both are free on Google Fonts and already in the game. They stay: the display face has the hand-cut character the soil needs, and the body face is built for reading small numbers on phones.</p>
+    </div>
+    <div class="card stack">
+      <div class="icons">
+        <figure><span class="tile">{{ICON:foliage}}</span>Foliage</figure>
+        <figure><span class="tile">{{ICON:protein}}</span>Protein</figure>
+        <figure><span class="tile">{{ICON:nectar}}</span>Nectar</figure>
+        <figure><span class="tile">{{ICON:workforce}}</span>Worker</figure>
+        <figure><span class="tile">{{ICON:soldier}}</span>Soldier</figure>
+      </div>
+      <p class="small muted">Icon rules: side view, like the nest. A 3px ant-ink outline, one base colour and one shade, one highlight stroke. Always on a light tile with a leaf-green inner ring, so they read in both themes and on the 3D sky.</p>
+    </div>
+  </div>
+  <h3>How a menu looks now</h3>
+  <div class="rows">
+    <div class="mrow"><span class="tile">{{ICON:foliage}}</span><div class="info"><span class="name">Granary · level 3</span><span class="sub">Holds 9,000 of 22,000 foliage · next level 22 min</span></div><button class="act" type="button">Dig deeper</button></div>
+    <div class="mrow"><span class="tile">{{ICON:soldier}}</span><div class="info"><span class="name">Minor soldiers · 20</span><span class="sub">Guard the entrance · raise 5 more in 6 min</span></div><button class="act" type="button">Raise</button></div>
+  </div>
+</section>
+
+<section>
+  <p class="eyebrow">5 · Interaction map</p>
+  <h2>Every system already has a place</h2>
+  <p class="col">The 2D nest already gave each system a spot; 3D makes each one physical. Menus open from the world. The server still decides every result: the world only acts out what it returns.</p>
+  <div class="tablebox"><table>
+    <thead><tr><th>System</th><th>Where it lives</th><th>What the player does</th><th>Builds on</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Chambers</strong></td><td>Carved hollows in the cut face; size grows with level</td><td>Tap a chamber, read its sheet, Dig deeper. Diggers work the rim and haul soil up the shaft to a spoil heap</td><td>Build job, chamber sheet (live today)</td></tr>
+      <tr><td><strong>Stores</strong></td><td>Granary, Larder, Nectar Cellar floors</td><td>See piles grow as stock rises; tap for exact amounts</td><td>Resources and storage capacity</td></tr>
+      <tr><td><strong>Production</strong></td><td>Fungus garden, Hunting Grounds, aphid root</td><td>Watch workers at it; short of workers, the chamber dims</td><td>Production and workforce</td></tr>
+      <tr><td><strong>Brood</strong></td><td>Brood Hall eggs, larvae, cocoons</td><td>Tap to raise units; each new ant crawls out</td><td>Brood queue</td></tr>
+      <tr><td><strong>Research</strong></td><td>Pheromone Chamber glow</td><td>Tap to open research; the glow pulses while learning</td><td>Research job</td></tr>
+      <tr><td><strong>Missions</strong></td><td>The entrance mound and the surface</td><td>Tap the entrance to send a party; it walks out across the top and comes home carrying food</td><td>Missions (forage, raid, scout, transport)</td></tr>
+      <tr><td><strong>Incoming</strong></td><td>The surface, from the attacker's side</td><td>Red soldiers march in with a timer; the entrance rings red; your soldiers gather</td><td>Incoming list, battle on arrival</td></tr>
+      <tr><td><strong>Nest events</strong></td><td>Surface and chambers</td><td>Watch: a beetle dragged down, rain, winged ants rising</td><td>Nest events</td></tr>
+      <tr><td><strong>Ant names</strong></td><td>Every ant</td><td>Hover or tap any ant</td><td>Names (live today)</td></tr>
+      <tr><td><strong>Map, reports, rankings</strong></td><td>Stay as menus</td><td>Unchanged</td><td>Unchanged</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section>
+  <p class="eyebrow">6 · Technology</p>
+  <h2>Three.js next to what we have</h2>
+  <div class="grid2">
+    <div class="layers">
+      <div class="layer same"><b>Menus, sheets, HUD</b><span>React and HTML, unchanged</span></div>
+      <div class="layer new"><b>3D nest (new)</b><span>Three.js scene, lazy-loaded on the Colony screen only</span></div>
+      <div class="layer same"><b>2D nest (kept)</b><span>PixiJS: fallback for no WebGL, low-power phones and Motion off</span></div>
+      <div class="layer same"><b>Game state and API</b><span>The same colony, missions and incoming data both nests read</span></div>
+      <div class="layer same"><b>Server</b><span>Unchanged: the server decides; the scene only shows it</span></div>
+    </div>
+    <div class="tablebox"><table style="min-width:0">
+      <thead><tr><th>Option</th><th>Verdict</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Three.js, plain</strong></td><td><b>Recommended.</b> The nest is one hand-driven scene, like <code>nestScene</code> and <code>nestFx</code> today; plain Three.js fits that shape. About 160 KB extra, only on the Colony screen.</td></tr>
+        <tr><td>React Three Fiber</td><td>Good library, wrong fit: it suits many small React-managed objects; ours is one animated scene.</td></tr>
+        <tr><td>Babylon.js</td><td>Capable but about three times heavier, with features we won't use.</td></tr>
+        <tr><td>PixiJS 2.5D</td><td>Option B above. Cheapest, but no real depth.</td></tr>
+        <tr><td>Godot or Unity web export</td><td>No: a second app, slow downloads, and it can't share the React menus.</td></tr>
+      </tbody>
+    </table></div>
+  </div>
+  <div class="grid3">
+    <div class="card stack"><h3>Loading</h3><p class="small">Three.js plus the scene under 250 KB compressed, loaded only after the Colony screen opens; the 2D nest shows meanwhile. Hero models under 150 KB each, at most six.</p></div>
+    <div class="card stack"><h3>Geometry</h3><p class="small">Under 60,000 triangles. Ants built from shared shapes, drawn in batches (at most 200 on screen). Flat colours; no textures beyond tiny painted strips.</p></div>
+    <div class="card stack"><h3>Frame rate and battery</h3><p class="small">30 frames a second on a mid-range phone. Stop drawing when the tab is hidden or the nest is off screen. Sharper shadows only on desktop. Motion off shows a still frame or the 2D nest.</p></div>
+  </div>
+</section>
+
+<section>
+  <p class="eyebrow">7 · Making the art</p>
+  <h2>Code for most of it, models for a few</h2>
+  <div class="grid3">
+    <div class="card stack"><span class="tag">Now</span><h3>Built in code</h3><p class="small">The slab, strata, chambers, tunnels, grass and every ant, as in this mock-up. Ants keep one body plan, the 3D twin of <code>ants.ts</code>, so castes, palettes and names carry over.</p></div>
+    <div class="card stack"><span class="tag">Hero pieces</span><h3>A handful of models</h3><p class="small">The queen, fungus garden, honeypot ant, beetle and a fallen leaf: made from a concept image with an image-to-3D tool (Meshy, Tripo or Rodin), exported as <code>.glb</code>, reduced under 3,000 triangles each.</p></div>
+    <div class="card stack"><span class="tag alt">Later</span><h3>An artist pass</h3><p class="small">If the game grows, hire a 3D artist for a consistent set and cosmetic nest themes, built on the same rules.</p></div>
+  </div>
+  <ol class="steps">
+    <li><div><h3>Make the concept image</h3><p>Paste the prompt below into an image generator. Ask for a plain background. Keep the version you like.</p></div></li>
+    <li><div><h3>Turn it into a model</h3><p>Upload the image to Meshy or Tripo, choose "low poly" if offered, and download the result as <code>.glb</code>.</p></div></li>
+    <li><div><h3>Send it to me</h3><p>Drop the file in the chat. I check its size, reduce it if needed, match it to the palette and place it in the scene.</p></div></li>
+  </ol>
+  <div class="prompt">A honeypot ant hanging upside down, its abdomen swollen into a translucent amber sphere of honeydew.
+Stylised low-poly 3D model, flat-shaded facets, chunky readable silhouette, field-guide naturalism, no cartoon face.
+Colours: rust-brown body #A95F2F, amber #E8B23A with dark plate bands, warm rim light.
+Isolated on a plain light background, three-quarter side view, whole model in frame.</div>
+  <p class="small muted">Check each tool's terms allow commercial use on the plan you use before anything ships in the game.</p>
+</section>
+
+<section>
+  <p class="eyebrow">8 · Conflicts</p>
+  <h2>What would change in the design documents</h2>
+  <div class="tablebox"><table>
+    <thead><tr><th>Where</th><th>Says today</th><th>Would say</th></tr></thead>
+    <tbody>
+      <tr><td><code>CLAUDE.md</code> stack</td><td class="was">Vite + React, with PixiJS for the nest view</td><td>Three.js for the nest, with the PixiJS nest kept as the fallback</td></tr>
+      <tr><td><code>13-tech.md</code> client row</td><td class="was">PixiJS for Nest View</td><td>Three.js 3D nest (lazy-loaded), PixiJS 2D fallback</td></tr>
+      <tr><td><code>12-ui-nest-view.md</code> Nest View</td><td class="was">Side cross-section of soil; chambers are rounded shapes</td><td>A block of soil cut open at the front; chambers carved into the face; gentle orbit</td></tr>
+      <tr><td><code>12-ui-nest-view.md</code> reduce motion</td><td class="was">Moving parts stop; static state shows</td><td>Motion off shows the 2D nest or a still 3D frame</td></tr>
+      <tr><td><code>18-art-direction.md</code> scale and assets</td><td class="was">2D sprites at 11–15px; SVG portraits</td><td>3D ants from the same body plan; SVG kept for icons, cards and the 2D fallback</td></tr>
+      <tr><td><code>00-vision.md</code> non-goals</td><td class="was">Not a detailed nest simulation</td><td>Unchanged: still no per-ant simulation; 3D only shows what the server decides</td></tr>
+    </tbody>
+  </table></div>
+  <p class="small muted">I haven't edited any design doc. Once you approve, they change in the same pull request as the first 3D work.</p>
+</section>
+
+<section>
+  <p class="eyebrow">9 · Plan and decisions</p>
+  <h2>Getting there without breaking the 2D nest</h2>
+  <ol class="steps">
+    <li><div><h3>Hidden test slice</h3><p>The 3D slab on the Colony screen behind a hidden switch, with your real chambers, tunnels and walking ants. You play it on your phone; I measure load time and frame rate.</p></div></li>
+    <li><div><h3>Port the moving parts</h3><p>Parties, raids, digging, brood and events in 3D; the chamber sheet and close-up open from the slab.</p></div></li>
+    <li><div><h3>Day, night and hero models</h3><p>Sky by your clock, glowing chambers at night, the first hero models.</p></div></li>
+    <li><div><h3>Make 3D the default</h3><p>The 2D nest stays for old phones and Motion off.</p></div></li>
+  </ol>
+  <div class="card stack decide">
+    <h3>What I need from you</h3>
+    <ol class="clean">
+      <li>Build the hidden 3D test slice (step 1), or stay 2D and do option B?</li>
+      <li>Gentle orbit as in this mock-up, or a fixed front view with depth only?</li>
+      <li>Keep the 2D nest permanently as the fallback and the Motion-off view?</li>
+      <li>Add the light "field-guide paper" theme to the menus, following each player's device?</li>
+      <li>Code-only art for now, or start on the hero models (some tools are paid)?</li>
+    </ol>
+  </div>
+  <p class="small muted">Risks: every new nest feature now costs work in 3D and, while it exists, in 2D too; cheap phones are the real test; art is the slowest part. Menus stay as the fallback for everything.</p>
+</section>
+
+<footer>Hormigas art direction · 3D exploration · the server decides; the nest only shows it.</footer>
+</div>
+
+<script type="module">
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.min.js';
+
+const $ = (s) => document.querySelector(s);
+const stage = $('#stage'), canvas = $('#world'), labelsEl = $('#labels');
+const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const coarse = matchMedia('(pointer: coarse)').matches;
+
+let renderer;
+try {
+  renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
+} catch (e) {
+  $('#fallback').textContent = 'This browser cannot show 3D, so the nest mock-up is unavailable here. The game keeps a 2D nest for exactly this case.';
+  throw e;
+}
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(32, 1, 0.5, 600);
+
+// ---------- helpers ----------
+let seed = 11;
+const rnd = () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+const rr = (a, b) => a + (b - a) * rnd();
+const pick = (arr) => arr[Math.floor(rnd() * arr.length)];
+const matCache = new Map();
+function mat(hex, extra) {
+  const key = hex + (extra ? JSON.stringify(extra) : '');
+  if (!matCache.has(key)) matCache.set(key, new THREE.MeshStandardMaterial({ color: hex, roughness: 0.92, metalness: 0, flatShading: true, ...extra }));
+  return matCache.get(key);
+}
+const SPH = new THREE.SphereGeometry(1, 10, 8);
+const SPH_LO = new THREE.IcosahedronGeometry(1, 0);
+function blob(m, x, y, z, sx, sy = sx, sz = sx, parent = scene, geo = SPH) {
+  const mesh = new THREE.Mesh(geo, typeof m === 'string' ? mat(m) : m);
+  mesh.position.set(x, y, z); mesh.scale.set(sx, sy, sz); parent.add(mesh); return mesh;
+}
+function box(w, h, d, m, x, y, z, parent = scene) {
+  const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), typeof m === 'string' ? mat(m) : m);
+  mesh.position.set(x, y, z); parent.add(mesh); return mesh;
+}
+
+// ---------- the block ----------
+const W = 52, H = 28, D = 2.4, BACK = 13;
+const SHAFT_HW = 0.7, TUN_H = 0.55, GAP = 0.06;
+const sx = (y) => 0.55 * Math.sin(y * 0.23);
+const CH = {
+  leaf_garden: { name: 'Leaf Garden', x: -16, y: -4.6, lv: 5, desc: 'Grows fungus on cut leaves. Makes foliage.' },
+  hunting_grounds: { name: 'Hunting Grounds', x: 16.5, y: -4.6, lv: 2, desc: 'Where prey is hauled in. Makes protein.' },
+  excavation_works: { name: 'Excavation Works', x: 8.5, y: -8.6, lv: 2, desc: 'Diggers work faster. A new tunnel is being cut.' },
+  nursery: { name: 'Nursery', x: -9, y: -9.4, lv: 6, desc: 'Larvae fed here grow into your workforce.' },
+  pheromone_chamber: { name: 'Pheromone Chamber', x: 15.5, y: -13.4, lv: 3, desc: 'Where the colony learns. Research runs faster.' },
+  aphid_pasture: { name: 'Aphid Pasture', x: -18, y: -14.2, lv: 4, desc: 'Aphids on a root, milked for honeydew. Makes nectar.' },
+  brood_hall: { name: 'Brood Hall', x: 7.5, y: -16.8, lv: 2, desc: 'Eggs, larvae and cocoons. Raises soldiers and workers.' },
+  granary: { name: 'Granary', x: -9, y: -18.6, lv: 3, desc: 'Stores foliage.', store: 'foliage' },
+  larder: { name: 'Larder', x: 17.5, y: -19.8, lv: 2, desc: 'Stores protein.', store: 'protein' },
+  nectar_cellar: { name: 'Nectar Cellar', x: -18.5, y: -23.4, lv: 1, viaQueen: true, desc: 'Stores nectar.', store: 'nectar' },
+  queen_chamber: { name: "Queen's Chamber", x: 0, y: -23, lv: 4, queen: true, desc: 'Home of the queen. Every other chamber depends on it.' },
+  honeypot_gallery: { name: 'Honeypot Gallery', x: 13, y: -25.2, lv: 1, viaQueen: true, desc: 'Honeypot ants hold reserves raids cannot take.' },
+};
+const IDS = Object.keys(CH);
+const Q = CH.queen_chamber;
+const radii = (c) => c.queen ? { rx: 3.9 + 0.08 * c.lv, ry: 2.0 + 0.03 * c.lv } : { rx: 2.9 + 0.1 * c.lv, ry: 1.5 + 0.05 * c.lv };
+const halfW = (c, y) => { const { rx, ry } = radii(c); const k = 1 - ((y - c.y) / ry) ** 2; return k > 0 ? rx * Math.sqrt(k) : 0; };
+const floorAt = (c, x) => { const { rx, ry } = radii(c); return c.y - ry * Math.sqrt(Math.max(0, 1 - ((x - c.x) / rx) ** 2)); };
+const queenTopAt = (x) => { const { rx, ry } = radii(Q); return Q.y + ry * Math.sqrt(Math.max(0, 1 - (x / rx) ** 2)); };
+
+function ellipseHole(c) {
+  const { rx, ry } = radii(c); const pts = []; const n = 40;
+  for (let i = 0; i < n; i++) { const a = i / n * Math.PI * 2; const k = 0.975 + 0.025 * Math.sin(a * 5 + c.x); pts.push([c.x + Math.cos(a) * rx * k, c.y + Math.sin(a) * ry * k]); }
+  return pts;
+}
+function shaftHole() {
+  const yb = Q.y + radii(Q).ry, xc = sx(yb);
+  const xl = xc - SHAFT_HW, xr = xc + SHAFT_HW, yl = queenTopAt(xl) + GAP, yr = queenTopAt(xr) + GAP;
+  const left = [], right = [];
+  for (let y = -0.08; y > yl + 0.3; y -= 0.5) left.push([sx(y) - SHAFT_HW, y]);
+  left.push([xl, yl]);
+  const arc = []; for (let i = 1; i < 8; i++) { const x = xl + (xr - xl) * i / 8; arc.push([x, queenTopAt(x) + GAP]); }
+  for (let y = -0.08; y > yr + 0.3; y -= 0.5) right.push([sx(y) + SHAFT_HW, y]);
+  right.push([xr, yr]);
+  return [...left, ...arc, ...right.reverse()];
+}
+function branchHole(c) {
+  const s = Math.sign(c.x - sx(c.y)), top = c.y + TUN_H, bot = c.y - TUN_H;
+  const startX = (y) => sx(y) + s * (SHAFT_HW + GAP), endX = (y) => c.x - s * (halfW(c, y) + GAP);
+  const pts = [[startX(top), top], [endX(top), top]];
+  for (let i = 1; i < 6; i++) { const y = top - (top - bot) * i / 6; pts.push([endX(y), y]); }
+  pts.push([endX(bot), bot], [startX(bot), bot]);
+  return pts;
+}
+function queenBranchHole(c) {
+  const s = Math.sign(c.x), ya = Q.y + 0.2, yb = c.y;
+  const qx = (y) => s * (halfW(Q, y) + GAP), cx = (y) => c.x - s * (halfW(c, y) + GAP);
+  const pts = [[qx(ya + TUN_H), ya + TUN_H], [cx(yb + TUN_H), yb + TUN_H]];
+  for (let i = 1; i < 6; i++) { const y = yb + TUN_H - 2 * TUN_H * i / 6; pts.push([cx(y), y]); }
+  pts.push([cx(yb - TUN_H), yb - TUN_H], [qx(ya - TUN_H), ya - TUN_H]);
+  for (let i = 1; i < 6; i++) { const y = ya - TUN_H + 2 * TUN_H * i / 6; pts.push([qx(y), y]); }
+  return pts;
+}
+let holes = [];
+function computeHoles() {
+  holes = [shaftHole()];
+  for (const id of IDS) {
+    const c = CH[id];
+    holes.push(ellipseHole(c));
+    if (id === 'queen_chamber') continue;
+    holes.push(c.viaQueen ? queenBranchHole(c) : branchHole(c));
+  }
+}
+const inPoly = (x, y, pts) => { let inside = false; for (let i = 0, j = pts.length - 1; i < pts.length; j = i++) { const [xi, yi] = pts[i], [xj, yj] = pts[j]; if ((yi > y) !== (yj > y) && x < (xj - xi) * (y - yi) / (yj - yi) + xi) inside = !inside; } return inside; };
+const nearHole = (x, y, m) => holes.some((h) => inPoly(x, y, h) || inPoly(x + m, y, h) || inPoly(x - m, y, h) || inPoly(x, y + m, h) || inPoly(x, y - m, h));
+
+const strata = (y) => {
+  const t = Math.min(1, -y / H); const a = new THREE.Color('#6B4F37'), b = new THREE.Color('#4A3726'), c = new THREE.Color('#33261A');
+  const col = t < 0.45 ? a.lerp(b, t / 0.45) : b.lerp(c, (t - 0.45) / 0.55);
+  const n = 1 + 0.07 * Math.sin(y * 1.9) + 0.04 * Math.sin(y * 5.3 + 1);
+  return col.multiplyScalar(n);
+};
+const frontMat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.95, flatShading: true });
+const sideMat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.95, flatShading: true, color: '#8F8274' });
+let plate = null;
+function buildPlate() {
+  computeHoles();
+  const shape = new THREE.Shape();
+  shape.moveTo(-W / 2, -H); shape.lineTo(W / 2, -H); shape.lineTo(W / 2, 0); shape.lineTo(-W / 2, 0); shape.lineTo(-W / 2, -H);
+  for (const h of holes) { const p = new THREE.Path(); p.moveTo(h[0][0], h[0][1]); for (const q of h.slice(1)) p.lineTo(q[0], q[1]); p.closePath(); shape.holes.push(p); }
+  const geo = new THREE.ExtrudeGeometry(shape, { depth: D, bevelEnabled: false, curveSegments: 2 });
+  geo.translate(0, 0, -D);
+  const pos = geo.attributes.position, cols = new Float32Array(pos.count * 3);
+  for (let i = 0; i < pos.count; i++) { const c = strata(pos.getY(i)); cols[i * 3] = c.r; cols[i * 3 + 1] = c.g; cols[i * 3 + 2] = c.b; }
+  geo.setAttribute('color', new THREE.BufferAttribute(cols, 3));
+  if (plate) { scene.remove(plate); plate.geometry.dispose(); }
+  plate = new THREE.Mesh(geo, [frontMat, sideMat]); plate.castShadow = true; plate.receiveShadow = true; scene.add(plate);
+}
+buildPlate();
+
+// the rest of the block behind the face: its front is the back wall of every hollow
+{
+  const side = mat('#4A3727'), top = mat('#5A4330'), hollow = mat('#1C140E');
+  const back = new THREE.Mesh(new THREE.BoxGeometry(W, H, BACK), [side, side, top, side, hollow, side]);
+  back.position.set(0, -H / 2, -D - BACK / 2); back.receiveShadow = true; back.castShadow = true; scene.add(back);
+  const plinth = box(W + 5, 1.6, D + BACK + 5, '#3A2A1C', 0, -H - 0.8, -(D + BACK) / 2); plinth.receiveShadow = true;
+  box(W + 6, 0.5, D + BACK + 6, '#2E2116', 0, -H - 1.85, -(D + BACK) / 2);
+}
+// grit pressed into the cut face, kept clear of the hollows
+for (let i = 0; i < 70; i++) {
+  const x = rr(-W / 2 + 0.6, W / 2 - 0.6), y = rr(-H + 0.6, -0.5);
+  if (nearHole(x, y, 0.7)) continue;
+  const p = blob(pick(['#6B5038', '#4A3828', '#7A6048', '#3A2B1E']), x, y, rr(-0.05, 0.08), rr(0.12, 0.32), undefined, undefined, scene, SPH_LO);
+  p.rotation.set(rnd() * 3, rnd() * 3, 0);
+}
+// a few roots hanging into the top of the face
+for (const rx0 of [-22, -5.5, 11, 23]) {
+  const pts = []; let x = rx0; for (let y = 0; y > -rr(3, 6); y -= 0.6) { x += rr(-0.25, 0.25); pts.push(new THREE.Vector3(x, y, 0.06)); }
+  const tube = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 16, 0.07, 4), mat('#7A5A3A')); scene.add(tube);
+}
+
+// ---------- the surface ----------
+const SX0 = sx(0), SURF = 0.32, ZS = -D / 2;
+{
+  const g = mat('#6F9A3E');
+  box(SX0 - SHAFT_HW - 0.2 + W / 2, SURF, D, g, (-W / 2 + SX0 - SHAFT_HW - 0.2) / 2, SURF / 2, -D / 2).receiveShadow = true;
+  box(W / 2 - (SX0 + SHAFT_HW + 0.2), SURF, D, g, (W / 2 + SX0 + SHAFT_HW + 0.2) / 2, SURF / 2, -D / 2).receiveShadow = true;
+  box(W, SURF, BACK, g, 0, SURF / 2, -D - BACK / 2).receiveShadow = true;
+  // grass blades, drawn in one batch
+  const blade = new THREE.ConeGeometry(0.07, 1, 3); blade.translate(0, 0.5, 0);
+  const n = 650, inst = new THREE.InstancedMesh(blade, new THREE.MeshStandardMaterial({ roughness: 0.9, flatShading: true }), n);
+  const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), e = new THREE.Euler(), cl = new THREE.Color();
+  for (let i = 0; i < n; i++) {
+    let x = rr(-W / 2 + 0.3, W / 2 - 0.3), z = rr(-D - BACK + 0.3, -0.2);
+    if (Math.abs(x - SX0) < 2.6 && z > -4.5) x += x > SX0 ? 2.6 : -2.6;
+    e.set(rr(-0.25, 0.25), rnd() * 3, rr(-0.25, 0.25)); q.setFromEuler(e);
+    m4.compose(new THREE.Vector3(x, SURF, z), q, new THREE.Vector3(1, rr(0.35, 0.95), 1)); inst.setMatrixAt(i, m4);
+    inst.setColorAt(i, cl.set(pick(['#7FAA48', '#6F9A3E', '#8DB255', '#5E8735', '#A3BE5C'])));
+  }
+  inst.castShadow = true; scene.add(inst);
+  for (let i = 0; i < 26; i++) { const p = blob(pick(['#9C8B78', '#7F7060', '#B5A48E']), rr(-W / 2 + 1, W / 2 - 1), SURF + 0.1, rr(-D - BACK + 1, -0.6), rr(0.2, 0.55), undefined, undefined, scene, SPH_LO); p.scale.y *= 0.6; p.castShadow = true; }
+  // a fallen leaf the foragers cut from
+  const ls = new THREE.Shape(); ls.moveTo(0, -2.6); ls.quadraticCurveTo(2.4, -0.6, 0, 2.6); ls.quadraticCurveTo(-2.4, -0.6, 0, -2.6);
+  const lg = new THREE.ExtrudeGeometry(ls, { depth: 0.08, bevelEnabled: false }); lg.rotateX(-Math.PI / 2);
+  var leaf = new THREE.Mesh(lg, mat('#9BBF54')); leaf.position.set(19, SURF + 0.02, -6); leaf.rotation.y = 0.9; leaf.castShadow = true; leaf.receiveShadow = true; scene.add(leaf);
+  box(0.07, 0.04, 4.6, '#5F7D36', 0, 0.09, 0, leaf);
+  // a twig and a toadstool
+  const tw = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.2, 9, 6), mat('#6E4A2C')); tw.rotation.set(Math.PI / 2, 0, 1.1); tw.position.set(-12, SURF + 0.18, -9); tw.castShadow = true; scene.add(tw);
+  const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.45, 2.2, 8), mat('#EDE3CF')); stem.position.set(-21, SURF + 1.1, -11); stem.castShadow = true; scene.add(stem);
+  const cap = new THREE.Mesh(new THREE.SphereGeometry(1.5, 10, 6, 0, Math.PI * 2, 0, Math.PI / 2), mat('#B0503A')); cap.position.set(-21, SURF + 2.1, -11); cap.scale.y = 0.7; cap.castShadow = true; scene.add(cap);
+}
+// the entrance: a mound of spoil around the shaft, and the heap your diggers add to
+const mound = new THREE.Mesh(new THREE.TorusGeometry(1.25, 0.55, 6, 14), mat('#7A5C40')); mound.rotation.x = Math.PI / 2; mound.scale.z = 0.9; mound.position.set(SX0, SURF + 0.05, -D / 2 - 0.2); mound.castShadow = true; scene.add(mound);
+blob('#140E0A', SX0, SURF - 0.02, -D / 2 - 0.2, 0.8, 0.06, 0.8);
+const heap = new THREE.Mesh(new THREE.ConeGeometry(1.4, 1, 9), mat('#6B4F35')); heap.position.set(SX0 + 3, SURF + 0.3, -4.2); heap.scale.set(1, 0.6, 1); heap.castShadow = true; scene.add(heap);
+const alarm = new THREE.Mesh(new THREE.TorusGeometry(2.2, 0.09, 6, 32), new THREE.MeshBasicMaterial({ color: '#E2685A', transparent: true, opacity: 0 })); alarm.rotation.x = Math.PI / 2; alarm.position.set(SX0, SURF + 0.15, -D / 2 - 0.2); scene.add(alarm);
+
+// ---------- lights and sky ----------
+const hemi = new THREE.HemisphereLight('#E8F2F4', '#6B5238', 1.15); scene.add(hemi);
+const sun = new THREE.DirectionalLight('#FFF1D6', 2.6);
+sun.position.set(-26, 34, 40); sun.castShadow = true;
+sun.shadow.mapSize.set(coarse ? 1024 : 2048, coarse ? 1024 : 2048);
+Object.assign(sun.shadow.camera, { left: -40, right: 40, top: 30, bottom: -40, near: 1, far: 140 });
+sun.shadow.bias = -0.0005; sun.shadow.normalBias = 0.05;
+sun.target.position.set(0, -12, -6); scene.add(sun, sun.target);
+scene.background = new THREE.Color('#A9CFE0');
+scene.fog = new THREE.Fog('#A9CFE0', 160, 340);
+const stars = (() => {
+  const n = 380, p = new Float32Array(n * 3);
+  for (let i = 0; i < n; i++) { const a = rr(-1.4, 1.4), r = rr(150, 220); p[i * 3] = Math.sin(a) * r; p[i * 3 + 1] = rr(-20, 120); p[i * 3 + 2] = -Math.cos(a) * r; }
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(p, 3));
+  const s = new THREE.Points(g, new THREE.PointsMaterial({ color: '#F3EAD8', size: 1.1, transparent: true, opacity: 0, sizeAttenuation: true })); scene.add(s); return s;
+})();
+const glows = [];
+function glow(color, x, y, z, base) { const l = new THREE.PointLight(color, base, 9, 2); l.position.set(x, y, z); scene.add(l); glows.push({ l, base }); return l; }
+
+// ---------- chamber contents ----------
+const contentGroups = {};
+const piles = { granary: 14, larder: 9, nectar_cellar: 6 };
+function buildContents(id) {
+  if (contentGroups[id]) scene.remove(contentGroups[id]);
+  const c = CH[id], g = new THREE.Group(); const { rx, ry } = radii(c);
+  const zr = () => rr(-D + 0.5, -0.5);
+  const fx = (k) => c.x + k * rx;
+  if (id === 'leaf_garden') {
+    for (let i = 0; i < 40; i++) { const k = rr(-0.55, 0.55), x = fx(k), r = rr(0.22, 0.42); blob(pick(['#E6DCCB', '#D8CCB4', '#F0E8D8', '#CBBFA6']), x, floorAt(c, x) + r * 0.7 + rnd() * 1.1 * (1 - Math.abs(k) / 0.6), zr(), r, r * 0.9, r, g); }
+    for (let i = 0; i < 8; i++) { const x = fx(rr(-0.45, 0.45)); box(0.3, 0.04, 0.18, '#8DB255', x, floorAt(c, x) + rr(0.5, 1.3), zr(), g).rotation.set(rnd(), rnd() * 3, rnd()); }
+  } else if (id === 'granary' || id === 'larder') {
+    const leafy = id === 'granary';
+    for (let i = 0; i < piles[id]; i++) {
+      const k = rr(-0.45, 0.45), x = fx(k), y = floorAt(c, x) + 0.06 + rnd() * 0.75 * (1 - Math.abs(k) / 0.5) * Math.min(1, piles[id] / 18);
+      const m = box(leafy ? 0.5 : 0.36, leafy ? 0.05 : 0.24, leafy ? 0.32 : 0.3, leafy ? pick(['#8DB255', '#7AA046', '#9BBF54']) : pick(['#B65A50', '#C0655A', '#9E4A42']), x, y, zr(), g);
+      m.rotation.set(rr(-0.4, 0.4), rnd() * 3, rr(-0.4, 0.4));
+    }
+  } else if (id === 'nectar_cellar') {
+    const pool = new THREE.Mesh(new THREE.CylinderGeometry(rx * 0.55, rx * 0.6, 0.12, 16), mat('#E8B23A', { emissive: '#7A5410', emissiveIntensity: 0.4 }));
+    pool.position.set(c.x, floorAt(c, c.x) + 0.08, -D / 2); pool.scale.z = 0.35; g.add(pool);
+    for (let i = 0; i < piles[id]; i++) { const x = fx(rr(-0.4, 0.4)); blob(mat('#E8B23A', { emissive: '#7A5410', emissiveIntensity: 0.5 }), x, floorAt(c, x) + 0.3, zr(), 0.22, 0.28, 0.22, g); }
+  } else if (id === 'hunting_grounds') {
+    const b = new THREE.Group(); b.position.set(c.x + 0.4, floorAt(c, c.x) + 0.5, -D / 2); g.add(b);
+    blob('#6B4A33', 0, 0, 0, 0.95, 0.5, 0.6, b); blob('#4E3626', 0.95, 0.05, 0, 0.32, 0.3, 0.3, b);
+    for (let i = 0; i < 6; i++) { const l = box(0.06, 0.6, 0.06, '#4E3626', -0.4 + (i % 3) * 0.4, 0.5, i < 3 ? 0.3 : -0.3, b); l.rotation.z = rr(-0.4, 0.4); }
+    b.rotation.z = Math.PI; b.position.y += 0.25;
+  } else if (id === 'nursery') {
+    const tor = new THREE.TorusGeometry(0.24, 0.12, 6, 10, Math.PI * 1.45);
+    for (let i = 0; i < 6; i++) { const x = fx(-0.4 + i * 0.16); const m = new THREE.Mesh(tor, mat('#EFE6D2')); m.position.set(x, floorAt(c, x) + 0.3, zr()); m.rotation.set(rr(-0.3, 0.3), rr(-0.5, 0.5), rnd() * 3); g.add(m); }
+  } else if (id === 'brood_hall') {
+    for (let i = 0; i < 9; i++) { const x = fx(rr(-0.5, -0.2)); blob('#F3EAD8', x, floorAt(c, x) + 0.12 + (i % 3) * 0.12, zr(), 0.13, 0.1, 0.1, g); }
+    const tor = new THREE.TorusGeometry(0.2, 0.1, 6, 10, Math.PI * 1.4);
+    for (let i = 0; i < 3; i++) { const x = fx(-0.08 + i * 0.12); const m = new THREE.Mesh(tor, mat('#EFE6D2')); m.position.set(x, floorAt(c, x) + 0.26, zr()); m.rotation.z = rnd() * 3; g.add(m); }
+    for (let i = 0; i < 5; i++) { const x = fx(rr(0.25, 0.5)); blob('#D9C39A', x, floorAt(c, x) + 0.2 + (i % 2) * 0.22, zr(), 0.32, 0.17, 0.17, g); }
+  } else if (id === 'pheromone_chamber') {
+    const vm = mat('#C59BFF', { emissive: '#9B6BE0', emissiveIntensity: 1.2 });
+    for (let i = 0; i < 22; i++) { const t = i / 21, x = fx(-0.75 + t * 1.5), y = c.y - 0.2 + Math.sin(t * 7) * ry * 0.35; blob(vm, x, y, -D / 2 + Math.sin(t * 5) * 0.5, 0.06, 0.06, 0.06, g); }
+  } else if (id === 'aphid_pasture') {
+    const root = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.24, ry * 1.9, 6), mat('#7A5A3A')); root.position.set(c.x + 0.6, c.y + 0.1, -D / 2); root.rotation.z = 0.15; g.add(root);
+    for (let i = 0; i < 9; i++) blob('#9CC25A', c.x + 0.6 + rr(-0.25, 0.25) - (i * 0.03), c.y + ry * 0.7 - i * 0.32, -D / 2 + rr(-0.25, 0.25), 0.16, 0.12, 0.13, g);
+    for (let i = 0; i < 3; i++) blob(mat('#E8B23A', { emissive: '#7A5410', emissiveIntensity: 0.6 }), c.x + 0.3 + i * 0.2, floorAt(c, c.x) + 0.12, -D / 2 + rr(-0.4, 0.4), 0.09, 0.12, 0.09, g);
+  } else if (id === 'excavation_works') {
+    for (let i = 0; i < 24; i++) { const k = rr(-0.25, 0.35), x = fx(k); blob(pick(['#6B4F35', '#5A4029', '#7A5C40']), x, floorAt(c, x) + 0.1 + rnd() * 0.6 * (1 - Math.abs(k - 0.05) / 0.35), zr(), rr(0.12, 0.22), undefined, undefined, g, SPH_LO); }
+  } else if (id === 'queen_chamber') {
+    for (let i = 0; i < 10; i++) { const x = fx(rr(-0.75, -0.45)); blob('#F3EAD8', x, floorAt(c, x) + 0.12 + (i % 3) * 0.1, zr(), 0.13, 0.1, 0.1, g); }
+  } else if (id === 'honeypot_gallery') {
+    for (let i = 0; i < 3; i++) {
+      const x = c.x + (i - 1) * rx * 0.42, top = c.y + ry * Math.sqrt(Math.max(0, 1 - ((x - c.x) / rx) ** 2)) - 0.1, z = -D / 2 + (i - 1) * 0.3;
+      blob('#A95F2F', x, top - 0.18, z, 0.16, 0.14, 0.14, g); blob('#A95F2F', x, top - 0.38, z, 0.12, 0.11, 0.11, g);
+      blob(mat('#E8B23A', { emissive: '#8A5A10', emissiveIntensity: 0.55, transparent: true, opacity: 0.92 }), x, top - 0.95, z, 0.52, 0.56, 0.52, g);
+    }
+  }
+  scene.add(g); contentGroups[id] = g;
+}
+IDS.forEach(buildContents);
+const qGlow = glow('#FFB36B', Q.x, Q.y + 0.5, -0.6, 2.5);
+glow('#FFCF5A', CH.honeypot_gallery.x, CH.honeypot_gallery.y, -0.6, 2);
+glow('#E8F0D0', CH.leaf_garden.x, CH.leaf_garden.y, -0.6, 1.5);
+const scentGlow = glow('#C59BFF', CH.pheromone_chamber.x, CH.pheromone_chamber.y, -0.6, 3);
+glow('#FFCF5A', CH.nectar_cellar.x, CH.nectar_cellar.y, -0.6, 1.2);
+
+// tap targets: an invisible disc in each hollow
+const hitMat = new THREE.MeshBasicMaterial({ visible: false });
+const discs = {};
+function placeDisc(id) {
+  const c = CH[id], { rx, ry } = radii(c);
+  if (!discs[id]) { discs[id] = new THREE.Mesh(new THREE.CircleGeometry(1, 20), hitMat); discs[id].userData.tap = id; scene.add(discs[id]); }
+  discs[id].position.set(c.x, c.y, -0.15); discs[id].scale.set(rx, ry, 1);
+}
+IDS.forEach(placeDisc);
+
+// ---------- ants ----------
+const legGeo = (() => { const g = new THREE.CylinderGeometry(0.02, 0.015, 0.36, 4); g.translate(0, -0.18, 0); return g; })();
+const antGeo = (() => { const g = new THREE.CylinderGeometry(0.012, 0.012, 0.3, 3); g.translate(0, 0.15, 0); return g; })();
+const COLORS = { worker: '#C98B52', soldier: '#B06A38', queen: '#A95F2F', enemy: '#C4473A', alate: '#A95F2F' };
+const NAMES = ['María', 'Carmen', 'Lucía', 'Isabel', 'Laura', 'Marta', 'Elena', 'Sara', 'Paula', 'Raquel', 'Rosa', 'Julia', 'Beatriz', 'Nuria', 'Irene', 'Alba', 'Rocío', 'Andrea', 'Marina', 'Natalia', 'Claudia', 'Inés', 'Nerea', 'Daniela', 'Martina', 'Sofía', 'Celia', 'Clara', 'Paloma', 'Vanesa', 'Jimena', 'Carla', 'Aurora', 'Blanca', 'Valeria', 'Lidia'];
+const ants = [];
+function makeAnt(kind = 'worker') {
+  const m = mat(COLORS[kind]), g = new THREE.Group(), body = new THREE.Group(); g.add(body);
+  const big = kind === 'queen' || kind === 'alate', sol = kind === 'soldier' || kind === 'enemy';
+  blob(m, big ? -0.42 : -0.3, 0.26, 0, big ? 0.42 : 0.25, big ? 0.24 : 0.19, big ? 0.22 : 0.18, body);
+  blob(m, -0.06, 0.24, 0, 0.05, 0.06, 0.05, body);
+  blob(m, 0.08, 0.26, 0, 0.15, 0.095, 0.09, body);
+  const hx = sol ? 0.36 : 0.31, hs = sol ? 0.17 : 0.11;
+  blob(m, hx, 0.28, 0, hs, hs * 0.9, hs * 0.9, body);
+  blob('#1A120C', hx + hs * 0.5, 0.31, hs * 0.55, 0.025, 0.025, 0.02, body); blob('#1A120C', hx + hs * 0.5, 0.31, -hs * 0.55, 0.025, 0.025, 0.02, body);
+  for (const s of [1, -1]) { const a = new THREE.Mesh(antGeo, m); a.position.set(hx, 0.28 + hs * 0.6, s * 0.05); a.rotation.set(s * 0.35, 0, -0.85); body.add(a); }
+  if (sol) for (const s of [1, -1]) { const j = box(0.2, 0.04, 0.04, '#7A4524', hx + hs + 0.06, 0.22, s * 0.05, body); j.rotation.y = s * 0.3; }
+  const legs = [];
+  [[0.15, 0.5, 0], [0.08, 0.05, 1], [0.01, -0.5, 0]].forEach(([x, base, set]) => {
+    for (const s of [1, -1]) {
+      const pv = new THREE.Group(); pv.position.set(x, 0.21, s * 0.06); body.add(pv);
+      const leg = new THREE.Mesh(legGeo, m); leg.rotation.x = -s * 0.8; pv.add(leg);
+      legs.push({ pv, base, set: s === 1 ? set : 1 - set });
+    }
+  });
+  let wings = null;
+  if (kind === 'alate') {
+    const wm = new THREE.MeshBasicMaterial({ color: '#F6EEDF', transparent: true, opacity: 0.55, side: THREE.DoubleSide });
+    wings = [1, -1].map((s) => { const w = new THREE.Mesh(new THREE.PlaneGeometry(0.9, 0.3), wm); w.position.set(-0.25, 0.36, s * 0.12); w.rotation.x = Math.PI / 2; body.add(w); return w; });
+  }
+  const scale = kind === 'queen' ? 2.5 : kind === 'alate' ? 1.4 : sol ? 1.15 : 1;
+  g.scale.setScalar(scale);
+  const a = { g, legs, wings, kind, phase: rnd() * 6, name: kind === 'queen' ? 'Reina ' + pick(NAMES) : pick(NAMES) };
+  g.traverse((o) => { o.userData.ant = a; });
+  scene.add(g); ants.push(a);
+  return a;
+}
+function stepLegs(a, dt, moving) {
+  a.phase += dt * (moving ? 14 : 0);
+  for (const l of a.legs) l.pv.rotation.z = l.base + (moving ? 0.38 * Math.sin(a.phase + l.set * Math.PI) : 0);
+  if (a.wings) { const f = Math.sin(a.phase * 2.6) * 0.7; a.wings[0].rotation.y = f; a.wings[1].rotation.y = -f; }
+}
+// face along v; on walls (steep paths) the back faces the viewer
+const fwd = new THREE.Vector3(), upv = new THREE.Vector3(), side = new THREE.Vector3(), basis = new THREE.Matrix4();
+function orient(a, v) {
+  fwd.copy(v).normalize(); if (fwd.lengthSq() < 0.5) return;
+  upv.set(0, 1, 0); if (Math.abs(fwd.y) > 0.7) upv.set(0, 0, 1);
+  side.crossVectors(fwd, upv).normalize(); upv.crossVectors(side, fwd).normalize();
+  basis.makeBasis(fwd, upv, side); a.g.quaternion.setFromRotationMatrix(basis);
+}
+
+// paths: entrance → down the shaft → along a tunnel → onto a chamber floor
+function pathTo(id, z = ZS) {
+  const c = CH[id], P = (x, y) => new THREE.Vector3(x, y, z), pts = [P(SX0, SURF + 0.05), P(sx(-0.4), -0.4)];
+  const shaftEnd = c.viaQueen || id === 'queen_chamber' ? Q.y + radii(Q).ry - 0.3 : c.y - TUN_H + 0.12;
+  for (let y = -1; y > shaftEnd; y -= 1) pts.push(P(sx(y), y));
+  if (id === 'queen_chamber') { pts.push(P(sx(shaftEnd), floorAt(Q, sx(shaftEnd)) + 0.08), P(Q.x + 1.6, floorAt(Q, Q.x + 1.6) + 0.06)); return pts; }
+  if (c.viaQueen) {
+    const s = Math.sign(c.x), ex = s * (halfW(Q, Q.y + 0.2 - TUN_H) + 0.2);
+    pts.push(P(sx(shaftEnd), floorAt(Q, sx(shaftEnd)) + 0.08), P(s * 2, floorAt(Q, s * 2) + 0.06), P(ex, Q.y + 0.2 - TUN_H + 0.1));
+  } else pts.push(P(sx(shaftEnd), shaftEnd));
+  const { rx } = radii(c), s = Math.sign(c.x - sx(c.y)), edge = c.x - s * rx;
+  pts.push(P(edge, c.y - TUN_H + 0.12));
+  const mid = c.x - s * rx * 0.1; pts.push(P(mid, floorAt(c, mid) + 0.06));
+  return pts;
+}
+function sampler(pts) {
+  const lens = [0]; for (let i = 1; i < pts.length; i++) lens.push(lens[i - 1] + pts[i].distanceTo(pts[i - 1]));
+  const total = lens[lens.length - 1];
+  const at = (d, out, dir) => {
+    d = Math.max(0, Math.min(total, d)); let i = 1; while (i < lens.length - 1 && lens[i] < d) i++;
+    const t = (d - lens[i - 1]) / ((lens[i] - lens[i - 1]) || 1); out.lerpVectors(pts[i - 1], pts[i], t); if (dir) dir.subVectors(pts[i], pts[i - 1]); return out;
+  };
+  return { pts, total, at };
+}
+const tmpP = new THREE.Vector3(), tmpD = new THREE.Vector3();
+
+// walkers travel between the entrance and the chambers; residents potter about on chamber floors
+const walkers = [];
+function makeWalkers() {
+  for (const w of walkers) { w.path = sampler(pathTo(w.to, w.z)); w.d = Math.min(w.d, w.path.total); }
+}
+const WALK_TO = ['granary', 'leaf_garden', 'nursery', 'larder', 'brood_hall', 'aphid_pasture', 'hunting_grounds', 'excavation_works', 'pheromone_chamber', 'queen_chamber', 'nectar_cellar', 'honeypot_gallery'];
+for (let i = 0; i < 26; i++) {
+  const to = WALK_TO[i % WALK_TO.length], z = ZS + rr(-0.45, 0.45);
+  const a = makeAnt(i % 9 === 4 ? 'soldier' : 'worker');
+  const w = { a, to, z, path: null, d: 0, dir: rnd() < 0.5 ? 1 : -1, speed: rr(1.6, 2.6), pause: 0 };
+  w.path = sampler(pathTo(to, z)); w.d = rnd() * w.path.total; walkers.push(w);
+}
+const residents = [];
+for (const id of IDS) {
+  const n = id === 'queen_chamber' ? 2 : 1;
+  for (let i = 0; i < n; i++) residents.push({ a: makeAnt('worker'), id, k: rr(-0.4, 0.4), dir: rnd() < 0.5 ? 1 : -1, z: -D / 2 + rr(-0.5, 0.5), speed: rr(0.05, 0.1) });
+}
+const queen = makeAnt('queen');
+function placeQueen() { const x = Q.x + 0.4; queen.g.position.set(x, floorAt(Q, x) + 0.02, -D / 2); orient(queen, tmpD.set(1, 0, 0)); }
+placeQueen();
+
+// ---------- camera rig ----------
+const target = new THREE.Vector3(0, -14, -3);
+const view = { yaw: 0.36, pitch: 0.16, dist: 80 };
+const goal = { ...view };
+const home = () => { const portrait = stage.clientWidth / stage.clientHeight < 0.9; return portrait ? { yaw: 0.28, pitch: 0.2, dist: 122 } : { yaw: 0.36, pitch: 0.17, dist: 76 }; };
+function placeCamera() {
+  const cp = Math.cos(view.pitch);
+  camera.position.set(target.x + view.dist * cp * Math.sin(view.yaw), target.y + view.dist * Math.sin(view.pitch), target.z + view.dist * cp * Math.cos(view.yaw));
+  camera.lookAt(target);
+}
+const resize = () => { const w = stage.clientWidth, h = stage.clientHeight; renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix(); };
+let first = true;
+new ResizeObserver(() => { resize(); if (first) { Object.assign(goal, home()); Object.assign(view, goal); first = false; } }).observe(stage);
+const pointers = new Map(); let pinch0 = 0, dist0 = 0, downAt = null;
+const clampGoal = () => { goal.yaw = THREE.MathUtils.clamp(goal.yaw, -0.9, 0.9); goal.pitch = THREE.MathUtils.clamp(goal.pitch, -0.05, 0.75); goal.dist = THREE.MathUtils.clamp(goal.dist, 26, 170); };
+canvas.addEventListener('pointerdown', (e) => {
+  pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  if (pointers.size === 1) downAt = { x: e.clientX, y: e.clientY, t: performance.now() };
+  if (pointers.size === 2) { const [a, b] = [...pointers.values()]; pinch0 = Math.hypot(a.x - b.x, a.y - b.y); dist0 = goal.dist; downAt = null; }
+});
+canvas.addEventListener('pointermove', (e) => {
+  const p = pointers.get(e.pointerId);
+  if (!p) { hover(e); return; }
+  const dx = e.clientX - p.x, dy = e.clientY - p.y; p.x = e.clientX; p.y = e.clientY;
+  if (pointers.size === 2) { const [a, b] = [...pointers.values()]; const d = Math.hypot(a.x - b.x, a.y - b.y); if (pinch0) goal.dist = dist0 * pinch0 / d; clampGoal(); return; }
+  goal.yaw -= dx * 0.005; if (e.pointerType === 'mouse') goal.pitch += dy * 0.004; clampGoal();
+});
+const up = (e) => {
+  const was = pointers.get(e.pointerId); pointers.delete(e.pointerId);
+  if (e.type === 'pointerup' && was && downAt && pointers.size === 0 && Math.hypot(e.clientX - downAt.x, e.clientY - downAt.y) < 9 && performance.now() - downAt.t < 500) tapAt(e);
+  if (pointers.size < 2) pinch0 = 0;
+};
+canvas.addEventListener('pointerup', up); canvas.addEventListener('pointercancel', up);
+canvas.addEventListener('pointerleave', (e) => { if (e.pointerType === 'mouse') up(e); });
+canvas.addEventListener('wheel', (e) => { if (!e.ctrlKey) return; e.preventDefault(); goal.dist *= 1 + e.deltaY * 0.004; clampGoal(); }, { passive: false });
+$('#btn-reset').addEventListener('click', () => Object.assign(goal, home()));
+
+// ---------- picking ----------
+const ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
+function pickAt(e) {
+  const r = canvas.getBoundingClientRect(); ndc.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
+  ray.setFromCamera(ndc, camera);
+  const antHit = ray.intersectObjects(ants.filter((a) => a.g.visible).map((a) => a.g), true)[0];
+  if (antHit) return { ant: antHit.object.userData.ant };
+  const hit = ray.intersectObjects([...Object.values(discs), mound], false)[0];
+  if (!hit) return null;
+  return hit.object === mound ? { act: 'forage' } : { chamber: hit.object.userData.tap };
+}
+function hover(e) { if (e.pointerType !== 'mouse') return; canvas.classList.toggle('pointing', !!pickAt(e)); }
+function tapAt(e) {
+  const p = pickAt(e); if (!p) return;
+  if (p.ant) nameAnt(p.ant); else if (p.chamber) openChamber(p.chamber); else if (p.act) act(p.act);
+}
+document.querySelectorAll('[data-act]').forEach((b) => b.addEventListener('click', () => act(b.dataset.act)));
+document.querySelectorAll('[data-close]').forEach((b) => b.addEventListener('click', () => { $('#' + b.dataset.close).hidden = true; selected = null; showChips(); }));
+const showChips = () => { $('#chips').hidden = !$('#sheet-chamber').hidden; };
+
+// ---------- tweens, toasts, labels ----------
+const tweens = [];
+function tween(dur, fn, done) { tweens.push({ t: 0, dur: reduceMotion ? Math.min(dur, 0.05) : dur, fn, done }); }
+const ease = (k) => k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2;
+let toastTimer;
+function toast(html, ms = 4200) { const t = $('#toast'); t.innerHTML = html; t.dataset.show = '1'; clearTimeout(toastTimer); toastTimer = setTimeout(() => (t.dataset.show = '0'), ms); }
+const tmpV = new THREE.Vector3();
+function toScreen(p) { tmpV.copy(p).project(camera); return { x: (tmpV.x + 1) / 2 * stage.clientWidth, y: (1 - tmpV.y) / 2 * stage.clientHeight, ok: tmpV.z < 1 && tmpV.x > -1.1 && tmpV.x < 1.1 }; }
+function pop(text, at, gold = true) {
+  const el = document.createElement('div'); el.className = 'wlabel pop' + (gold ? ' gold' : ''); el.textContent = text; labelsEl.appendChild(el);
+  const s = toScreen(at); el.style.left = s.x + 'px'; el.style.top = s.y + 'px'; setTimeout(() => el.remove(), 1500);
+}
+const labels = [];
+function label(cls, at, text) { const el = document.createElement('div'); el.className = 'wlabel ' + cls; labelsEl.appendChild(el); const l = { el, at, text }; labels.push(l); return l; }
+for (const id of IDS) {
+  const c = CH[id];
+  label('room', () => tmpP.set(c.x, c.y + radii(c).ry + 0.15, 0), () => {
+    if (dig && dig.id === id) return null;
+    const fill = c.store ? ` · ${Math.min(100, Math.round(piles[id] / 0.4))}% full` : '';
+    return `${c.name.replace("Queen's Chamber", 'Queen')} ${c.lv}${fill}`;
+  });
+}
+const digLabel = label('dig', () => dig ? tmpP.set(CH[dig.id].x, CH[dig.id].y + radii(CH[dig.id]).ry + 0.15, 0) : null, () => dig ? `Digging · ${Math.ceil(dig.left)}s` : null);
+let partyLabelText = null, partyLabelAt = null, raidLabelAt = null, raidLeft = 0;
+label('', () => partyLabelAt, () => partyLabelText);
+label('raid', () => raidLabelAt, () => raidLabelAt ? `Raid · ${Math.ceil(raidLeft)}s` : null);
+let named = null, namedUntil = 0;
+const nameLabel = label('name', () => named ? named.g.getWorldPosition(tmpP).add(tmpD.set(0, named.kind === 'queen' ? 1.7 : 0.9, 0)) : null, () => named ? `<b>${named.name}</b> <small>· ${{ worker: 'Worker', soldier: 'Soldier', queen: 'Queen', enemy: 'Raider', alate: 'Winged queen' }[named.kind]}</small>` : null);
+nameLabel.html = true;
+function nameAnt(a) { named = a; namedUntil = performance.now() + 5000; }
+
+// ---------- game-ish state (all fake; the server decides in the real game) ----------
+const res = { foliage: 9000, protein: 7693, nectar: 773 };
+const setHud = () => { $('#r-foliage').textContent = res.foliage.toLocaleString('en'); $('#r-protein').textContent = res.protein.toLocaleString('en'); $('#r-nectar').textContent = res.nectar.toLocaleString('en'); };
+let selected = null, dig = null;
+function openChamber(id) {
+  const c = CH[id]; selected = id;
+  $('#sc-title').innerHTML = `${c.name} <small>level ${c.lv}</small>`;
+  const fill = c.store ? ` Holds ${Math.round(piles[id] * 600).toLocaleString('en')} ${c.store}.` : '';
+  $('#sc-desc').textContent = c.desc + fill + (dig ? ' Your diggers are busy.' : ` Next level: ${c.lv * 120} foliage, ${c.lv * 30} protein.`);
+  $('#btn-dig').disabled = !!dig; $('#btn-dig').textContent = dig ? (dig.id === id ? 'Digging now' : 'Diggers are busy') : `Dig level ${c.lv + 1} (12 s here)`;
+  $('#sheet-chamber').hidden = false; showChips();
+}
+const diggers = [];
+$('#btn-dig').addEventListener('click', () => {
+  if (dig || !selected) return;
+  const id = selected, c = CH[id];
+  res.foliage -= c.lv * 120; res.protein -= c.lv * 30; setHud();
+  dig = { id, left: 12, pellet: 0 };
+  $('#sheet-chamber').hidden = true; selected = null; showChips();
+  const { rx, ry } = radii(c);
+  for (let i = 0; i < 3; i++) { const a = makeAnt('worker'); const ang = Math.PI * (0.25 + i * 0.25); a.g.position.set(c.x + Math.cos(ang) * rx * 0.85, c.y + Math.sin(ang) * ry * 0.75 - 0.3, -D / 2 + (i - 1) * 0.4); orient(a, tmpD.set(Math.cos(ang), Math.sin(ang), 0)); diggers.push(a); }
+  toast(`Diggers start on the <em>${c.name}</em>. They haul soil up the shaft to the heap by the entrance.`);
+});
+function finishDig() {
+  const c = CH[dig.id]; c.lv += 1; buildPlate(); buildContents(dig.id); placeDisc(dig.id); makeWalkers(); if (dig.id === 'queen_chamber') placeQueen();
+  for (const a of diggers) { scene.remove(a.g); ants.splice(ants.indexOf(a), 1); } diggers.length = 0;
+  const ring = new THREE.Mesh(new THREE.TorusGeometry(1, 0.06, 6, 40), new THREE.MeshBasicMaterial({ color: '#E8B23A', transparent: true }));
+  ring.position.set(c.x, c.y, 0.05); scene.add(ring); const { rx, ry } = radii(c);
+  tween(1.4, (k) => { ring.scale.set(rx * (1 + k * 0.4), ry * (1 + k * 0.4), 1); ring.material.opacity = 1 - k; }, () => scene.remove(ring));
+  pop(`${c.name} level ${c.lv}`, tmpP.set(c.x, c.y + radii(c).ry + 1, 0), true);
+  toast(`The <em>${c.name}</em> is bigger. In the game the hollow grows with every level, exactly like this.`);
+  dig = null;
+}
+// pellets of soil carried up the shaft while digging
+const pellets = [];
+function sendPellet() {
+  const p = sampler(pathTo(dig.id, ZS).slice().reverse()); const a = makeAnt('worker');
+  const lump = blob('#7A5C40', 0.42, 0.42, 0, 0.12, undefined, undefined, a.g, SPH_LO);
+  pellets.push({ a, p, d: 0, lump });
+}
+
+// a party walking a path, one after another
+const parties = [];
+function march(pts, kinds, opts = {}) {
+  const p = sampler(pts), members = kinds.map((k, i) => { const a = makeAnt(k); a.g.visible = false; if (opts.load) blob(opts.load, 0.5, 0.42, 0, 0.18, 0.04, 0.14, a.g); return { a, delay: i * (opts.gap ?? 0.55) }; });
+  const party = { p, members, t: 0, speed: opts.speed ?? 2.8, done: opts.done, label: opts.label, finished: false };
+  parties.push(party); return party;
+}
+function endParty(party, keep) { if (!keep) for (const m of party.members) { scene.remove(m.a.g); ants.splice(ants.indexOf(m.a), 1); } parties.splice(parties.indexOf(party), 1); }
+const surf = (x, z) => new THREE.Vector3(x, SURF + 0.02, z);
+
+let foraging = false;
+function forage() {
+  if (foraging) { toast('Your foragers are already out.'); return; }
+  foraging = true;
+  const down = pathTo('granary', ZS);
+  const out = [...down.slice().reverse(), surf(SX0 + 1.2, -2.6), surf(9, -5), surf(17.4, -6)];
+  toast('Six foragers leave through the entrance. In the game you choose where they go on the map; here they cut the leaf on top.');
+  march(out, Array(6).fill('worker'), { label: 'Foragers', done: (party) => {
+    endParty(party);
+    tween(1.6, (k) => { leaf.scale.setScalar(1 - k * 0.12); });
+    tween(1.7, () => {}, () => {
+      march([...out.slice().reverse()], Array(6).fill('worker'), { load: '#8DB255', label: 'Foragers home', done: (back) => {
+        endParty(back); piles.granary = Math.min(40, piles.granary + 6); buildContents('granary');
+        res.foliage += 720; setHud(); pop('+720 foliage', tmpP.set(CH.granary.x, CH.granary.y + 2.5, 0));
+        toast('The foragers are home. The leaf pieces go to the <em>Granary</em>, and its pile grows.'); foraging = false; partyLabelAt = null;
+      } });
+    });
+  } });
+}
+
+let raiding = false;
+function raid() {
+  if (raiding) return; raiding = true; raidLeft = 14;
+  const path = [surf(-34, -6.5), surf(SX0 - 6.5, -6.5)];
+  toast('A <em>raid from Rojas</em> is marching in. Your soldiers come up to guard the entrance; the alarm rings.');
+  const r = march(path, Array(8).fill('enemy'), { speed: 2.2, gap: 0.45, done: (party) => {
+    party.finished = true;
+    toast('The raiders reach your soldiers. In the game the server decides the fight when they arrive; here they lose their nerve and turn back.', 5200);
+    tween(4.2, () => {}, () => {
+      endParty(party);
+      march([surf(SX0 - 6.5, -6.5), surf(-34, -6.5)], Array(8).fill('enemy'), { speed: 2.6, gap: 0.45, done: (p2) => { endParty(p2); } });
+      for (const g of guards) march(g.path.pts.slice().reverse(), ['soldier'], { speed: 3.2, done: (p) => endParty(p) });
+      for (const g of guards) endParty(g.party);
+      guards.length = 0; raiding = false;
+    });
+  } });
+  r.raid = true;
+  const guards = [];
+  for (let i = 0; i < 5; i++) {
+    const pts = [...pathTo('brood_hall', ZS + (i - 2) * 0.2).slice().reverse(), surf(SX0 - 1.4 - i * 0.8, -2.4 - (i % 2) * 1.3)];
+    const party = march(pts, ['soldier'], { gap: 0, speed: 3.2, done: (p) => { p.finished = true; } });
+    party.members[0].delay = i * 0.5; guards.push({ party, path: party.p });
+  }
+}
+
+function flight() {
+  toast('A warm, still evening: <em>winged queens</em> rise from the entrance to found new colonies. In the game this is the Nuptial Flight event.');
+  for (let i = 0; i < 10; i++) {
+    const a = makeAnt('alate'); a.g.position.set(SX0 + rr(-0.6, 0.6), SURF + 0.2, -D / 2 - 0.2); a.g.visible = false;
+    const dx = rr(-0.8, 0.8), dz = rr(-0.8, 0.3), delay = i * 0.35;
+    tween(7 + delay, (k) => {
+      const t = Math.max(0, (k * (7 + delay) - delay) / 7); a.g.visible = t > 0 && t < 1;
+      a.g.position.set(SX0 + dx * t * 20 + Math.sin(t * 20 + i) * 0.3, SURF + 0.2 + t * 26, -D / 2 - 0.2 + dz * t * 14);
+      orient(a, tmpD.set(dx, 1.4, dz)); stepLegs(a, 0.05, true);
+    }, () => { scene.remove(a.g); ants.splice(ants.indexOf(a), 1); });
+  }
+}
+
+function meet() {
+  const vis = walkers.filter((w) => { const s = toScreen(w.a.g.getWorldPosition(tmpP)); return s.ok && s.x > 40 && s.x < stage.clientWidth - 40 && s.y > 90 && s.y < stage.clientHeight - 80; });
+  const w = pick(vis.length ? vis : walkers); nameAnt(w.a);
+  toast(`Meet <em>${w.a.name}</em>. Every ant has a name: hover or tap one. Names come from a fixed list and never need saving.`);
+}
+
+function act(id) {
+  if (id === 'granary') openChamber('granary');
+  else if (id === 'forage') forage();
+  else if (id === 'raid') raid();
+  else if (id === 'flight') flight();
+  else if (id === 'meet') meet();
+}
+
+// ---------- day and night ----------
+const DAY = { sky: '#A9CFE0', hemiSky: '#E8F2F4', hemiGround: '#6B5238', hemi: 1.15, sun: 2.6, sunCol: '#FFF1D6', glow: 1, stars: 0, grassMul: 1 };
+const NIGHT = { sky: '#121A2B', hemiSky: '#5A6E9A', hemiGround: '#3A2C20', hemi: 0.8, sun: 0.75, sunCol: '#AFC2F0', glow: 6, stars: 0.9, grassMul: 1 };
+let night = 0, nightGoal = 0;
+const pageDark = () => { const t = document.documentElement.dataset.theme; return t ? t === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches; };
+nightGoal = night = pageDark() ? 1 : 0;
+$('#btn-time').addEventListener('click', () => { nightGoal = nightGoal ? 0 : 1; $('#btn-time').textContent = nightGoal ? 'Day' : 'Night'; });
+const cA = new THREE.Color(), cB = new THREE.Color();
+const mix = (a, b, k) => cA.set(a).lerp(cB.set(b), k);
+function applyTime(k) {
+  const L = (a, b) => a + (b - a) * k;
+  scene.background.copy(mix(DAY.sky, NIGHT.sky, k)); scene.fog.color.copy(scene.background);
+  hemi.color.copy(mix(DAY.hemiSky, NIGHT.hemiSky, k)); hemi.groundColor.copy(mix(DAY.hemiGround, NIGHT.hemiGround, k)); hemi.intensity = L(DAY.hemi, NIGHT.hemi);
+  sun.intensity = L(DAY.sun, NIGHT.sun); sun.color.copy(mix(DAY.sunCol, NIGHT.sunCol, k));
+  for (const g of glows) g.l.intensity = g.base * L(DAY.glow, NIGHT.glow);
+  stars.material.opacity = L(DAY.stars, NIGHT.stars);
+  stage.style.background = '#' + scene.background.getHexString();
+  $('#btn-time').textContent = nightGoal ? 'Day' : 'Night';
+}
+applyTime(night);
+
+// ---------- loop ----------
+let visible = true;
+new IntersectionObserver(([e]) => { visible = e.isIntersecting; }).observe(stage);
+const clock = new THREE.Clock(); let t = 0;
+function frame() {
+  requestAnimationFrame(frame);
+  if (!visible || document.hidden) { clock.getDelta(); return; }
+  step(Math.min(clock.getDelta(), 0.05));
+}
+// advance the world by dt seconds and draw it (the loop above calls this; tests can too)
+function step(dt) {
+  const mdt = reduceMotion ? 0 : dt; t += mdt;
+  for (const k of ['yaw', 'pitch', 'dist']) view[k] += (goal[k] - view[k]) * Math.min(1, dt * 8);
+  placeCamera();
+
+  for (const w of walkers) {
+    if (w.pause > 0) w.pause -= mdt;
+    else { w.d += w.dir * w.speed * mdt; if (w.d >= w.path.total) { w.d = w.path.total; w.dir = -1; w.pause = rr(0.6, 2.2); } if (w.d <= 0) { w.d = 0; w.dir = 1; w.pause = rr(0.3, 1); } }
+    w.path.at(w.d, w.a.g.position, tmpD); if (w.dir < 0) tmpD.negate(); orient(w.a, tmpD); stepLegs(w.a, mdt, w.pause <= 0);
+  }
+  for (const r of residents) {
+    const c = CH[r.id], { rx } = radii(c); r.k += r.dir * r.speed * mdt; if (Math.abs(r.k) > 0.45) { r.k = Math.sign(r.k) * 0.45; r.dir *= -1; }
+    const x = c.x + r.k * rx; r.a.g.position.set(x, floorAt(c, x) + 0.04, r.z); orient(r.a, tmpD.set(r.dir, 0, 0)); stepLegs(r.a, mdt * 0.6, true);
+  }
+  stepLegs(queen, mdt * 0.15, true);
+  for (const a of diggers) { stepLegs(a, mdt, true); a.g.position.x += Math.sin(t * 9 + a.phase) * 0.004; }
+
+  if (dig) {
+    dig.left -= dt; dig.pellet -= dt;
+    if (dig.pellet <= 0) { dig.pellet = 1.1; sendPellet(); }
+    if (dig.left <= 0) finishDig();
+  }
+  for (let i = pellets.length - 1; i >= 0; i--) {
+    const pl = pellets[i]; pl.d += 3.2 * dt; pl.p.at(pl.d, pl.a.g.position, tmpD); orient(pl.a, tmpD); stepLegs(pl.a, dt, true);
+    if (pl.d >= pl.p.total) { scene.remove(pl.a.g); ants.splice(ants.indexOf(pl.a), 1); pellets.splice(i, 1); heap.scale.x = heap.scale.z = Math.min(2.2, heap.scale.x + 0.05); heap.scale.y = Math.min(1.3, heap.scale.y + 0.03); }
+  }
+
+  partyLabelAt = null; raidLabelAt = null;
+  for (const party of [...parties]) {
+    party.t += dt; let allIn = true, lead = null;
+    for (const m of party.members) {
+      const d = (party.t - m.delay) * party.speed;
+      if (d < 0) { m.a.g.visible = false; allIn = false; continue; }
+      m.a.g.visible = true; party.p.at(d, m.a.g.position, tmpD); orient(m.a, tmpD);
+      const moving = d < party.p.total; stepLegs(m.a, dt, moving); if (moving) allIn = false; if (!lead) lead = m.a;
+    }
+    if (party.label && lead) { partyLabelAt = lead.g.position.clone().add(tmpD.set(0, 1.4, 0)); const left = Math.max(0, party.p.total / party.speed - party.t + party.members.at(-1).delay); partyLabelText = `${party.label} · ${Math.ceil(left)}s`; }
+    if (party.raid && lead && !party.finished) { raidLabelAt = lead.g.position.clone().add(tmpD.set(0, 1.6, 0)); raidLeft = Math.max(0, party.p.total / party.speed - party.t); }
+    if (allIn && !party.finished && party.done) { party.finished = true; party.done(party); }
+  }
+  if (raiding) { alarm.material.opacity = 0.45 + 0.4 * Math.sin(t * 7); alarm.scale.setScalar(1 + 0.08 * Math.sin(t * 7)); } else alarm.material.opacity = 0;
+
+  scentGlow.intensity *= 1; qGlow.position.y = Q.y + 0.5;
+  for (let i = tweens.length - 1; i >= 0; i--) { const tw = tweens[i]; tw.t += dt; const k = Math.min(1, tw.t / tw.dur); tw.fn(k); if (k >= 1) { tweens.splice(i, 1); tw.done?.(); } }
+  if (Math.abs(nightGoal - night) > 0.001) { night += Math.sign(nightGoal - night) * Math.min(Math.abs(nightGoal - night), dt * 0.9); applyTime(night); }
+  if (named && performance.now() > namedUntil) named = null;
+
+  for (const l of labels) {
+    const at = l.at(), text = at ? l.text() : null;
+    if (!text) { l.el.hidden = true; continue; }
+    const s = toScreen(at); l.el.hidden = !s.ok; l.el.style.left = s.x + 'px'; l.el.style.top = s.y + 'px';
+    if (l.html) l.el.innerHTML = text; else l.el.textContent = text;
+  }
+  renderer.render(scene, camera);
+}
+// test hook: advance the scene without animation frames (hidden tabs pause them)
+window.__nest = { run: (sec) => { for (let i = 0; i < sec / 0.05; i++) step(0.05); }, act, openChamber, digNow: () => $('#btn-dig').click() };
+setHud(); stage.classList.add('ready'); frame();
+</script>

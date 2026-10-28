@@ -81,6 +81,9 @@ Every ant in a chamber close-up has a name: hover it (or tap it on a phone) to s
 - **Biologically accurate:** workers, soldiers and queens are all female, so they take female names; a queen is titled ("Reina Isabel"). Male names are for winged males (drones), which aren't drawn yet.
 - **Nothing is stored.** A name is worked out from the colony, the chamber and which ant it is (`client/src/art/antNames.ts`), so the same ant has the same name on every visit, on every device, for anyone looking. A name belongs to a spot in the chamber, not to an individual with a history.
 
+## In 3D: 2D art in a 3D block
+The computer nest is a 3D block of earth ([12-ui-nest-view.md](12-ui-nest-view.md), "The 3D slab"), but its life is this 2D art: chamber pictures on the hollows' back walls and ant sprites on flat cards. The look is a paper diorama; the soil strata (`#6B4F37` → `#4A3726` → `#33261A`), hollow (`#1C140E`) and grass (`#6F9A3E`) come from [art/3d-exploration.md](art/3d-exploration.md). Hero models can replace cards one at a time later.
+
 ## Assets
 Chambers come from `client/src/art/chambers.ts`; `npx tsx art/chambers/build.ts` writes each to `art/chambers/<id>.svg` with a `preview.html` sheet (every chamber large, and at nest size). Edit `chambers.ts`, not the SVGs.
 

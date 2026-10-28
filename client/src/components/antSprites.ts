@@ -20,7 +20,8 @@ export async function rasterise(svg: string, w: number, h: number) {
   return canvas;
 }
 
-function loadCanvases() {
+/** The rasterised walk poses for every caste (shared with the 3D nest). */
+export function loadCanvases() {
   canvases ??= (async () => {
     const out = {} as Record<Caste, HTMLCanvasElement[]>;
     for (const c of CASTE_LIST) {

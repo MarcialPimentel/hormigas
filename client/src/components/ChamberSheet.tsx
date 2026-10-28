@@ -10,7 +10,7 @@ import { Cost } from './ui';
 
 export const STORE_OF: Partial<Record<ChamberId, ResourceId>> = { granary: 'foliage', larder: 'protein', nectar_cellar: 'nectar' };
 
-export function ChamberSheet({ id, onClose, onLookInside, onAllChambers }: { id: ChamberId; onClose: () => void; onLookInside: () => void; onAllChambers: () => void }) {
+export function ChamberSheet({ id, onClose, onLookInside, onAllChambers }: { id: ChamberId; onClose: () => void; onLookInside?: () => void; onAllChambers: () => void }) {
   const { colony, state, act, now } = useGame();
 
   useEffect(() => {
@@ -70,7 +70,7 @@ export function ChamberSheet({ id, onClose, onLookInside, onAllChambers }: { id:
             {level === 0 ? 'Dig it' : 'Dig deeper'}
           </button>
         )}
-        {level > 0 && (
+        {level > 0 && onLookInside && (
           <button type="button" className="btn" onClick={onLookInside}>
             Look inside
           </button>

@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Nectar">
+  <path d="M32 7C39 20 48 28 48 39A16 16 0 0 1 16 39C16 28 25 20 32 7Z" fill="#E8B23A" stroke="#2B1D13" stroke-width="3" stroke-linejoin="round"/>
+  <path d="M19 41a13 13 0 0 0 26 0" fill="none" stroke="#B9861D" stroke-width="2.5"/>
+  <path d="M24 34c0-5 3-10 6-14" fill="none" stroke="#FFF3C8" stroke-width="3" stroke-linecap="round"/>
+</svg>

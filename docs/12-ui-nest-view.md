@@ -1,6 +1,6 @@
 # 12 — UI & Nest View
 
-**Version:** 0.4
+**Version:** 0.5
 
 ## Principles
 - **Mobile-browser first.** Every screen works one-handed on a phone. Desktop gets more columns, not more features.
@@ -28,7 +28,15 @@ A **Feedback** button sits in the top bar of every screen (icon only on phones).
 
 Feedback is read on the admin-only **Feedback** screen. Admins are players with `is_admin` set in the database (see [DEPLOY.md](DEPLOY.md)).
 
-## Nest View (simple, schematic)
+## The 3D slab (computers)
+On computers the nest is a block of earth cut open at the front, like an ant farm on a plinth (approved from [art/3d-exploration.md](art/3d-exploration.md)). Built with Three.js in `client/src/components/nest3d/`, loaded only when shown.
+- **The block is 3D; everything living in it is the 2D art.** Hollows and tunnels are carved into the face; each chamber's own art (`client/src/art/chambers.ts`) is on its hollow's back wall; ants are the 2D sprites on flat cards, walking at slightly different depths. A paper diorama you can turn; real models can replace the cards later.
+- **Gentle orbit only:** drag to turn (about ±30°) and, with a mouse, tilt a little. No zoom and no inside views: the whole colony stays in sight. Double-click resets.
+- **Same information as the 2D nest:** chamber names, levels and tags; dashed outlines for chambers you could dig next; surface parties with timers; raiders in red with the entrance ringing; diggers on the rim; the Pheromone Chamber glowing while research runs; a sky by the player's clock, with chambers glowing at night.
+- **Taps:** a chamber opens its sheet (no Look inside); the entrance opens Missions.
+- **Which nest:** 3D on computers, 2D on phones. A button in the corner switches (saved per browser). Without WebGL the 2D nest shows. Motion off draws a still slab, refreshed about once a second.
+
+## Nest View (2D, phones)
 - Side cross-section of soil.
 - **Chambers** = rounded shapes; size grows with level; locked chambers appear as faint outlines (shows what's coming).
 - **Tunnels** = lines connecting chambers to the entrance.

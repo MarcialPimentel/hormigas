@@ -9,7 +9,8 @@ import { rasterise } from './antSprites';
 const RASTER = 2;
 let canvases: Promise<Record<ChamberId, HTMLCanvasElement>> | null = null;
 
-function loadCanvases() {
+/** Each chamber's nest art, rasterised once (shared with the 3D nest). */
+export function loadCanvases() {
   canvases ??= (async () => {
     const out = {} as Record<ChamberId, HTMLCanvasElement>;
     await Promise.all(
