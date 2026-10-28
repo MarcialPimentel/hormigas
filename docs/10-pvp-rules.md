@@ -19,6 +19,7 @@ Wild nests (NPC colonies, see [17-wild-nests](17-wild-nests.md)) have no new-col
 
 ## Bash limit
 - Max **4 successful raids per 24 h** against the same colony from the same attacker.
+- Raids still on their way to that colony count toward the 4, so sending several at once can't get around the limit. A recalled raid stops counting.
 - During declared wars (v1 supercolonies), the limit is lifted between participants.
 
 ## Protected storage

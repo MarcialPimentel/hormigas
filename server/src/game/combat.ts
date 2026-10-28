@@ -33,11 +33,20 @@ import { refreshPointsAfterCommit } from './points';
 
 const nonZero = <T extends Record<string, number | undefined>>(u: T): T => Object.fromEntries(Object.entries(u).filter(([, n]) => (n ?? 0) > 0)) as T;
 
+/**
+ * Raids that count toward the bash limit: raids this attacker won on this colony in the last 24 h,
+ * plus raids still on their way there. Without the second part, several raids sent at once
+ * would all pass the check before any of them landed. A recalled raid no longer counts.
+ */
 export async function raidsInLast24h(q: Q, attackerId: number, colonyId: number, t: number): Promise<number> {
-  const r = await q.query("SELECT count(*)::int AS n FROM raid_log WHERE attacker_id = $1 AND colony_id = $2 AND winner = 'attacker' AND at > $3", [
-    attackerId, colonyId, t - 86400_000,
-  ]);
-  return r.rows[0].n;
+  const r = await q.query(
+    `SELECT
+       (SELECT count(*) FROM raid_log WHERE attacker_id = $1 AND colony_id = $2 AND winner = 'attacker' AND at > $3)
+     + (SELECT count(*) FROM missions WHERE player_id = $1 AND target_colony_id = $2 AND type = 'raid' AND status = 'outbound')
+     AS n`,
+    [attackerId, colonyId, t - 86400_000],
+  );
+  return Number(r.rows[0].n);
 }
 
 export function pvpState(p: Player) {
