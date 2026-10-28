@@ -57,6 +57,7 @@ Tapping a chamber (built or not yet dug) opens a sheet right under the nest, and
 ## Chamber close-up
 Tapping a built chamber opens a close look inside it, filling the nest view:
 - The chamber's full art (soil wall, roots, tunnel mouth, contents and its signature detail) with workers walking its floor. Stores get a wash of their food colour that rises as they fill, and show the amount.
+- Every ant has a name: hover it (tap on phones) for a tag with its name and caste. See [18-art-direction.md](18-art-direction.md), "Names".
 - **Upgrade** and **Back** (or Esc) return to the nest, with the chamber's sheet open.
 - With motion reduced, the ants stand still along their beat.
 

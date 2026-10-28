@@ -1,0 +1,28 @@
+{
+  "_version": "0.1",
+  "_note": "Common given names in Spain (after the INE frequency lists; not an exact ranking). Workers, soldiers and queens are all female, as in real colonies; male names are for winged males (drones). See docs/18-art-direction.md.",
+  "female": [
+    "María", "Carmen", "Ana", "Isabel", "Laura", "Lucía", "Marta", "Cristina", "Josefa", "Pilar",
+    "Dolores", "Teresa", "Ángeles", "Elena", "Francisca", "Antonia", "Sara", "Paula", "Raquel", "Rosa",
+    "Concepción", "Manuela", "Mercedes", "Julia", "Beatriz", "Silvia", "Nuria", "Irene", "Alba", "Patricia",
+    "Rocío", "Montserrat", "Andrea", "Encarnación", "Rosario", "Juana", "Mónica", "Alicia", "Sonia", "Sandra",
+    "Marina", "Susana", "Yolanda", "Natalia", "Margarita", "Inmaculada", "Eva", "Claudia", "Esther", "Noelia",
+    "Ángela", "Verónica", "Carolina", "Inés", "Amparo", "Nerea", "Daniela", "Lorena", "Ainhoa", "Martina",
+    "Sofía", "Victoria", "Emilia", "Consuelo", "Alejandra", "Gloria", "Luisa", "Lidia", "Celia", "Miriam",
+    "Olga", "Catalina", "Virginia", "Esperanza", "Valeria", "Aurora", "Eugenia", "Adriana", "Begoña", "Blanca",
+    "Clara", "Diana", "Elisa", "Fátima", "Gemma", "Lourdes", "Milagros", "Nieves", "Paloma", "Remedios",
+    "Soledad", "Trinidad", "Vanesa", "Vicenta", "Ana Belén", "Noemí", "Elvira", "Rebeca", "Carla", "Jimena"
+  ],
+  "male": [
+    "Antonio", "José", "Manuel", "Francisco", "David", "Juan", "Javier", "José Antonio", "Daniel", "José Luis",
+    "Francisco Javier", "Carlos", "Jesús", "Alejandro", "Miguel", "José Manuel", "Rafael", "Pedro", "Miguel Ángel", "Ángel",
+    "Pablo", "José María", "Fernando", "Sergio", "Luis", "Jorge", "Alberto", "Juan Carlos", "Juan José", "Álvaro",
+    "Diego", "Adrián", "Juan Antonio", "Raúl", "Enrique", "Ramón", "Vicente", "Iván", "Rubén", "Óscar",
+    "Andrés", "Joaquín", "Santiago", "Eduardo", "Víctor", "Roberto", "Jaime", "Francisco José", "Mario", "Ignacio",
+    "Alfonso", "Salvador", "Ricardo", "Marcos", "Jordi", "Emilio", "Julián", "Julio", "Guillermo", "Gabriel",
+    "Tomás", "Agustín", "José Miguel", "Marc", "Gonzalo", "Félix", "José Ramón", "Mohamed", "Hugo", "Lucas",
+    "Martín", "Nicolás", "Samuel", "Mateo", "Héctor", "Ismael", "Cristian", "Aitor", "Iker", "Sebastián",
+    "Esteban", "Gregorio", "Lorenzo", "Felipe", "Pascual", "Domingo", "Benito", "Arturo", "Rodrigo", "Bruno",
+    "Aarón", "Unai", "Alfredo", "Mariano", "Germán", "Ernesto", "Cristóbal", "Bernardo", "Valentín", "Leo"
+  ]
+}
