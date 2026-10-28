@@ -271,9 +271,11 @@ input:focus, textarea:focus { border-color: var(--honey); outline: none; }
 .spot-moves li { display: flex; align-items: center; gap: 0.5rem; }
 .spot-moves li.danger { color: var(--danger); }
 
+/* motion follows the system unless the player picked On or Off (client/src/motion.ts) */
 @media (prefers-reduced-motion: reduce) {
-  * { transition: none !important; animation: none !important; }
+  :root:not([data-motion='on']) * { transition: none !important; animation: none !important; }
 }
+:root[data-motion='off'] * { transition: none !important; animation: none !important; }
 
 /* ---------- map ---------- */
 .map-nav { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: end; }
@@ -369,6 +371,8 @@ pre.report-body { white-space: pre-wrap; overflow-x: auto; }
 .nest-chamber.ghost .nest-label { color: var(--muted); font-weight: 400; }
 .nest-chamber.building .nest-label { color: var(--honey); }
 .nest-away { position: absolute; right: 10px; top: 6px; font-size: 0.75rem; color: var(--sand); background: rgba(35, 26, 20, 0.8); padding: 2px 8px; border-radius: 999px; }
+.nest-motion { position: absolute; left: 10px; top: 6px; font: inherit; font-size: 0.75rem; color: var(--sand); background: rgba(35, 26, 20, 0.8); border: 1px solid transparent; padding: 2px 8px; border-radius: 999px; cursor: pointer; }
+.nest-motion:hover, .nest-motion:focus-visible { border-color: var(--honey); }
 @media (max-width: 520px) { .nest-label { font-size: 0.6rem; } }
 
 /* ---------- quests ---------- */

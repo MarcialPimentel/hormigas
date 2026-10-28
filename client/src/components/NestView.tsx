@@ -1,6 +1,7 @@
 // Schematic cross-section of the nest (docs/12-ui-nest-view.md), drawn with PixiJS.
 // Chambers grow with level, tunnels link them to the entrance, and dots are ants going about their work.
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { setMotionPref, useMotion, type MotionPref } from '../motion';
 import { Application, Graphics } from 'pixi.js';
 import { C, FLECK, LAYOUT, SURFACE, dottedEllipse, drawPolyline, geometry, lerpColor, seeded, type Pt } from './nestScene';
 import { createFx } from './nestFx';
@@ -37,6 +38,8 @@ function antPos(a: Ant): Pt {
   return [path[i - 1][0] + (path[i][0] - path[i - 1][0]) * t, path[i - 1][1] + (path[i][1] - path[i - 1][1]) * t];
 }
 
+const NEXT_MOTION: Record<MotionPref, MotionPref> = { auto: 'on', on: 'off', off: 'auto' };
+
 function destroyApp(app: Application) {
   if ((app as any).__dead) return;
   (app as any).__dead = true;
@@ -55,7 +58,7 @@ export function NestView({ nav }: { nav: Nav }) {
   const [size, setSize] = useState({ w: 0, h: 0 });
   const dataRef = useRef({ colony, state, now });
   dataRef.current = { colony, state, now };
-  const reduced = useMemo(() => typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches, []);
+  const { pref: motion, reduced } = useMotion();
 
   // tear down whatever scene is on screen when the view goes away
   useEffect(
@@ -242,7 +245,7 @@ export function NestView({ nav }: { nav: Nav }) {
       if (appRef.current !== app && app.renderer) destroyApp(app);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [size.w, size.h, chambersKey, buildKey, antBucket, JSON.stringify(research), colony?.id]);
+  }, [size.w, size.h, chambersKey, buildKey, antBucket, JSON.stringify(research), colony?.id, reduced]);
 
   if (!colony) return null;
   const { w, h } = size;
@@ -273,6 +276,15 @@ export function NestView({ nav }: { nav: Nav }) {
             </button>
           );
         })}
+      <button
+        type="button"
+        className="nest-motion"
+        onClick={() => setMotionPref(NEXT_MOTION[motion])}
+        title="Auto follows your device's reduce-motion setting"
+        aria-label={`Animation: ${motion}${motion === 'auto' ? (reduced ? ' (still)' : ' (moving)') : ''}. Click to change.`}
+      >
+        Motion: {motion}
+      </button>
       {away > 0 && <span className="nest-away">{away.toLocaleString()} away on missions</span>}
     </div>
   );
