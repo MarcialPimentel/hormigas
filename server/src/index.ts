@@ -8,6 +8,7 @@ import { refreshAllPoints } from './game/points';
 import { ensureWildNests } from './game/nests';
 import { ensureNestEvents } from './game/nestEvents';
 import { now } from './clock';
+import { syncFeedbackToGitHub } from './game/feedbackGithub';
 
 async function main() {
   const applied = await migrate();
@@ -29,6 +30,10 @@ async function main() {
       .catch((e) => console.error('points refresh failed', e))
       .finally(() => (pointsTimer = setTimeout(refresh, 60_000)));
   pointsTimer = setTimeout(refresh, 5_000);
+  // post in-game feedback to GitHub, catching up on anything that failed before
+  const feedbackTimer = config.feedbackGithubToken ? setInterval(() => void syncFeedbackToGitHub(getPool()), 5 * 60_000) : undefined;
+  if (feedbackTimer) void syncFeedbackToGitHub(getPool());
+  else console.log('FEEDBACK_GITHUB_TOKEN not set: feedback stays in the database only');
   await app.listen({ port: config.port, host: config.host });
 
   // Hosts stop the old instance with SIGTERM on every deploy: finish in-flight work, then exit.
@@ -36,6 +41,7 @@ async function main() {
     console.log(`${signal} received, shutting down`);
     stopEvents();
     clearTimeout(pointsTimer);
+    clearInterval(feedbackTimer);
     await app.close().catch(() => {});
     await closePool().catch(() => {});
     process.exit(0);

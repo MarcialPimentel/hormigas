@@ -25,7 +25,7 @@ The files that define the hub are in [`deploy/`](../deploy/). The copy on the se
 | `deploy/setup-droplet.sh` | One-time server prep: Docker, 2 GB swap, firewall (SSH/HTTP/HTTPS only), automatic security updates, `deploy` user, `/opt/hub` |
 | `deploy/hub/docker-compose.yml` | The containers: `caddy`, `db`, `hormigas` |
 | `deploy/hub/Caddyfile` | Which domain goes to which container |
-| `deploy/hub/.env.example` | Variable names for `.env` (`POSTGRES_PASSWORD`, `HORMIGAS_DB_PASSWORD`, `HORMIGAS_WORLD_NAME`) |
+| `deploy/hub/.env.example` | Variable names for `.env` (`POSTGRES_PASSWORD`, `HORMIGAS_DB_PASSWORD`, `HORMIGAS_WORLD_NAME`, optional `HORMIGAS_FEEDBACK_GITHUB_TOKEN`) |
 | `deploy/hub/postgres-init/01-hormigas.sh` | Creates the `hormigas` database and user on the database's very first start |
 | `deploy/hub/add-database.sh` | Creates a database and user for another project |
 | `deploy/hub/backup.sh` | Dumps every database to `/opt/hub/backups`, keeps 7 days (cron, nightly 03:30 UTC) |
@@ -55,6 +55,18 @@ Deploy needs two repository secrets: `DROPLET_HOST` (the droplet's IP) and `DROP
 | Open a database shell | `docker compose exec db psql -U postgres -d hormigas` |
 | Restore a backup (replaces data!) | `zcat backups/all-YYYY-MM-DD.sql.gz \| docker compose exec -T db psql -U postgres` |
 | Let a player read feedback (admin) | `docker compose exec db psql -U postgres -d hormigas -c "UPDATE players SET is_admin = true WHERE lower(username) = lower('NAME')"`, then reload the game |
+
+## Feedback on GitHub
+
+When `HORMIGAS_FEEDBACK_GITHUB_TOKEN` is set in `.env`, each piece of in-game feedback also becomes an issue in `MarcialPimentel/hormigas`, labelled `feedback` (plus `bug`, `enhancement` or `question` by kind). The repository is public, so issues show the player's id, not their name or colony. The database stays the record: anything that couldn't be posted is retried every 5 minutes, and feedback already sent but not yet marked handled is posted the first time the token is set.
+
+To set it up:
+
+1. On GitHub: **Settings → Developer settings → Personal access tokens → Fine-grained tokens → Generate new token**. Repository access: only `MarcialPimentel/hormigas`. Permissions: **Issues: Read and write** (nothing else). Pick an expiry and note it.
+2. On the droplet, in `/opt/hub`: make sure `docker-compose.yml` passes `FEEDBACK_GITHUB_TOKEN: ${HORMIGAS_FEEDBACK_GITHUB_TOKEN:-}` to `hormigas` (copy it from `deploy/hub/docker-compose.yml`), add `HORMIGAS_FEEDBACK_GITHUB_TOKEN=<token>` to `.env`, then run `docker compose up -d hormigas`.
+3. Check: `docker compose logs hormigas | grep -i feedback` should **not** say the token isn't set.
+
+When the token expires, issues stop appearing (the logs say GitHub answered 401) and feedback waits in the database; put a new token in `.env` and run `docker compose up -d hormigas`.
 
 ## Rules for the live server
 

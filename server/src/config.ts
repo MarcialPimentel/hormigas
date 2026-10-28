@@ -17,4 +17,8 @@ export const config = {
   /** Folder with the built client to serve, if it exists (npm workspaces run the server from /server). */
   clientDist: process.env.CLIENT_DIST ?? '../client/dist',
   sessionDays: 30,
+  /** GitHub token allowed to open issues in feedbackRepo. Unset = in-game feedback stays in the database only. */
+  feedbackGithubToken: process.env.FEEDBACK_GITHUB_TOKEN ?? '',
+  /** owner/name of the repository that gets an issue per piece of feedback. */
+  feedbackRepo: process.env.FEEDBACK_GITHUB_REPO ?? 'MarcialPimentel/hormigas',
 };

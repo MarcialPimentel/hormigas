@@ -41,6 +41,8 @@ services:
     environment:
       DATABASE_URL: postgres://hormigas:${HORMIGAS_DB_PASSWORD}@db:5432/hormigas
       WORLD_NAME: ${HORMIGAS_WORLD_NAME:-The Backyard}
+      # optional: post in-game feedback to GitHub issues (docs/DEPLOY.md)
+      FEEDBACK_GITHUB_TOKEN: ${HORMIGAS_FEEDBACK_GITHUB_TOKEN:-}
       # Production defaults already apply: world speed x1, secure cookies,
       # trusted proxy headers (Caddy sits in front).
     depends_on:

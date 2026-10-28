@@ -6,6 +6,7 @@ import { requireAuth } from '../auth';
 import { GameError } from '../errors';
 import { getPlayer, playerColonies } from '../colony';
 import { getWorld } from '../world';
+import { syncFeedbackToGitHub } from '../game/feedbackGithub';
 
 export const FEEDBACK_KINDS = ['bug', 'idea', 'confusing', 'other'] as const;
 export const FEEDBACK_MAX_LENGTH = 2000;
@@ -53,6 +54,7 @@ export async function feedbackRoutes(app: FastifyInstance) {
     await q.query('INSERT INTO feedback (world_id, player_id, kind, message, context, created_at) VALUES ($1,$2,$3,$4,$5,$6)', [
       world.id, req.playerId, kind, message, JSON.stringify(full), t,
     ]);
+    void syncFeedbackToGitHub(q); // in the background; the player doesn't wait on GitHub
     return { ok: true };
   });
 
