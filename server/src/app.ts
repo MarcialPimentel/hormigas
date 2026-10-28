@@ -20,6 +20,7 @@ import './game/nests';
 import './game/nestEvents';
 import { worldRoutes } from './routes/world';
 import { feedbackRoutes } from './routes/feedback';
+import { feedbackPageRoutes } from './routes/feedbackPage';
 import { realtimeRoutes } from './realtime';
 
 export async function buildApp(opts: { logger?: boolean } = {}): Promise<FastifyInstance> {
@@ -43,6 +44,7 @@ export async function buildApp(opts: { logger?: boolean } = {}): Promise<Fastify
   await app.register(gameRoutes);
   await app.register(worldRoutes);
   await app.register(feedbackRoutes);
+  await app.register(feedbackPageRoutes);
 
   // Serve the built client in production (single deploy).
   if (config.clientDist && existsSync(config.clientDist)) {
