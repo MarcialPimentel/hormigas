@@ -54,11 +54,18 @@ function blob(rnd: () => number, cx: number, cy: number, rx: number, ry: number,
 
 // ---------- small things ----------
 
-/** An ant portrait standing on (x, y), `len` units long, facing right (or left). */
+/** Ants drawn so far in the chamber being drawn: each gets a stable key (its caste and order) so it can be named. */
+let antCount = 0;
+
+/**
+ * An ant portrait standing on (x, y), `len` units long, facing right (or left). It carries
+ * `data-ant` (caste) and `data-key` so the close-up can name it, and an invisible box to hover.
+ */
 export function ant(caste: Caste, x: number, y: number, len: number, left = false, extra = '') {
-  const [vx, , vw] = CASTES[caste].vb;
+  const [vx, vy, vw, vh] = CASTES[caste].vb;
   const k = len / vw;
-  return `<g transform="translate(${f(x)} ${f(y)}) scale(${f(left ? -k : k)} ${f(k)}) translate(${f(-(vx + vw / 2))} ${-FOOT_Y})">${antBody(caste, { lod: 'portrait' })}${extra}</g>`;
+  const key = `${caste}-${antCount++}`;
+  return `<g data-ant="${caste}" data-key="${key}" transform="translate(${f(x)} ${f(y)}) scale(${f(left ? -k : k)} ${f(k)}) translate(${f(-(vx + vw / 2))} ${-FOOT_Y})"><rect x="${vx}" y="${vy}" width="${vw}" height="${vh}" fill="transparent"/>${antBody(caste, { lod: 'portrait' })}${extra}</g>`;
 }
 
 const leafBit = (x: number, y: number, r: number, s = 1) =>
@@ -246,6 +253,7 @@ export const SIGNATURE: Record<ChamberId, string> = {
  */
 export function chamberBody(id: ChamberId, uid: string = id, opts: { nest?: boolean } = {}) {
   const rnd = seeded([...id].reduce((a, c) => a * 31 + c.charCodeAt(0), 7));
+  antCount = 0;
   const out: string[] = [];
   const hollow = blob(rnd, CX, CY, RX, RY, 0.12, FLOOR + 2);
   const wall = blob(rnd, CX, CY + 2, RX + 13, RY + 11, 0.14);

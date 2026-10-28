@@ -75,6 +75,12 @@ In the game: the close-up draws the full art; the whole-nest view draws each cha
 
 **Next:** contents that grow with level and fill (more leaves as the Granary fills, more repletes as the gallery grows), and bolder silhouettes for the chambers that are weak at nest size.
 
+## Names
+Every ant in a chamber close-up has a name: hover it (or tap it on a phone) to see a small tag with its name and caste.
+- Names are common given names in Spain, kept in `docs/data/ant-names.json` (100 female, 100 male).
+- **Biologically accurate:** workers, soldiers and queens are all female, so they take female names; a queen is titled ("Reina Isabel"). Male names are for winged males (drones), which aren't drawn yet.
+- **Nothing is stored.** A name is worked out from the colony, the chamber and which ant it is (`client/src/art/antNames.ts`), so the same ant has the same name on every visit, on every device, for anyone looking. A name belongs to a spot in the chamber, not to an individual with a history.
+
 ## Assets
 Chambers come from `client/src/art/chambers.ts`; `npx tsx art/chambers/build.ts` writes each to `art/chambers/<id>.svg` with a `preview.html` sheet (every chamber large, and at nest size). Edit `chambers.ts`, not the SVGs.
 
