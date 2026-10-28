@@ -29,7 +29,7 @@ import { advance, getColony, getPlayer, lockColony, saveColony, type Player } fr
 import { syncNest } from './nests';
 import { defineMission } from './missions';
 import { addReport } from './reports';
-import { refreshPoints } from './points';
+import { refreshPointsAfterCommit } from './points';
 
 const nonZero = <T extends Record<string, number | undefined>>(u: T): T => Object.fromEntries(Object.entries(u).filter(([, n]) => (n ?? 0) > 0)) as T;
 
@@ -154,8 +154,8 @@ defineMission('raid', {
     const dverb = result.winner === 'defender' ? 'held' : result.winner === 'attacker' ? 'was raided' : 'held (draw)';
     if (!defender.isNpc)
       await addReport(q, m.worldId, defender.id, 'battle', `${target.name} ${dverb} — attack by ${attackerName}`, { ...data, perspective: 'defender' }, at);
-    if (!defender.isNpc) await refreshPoints(q, defender.id);
-    if (!attacker.isNpc) await refreshPoints(q, attacker.id);
+    if (!defender.isNpc) await refreshPointsAfterCommit(q, defender.id);
+    if (!attacker.isNpc) await refreshPointsAfterCommit(q, attacker.id);
     return { home: presentUnits(m.units).length > 0 };
   },
 });

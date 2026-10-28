@@ -22,18 +22,38 @@ export async function closePool() {
   pool = null;
 }
 
-/** Run `fn` inside a transaction. */
+type Task = () => Promise<void>;
+const afterCommitTasks = new WeakMap<object, Task[]>();
+
+/** Run `fn` inside a transaction, then any tasks queued with afterCommit() once it has committed. */
 export async function tx<T>(fn: (c: Tx) => Promise<T>): Promise<T> {
   const client = await getPool().connect();
+  const tasks: Task[] = [];
+  afterCommitTasks.set(client, tasks);
+  let out: T;
   try {
     await client.query('BEGIN');
-    const out = await fn(client);
+    out = await fn(client);
     await client.query('COMMIT');
-    return out;
   } catch (e) {
     await client.query('ROLLBACK').catch(() => {});
     throw e;
   } finally {
+    afterCommitTasks.delete(client);
     client.release();
   }
+  for (const task of tasks) await task();
+  return out;
+}
+
+/**
+ * Run `fn` after the transaction `q` belongs to has committed (right away if `q` isn't in one).
+ * Use it for follow-up work that must not take more row locks inside the transaction.
+ * The data is already saved by then, so a failing task is logged rather than thrown.
+ */
+export async function afterCommit(q: Q, fn: () => Promise<unknown>): Promise<void> {
+  const task = () => fn().then(() => {}, (e) => console.error('After-commit task failed:', e));
+  const tasks = afterCommitTasks.get(q);
+  if (tasks) tasks.push(task);
+  else await task();
 }

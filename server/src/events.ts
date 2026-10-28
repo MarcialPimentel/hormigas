@@ -33,6 +33,16 @@ export async function rescheduleEvent(q: Q, id: number, dueAt: number) {
   await q.query('UPDATE events SET due_at = $2 WHERE id = $1 AND NOT done', [id, Math.round(dueAt)]);
 }
 
+/**
+ * Postgres errors that mean "try again", not "this event is broken":
+ * serialization failure, deadlock, lock not available.
+ */
+const TEMPORARY_ERRORS = new Set(['40001', '40P01', '55P03']);
+const isTemporary = (e: unknown) => TEMPORARY_ERRORS.has(String((e as { code?: unknown } | null)?.code));
+
+/** How many times an event may hit a temporary error before it is given up on like any other failure. */
+export const MAX_ATTEMPTS = 5;
+
 let running: Promise<number> | null = null;
 
 /**
@@ -46,34 +56,50 @@ export function processDueEvents(max = 500): Promise<number> {
 
 async function runDue(max: number): Promise<number> {
   let processed = 0;
+  // Only pick types this server knows. An unknown type (say, from a newer build that was rolled back)
+  // stays pending for a server that can handle it instead of being thrown away.
+  const known = [...handlers.keys()];
   while (processed < max) {
     const t = now();
-    const handled = await tx(async (q) => {
+    const outcome = await tx(async (q): Promise<'empty' | 'done' | 'retry'> => {
       const r = await q.query(
-        'SELECT id, world_id, type, due_at, payload FROM events WHERE NOT done AND due_at <= $1 ORDER BY due_at, id LIMIT 1 FOR UPDATE SKIP LOCKED',
-        [t],
+        'SELECT id, world_id, type, due_at, payload FROM events WHERE NOT done AND due_at <= $1 AND type = ANY($2::text[]) ORDER BY due_at, id LIMIT 1 FOR UPDATE SKIP LOCKED',
+        [t, known],
       );
       const ev = r.rows[0] as GameEvent | undefined;
-      if (!ev) return false;
-      const h = handlers.get(ev.type);
+      if (!ev) return 'empty';
       try {
         await q.query('SAVEPOINT ev');
-        if (h) await h(q, ev);
-        else console.warn(`No handler for event type ${ev.type}`);
+        await handlers.get(ev.type)!(q, ev);
         await q.query('RELEASE SAVEPOINT ev');
       } catch (e) {
-        // Never let one broken event block the queue: roll back its effects, record the error, move on.
         await q.query('ROLLBACK TO SAVEPOINT ev');
+        const attempts = (Number(ev.payload?.attempts) || 0) + 1;
+        if (isTemporary(e) && attempts < MAX_ATTEMPTS) {
+          // e.g. a deadlock with a player action: nothing is wrong with the event, so keep it for the next run.
+          console.warn(`Event ${ev.id} (${ev.type}) hit a temporary error, will retry (attempt ${attempts}):`, e);
+          await q.query("UPDATE events SET payload = payload || jsonb_build_object('attempts', $2::int) WHERE id = $1", [ev.id, attempts]);
+          return 'retry';
+        }
+        // Never let one broken event block the queue: roll back its effects, record the error, move on.
         console.error(`Event ${ev.id} (${ev.type}) failed:`, e);
         await q.query("UPDATE events SET payload = payload || jsonb_build_object('error', $2::text) WHERE id = $1", [ev.id, String(e)]);
       }
       await q.query('UPDATE events SET done = true WHERE id = $1', [ev.id]);
-      return true;
+      return 'done';
     });
-    if (!handled) break;
+    if (outcome === 'empty') break;
+    // A retried event is still first in line. Stop here so the next run starts with it and events stay in order.
+    if (outcome === 'retry') break;
     processed++;
   }
   return processed;
+}
+
+/** Event types with pending rows that no handler on this server knows (logged at startup). */
+export async function unknownPendingEventTypes(q: Q): Promise<string[]> {
+  const r = await q.query('SELECT DISTINCT type FROM events WHERE NOT done AND NOT (type = ANY($1::text[]))', [[...handlers.keys()]]);
+  return r.rows.map((row) => row.type as string);
 }
 
 /** Background loop. Returns a stop function. */

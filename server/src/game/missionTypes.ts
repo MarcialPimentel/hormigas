@@ -26,7 +26,7 @@ import { advance, getColony, getPlayer, lockColony, saveColony } from '../colony
 import { syncNest } from './nests';
 import { defineMission } from './missions';
 import { addReport } from './reports';
-import { refreshPoints } from './points';
+import { refreshPointsAfterCommit } from './points';
 
 defineMission('transport', {
   allowsCargo: true,
@@ -128,7 +128,7 @@ defineMission('scout', {
     );
     if (caught) {
       m.units = {};
-      await refreshPoints(q, m.playerId);
+      await refreshPointsAfterCommit(q, m.playerId);
       return { home: false };
     }
     return { home: true };

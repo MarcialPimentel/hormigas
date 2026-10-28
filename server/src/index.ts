@@ -2,7 +2,7 @@ import { buildApp } from './app';
 import { config } from './config';
 import { closePool, getPool, tx } from './db';
 import { migrate } from './migrate';
-import { startEventLoop } from './events';
+import { startEventLoop, unknownPendingEventTypes } from './events';
 import { getWorld } from './world';
 import { refreshAllPoints } from './game/points';
 import { ensureWildNests } from './game/nests';
@@ -19,6 +19,8 @@ async function main() {
   const armed = await tx((q) => ensureNestEvents(q, world.id, now()));
   if (armed) console.log(`Nest events scheduled for ${armed} colon${armed === 1 ? 'y' : 'ies'}`);
   const app = await buildApp({ logger: true });
+  const unknown = await unknownPendingEventTypes(getPool());
+  if (unknown.length) console.warn(`Pending events with no handler on this build (left alone): ${unknown.join(', ')}`);
   const stopEvents = startEventLoop();
   // keep rankings / strength protection current
   let pointsTimer: NodeJS.Timeout;

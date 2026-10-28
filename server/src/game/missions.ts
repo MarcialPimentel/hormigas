@@ -31,7 +31,7 @@ import { GameError, notFound, forbidden } from '../errors';
 import { advance, colonyAt, getPlayer, lockColony, lockOwnColony, saveColony, type Colony, type Player } from '../colony';
 import { cancelEvent, onEvent, schedule } from '../events';
 import { getWorld } from '../world';
-import { refreshPoints } from './points';
+import { refreshPointsAfterCommit } from './points';
 import { notify } from '../realtime';
 
 export type MissionType = 'transport' | 'relocate' | 'scout' | 'raid' | 'haul' | 'forage';
@@ -284,7 +284,7 @@ onEvent('mission_arrive', async (q, ev) => {
     m.status = 'done';
   }
   await saveMission(q, m);
-  if (m.status === 'done') await refreshPoints(q, m.playerId);
+  if (m.status === 'done') await refreshPointsAfterCommit(q, m.playerId);
 });
 
 onEvent('mission_return', async (q, ev) => {
@@ -297,7 +297,7 @@ onEvent('mission_return', async (q, ev) => {
   await saveColony(q, c);
   m.status = 'done';
   await saveMission(q, m);
-  await refreshPoints(q, m.playerId);
+  await refreshPointsAfterCommit(q, m.playerId);
   notify(m.playerId, { type: 'returned', missionType: m.type });
 });
 
