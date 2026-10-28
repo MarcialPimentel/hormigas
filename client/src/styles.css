@@ -252,20 +252,18 @@ input:focus, textarea:focus { border-color: var(--honey); outline: none; }
 .linkish:hover { text-decoration-color: var(--sand); }
 
 .activity-time, .mission-time { display: inline-flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
-.trip { display: inline-flex; align-items: center; width: 96px; flex: none; }
+.trip { display: inline-flex; align-items: center; width: 160px; flex: none; }
+@media (max-width: 520px) { .trip { width: 128px; } }
 .trip-home, .trip-target { width: 7px; height: 7px; border-radius: 50%; flex: none; }
 .trip-home { background: var(--honey); }
 .trip-target { border: 1.5px solid var(--muted); }
 .trip.hostile .trip-target { border-color: var(--danger); }
 .trip-line { position: relative; flex: 1; height: 2px; margin: 0 3px; background: repeating-linear-gradient(90deg, var(--seam) 0 4px, transparent 4px 7px); }
-.trip-party { position: absolute; top: -3px; display: flex; gap: 2px; transform: translateX(-100%); transition: left 1s linear; }
-.trip-party.back { flex-direction: row-reverse; transform: none; }
-.trip-party i { width: 4px; height: 4px; border-radius: 50%; background: var(--sand); animation: trip-bob 0.6s ease-in-out infinite; }
-.trip-party i:nth-child(2) { animation-delay: 0.2s; }
-.trip-party i:nth-child(3) { animation-delay: 0.4s; }
-.trip-party i.loaded { box-shadow: 0 -3px 0 -0.5px var(--load); }
-.trip.hostile .trip-party i { background: var(--danger); }
-@keyframes trip-bob { 50% { transform: translateY(-1.5px); } }
+/* a party of three ants standing on the line, facing the way they travel */
+.trip-party { position: absolute; bottom: -1px; display: flex; gap: 1px; transition: left 1s linear; }
+.trip-party.back { transform: scaleX(-1); }
+.trip-party i { display: block; line-height: 0; }
+.trip-party i svg { display: block; overflow: visible; }
 
 .spot-moves { list-style: none; margin: 0.3rem 0 0; padding: 0; display: grid; gap: 0.2rem; font-size: 0.8rem; color: var(--muted); }
 .spot-moves li { display: flex; align-items: center; gap: 0.5rem; }

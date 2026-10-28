@@ -3,6 +3,8 @@ import { useGame } from '../game';
 import { fmtDuration, fmtFull, fmtNum } from '../format';
 import { RESOURCE_LABEL } from '../describe';
 import type { ReactNode } from 'react';
+import { useMotion } from '../motion';
+import { CASTES, antSvg, type Caste } from '../art/ants';
 
 export function ResDot({ r }: { r: 'foliage' | 'protein' | 'nectar' | 'workforce' }) {
   return <span className={`dot dot-${r}`} aria-hidden="true" />;
@@ -61,7 +63,23 @@ export function Empty({ children }: { children: ReactNode }) {
   return <p className="empty">{children}</p>;
 }
 
-const TRIP_LOAD: Record<string, string> = { foliage: 'var(--leaf)', protein: 'var(--protein)', nectar: 'var(--honey)' };
+// hex, not CSS variables: these go inside the ant SVG
+const TRIP_LOAD: Record<string, string> = { foliage: '#8db255', protein: '#d06a6a', nectar: '#e8b23a' };
+const TRIP_ANT_LEN = 18;
+
+const tripAntCache = new Map<string, string>();
+/** One small walking ant for a trip track (cached: the same few are drawn every second). */
+function tripAnt(caste: Caste, i: number, walk: boolean, enemy: boolean, load?: string) {
+  const key = `${caste}|${i}|${walk}|${enemy}|${load ?? ''}`;
+  let svg = tripAntCache.get(key);
+  if (!svg) {
+    const [, , w, h] = CASTES[caste].vb;
+    const len = caste === 'soldier' ? TRIP_ANT_LEN + 2 : TRIP_ANT_LEN;
+    svg = antSvg(caste, { lod: 'sprite', walk, enemy, load, phase: i * 0.13 }, `width="${len}" height="${((len * h) / w).toFixed(1)}"`);
+    tripAntCache.set(key, svg);
+  }
+  return svg;
+}
 
 /**
  * A party on its way: home on the left, the target on the right. Outbound it walks right; coming home
@@ -85,6 +103,7 @@ export function Trip({
   hostile?: boolean;
 }) {
   const { now } = useGame();
+  const { reduced } = useMotion();
   const k = (a: number | undefined, b: number | undefined) => (a && b && b > a ? Math.min(1, Math.max(0, (now - a) / (b - a))) : 0.5);
   let pos: number;
   let back = false;
@@ -101,9 +120,15 @@ export function Trip({
     <span className={`trip${hostile ? ' hostile' : ''}`} aria-hidden="true">
       <span className="trip-home" />
       <span className="trip-line">
-        <span className={`trip-party${back ? ' back' : ''}`} style={{ left: `${pos}%` }}>
+        {/* the whole party stays on the line: it slides across the room the line has left over */}
+        <span className={`trip-party${back ? ' back' : ''}`} style={{ left: `calc((100% - ${3 * (hostile ? TRIP_ANT_LEN + 2 : TRIP_ANT_LEN) + 6}px) * ${(pos / 100).toFixed(4)})` }}>
           {[0, 1, 2].map((i) => (
-            <i key={i} style={loads.length ? ({ '--load': TRIP_LOAD[loads[i % loads.length]] } as any) : undefined} className={loads.length ? 'loaded' : ''} />
+            <i
+              key={i}
+              dangerouslySetInnerHTML={{
+                __html: tripAnt(hostile ? 'soldier' : 'worker', i, !reduced, !!hostile, loads.length ? TRIP_LOAD[loads[i % loads.length]] : undefined),
+              }}
+            />
           ))}
         </span>
       </span>

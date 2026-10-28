@@ -28,6 +28,8 @@ interface CasteSpec {
 // "Amber chitin": light enough to read against the dark soil.
 const AMBER: Palette = { base: '#c98b52', light: '#f2d3a2', shade: '#8c5730', far: '#6e4325', ink: '#2b1d13' };
 const RUST: Palette = { base: '#a95f2f', light: '#e0a46e', shade: '#713c1c', far: '#552c14', ink: '#24170e' };
+/** Other colonies' raiders: same anatomy, blood-red chitin. */
+const ENEMY: Palette = { base: '#c4473a', light: '#ef9a8a', shade: '#86281f', far: '#64201a', ink: '#2b1210' };
 
 export const CASTES: Record<Caste, CasteSpec> = {
   worker: {
@@ -98,14 +100,21 @@ export interface AntOptions {
   swing?: number;
   /** Seconds per stride when walking. */
   stride?: number;
+  /** Seconds to offset the walk, so ants side by side don't step in sync. */
+  phase?: number;
+  /** Colour of food held in the jaws. */
+  load?: string;
+  /** Draw as another colony's ant. */
+  enemy?: boolean;
 }
 
 function leg(l: Leg, color: string, width: number, portrait: boolean, pal: Palette, o: AntOptions) {
   const [cx, cy] = l.pts[0];
   const sign = l.set === 'a' ? 1 : -1;
   const stride = o.stride ?? 0.42;
+  const begin = (o.phase ?? 0) + (l.set === 'a' ? 0 : stride / 2);
   const anim = o.walk
-    ? `<animateTransform attributeName="transform" type="rotate" values="-13 ${cx} ${cy};13 ${cx} ${cy};-13 ${cx} ${cy}" dur="${stride}s" begin="${l.set === 'a' ? '0s' : `-${stride / 2}s`}" repeatCount="indefinite"/>`
+    ? `<animateTransform attributeName="transform" type="rotate" values="-13 ${cx} ${cy};13 ${cx} ${cy};-13 ${cx} ${cy}" dur="${stride}s" begin="${begin ? `-${f(begin)}s` : '0s'}" repeatCount="indefinite"/>`
     : '';
   const pose = !o.walk && o.swing ? ` transform="rotate(${f(o.swing * sign)} ${cx} ${cy})"` : '';
   const ink = portrait ? `<polyline points="${P(l.pts)}" stroke="${pal.ink}" stroke-width="${width + 1}"/>` : '';
@@ -125,7 +134,8 @@ function antenna(h: Ellipse, color: string, width: number, portrait: boolean, pa
 /** The ant's shapes (no <svg> wrapper), in body units. */
 export function antBody(caste: Caste, o: AntOptions = {}) {
   const c = CASTES[caste];
-  const { pal, gaster: g, pet, head: h } = c;
+  const { gaster: g, pet, head: h } = c;
+  const pal = o.enemy ? ENEMY : c.pal;
   const portrait = o.lod === 'portrait';
   const line = portrait ? `stroke="${pal.ink}" stroke-width="0.9"` : '';
   const ft = `translate(${c.front.x} 16) scale(${c.front.s}) translate(-29 -16)`;
@@ -180,6 +190,8 @@ export function antBody(caste: Caste, o: AntOptions = {}) {
     for (const t of [0.35, 0.6]) out.push(`<path d="M${f(mx + 2.4 * m * t)},${f(my + 0.3 * m * t)} l0.2,0.9" stroke="${pal.ink}" stroke-width="0.5"/>`);
   }
   out.push('</g>');
+  // a morsel held in the jaws
+  if (o.load) out.push(`<circle cx="${f(mx + 3.6 * m)}" cy="${f(my + 0.4 * m)}" r="3.4" fill="${o.load}" stroke="${pal.ink}" stroke-width="${portrait ? 0.6 : 0}"/>`);
   // eye (small: ants see poorly)
   const ex = h.cx + h.rx * 0.28, ey = h.cy - h.ry * 0.12;
   out.push(`<ellipse cx="${f(ex)}" cy="${f(ey)}" rx="${f(Math.min(1.5, h.rx * 0.22))}" ry="${f(Math.min(1.2, h.ry * 0.2))}" fill="${pal.ink}"/>`);
