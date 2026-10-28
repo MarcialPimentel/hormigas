@@ -6,6 +6,7 @@ import rateLimit from '@fastify/rate-limit';
 import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { config } from './config';
+import { getPool } from './db';
 import { GameError } from './errors';
 import { authRoutes } from './routes/auth';
 import { gameRoutes } from './routes/game';
@@ -38,7 +39,16 @@ export async function buildApp(opts: { logger?: boolean } = {}): Promise<Fastify
     return reply.status(500).send({ error: { code: 'server_error', message: 'Something went wrong.' } });
   });
 
-  app.get('/api/health', async () => ({ ok: true }));
+  // Used by Docker's health check and by the deploy's go/no-go check, so "ok" must mean the game can reach its database.
+  app.get('/api/health', async (_req, reply) => {
+    try {
+      await getPool().query('SELECT 1');
+      return { ok: true };
+    } catch (e) {
+      app.log.error(e, 'health check: database unreachable');
+      return reply.status(503).send({ ok: false, error: 'database unreachable' });
+    }
+  });
   await app.register(realtimeRoutes);
   await app.register(authRoutes);
   await app.register(gameRoutes);

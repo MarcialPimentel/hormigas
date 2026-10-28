@@ -36,10 +36,31 @@ Merging to `main` deploys automatically:
 
 1. **CI** (`.github/workflows/ci.yml`) runs typecheck, tests and build.
 2. If CI passes, **Deploy** (`.github/workflows/deploy.yml`) builds the image on GitHub's runners and pushes it to GitHub Container Registry as `latest` and as the commit SHA.
-3. Deploy then SSHes into the droplet as `deploy` and runs `docker compose pull hormigas && docker compose up -d hormigas`.
-4. The old container gets SIGTERM and finishes in-flight events (30 s grace period), and the new one applies database migrations on start.
+3. Deploy then SSHes into the droplet as `deploy` and, in `/opt/hub`:
+   1. **Backs up the `hormigas` database** to `backups/predeploy-<date>-<commit>.sql.gz` (the newest 10 are kept). If the backup fails, nothing is deployed.
+   2. Tags the running image as `hormigas:previous`.
+   3. Pulls the new build, tags it `latest` and runs `docker compose up -d hormigas`. The old container gets SIGTERM and finishes in-flight events (30 s grace period), and the new one applies database migrations on start.
+   4. **Waits up to 3 minutes for Docker to report the game healthy** (`/api/health`, which also checks the database). If it never does, Deploy prints the server's last log lines, **switches back to `previous`**, and the run fails. The game keeps running the old build.
+4. Finally Deploy checks https://hormigas.marz.gg/api/health from outside.
 
-To redeploy without a code change, go to **Actions → Deploy → Run workflow**.
+The deploy script lives entirely in `deploy.yml`, so changing it needs no edits on the server.
+
+To redeploy without a code change, go to **Actions → Deploy → Run workflow** and leave the commit box empty.
+
+### Rolling back
+
+If a release is live but broken (say, a bug players hit, and the server is healthy so the automatic rollback didn't kick in), go back to an earlier build from GitHub. No terminal needed:
+
+1. Find the last good commit on `main` (the repo's commit list, or the PR that was fine).
+2. **Actions → Deploy → Run workflow**, paste its commit SHA (the short 7-character one works), and run it.
+
+This deploys the saved image for that commit, with the same backup and health check as a normal deploy. Then fix forward: the next merge to `main` deploys as usual.
+
+On the droplet, `docker tag ghcr.io/marcialpimentel/hormigas:previous ghcr.io/marcialpimentel/hormigas:latest && docker compose up -d hormigas` does the same for the build that ran just before the current one.
+
+Two things to know:
+- **Migrations aren't undone.** An older build runs on the newer database. That's fine for migrations that only add tables or columns, which is how they should be written. If a migration rewrote data, restore the pre-deploy backup instead (below).
+- Don't run `docker compose pull hormigas` by hand after a rollback. It fetches the newest `latest` from GitHub, which is the broken build.
 
 Deploy needs two repository secrets: `DROPLET_HOST` (the droplet's IP) and `DROPLET_SSH_KEY` (the private half of a key used only by GitHub). The GHCR package `hormigas` is public so the droplet can pull it without logging in.
 
@@ -53,7 +74,8 @@ Deploy needs two repository secrets: `DROPLET_HOST` (the droplet's IP) and `DROP
 | Start or update everything | `docker compose up -d` |
 | Back up now | `./backup.sh` |
 | Open a database shell | `docker compose exec db psql -U postgres -d hormigas` |
-| Restore a backup (replaces data!) | `zcat backups/all-YYYY-MM-DD.sql.gz \| docker compose exec -T db psql -U postgres` |
+| Restore a pre-deploy backup (replaces all game data!) | `docker compose stop hormigas`, then `zcat backups/predeploy-....sql.gz \| docker compose exec -T db psql -U postgres -d postgres`, then `docker compose up -d hormigas`. The dump drops and recreates the `hormigas` database, which is why the game must be stopped first. |
+| Restore a nightly backup | `zcat backups/all-YYYY-MM-DD.sql.gz \| docker compose exec -T db psql -U postgres`. This dump has no "drop first", so on a live database it reports "already exists" errors and leaves old rows in place: use it on an empty database (e.g. a rebuilt hub), or prefer a pre-deploy backup. |
 | Let a player read feedback (admin) | `docker compose exec db psql -U postgres -d hormigas -c "UPDATE players SET is_admin = true WHERE lower(username) = lower('NAME')"`, then reload the game |
 
 ## Private feedback page
@@ -74,7 +96,7 @@ To change the key (say it leaked), edit `.env` and run `docker compose up -d hor
 
 - **Run exactly one Hormigas instance (one replica).** The event loop and WebSocket push assume a single server process. Scaling out needs a shared event lock and pub/sub first.
 - **World speed is fixed at creation.** Production defaults to ×1. Changing `WORLD_SPEED` later does nothing; a fresh world means a fresh database.
-- **Back up before risky changes**, such as migrations that drop or rewrite data: run `./backup.sh` first.
+- **Every deploy backs up the game database first** (see above). Backups still live on the droplet itself, so they don't survive losing the droplet; turn on DigitalOcean droplet backups or copy `backups/` elsewhere for that.
 - The production image already sets `NODE_ENV=production`, which turns on secure cookies, trusted proxy headers (Caddy is the proxy) and speed ×1.
 
 ## Adding another project to the hub
