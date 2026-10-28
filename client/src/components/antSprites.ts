@@ -62,10 +62,12 @@ export function drawAnt(g: Graphics, frames: AntFrames, caste: Caste, x: number,
   const len = opts.len ?? NEST_LEN[caste];
   const k = len / vw;
   const left = Math.cos(angle) < -0.01;
+  // One matrix: mirror (if heading left), then turn, then move to (x, y). Pixi's rotate/scale
+  // helpers act on the whole canvas (they'd swing the ant around the canvas corner), so build it here.
+  const turn = left ? angle + Math.PI : angle;
+  const cos = Math.cos(turn), sin = Math.sin(turn), sx = left ? -1 : 1;
   g.save();
-  g.translateTransform(x, y);
-  g.rotateTransform(left ? angle + Math.PI : angle);
-  if (left) g.scaleTransform(-1, 1);
+  g.setTransform(cos * sx, sin * sx, -sin, cos, x, y);
   const oy = opts.feet ? FOOT_Y - vy : vh / 2;
   g.texture(tex, opts.tint ?? 0xffffff, -(vw / 2) * k, -oy * k, vw * k, vh * k);
   g.restore();
