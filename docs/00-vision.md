@@ -28,7 +28,7 @@ Browser-first (desktop + mobile browser). No install.
 ## Non-goals (what we are NOT making)
 - Not a real-time action or RTS game. No unit micro.
 - Not a pay-to-win or gacha game.
-- Not a detailed illustrated nest sim (v0.1 nest view is schematic).
+- Not a detailed nest *simulation*: the art shows what the colony is doing, but there's no per-ant simulation or micro-management.
 - Not multiple worlds/servers at launch — one world.
 
 ## Inspirations

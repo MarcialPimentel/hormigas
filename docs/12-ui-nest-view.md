@@ -1,6 +1,6 @@
 # 12 — UI & Nest View
 
-**Version:** 0.2
+**Version:** 0.3
 
 ## Principles
 - **Mobile-browser first.** Every screen works one-handed on a phone. Desktop gets more columns, not more features.
@@ -32,16 +32,22 @@ Feedback is read on the admin-only **Feedback** screen. Admins are players with 
 - Side cross-section of soil.
 - **Chambers** = rounded shapes; size grows with level; locked chambers appear as faint outlines (shows what's coming).
 - **Tunnels** = lines connecting chambers to the entrance.
-- **Ants** = small dots moving along tunnels:
+- **Ants** = ant sprites (worker, soldier) walking along tunnels, facing the way they go, with a tripod walk cycle. See [18-art-direction.md](18-art-direction.md):
   - Workers traveling between gardens and storage
   - Soldiers clustered near the entrance
-  - Dots leaving/arriving when missions depart/return
+  - Ants leaving/arriving when missions depart/return
 - Under-construction chambers show a digging animation (dots + progress ring).
-- Tap a chamber → its upgrade panel.
-- No art assets in v0.1 — colors and shapes only (PixiJS). Real art can replace it later without changing behavior.
+- Tap a built chamber → its **close-up** (below). Tap an unbuilt one → the Chambers screen.
+- Ants are drawn from the art set in `client/src/art/ants.ts`; chambers and tunnels are still colours and shapes (PixiJS) until chamber art lands.
+
+## Chamber close-up
+Tapping a built chamber opens a close look inside it, filling the nest view:
+- The hollow at full size, with ants drawn as detailed portraits (about 40–70px long) walking its floor. Stores show their food piling up and filling as stock rises; the Queen's Chamber shows the queen with her eggs and attendants; brood chambers show eggs.
+- **Upgrade** goes to the Chambers screen; **Back** (or Esc) returns to the whole nest.
+- With motion reduced, the ants stand still along their beat.
 
 ## Showing what happens (Build 3)
-The game should *show* the colony at work, not only list timers. Schematic shapes and dots only; no art assets.
+The game should *show* the colony at work, not only list timers. (Build 3 used dots; ants are now sprites, see above.)
 
 **Nest View**
 - **Parties on the surface.** Our missions walk along the grass from the entrance toward the edge (the side of the target), and walk back carrying coloured food. Their position is how far through the trip they are.
@@ -74,5 +80,4 @@ The game should *show* the colony at work, not only list timers. Schematic shape
 ## Open Questions
 - Dark mode by default (soil theme) or light?
 - Should the Nest View be the home screen, or the Overview?
-- Tapping a chamber in the Nest View opens the Chambers screen. Should it open a small panel for that chamber instead? Planned for a later build.
 - Should a raid landing on the nest have its own scene (a fight at the entrance, corpses on the surface)? Planned for a later build.

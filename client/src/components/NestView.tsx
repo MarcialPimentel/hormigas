@@ -1,10 +1,13 @@
 // Schematic cross-section of the nest (docs/12-ui-nest-view.md), drawn with PixiJS.
-// Chambers grow with level, tunnels link them to the entrance, and dots are ants going about their work.
+// Chambers grow with level, tunnels link them to the entrance, and ants (docs/18-art-direction.md) go about
+// their work. Tapping a chamber opens a close-up of it.
 import { useEffect, useRef, useState } from 'react';
 import { setMotionPref, useMotion, type MotionPref } from '../motion';
 import { Application, Graphics } from 'pixi.js';
 import { C, FLECK, LAYOUT, SURFACE, dottedEllipse, drawPolyline, geometry, lerpColor, seeded, type Pt } from './nestScene';
 import { createFx } from './nestFx';
+import { antTextures, drawAnt, walkFrame } from './antSprites';
+import { ChamberCloseUp } from './ChamberCloseUp';
 import { onMoment } from '../moments';
 import { CHAMBERS, CHAMBER_IDS, isUnlocked, lvl, type ChamberId } from '@hormigas/shared';
 import { useGame } from '../game';
@@ -29,13 +32,16 @@ function makeAnt(path: Pt[], soldier: boolean, rnd: () => number): Ant {
   return { path, lens, total, d: rnd() * total, dir: rnd() < 0.5 ? 1 : -1, speed: 14 + rnd() * 16, pause: 0, soldier, home: path[0] };
 }
 
-function antPos(a: Ant): Pt {
+/** Position on the path and heading (radians) in the direction the ant is walking. */
+function antPos(a: Ant): [number, number, number] {
   const { path, lens } = a;
   let i = 1;
   while (i < lens.length - 1 && lens[i] < a.d) i++;
   const seg = lens[i] - lens[i - 1] || 1;
   const t = Math.max(0, Math.min(1, (a.d - lens[i - 1]) / seg));
-  return [path[i - 1][0] + (path[i][0] - path[i - 1][0]) * t, path[i - 1][1] + (path[i][1] - path[i - 1][1]) * t];
+  const dx = (path[i][0] - path[i - 1][0]) * a.dir;
+  const dy = (path[i][1] - path[i - 1][1]) * a.dir;
+  return [path[i - 1][0] + (path[i][0] - path[i - 1][0]) * t, path[i - 1][1] + (path[i][1] - path[i - 1][1]) * t, Math.atan2(dy, dx)];
 }
 
 const NEXT_MOTION: Record<MotionPref, MotionPref> = { auto: 'on', on: 'off', off: 'auto' };
@@ -46,6 +52,7 @@ function destroyApp(app: Application) {
   try {
     if ((app as any).__iv) clearInterval((app as any).__iv);
     app.destroy(true, { children: true });
+    (app as any).__art?.destroy();
   } catch {
     /* not initialised yet */
   }
@@ -59,6 +66,7 @@ export function NestView({ nav }: { nav: Nav }) {
   const dataRef = useRef({ colony, state, now });
   dataRef.current = { colony, state, now };
   const { pref: motion, reduced } = useMotion();
+  const [closeUp, setCloseUp] = useState<ChamberId | null>(null);
 
   // tear down whatever scene is on screen when the view goes away
   useEffect(
@@ -97,10 +105,13 @@ export function NestView({ nav }: { nav: Nav }) {
     let offMoments: (() => void) | null = null;
     (async () => {
       await app.init({ width: size.w, height: size.h, background: C.soilDeep, antialias: true, resolution: Math.min(2, window.devicePixelRatio || 1), autoDensity: true });
+      const art = await antTextures();
       if (disposed) {
         app.destroy(true);
+        art.destroy();
         return;
       }
+      (app as any).__art = art;
       // keep showing the previous scene until this one has drawn, so a rebuild never flashes blank
       const previous = appRef.current;
       appRef.current = app;
@@ -169,7 +180,7 @@ export function NestView({ nav }: { nav: Nav }) {
       app.stage.addChild(ch);
 
       // things happening: storage, eggs, digging, research (under the ants); parties and moments (over them)
-      const fx = createFx(w, h, geo, chambers, reduced);
+      const fx = createFx(w, h, geo, chambers, reduced, art.frames);
       app.stage.addChild(fx.under);
 
       // construction progress
@@ -222,8 +233,9 @@ export function NestView({ nav }: { nav: Nav }) {
               if (a.d <= 0) { a.d = 0; a.dir = 1; a.pause = a.soldier ? 400 : 300; }
             }
           }
-          const [px, py] = antPos(a);
-          antsG.circle(px, py, a.soldier ? 2.6 : 2).fill(a.soldier ? C.soldier : C.ant);
+          const [px, py, heading] = antPos(a);
+          const still = reduced || a.pause > 0;
+          drawAnt(antsG, art.frames, a.soldier ? 'soldier' : 'worker', px, py, heading, { frame: still ? 1 : walkFrame(a.d) });
         }
         fx.draw(dt, dataRef.current);
       };
@@ -266,8 +278,8 @@ export function NestView({ nav }: { nav: Nav }) {
               key={id}
               className={`nest-chamber${level === 0 ? ' ghost' : ''}${building ? ' building' : ''}`}
               style={{ left: x * w - rx, top: y * h - ry, width: rx * 2, height: ry * 2 }}
-              onClick={() => nav('chambers')}
-              aria-label={`${CHAMBERS[id].name}${level ? `, level ${level}` : ', not built yet'}${building ? ', being dug' : ''}. Open chambers.`}
+              onClick={() => (level > 0 ? setCloseUp(id) : nav('chambers'))}
+              aria-label={`${CHAMBERS[id].name}${level ? `, level ${level}` : ', not built yet'}${building ? ', being dug' : ''}. ${level > 0 ? 'Look inside.' : 'Open chambers.'}`}
             >
               <span className="nest-label">
                 {CHAMBERS[id].name.replace("Queen's Chamber", 'Queen')}
@@ -286,6 +298,7 @@ export function NestView({ nav }: { nav: Nav }) {
         Motion: {motion}
       </button>
       {away > 0 && <span className="nest-away">{away.toLocaleString()} away on missions</span>}
+      {closeUp && <ChamberCloseUp id={closeUp} onClose={() => setCloseUp(null)} onOpenChambers={() => nav('chambers')} />}
     </div>
   );
 }
