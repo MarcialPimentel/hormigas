@@ -29,7 +29,7 @@ gaster · petiole · mesosoma · head · mandibles · elbowed antenna · six leg
 - **Walking** uses a tripod gait: near front, near hind and far middle legs swing together, against the other three. Legs pivot at the hip in code; no hand-drawn frames.
 
 ## Palette
-Ants are lighter than the soil so they read on it. Colours sit alongside the UI palette in `client/src/styles.css`.
+Ants are lighter than the soil so they read on it. Colours sit alongside the UI palette in `client/src/styles.css`, which has a dark (soil) and a light (field-guide paper) theme following the device; the nest itself looks the same in both.
 
 | Role | Worker | Soldier | Queen |
 |---|---|---|---|
