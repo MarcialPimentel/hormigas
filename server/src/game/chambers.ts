@@ -20,7 +20,7 @@ import { advance, requireAffordable, getPlayer, lockOwnColony, lockColony, saveC
 import { cancelEvent, onEvent, schedule } from '../events';
 import { getWorld } from '../world';
 import { timeMultiplier } from './boost';
-import { refreshPoints } from './points';
+import { refreshPointsAfterCommit } from './points';
 import { addReport } from './reports';
 
 export async function startBuild(q: Tx, playerId: number, colonyId: number, chamber: string) {
@@ -80,7 +80,7 @@ onEvent('build_complete', async (q, ev) => {
   c.chambers = { ...c.chambers, [job.chamber]: job.level };
   c.buildJob = null;
   await saveColony(q, c);
-  await refreshPoints(q, c.playerId);
+  await refreshPointsAfterCommit(q, c.playerId);
   if (job.chamber === 'aphid_pasture' && job.level === 1) {
     const first = await q.query("SELECT 1 FROM reports WHERE player_id = $1 AND type = 'milestone' AND data->>'id' = 'nectar'", [c.playerId]);
     if (!first.rowCount)

@@ -1,5 +1,5 @@
 import { computePoints } from '@hormigas/shared';
-import type { Q } from '../db';
+import { afterCommit, getPool, type Q } from '../db';
 import { now } from '../clock';
 import { advance, playerColonies } from '../colony';
 
@@ -20,6 +20,15 @@ export async function refreshPoints(q: Q, playerId: number) {
   const points = computePoints(colonies, p.rows[0].research);
   await q.query('UPDATE players SET points = $2, points_total = $3 WHERE id = $1', [playerId, JSON.stringify(points), points.total]);
   return points;
+}
+
+/**
+ * Recompute a player's points once the current transaction commits.
+ * Event handlers lock colonies, and player actions lock the player and then the colony. Updating the
+ * player row inside a handler takes those locks in the opposite order, which can deadlock, so handlers use this.
+ */
+export function refreshPointsAfterCommit(q: Q, playerId: number): Promise<void> {
+  return afterCommit(q, () => refreshPoints(getPool(), playerId));
 }
 
 /** Periodic refresh for everyone (rankings, protection checks). */
