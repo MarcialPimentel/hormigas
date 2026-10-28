@@ -8,6 +8,8 @@ Hormigas is a browser-based, persistent strategy game where you grow an ant king
 ## The fantasy
 *"I am the will of the colony."* Not a hero, not a general — the collective instinct that decides where tunnels go, which castes to raise, and when to march.
 
+**Tone:** grounded nature documentary. The colony is drawn like a living field guide: real anatomy, bold silhouettes, no cartoon faces. See [18-art-direction.md](18-art-direction.md).
+
 ## Design pillars
 1. **The colony lives while you're away.** Progress never stops. Coming back should always feel rewarding.
 2. **Every loss is recoverable.** Raids sting but never end you. Protected storage, brood, and catch-up rules keep players in the game.
@@ -36,4 +38,3 @@ Browser-first (desktop + mobile browser). No install.
 
 ## Open Questions
 - Final name (Hormigas = "ants" in Spanish). Lean into Spanish flavor in naming, or keep English terms?
-- Tone: grounded nature-documentary vs. light/charming?
