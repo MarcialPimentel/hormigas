@@ -115,11 +115,13 @@ input:focus, textarea:focus { border-color: var(--honey); outline: none; }
 .res.full .res-rate { color: var(--honey); }
 .res.short .res-rate { color: var(--danger); }
 
-.dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; vertical-align: baseline; flex: none; }
-.dot-foliage { background: var(--leaf); border-radius: 50% 0; }           /* leaf */
-.dot-protein { background: var(--protein); border-radius: 40% 40% 50% 50%; }
-.dot-nectar { background: var(--honey); border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%; } /* droplet */
-.dot-workforce { background: var(--workforce); }
+.dot { display: inline-block; width: 13px; height: 13px; vertical-align: -2px; flex: none; }
+.res .dot { width: 18px; height: 18px; }
+@media (max-width: 520px) { .res .dot { width: 13px; height: 13px; } .res { padding: 0.45rem 0.35rem; column-gap: 0.3rem; } }
+.icon-foliage { color: var(--leaf); }
+.icon-protein { color: var(--protein); }
+.icon-nectar { color: var(--honey); }
+.icon-workforce { color: var(--workforce); }
 
 .nav {
   position: fixed; inset: auto 0 0 0; z-index: 10;
@@ -363,12 +365,34 @@ pre.report-body { white-space: pre-wrap; overflow-x: auto; }
 .nest-chamber:hover, .nest-chamber:focus-visible { box-shadow: 0 0 0 2px var(--honey); }
 .nest-label {
   position: absolute; left: 50%; top: 100%; transform: translate(-50%, 2px);
-  font-size: 0.68rem; font-weight: 700; white-space: nowrap; color: var(--sand); opacity: 0.85;
+  display: flex; flex-direction: column; align-items: center; gap: 1px;
+  font-size: 0.68rem; font-weight: 700; white-space: nowrap; color: var(--sand); opacity: 0.9;
   text-shadow: 0 1px 2px #000;
 }
+/* what a chamber is busy with, under its name */
+.nest-tag { font-size: 0.62rem; font-weight: 700; padding: 0 6px; border-radius: 999px; background: rgba(26, 19, 14, 0.85); text-shadow: none; color: var(--muted); }
+.nest-tag.dig { color: var(--honey); box-shadow: inset 0 0 0 1px rgba(232, 178, 58, 0.6); }
+.nest-tag.learn { color: #d6c0ea; box-shadow: inset 0 0 0 1px rgba(181, 138, 216, 0.6); }
+.nest-tag.brood { color: #f3ead8; }
+.nest-tag.store { color: var(--sand); }
+.nest-tag.full { color: var(--honey); }
+.nest-chamber.selected { box-shadow: 0 0 0 2px var(--honey); }
+/* the colony's name on a little stake by the entrance */
+.nest-sign { position: absolute; max-width: 40%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: var(--font-display); font-size: 0.72rem; font-weight: 700; color: #f2d3a2; background: #6b4a2f; border: 1px solid #8a6040; padding: 0 7px; border-radius: 3px; pointer-events: none; }
+/* a party's timer, floating over it on the surface */
+.nest-trip { position: absolute; transform: translateX(-50%); font-size: 0.7rem; font-weight: 700; white-space: nowrap; padding: 1px 8px; border-radius: 999px; background: rgba(35, 26, 20, 0.9); border: 1px solid var(--seam); color: var(--sand); pointer-events: none; transition: left 1s linear; }
+.nest-trip.raid { color: #f5c0b6; border-color: var(--danger); background: rgba(58, 23, 20, 0.92); }
+.nest-trip.scout { color: #f5c0b6; border-color: rgba(226, 104, 90, 0.5); }
+
+/* tap a chamber: its details and the next dig, right under the nest */
+.sheet { width: 100%; background: var(--wall); border: 1px solid var(--seam); border-top: 3px solid var(--honey); border-radius: var(--r-md); padding: 0.9rem 1rem; display: grid; gap: 0.4rem; }
+.sheet-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.sheet-level { font-family: var(--font-body); font-weight: 400; font-size: 0.9rem; }
+.sheet-next { margin-top: 0.15rem; }
+.sheet-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 0.3rem; }
+.sheet-actions .why { font-size: 0.8rem; color: var(--muted); }
 .nest-chamber.ghost .nest-label { color: var(--muted); font-weight: 400; }
 .nest-chamber.building .nest-label { color: var(--honey); }
-.nest-away { position: absolute; right: 10px; top: 6px; font-size: 0.75rem; color: var(--sand); background: rgba(35, 26, 20, 0.8); padding: 2px 8px; border-radius: 999px; }
 .nest-motion { position: absolute; left: 10px; top: 6px; font: inherit; font-size: 0.75rem; color: var(--sand); background: rgba(35, 26, 20, 0.8); border: 1px solid transparent; padding: 2px 8px; border-radius: 999px; cursor: pointer; }
 .nest-motion:hover, .nest-motion:focus-visible { border-color: var(--honey); }
 @media (max-width: 520px) { .nest-label { font-size: 0.6rem; } }
