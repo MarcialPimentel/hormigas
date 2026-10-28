@@ -23,6 +23,9 @@
 
 A persistent **resource bar** (Foliage, Protein, Nectar, Workforce) sits at the top of every screen. Each resource has a small picture rather than a dot: a cut leaf, prey, a drop of honeydew, a worker.
 
+## Light and dark
+The menus follow the device's setting: dark is the soil theme, light is "field-guide paper" (lichen paper, ant-ink text; palette in [art/3d-exploration.md](art/3d-exploration.md)). Accents that carry text (honey, leaf, protein) have darker `*-ink` shades in light mode; the bright accents stay as fills. Anything drawn on the soil (both nests, the close-up, the login art) keeps its in-world colours in both themes.
+
 ## Feedback
 A **Feedback** button sits in the top bar of every screen (icon only on phones). It opens a short form: a kind (bug, idea, confusing, other) and a message. The player's screen, colony, browser and screen size are attached automatically, so they never have to explain where they were. Limited to 10 messages per player per hour.
 
@@ -101,5 +104,4 @@ The game should *show* the colony at work, not only list timers. (Build 3 used d
 - In-game notification list on the Overview.
 
 ## Open Questions
-- Dark mode by default (soil theme) or light?
 - Should a raid landing on the nest have its own scene (a fight at the entrance, corpses on the surface)? Planned for a later build.
