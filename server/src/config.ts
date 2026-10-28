@@ -17,4 +17,6 @@ export const config = {
   /** Folder with the built client to serve, if it exists (npm workspaces run the server from /server). */
   clientDist: process.env.CLIENT_DIST ?? '../client/dist',
   sessionDays: 30,
+  /** Secret for the private feedback page (routes/feedbackPage.ts). Unset or under 16 characters = page off. */
+  feedbackKey: process.env.FEEDBACK_KEY ?? '',
 };

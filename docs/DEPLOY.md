@@ -25,7 +25,7 @@ The files that define the hub are in [`deploy/`](../deploy/). The copy on the se
 | `deploy/setup-droplet.sh` | One-time server prep: Docker, 2 GB swap, firewall (SSH/HTTP/HTTPS only), automatic security updates, `deploy` user, `/opt/hub` |
 | `deploy/hub/docker-compose.yml` | The containers: `caddy`, `db`, `hormigas` |
 | `deploy/hub/Caddyfile` | Which domain goes to which container |
-| `deploy/hub/.env.example` | Variable names for `.env` (`POSTGRES_PASSWORD`, `HORMIGAS_DB_PASSWORD`, `HORMIGAS_WORLD_NAME`) |
+| `deploy/hub/.env.example` | Variable names for `.env` (`POSTGRES_PASSWORD`, `HORMIGAS_DB_PASSWORD`, `HORMIGAS_WORLD_NAME`, optional `HORMIGAS_FEEDBACK_KEY`) |
 | `deploy/hub/postgres-init/01-hormigas.sh` | Creates the `hormigas` database and user on the database's very first start |
 | `deploy/hub/add-database.sh` | Creates a database and user for another project |
 | `deploy/hub/backup.sh` | Dumps every database to `/opt/hub/backups`, keeps 7 days (cron, nightly 03:30 UTC) |
@@ -55,6 +55,20 @@ Deploy needs two repository secrets: `DROPLET_HOST` (the droplet's IP) and `DROP
 | Open a database shell | `docker compose exec db psql -U postgres -d hormigas` |
 | Restore a backup (replaces data!) | `zcat backups/all-YYYY-MM-DD.sql.gz \| docker compose exec -T db psql -U postgres` |
 | Let a player read feedback (admin) | `docker compose exec db psql -U postgres -d hormigas -c "UPDATE players SET is_admin = true WHERE lower(username) = lower('NAME')"`, then reload the game |
+
+## Private feedback page
+
+Besides the in-game Feedback screen (admins only), feedback can be read on a private page reached by a secret link, so Marz and Claude can read it without logging in:
+
+`https://hormigas.marz.gg/api/feedback/private?key=YOUR-PHRASE` (add `&show=all` to include handled items, `&format=json` for raw data)
+
+It's off until a key is set. To turn it on (once):
+
+1. Make up a phrase of 16+ characters with no spaces, e.g. four random words joined by dashes plus a number. Don't reuse a password: anyone with the link can read the feedback, including player names.
+2. On the droplet in `/opt/hub`: make sure `docker-compose.yml` passes `FEEDBACK_KEY: ${HORMIGAS_FEEDBACK_KEY:-}` to `hormigas` (deploys don't update this file; copy the line from `deploy/hub/docker-compose.yml`), add `HORMIGAS_FEEDBACK_KEY=YOUR-PHRASE` to `.env`, then run `docker compose up -d hormigas`.
+3. Open the link and bookmark it. Keep it with the other private hosting notes on your PC (never in the repo). A wrong or missing key gets a plain "not found".
+
+To change the key (say it leaked), edit `.env` and run `docker compose up -d hormigas` again.
 
 ## Rules for the live server
 
