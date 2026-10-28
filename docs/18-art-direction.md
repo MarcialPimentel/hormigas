@@ -42,7 +42,9 @@ Ants are lighter than the soil so they read on it. Colours sit alongside the UI 
 Resource colours (leaf, protein, honey) stay reserved for cargo and stores, never for ant bodies, so a carried load always stands out.
 
 ## Scale
-An ant needs about 14–18px of length on screen to read as an ant. The whole-nest view is too small for that today (ants are 4px dots). The plan is two zoom levels: the whole nest stays schematic, and tapping a chamber opens a close-up of it where ants are drawn at full size.
+An ant needs about 14–18px of length on screen to read as an ant. There are two zoom levels:
+- **Whole nest:** sprites at 11px (workers) to 15px (queens). Small, but on phone screens (2× pixels) they read as ants.
+- **Chamber close-up:** tap a chamber to see portraits at 40–70px.
 
 ## Chambers (next)
 Built in layers, not one picture each, so they can grow with level and show how full they are:
@@ -51,7 +53,7 @@ Built in layers, not one picture each, so they can grow with level and show how 
 3. **Signature detail:** one thing per chamber that names it at a glance (the queen, the fungus garden).
 
 ## Assets
-Source lives in `art/`. Ants are generated from one parametric body plan by `node art/ants/build.mjs`, which writes `<caste>-sprite.svg`, `<caste>-portrait.svg` and `preview.html` (open it in a browser to review all castes at every size). Edit the generator, not the SVGs. Cosmetic ant palettes ([14-monetization.md](14-monetization.md)) are palette swaps on the same parts.
+Ants come from one parametric body plan in `client/src/art/ants.ts`, which the game uses directly: the nest view rasterises four walk poses per caste into textures, and the close-up draws portraits as SVG. `npx tsx art/ants/build.ts` writes the same ants to `art/ants/` as `<caste>-sprite.svg`, `<caste>-portrait.svg` and `preview.html` (open it in a browser to review all castes at every size). Edit `ants.ts`, not the SVGs. Cosmetic ant palettes ([14-monetization.md](14-monetization.md)) are palette swaps on the same parts.
 
 ## Open Questions
 - Should ant species vary by player (leafcutter, bullet ant, weaver), or is it one species with cosmetic palettes?

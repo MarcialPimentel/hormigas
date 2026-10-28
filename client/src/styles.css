@@ -375,6 +375,23 @@ pre.report-body { white-space: pre-wrap; overflow-x: auto; }
 .nest-motion:hover, .nest-motion:focus-visible { border-color: var(--honey); }
 @media (max-width: 520px) { .nest-label { font-size: 0.6rem; } }
 
+/* chamber close-up (inside the nest view) */
+.closeup { position: absolute; inset: 0; background: #271c14; display: flex; flex-direction: column; z-index: 2; }
+.closeup svg { flex: 1; width: 100%; min-height: 0; }
+.closeup-bar { position: absolute; left: 10px; right: 10px; top: 6px; display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.closeup-title { font-family: var(--font-display); font-weight: 700; background: rgba(35, 26, 20, 0.8); padding: 2px 10px; border-radius: 999px; }
+.closeup-actions { display: flex; gap: 6px; }
+.closeup-btn { padding: 0.2rem 0.7rem; font-size: 0.85rem; }
+.closeup-store { position: absolute; left: 10px; bottom: 6px; background: rgba(35, 26, 20, 0.8); padding: 2px 10px; border-radius: 999px; }
+.cu-walker { transform: translate(var(--from), var(--y)); animation: cu-walk linear infinite; }
+@keyframes cu-walk {
+  0% { transform: translate(var(--from), var(--y)) scaleX(1); }
+  49.9% { transform: translate(var(--to), var(--y)) scaleX(1); }
+  50% { transform: translate(var(--to), var(--y)) scaleX(-1); }
+  99.9% { transform: translate(var(--from), var(--y)) scaleX(-1); }
+  100% { transform: translate(var(--from), var(--y)) scaleX(1); }
+}
+
 /* ---------- quests ---------- */
 .quest { display: flex; flex-wrap: wrap; gap: 0.75rem 1.25rem; align-items: center; justify-content: space-between; padding: 1rem; border-radius: var(--r-md); border: 1px dashed var(--honey); background: rgba(232, 178, 58, 0.06); }
 .quest.ready { border-style: solid; background: rgba(232, 178, 58, 0.12); }

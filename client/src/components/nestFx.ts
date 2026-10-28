@@ -6,6 +6,8 @@ import { lvl, storageCapacity, workforce, type ChamberId, type ChamberLevels, ty
 import type { ServerColony, ServerState } from '../game';
 import type { Moment } from '../moments';
 import { C, LAYOUT, SURFACE, sampler, type Geo, type Pt } from './nestScene';
+import { drawAnt, walkFrame, type AntFrames } from './antSprites';
+import type { Caste } from '../art/ants';
 
 const FX = {
   enemy: 0xd0453a,
@@ -52,7 +54,7 @@ function leftOf(a: { region: number; patch: number; spot: number }, b: { region:
   return a.spot < b.spot;
 }
 
-export function createFx(w: number, h: number, geo: Geo, chambers: ChamberLevels, reduced: boolean) {
+export function createFx(w: number, h: number, geo: Geo, chambers: ChamberLevels, reduced: boolean, frames: AntFrames) {
   const under = new Graphics();
   const over = new Graphics();
   const surfaceY = SURFACE * h - 2;
@@ -76,6 +78,16 @@ export function createFx(w: number, h: number, geo: Geo, chambers: ChamberLevels
     if (!reduced) transients.push({ t: 0, dur, draw });
   };
 
+  /** An ant at distance d along a path, facing the way it walks, with an optional load in its jaws. */
+  const walker = (g: Graphics, path: ReturnType<typeof sampler>, d: number, load?: number | null, caste: Caste = 'worker') => {
+    const [x, y] = path.at(d);
+    const [nx, ny] = path.at(Math.min(path.total, d + 2));
+    const [bx, by] = d + 2 > path.total ? path.at(d - 2) : [x, y];
+    const a = d + 2 > path.total ? Math.atan2(y - by, x - bx) : Math.atan2(ny - y, nx - x);
+    drawAnt(g, frames, caste, x, y, a, { frame: walkFrame(d) });
+    if (load != null) g.circle(x + Math.cos(a) * 5.5, y + Math.sin(a) * 5.5, 1.6).fill(load);
+  };
+
   // ---------- one-off moments ----------
 
   /** A line of ants walking a path, one after another; optional coloured load above each. */
@@ -84,10 +96,7 @@ export function createFx(w: number, h: number, geo: Geo, chambers: ChamberLevels
       for (let i = 0; i < n; i++) {
         const k = clamp01((t - i * gap) / ms);
         if (k <= 0 || k >= 1) continue;
-        const [x, y] = path.at(path.total * ease(k));
-        g.circle(x, y, 2).fill(C.ant);
-        const col = load?.(i);
-        if (col != null) g.circle(x, y - 2.6, 1.4).fill(col);
+        walker(g, path, path.total * ease(k), load?.(i));
       }
     });
   };
@@ -134,8 +143,7 @@ export function createFx(w: number, h: number, geo: Geo, chambers: ChamberLevels
         const path = up(from);
         ring(from, FX.egg, 0, 700, 6);
         add(1200, (g, t, k) => {
-          const [x, y] = path.at(path.total * 0.35 * ease(k));
-          g.circle(x, y, 2).fill(C.ant);
+          walker(g, path, path.total * 0.35 * ease(k));
           if (k >= 0.99 || t >= 1190) hatching = false;
         });
         setTimeout(() => (hatching = false), 1400);
@@ -164,8 +172,9 @@ export function createFx(w: number, h: number, geo: Geo, chambers: ChamberLevels
           if (t > 4900) return;
           g.ellipse(x, y, 5.5, 3.6).fill(FX.beetle).stroke({ width: 1, color: 0xc89060 });
           if (t >= 1300) for (let i = 0; i < 4; i++) {
-            const a = (i / 4) * Math.PI * 2 + t / 300;
-            g.circle(x + Math.cos(a) * 7, y + Math.sin(a) * 4.5, 1.8).fill(C.ant);
+            // four ants round the beetle, heads in, hauling
+            const a = (i / 4) * Math.PI * 2 + Math.sin(t / 300) * 0.3;
+            drawAnt(g, frames, 'worker', x + Math.cos(a) * 8, y + Math.sin(a) * 5, a + Math.PI, { len: 9, frame: Math.floor(t / 90) + i });
           }
         });
         break;
@@ -219,10 +228,9 @@ export function createFx(w: number, h: number, geo: Geo, chambers: ChamberLevels
             if (k <= 0 || k >= 1) continue;
             const x = f.x + f.drift * k + Math.sin(t / 90 + f.d) * 1.5;
             const y = lerp(surfaceY, -8, k);
-            const flap = 1 + Math.abs(Math.sin(t / 50 + f.d)) * 1.6;
-            g.ellipse(x - 2, y - 1, 2.2, flap).fill({ color: FX.wing, alpha: 0.7 });
-            g.ellipse(x + 2, y - 1, 2.2, flap).fill({ color: FX.wing, alpha: 0.7 });
-            g.circle(x, y, 1.6).fill(C.soldier);
+            const flap = Math.abs(Math.sin(t / 45 + f.d));
+            g.ellipse(x, y - 3, 4, 0.8 + flap * 2.4).fill({ color: FX.wing, alpha: 0.45 });
+            drawAnt(g, frames, 'alate', x, y, f.drift < 0 ? Math.PI - 0.5 : -0.5, { len: 12 });
           }
         });
         break;
@@ -236,8 +244,10 @@ export function createFx(w: number, h: number, geo: Geo, chambers: ChamberLevels
           const alpha = Math.sin(clamp01(t / 4200) * Math.PI);
           const shown = Math.min(pts.length, Math.floor(t / 90));
           for (let i = 0; i < shown; i++) g.circle(pts[i][0], pts[i][1], 1.6).fill({ color: C.rim, alpha });
-          const scout = pts[Math.min(shown, pts.length - 1)];
-          if (scout) g.circle(scout[0], scout[1], 2).fill({ color: C.ant, alpha });
+          const at = Math.min(shown, pts.length - 1);
+          const scout = pts[at];
+          const prev = pts[Math.max(0, at - 1)];
+          if (scout && alpha > 0.15) drawAnt(g, frames, 'worker', scout[0], scout[1], at ? Math.atan2(scout[1] - prev[1], scout[0] - prev[0]) : dir > 0 ? 0 : Math.PI, { frame: Math.floor(t / 90) });
         });
         break;
       }
@@ -311,7 +321,8 @@ export function createFx(w: number, h: number, geo: Geo, chambers: ChamberLevels
       const { rx, ry } = geo.size(id, job.level);
       for (let i = 0; i < 3; i++) {
         const a = -Math.PI / 2 + (i - 1) * 0.9 + (reduced ? 0 : Math.sin(t / 260 + i * 2) * 0.35);
-        under.circle(x + Math.cos(a) * (rx + 1), y + Math.sin(a) * (ry + 1), 2).fill(C.ant);
+        // diggers on the rim, facing the soil they're cutting
+        drawAnt(under, frames, 'worker', x + Math.cos(a) * (rx + 2), y + Math.sin(a) * (ry + 2), Math.atan2(Math.sin(a) * ry, Math.cos(a) * rx), { frame: reduced ? 1 : Math.floor(t / 120) + i });
       }
       if (!reduced) {
         dustTimer += dt;
@@ -349,7 +360,7 @@ export function createFx(w: number, h: number, geo: Geo, chambers: ChamberLevels
       const units = Object.values(m.units as Record<string, number>).reduce((a, b) => a + b, 0);
       const cargo = (m.cargo ?? {}) as Resources;
       const loads = out ? [] : (Object.keys(RES_COLOR) as ResourceId[]).filter((r) => (cargo[r] ?? 0) > 0).map((r) => RES_COLOR[r]);
-      party(over, x, surfaceY - (lane++ % 3) * 1.5, heading, Math.min(8, Math.max(2, Math.ceil(units / 8))), C.ant, loads, t);
+      party(over, frames, x, surfaceY - (lane++ % 3) * 1.5, heading, Math.min(8, Math.max(2, Math.ceil(units / 8))), 'worker', 0xffffff, loads, t, reduced);
     }
     let raid = false;
     for (const i of d.state.incoming ?? []) {
@@ -358,9 +369,10 @@ export function createFx(w: number, h: number, geo: Geo, chambers: ChamberLevels
       const edge = fromLeft ? -8 : w + 8;
       const k = i.departAt ? clamp01((d.now - i.departAt) / (i.arriveAt - i.departAt)) : 0.5;
       const x = lerp(edge, entrance[0] + 12 * (fromLeft ? -1 : 1), k);
-      const color = i.type === 'raid' ? FX.enemy : i.type === 'scout' ? FX.scoutEnemy : C.ant;
+      // other colonies' ants are tinted: raids blood-red soldiers, scouts pale red
+      const tint = i.type === 'raid' ? FX.enemy : i.type === 'scout' ? FX.scoutEnemy : 0xffffff;
       const n = i.type === 'raid' ? Math.min(10, Math.max(3, Math.ceil(i.unitCount / 6))) : 2;
-      party(over, x, surfaceY - (lane++ % 3) * 1.5, fromLeft ? 1 : -1, n, color, [], t);
+      party(over, frames, x, surfaceY - (lane++ % 3) * 1.5, fromLeft ? 1 : -1, n, i.type === 'raid' ? 'soldier' : 'worker', tint, [], t, reduced);
       if (i.type === 'raid') raid = true;
     }
     if (raid) {
@@ -383,13 +395,12 @@ export function createFx(w: number, h: number, geo: Geo, chambers: ChamberLevels
   return { under, over, push, draw };
 }
 
-/** A small group walking along the surface; the leader is at x. */
-function party(g: Graphics, x: number, y: number, heading: number, n: number, color: number, loads: number[], t: number) {
+/** A small group walking along the surface, standing on y; the leader is at x. */
+function party(g: Graphics, frames: AntFrames, x: number, y: number, heading: number, n: number, caste: Caste, tint: number, loads: number[], t: number, reduced: boolean) {
   for (let i = 0; i < n; i++) {
-    const px = x - heading * i * 5;
-    const py = y + Math.sin(t / 110 + i * 1.7) * 0.6;
-    g.circle(px, py, 2).fill(color);
-    if (loads.length) g.circle(px, py - 2.6, 1.3).fill(loads[i % loads.length]);
+    const px = x - heading * i * 10;
+    drawAnt(g, frames, caste, px, y, heading > 0 ? 0 : Math.PI, { feet: true, tint, frame: reduced ? 1 : Math.floor(t / 85) + i * 2 });
+    if (loads.length) g.circle(px + heading * 5.5, y - 3.5, 1.6).fill(loads[i % loads.length]);
   }
 }
 
