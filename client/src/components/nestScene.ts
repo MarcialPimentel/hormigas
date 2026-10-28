@@ -42,11 +42,6 @@ export const C = {
   soldier: 0xd8b48a,
 };
 
-export const FLECK: Partial<Record<ChamberId, number>> = {
-  leaf_garden: C.leaf, granary: C.leaf, hunting_grounds: C.protein, larder: C.protein,
-  aphid_pasture: C.honey, nectar_cellar: C.honey, honeypot_gallery: C.honey,
-};
-
 export type Pt = [number, number];
 
 export function geometry(w: number, h: number) {

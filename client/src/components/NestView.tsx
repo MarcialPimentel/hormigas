@@ -4,12 +4,13 @@
 import { useEffect, useRef, useState } from 'react';
 import { setMotionPref, useMotion, type MotionPref } from '../motion';
 import { Application, Graphics } from 'pixi.js';
-import { C, FLECK, LAYOUT, SURFACE, dottedEllipse, drawPolyline, geometry, lerpColor, seeded, skyAt, surfaceParties, type Pt, type SurfaceParty } from './nestScene';
+import { C, LAYOUT, SURFACE, dottedEllipse, drawPolyline, geometry, lerpColor, seeded, skyAt, surfaceParties, type Pt, type SurfaceParty } from './nestScene';
 import { ChamberSheet, STORE_OF } from './ChamberSheet';
 import { fmtDuration } from '../format';
 import { MISSION_LABEL, type MissionType } from '../nav';
 import { createFx } from './nestFx';
 import { antTextures, drawAnt, walkFrame } from './antSprites';
+import { chamberTextures, drawChamber } from './chamberSprites';
 import { ChamberCloseUp } from './ChamberCloseUp';
 import { onMoment } from '../moments';
 import { CHAMBERS, CHAMBER_IDS, RESEARCH, isUnlocked, lvl, queueEndsAt, storageCapacity, type ChamberId, type ResearchId } from '@hormigas/shared';
@@ -56,6 +57,7 @@ function destroyApp(app: Application) {
     if ((app as any).__iv) clearInterval((app as any).__iv);
     app.destroy(true, { children: true });
     (app as any).__art?.destroy();
+    (app as any).__rooms?.destroy();
   } catch {
     /* not initialised yet */
   }
@@ -111,13 +113,15 @@ export function NestView({ nav }: { nav: Nav }) {
     let offMoments: (() => void) | null = null;
     (async () => {
       await app.init({ width: size.w, height: size.h, background: C.soilDeep, antialias: true, resolution: Math.min(2, window.devicePixelRatio || 1), autoDensity: true });
-      const art = await antTextures();
+      const [art, rooms] = await Promise.all([antTextures(), chamberTextures()]);
       if (disposed) {
         app.destroy(true);
         art.destroy();
+        rooms.destroy();
         return;
       }
       (app as any).__art = art;
+      (app as any).__rooms = rooms;
       // keep showing the previous scene until this one has drawn, so a rebuild never flashes blank
       const previous = appRef.current;
       appRef.current = app;
@@ -175,18 +179,8 @@ export function NestView({ nav }: { nav: Nav }) {
       for (const id of built) {
         const { x, y } = LAYOUT[id];
         const { rx, ry } = geo.size(id, lvl(chambers, id));
-        ch.ellipse(x * w, y * h, rx, ry).fill(C.hollow);
-        ch.ellipse(x * w, y * h, rx, ry).stroke({ width: 1.5, color: C.rim });
-        const fleck = FLECK[id];
-        if (fleck) {
-          const r2 = seeded(id.length * 13);
-          const n = Math.min(14, 3 + lvl(chambers, id));
-          for (let i = 0; i < n; i++) {
-            const a = r2() * Math.PI * 2;
-            const d = Math.sqrt(r2()) * 0.7;
-            ch.circle(x * w + Math.cos(a) * rx * d, y * h + Math.sin(a) * ry * d * 0.8 + ry * 0.25, 1.6).fill({ color: fleck, alpha: 0.85 });
-          }
-        }
+        // the chamber's own art (docs/18-art-direction.md), fitted to its hollow
+        drawChamber(ch, rooms.rooms, id, x * w, y * h, rx, ry);
         if (id === 'queen_chamber') dottedEllipse(ch, x * w, y * h, rx + 3, ry + 3, C.honey, 22);
       }
       for (const id of next) {

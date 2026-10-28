@@ -38,7 +38,7 @@ Feedback is read on the admin-only **Feedback** screen. Admins are players with 
   - Ants leaving/arriving when missions depart/return
 - Under-construction chambers show a digging animation (dots + progress ring).
 - Tap a chamber → its **sheet** (below). The sheet's **Look inside** opens the close-up.
-- Ants are drawn from the art set in `client/src/art/ants.ts`; chambers and tunnels are still colours and shapes (PixiJS) until chamber art lands.
+- Ants are drawn from the art set in `client/src/art/ants.ts`. Each built chamber shows its own art (`client/src/art/chambers.ts`, without the soil wall) fitted to its hollow; unbuilt chambers are dotted outlines. Tunnels are still plain shapes.
 
 ## The colony is the home screen
 The Colony screen opens on the nest, drawn tall (380px on phones, up to 540px on desktop), and the important information sits in the world rather than in tables:
@@ -56,7 +56,7 @@ Tapping a chamber (built or not yet dug) opens a sheet right under the nest, and
 
 ## Chamber close-up
 Tapping a built chamber opens a close look inside it, filling the nest view:
-- The hollow at full size, with ants drawn as detailed portraits (about 40–70px long) walking its floor. Stores show their food piling up and filling as stock rises; the Queen's Chamber shows the queen with her eggs and attendants; brood chambers show eggs.
+- The chamber's full art (soil wall, roots, tunnel mouth, contents and its signature detail) with workers walking its floor. Stores get a wash of their food colour that rises as they fill, and show the amount.
 - **Upgrade** and **Back** (or Esc) return to the nest, with the chamber's sheet open.
 - With motion reduced, the ants stand still along their beat.
 
