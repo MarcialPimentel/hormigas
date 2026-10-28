@@ -54,7 +54,7 @@ The game should *show* the colony at work, not only list timers. Schematic shape
 - **Research:** scent rings pulse from the Pheromone Chamber.
 - **Level-ups:** the chamber pulses with two honey rings.
 - **Nest events:** each has its own short scene (a beetle dragged down to the Larder, leaves falling and carried to the Granary, rain, winged ants rising, an old tunnel traced out).
-- "Reduce motion" turns off the moving parts; the static state (fills, eggs, parties' positions) still shows.
+- "Reduce motion" turns off the moving parts; the static state (fills, eggs, parties' positions) still shows. A **Motion** button in the corner of the nest view picks auto (follow the device's reduce-motion setting), on or off, saved per browser. Desktop OSes often report reduce-motion when system animations are off, which froze the ants for players who never asked for it.
 
 **Other screens**
 - **While you were away:** after 20+ minutes away, the Colony screen opens with a card listing chambers that grew, research learned, the change in stores and the reports filed meanwhile. Built from a snapshot the browser keeps; nothing new on the server.
