@@ -4,12 +4,15 @@
 import { useEffect, useRef, useState } from 'react';
 import { setMotionPref, useMotion, type MotionPref } from '../motion';
 import { Application, Graphics } from 'pixi.js';
-import { C, FLECK, LAYOUT, SURFACE, dottedEllipse, drawPolyline, geometry, lerpColor, seeded, type Pt } from './nestScene';
+import { C, FLECK, LAYOUT, SURFACE, dottedEllipse, drawPolyline, geometry, lerpColor, seeded, skyAt, surfaceParties, type Pt, type SurfaceParty } from './nestScene';
+import { ChamberSheet, STORE_OF } from './ChamberSheet';
+import { fmtDuration } from '../format';
+import { MISSION_LABEL, type MissionType } from '../nav';
 import { createFx } from './nestFx';
 import { antTextures, drawAnt, walkFrame } from './antSprites';
 import { ChamberCloseUp } from './ChamberCloseUp';
 import { onMoment } from '../moments';
-import { CHAMBERS, CHAMBER_IDS, isUnlocked, lvl, type ChamberId } from '@hormigas/shared';
+import { CHAMBERS, CHAMBER_IDS, RESEARCH, isUnlocked, lvl, queueEndsAt, storageCapacity, type ChamberId, type ResearchId } from '@hormigas/shared';
 import { useGame } from '../game';
 import type { Nav } from '../nav';
 
@@ -67,6 +70,8 @@ export function NestView({ nav }: { nav: Nav }) {
   dataRef.current = { colony, state, now };
   const { pref: motion, reduced } = useMotion();
   const [closeUp, setCloseUp] = useState<ChamberId | null>(null);
+  const [selected, setSelected] = useState<ChamberId | null>(null);
+  const hour = new Date(now).getHours();
 
   // tear down whatever scene is on screen when the view goes away
   useEffect(
@@ -83,7 +88,8 @@ export function NestView({ nav }: { nav: Nav }) {
     if (!el) return;
     const ro = new ResizeObserver(() => {
       const w = el.clientWidth;
-      setSize({ w, h: w < 520 ? 280 : 330 });
+      // the nest is the home screen: tall enough to see the colony at work
+      setSize({ w, h: w < 520 ? 380 : Math.max(440, Math.min(540, Math.round(w * 0.5))) });
     });
     ro.observe(el);
     return () => ro.disconnect();
@@ -132,7 +138,18 @@ export function NestView({ nav }: { nav: Nav }) {
         const y0 = SURFACE * h + ((h - SURFACE * h) * i) / bands;
         bg.rect(0, y0, w, (h - SURFACE * h) / bands + 1).fill(col);
       }
-      bg.rect(0, 0, w, SURFACE * h).fill(0x231a14);
+      // sky by the player's own clock: stars and moon at night, sun by day, hills on the horizon
+      const sky = skyAt(hour);
+      const top = SURFACE * h;
+      bg.rect(0, 0, w, top).fill(sky.sky);
+      const sr = seeded(3);
+      if (sky.stars) for (let i = 0; i < w / 22; i++) bg.circle(sr() * w, sr() * top * 0.7, 0.5 + sr() * 0.8).fill({ color: 0xf3ead8, alpha: 0.35 + sr() * 0.5 });
+      const arc = sky.body === 'sun' ? (hour - 6) / 14 : ((hour + 4) % 24) / 10;
+      bg.circle(w * (0.88 - 0.76 * Math.max(0, Math.min(1, arc))), top * 0.34, Math.max(5, top * 0.11)).fill({ color: sky.bodyColor, alpha: 0.9 });
+      const hills: number[] = [0, top];
+      for (let x = 0; x <= w + 20; x += 20) hills.push(x, top - 5 - (Math.sin(x / 95) + 1) * top * 0.1 - (Math.sin(x / 37 + 1) + 1) * top * 0.03);
+      hills.push(w, top);
+      bg.poly(hills).fill(sky.hills);
       bg.rect(0, SURFACE * h - 3, w, 4).fill(C.grass);
       const rng = seeded(7);
       for (let i = 0; i < w / 9; i++) {
@@ -257,33 +274,74 @@ export function NestView({ nav }: { nav: Nav }) {
       if (appRef.current !== app && app.renderer) destroyApp(app);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [size.w, size.h, chambersKey, buildKey, antBucket, JSON.stringify(research), colony?.id, reduced]);
+  }, [size.w, size.h, chambersKey, buildKey, antBucket, JSON.stringify(research), colony?.id, reduced, hour]);
 
   if (!colony) return null;
   const { w, h } = size;
   const geo = w ? geometry(w, h) : null;
   const visible = CHAMBER_IDS.filter((id) => lvl(colony.chambers, id) > 0 || isUnlocked(CHAMBERS[id].unlock, colony.chambers, research));
-  const away = (state?.missions ?? []).reduce((s: number, m: any) => s + Object.values(m.units as Record<string, number>).reduce((a, b) => a + b, 0), 0);
+  const entranceX = geo ? geo.shaftX(SURFACE * h) : 0;
+  const cap = storageCapacity(colony.chambers);
+  const qEnd = queueEndsAt(colony.unitQueue);
+  const raising = colony.unitQueue.reduce((s, i) => s + i.count - i.done, 0);
+  const rj = state?.player.researchJob;
+
+  /** What a chamber is busy with, shown under its name. */
+  const chamberTag = (id: ChamberId, level: number): { text: string; tone: string } | null => {
+    const job = colony.buildJob;
+    if (job?.chamber === id) return { text: `Digging · ${fmtDuration(job.endAt - now)}`, tone: 'dig' };
+    if (level === 0) return null;
+    if (id === 'pheromone_chamber' && rj) return { text: `${RESEARCH[rj.research as ResearchId].name} · ${fmtDuration(rj.endAt - now)}`, tone: 'learn' };
+    if (id === 'brood_hall' && qEnd) return { text: `Raising ${raising} · ${fmtDuration(qEnd - now)}`, tone: 'brood' };
+    const r = STORE_OF[id];
+    if (r) {
+      const pct = Math.floor((colony.resources[r] / cap[r]) * 100);
+      return pct >= 100 ? { text: 'Full', tone: 'full' } : { text: `${pct}% full`, tone: 'store' };
+    }
+    return null;
+  };
+
+  // timers float over the parties on the surface; parties close together take turns on two rows
+  const parties: (SurfaceParty & { row: number; tx: number })[] = [];
+  if (geo && state) {
+    let lastX = -1e9;
+    let lastRow = 1;
+    for (const p of surfaceParties(w, entranceX, colony, state, now).sort((a, b) => a.x - b.x)) {
+      const tx = Math.max(56, Math.min(w - 56, p.x));
+      const row = tx - lastX < 120 ? 1 - lastRow : 0;
+      parties.push({ ...p, row, tx });
+      lastX = tx;
+      lastRow = row;
+    }
+  }
+  const partyLabel = (p: SurfaceParty) =>
+    p.kind === 'raid' ? 'Raid' : p.kind === 'scout' ? 'Scouts' : p.kind === 'delivery' ? 'Delivery' : `${MISSION_LABEL[p.type as MissionType] ?? p.type}${p.outbound ? '' : ' home'}`;
 
   return (
-    <div className="nest" ref={host} style={{ height: h || 280 }}>
+    <>
+    <div className="nest" ref={host} style={{ height: h || 380 }}>
       {geo &&
         visible.map((id) => {
           const level = lvl(colony.chambers, id);
           const { x, y } = LAYOUT[id];
           const { rx, ry } = geo.size(id, level);
           const building = colony.buildJob?.chamber === id;
+          const tag = chamberTag(id, level);
           return (
             <button
               key={id}
-              className={`nest-chamber${level === 0 ? ' ghost' : ''}${building ? ' building' : ''}`}
+              className={`nest-chamber${level === 0 ? ' ghost' : ''}${building ? ' building' : ''}${selected === id ? ' selected' : ''}`}
               style={{ left: x * w - rx, top: y * h - ry, width: rx * 2, height: ry * 2 }}
-              onClick={() => (level > 0 ? setCloseUp(id) : nav('chambers'))}
-              aria-label={`${CHAMBERS[id].name}${level ? `, level ${level}` : ', not built yet'}${building ? ', being dug' : ''}. ${level > 0 ? 'Look inside.' : 'Open chambers.'}`}
+              onClick={() => setSelected(selected === id ? null : id)}
+              aria-label={`${CHAMBERS[id].name}${level ? `, level ${level}` : ', not built yet'}${tag ? `, ${tag.text}` : ''}. Show details.`}
+              aria-expanded={selected === id}
             >
               <span className="nest-label">
-                {CHAMBERS[id].name.replace("Queen's Chamber", 'Queen')}
-                {level > 0 ? ` ${level}` : ''}
+                <span>
+                  {CHAMBERS[id].name.replace("Queen's Chamber", 'Queen')}
+                  {level > 0 ? ` ${level}` : ''}
+                </span>
+                {tag && <span className={`nest-tag ${tag.tone}`}>{tag.text}</span>}
               </span>
             </button>
           );
@@ -297,9 +355,22 @@ export function NestView({ nav }: { nav: Nav }) {
       >
         Motion: {motion}
       </button>
-      {away > 0 && <span className="nest-away">{away.toLocaleString()} away on missions</span>}
-      {closeUp && <ChamberCloseUp id={closeUp} onClose={() => setCloseUp(null)} onOpenChambers={() => nav('chambers')} />}
+      {geo && (
+        <span className="nest-sign" style={{ left: entranceX + 14, top: SURFACE * h + 6 }} title={colony.name}>
+          {colony.name}
+        </span>
+      )}
+      {parties.map((p) => (
+        <span key={p.key} className={`nest-trip ${p.kind}`} style={{ left: p.tx, top: SURFACE * h - 30 - p.row * 20 }}>
+          {partyLabel(p)} · {fmtDuration(p.endAt - now)}
+        </span>
+      ))}
+      {closeUp && <ChamberCloseUp id={closeUp} onClose={() => setCloseUp(null)} onOpenChambers={() => setCloseUp(null)} />}
     </div>
+    {selected && !closeUp && (
+      <ChamberSheet id={selected} onClose={() => setSelected(null)} onLookInside={() => setCloseUp(selected)} onAllChambers={() => nav('chambers')} />
+    )}
+    </>
   );
 }
 

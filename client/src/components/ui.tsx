@@ -6,8 +6,43 @@ import type { ReactNode } from 'react';
 import { useMotion } from '../motion';
 import { CASTES, antSvg, type Caste } from '../art/ants';
 
+/** Each resource as a little picture: a cut leaf, prey, a drop of honeydew, a worker. */
+const RES_ICON: Record<'foliage' | 'protein' | 'nectar' | 'workforce', ReactNode> = {
+  foliage: (
+    <>
+      <path d="M1.5,10.5 C1.5,4.5 5,1.5 10.5,1.5 C10.5,7 7.5,10.5 1.5,10.5Z" fill="currentColor" />
+      <path d="M2.2,9.8 L8.6,3.4" stroke="#3f5a22" strokeWidth="0.9" strokeLinecap="round" />
+    </>
+  ),
+  protein: (
+    <>
+      <ellipse cx="5.2" cy="6.6" rx="3.9" ry="3.1" fill="currentColor" />
+      <circle cx="9.6" cy="5.6" r="1.7" fill="currentColor" />
+      <path d="M3,9.4 l-1.4,1.6 M5.4,9.7 l0,1.8 M7.6,9.2 l1.3,1.6 M5.2,3.6 L5.2,9.6" stroke="#6e3530" strokeWidth="0.8" strokeLinecap="round" />
+    </>
+  ),
+  nectar: (
+    <>
+      <path d="M6,1 C7.8,4 10,6.1 10,8 A4,4 0 0 1 2,8 C2,6.1 4.2,4 6,1Z" fill="currentColor" />
+      <ellipse cx="4.6" cy="7.6" rx="0.9" ry="1.4" fill="#fff3c8" opacity="0.8" />
+    </>
+  ),
+  workforce: (
+    <>
+      <ellipse cx="3.4" cy="7" rx="2.6" ry="2" fill="currentColor" />
+      <ellipse cx="6.8" cy="6.4" rx="1.6" ry="1.2" fill="currentColor" />
+      <circle cx="9.5" cy="5.6" r="1.7" fill="currentColor" />
+      <path d="M5.6,7.4 l-1.6,3 M6.9,7.6 l0,2.8 M8,7.2 l1.8,2.9 M9.8,4.2 l1.4,-2.4" stroke="currentColor" strokeWidth="0.8" strokeLinecap="round" fill="none" />
+    </>
+  ),
+};
+
 export function ResDot({ r }: { r: 'foliage' | 'protein' | 'nectar' | 'workforce' }) {
-  return <span className={`dot dot-${r}`} aria-hidden="true" />;
+  return (
+    <svg className={`dot icon-${r}`} viewBox="0 0 12 12" aria-hidden="true">
+      {RES_ICON[r]}
+    </svg>
+  );
 }
 
 /** Inline cost list; amounts the colony can't afford are marked. */

@@ -2,10 +2,10 @@
 // something is going on. Two layers: `under` sits below the walking ants (storage, eggs, digging,
 // research), `over` sits above them (parties on the surface, raid alarm, one-off moments).
 import { Graphics } from 'pixi.js';
-import { lvl, storageCapacity, workforce, type ChamberId, type ChamberLevels, type ResourceId, type Resources } from '@hormigas/shared';
+import { lvl, storageCapacity, workforce, type ChamberId, type ChamberLevels, type ResourceId } from '@hormigas/shared';
 import type { ServerColony, ServerState } from '../game';
 import type { Moment } from '../moments';
-import { C, LAYOUT, SURFACE, sampler, type Geo, type Pt } from './nestScene';
+import { C, LAYOUT, SURFACE, sampler, surfaceParties, type Geo, type Pt } from './nestScene';
 import { drawAnt, walkFrame, type AntFrames } from './antSprites';
 import type { Caste } from '../art/ants';
 
@@ -46,13 +46,6 @@ interface Particle {
 const clamp01 = (v: number) => Math.max(0, Math.min(1, v));
 const ease = (k: number) => k * k * (3 - 2 * k);
 const lerp = (a: number, b: number, k: number) => a + (b - a) * k;
-
-/** Is `a` to the left of `b` in world order (region, patch, spot)? */
-function leftOf(a: { region: number; patch: number; spot: number }, b: { region: number; patch: number; spot: number }) {
-  if (a.region !== b.region) return a.region < b.region;
-  if (a.patch !== b.patch) return a.patch < b.patch;
-  return a.spot < b.spot;
-}
 
 export function createFx(w: number, h: number, geo: Geo, chambers: ChamberLevels, reduced: boolean, frames: AntFrames) {
   const under = new Graphics();
@@ -347,33 +340,18 @@ export function createFx(w: number, h: number, geo: Geo, chambers: ChamberLevels
     }
 
     // parties on the surface: ours heading out and coming home, others heading for us
-    const home = c.coords;
-    let lane = 0;
-    for (const m of d.state.missions ?? []) {
-      if (m.originColonyId !== c.id) continue;
-      const toLeft = leftOf(m.target, home);
-      const edge = toLeft ? -8 : w + 8;
-      const out = m.status === 'outbound';
-      const k = out ? clamp01((d.now - m.departAt) / (m.arriveAt - m.departAt)) : clamp01((d.now - m.arriveAt) / (m.returnAt - m.arriveAt));
-      const x = out ? lerp(entrance[0] + 10 * (toLeft ? -1 : 1), edge, k) : lerp(edge, entrance[0], k);
-      const heading = out === toLeft ? -1 : 1;
-      const units = Object.values(m.units as Record<string, number>).reduce((a, b) => a + b, 0);
-      const cargo = (m.cargo ?? {}) as Resources;
-      const loads = out ? [] : (Object.keys(RES_COLOR) as ResourceId[]).filter((r) => (cargo[r] ?? 0) > 0).map((r) => RES_COLOR[r]);
-      party(over, frames, x, surfaceY - (lane++ % 3) * 1.5, heading, Math.min(8, Math.max(2, Math.ceil(units / 8))), 'worker', 0xffffff, loads, t, reduced);
-    }
     let raid = false;
-    for (const i of d.state.incoming ?? []) {
-      if (i.targetColonyId !== c.id) continue;
-      const fromLeft = leftOf(i.origin, home);
-      const edge = fromLeft ? -8 : w + 8;
-      const k = i.departAt ? clamp01((d.now - i.departAt) / (i.arriveAt - i.departAt)) : 0.5;
-      const x = lerp(edge, entrance[0] + 12 * (fromLeft ? -1 : 1), k);
-      // other colonies' ants are tinted: raids blood-red soldiers, scouts pale red
-      const tint = i.type === 'raid' ? FX.enemy : i.type === 'scout' ? FX.scoutEnemy : 0xffffff;
-      const n = i.type === 'raid' ? Math.min(10, Math.max(3, Math.ceil(i.unitCount / 6))) : 2;
-      party(over, frames, x, surfaceY - (lane++ % 3) * 1.5, fromLeft ? 1 : -1, n, i.type === 'raid' ? 'soldier' : 'worker', tint, [], t, reduced);
-      if (i.type === 'raid') raid = true;
+    for (const p of surfaceParties(w, entrance[0], c, d.state, d.now)) {
+      const y = surfaceY - (p.lane % 3) * 1.5;
+      if (p.kind === 'ours') {
+        const loads = p.cargo ? (Object.keys(RES_COLOR) as ResourceId[]).filter((r) => (p.cargo![r] ?? 0) > 0).map((r) => RES_COLOR[r]) : [];
+        party(over, frames, p.x, y, p.heading, p.n, 'worker', 0xffffff, loads, t, reduced);
+      } else {
+        // other colonies' ants are tinted: raids blood-red soldiers, scouts pale red
+        const tint = p.kind === 'raid' ? FX.enemy : p.kind === 'scout' ? FX.scoutEnemy : 0xffffff;
+        party(over, frames, p.x, y, p.heading, p.n, p.kind === 'raid' ? 'soldier' : 'worker', tint, [], t, reduced);
+        if (p.kind === 'raid') raid = true;
+      }
     }
     if (raid) {
       const pulse = reduced ? 0.6 : 0.4 + 0.35 * Math.sin(t / 220);

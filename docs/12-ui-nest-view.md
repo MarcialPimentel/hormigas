@@ -1,6 +1,6 @@
 # 12 — UI & Nest View
 
-**Version:** 0.3
+**Version:** 0.4
 
 ## Principles
 - **Mobile-browser first.** Every screen works one-handed on a phone. Desktop gets more columns, not more features.
@@ -21,7 +21,7 @@
 | **Rankings** | Leaderboards |
 | **Feedback** | Admins only: player feedback, newest first, mark as handled |
 
-A persistent **resource bar** (Foliage, Protein, Nectar, Workforce) sits at the top of every screen.
+A persistent **resource bar** (Foliage, Protein, Nectar, Workforce) sits at the top of every screen. Each resource has a small picture rather than a dot: a cut leaf, prey, a drop of honeydew, a worker.
 
 ## Feedback
 A **Feedback** button sits in the top bar of every screen (icon only on phones). It opens a short form: a kind (bug, idea, confusing, other) and a message. The player's screen, colony, browser and screen size are attached automatically, so they never have to explain where they were. Limited to 10 messages per player per hour.
@@ -37,13 +37,27 @@ Feedback is read on the admin-only **Feedback** screen. Admins are players with 
   - Soldiers clustered near the entrance
   - Ants leaving/arriving when missions depart/return
 - Under-construction chambers show a digging animation (dots + progress ring).
-- Tap a built chamber → its **close-up** (below). Tap an unbuilt one → the Chambers screen.
+- Tap a chamber → its **sheet** (below). The sheet's **Look inside** opens the close-up.
 - Ants are drawn from the art set in `client/src/art/ants.ts`; chambers and tunnels are still colours and shapes (PixiJS) until chamber art lands.
+
+## The colony is the home screen
+The Colony screen opens on the nest, drawn tall (380px on phones, up to 540px on desktop), and the important information sits in the world rather than in tables:
+- **Sky:** the strip above the grass follows the player's own clock: dawn, day, dusk, and night with stars and the moon.
+- **Sign:** the colony's name on a little stake by the entrance.
+- **Parties carry their timers.** Every party on the surface has a floating tag: "Forage · 17s", "Forage home · 2m", "Raid · 4m 12s" (red), "Scouts", "Delivery". Tags close together alternate between two rows so they don't overlap.
+- **Chambers say what they're busy with,** under their names: "Digging · 6m" (honey), the research being learned in the Pheromone Chamber (violet), "Raising 4 · 3m" in the Brood Hall, and "41% full" or "Full" on stores.
+- The "Happening now" list and the production table stay below the nest for now.
+
+## Chamber sheet
+Tapping a chamber (built or not yet dug) opens a sheet right under the nest, and rings the chamber in honey:
+- What it does, what it holds (stores: amount, capacity, and how much raids can't take), and what it does now.
+- The next level: what it gives, its cost and dig time, and **Dig it / Dig deeper**. When something is in the way the button is disabled and the reason shows beside it (diggers busy, not enough food, no space). Same rules as the Chambers screen; both use `client/src/chamberPlan.ts`.
+- **Look inside** (the close-up), **All chambers** (the Chambers screen), **Close** (or Esc, or tap the chamber again).
 
 ## Chamber close-up
 Tapping a built chamber opens a close look inside it, filling the nest view:
 - The hollow at full size, with ants drawn as detailed portraits (about 40–70px long) walking its floor. Stores show their food piling up and filling as stock rises; the Queen's Chamber shows the queen with her eggs and attendants; brood chambers show eggs.
-- **Upgrade** goes to the Chambers screen; **Back** (or Esc) returns to the whole nest.
+- **Upgrade** and **Back** (or Esc) return to the nest, with the chamber's sheet open.
 - With motion reduced, the ants stand still along their beat.
 
 ## Showing what happens (Build 3)
@@ -79,5 +93,4 @@ The game should *show* the colony at work, not only list timers. (Build 3 used d
 
 ## Open Questions
 - Dark mode by default (soil theme) or light?
-- Should the Nest View be the home screen, or the Overview?
 - Should a raid landing on the nest have its own scene (a fight at the entrance, corpses on the surface)? Planned for a later build.
