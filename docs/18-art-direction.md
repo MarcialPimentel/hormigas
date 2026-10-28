@@ -1,0 +1,59 @@
+# 18 — Art Direction
+
+**Version:** 0.1
+
+## Direction
+**Field guide meets bold silhouette.** The colony should look like a page from a naturalist's notebook that has come to life: real ant anatomy, inked and lit like an illustration, but built on shapes simple enough to read at a glance on a phone.
+
+- **In play (sprites):** a flat silhouette in two tones (body + top highlight), no outline. It must still read as an ant at 12px.
+- **Up close (portraits):** the same silhouette, plus ink outline, gaster bands, belly shade, leg joints, eye glint and fine hairs. Used for close-ups, caste cards, the Brood Hall and reports.
+
+The tone is grounded nature documentary, not cartoon: no faces, no big eyes, no expressions. Charm comes from behaviour (carrying, digging, swarming), not from faces.
+
+## The ant
+All castes share one body plan, seen side-on (the nest is a cross-section):
+
+gaster · petiole · mesosoma · head · mandibles · elbowed antenna · six legs
+
+- The **elbowed antenna** and the **pinched waist** are what say "ant" rather than "bug". Never lose them, at any size.
+- **Far-side legs and antenna** are drawn in a darker shade behind the body. This gives depth for free.
+- Castes differ by **shape first, colour second**, so they read in silhouette:
+
+| Caste | Silhouette cue | Colour |
+|---|---|---|
+| Worker | Baseline | Amber |
+| Soldier | Oversized head, heavy jaws | Redder, darker |
+| Queen | Long, heavy gaster; thick thorax with wing scars | Deep rust |
+| Alate (winged queen) | Queen + translucent wings over the back | Deep rust |
+
+- **Walking** uses a tripod gait: near front, near hind and far middle legs swing together, against the other three. Legs pivot at the hip in code; no hand-drawn frames.
+
+## Palette
+Ants are lighter than the soil so they read on it. Colours sit alongside the UI palette in `client/src/styles.css`.
+
+| Role | Worker | Soldier | Queen |
+|---|---|---|---|
+| Base | `#c98b52` | `#b06a38` | `#a95f2f` |
+| Highlight | `#f2d3a2` | `#e6b37f` | `#e0a46e` |
+| Shade | `#8c5730` | `#7a4524` | `#713c1c` |
+| Far side | `#6e4325` | `#5c341b` | `#552c14` |
+| Ink | `#2b1d13` | `#2b1d13` | `#24170e` |
+
+Resource colours (leaf, protein, honey) stay reserved for cargo and stores, never for ant bodies, so a carried load always stands out.
+
+## Scale
+An ant needs about 14–18px of length on screen to read as an ant. The whole-nest view is too small for that today (ants are 4px dots). The plan is two zoom levels: the whole nest stays schematic, and tapping a chamber opens a close-up of it where ants are drawn at full size.
+
+## Chambers (next)
+Built in layers, not one picture each, so they can grow with level and show how full they are:
+1. **Shell:** the hand-dug hollow, with soil texture and roots, scaling with level.
+2. **Contents:** piles that grow with stored amount (cut leaves, prey, swollen honeypot ants, fungus, eggs and larvae).
+3. **Signature detail:** one thing per chamber that names it at a glance (the queen, the fungus garden).
+
+## Assets
+Source lives in `art/`. Ants are generated from one parametric body plan by `node art/ants/build.mjs`, which writes `<caste>-sprite.svg`, `<caste>-portrait.svg` and `preview.html` (open it in a browser to review all castes at every size). Edit the generator, not the SVGs. Cosmetic ant palettes ([14-monetization.md](14-monetization.md)) are palette swaps on the same parts.
+
+## Open Questions
+- Should ant species vary by player (leafcutter, bullet ant, weaver), or is it one species with cosmetic palettes?
+- Do the surface and grass get the same field-guide treatment, or stay schematic so the nest stays the focus?
+- Larvae, pupae and eggs: drawn as their own sprites, or as simple shapes in the brood chamber?
