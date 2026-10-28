@@ -5,15 +5,15 @@ import { useEffect, useRef, useState } from 'react';
 import { setMotionPref, useMotion, type MotionPref } from '../motion';
 import { Application, Graphics } from 'pixi.js';
 import { C, LAYOUT, SURFACE, dottedEllipse, drawPolyline, geometry, lerpColor, seeded, skyAt, surfaceParties, type Pt, type SurfaceParty } from './nestScene';
-import { ChamberSheet, STORE_OF } from './ChamberSheet';
+import { ChamberSheet } from './ChamberSheet';
+import { chamberTag, partyLabel } from './nestInfo';
 import { fmtDuration } from '../format';
-import { MISSION_LABEL, type MissionType } from '../nav';
 import { createFx } from './nestFx';
 import { antTextures, drawAnt, walkFrame } from './antSprites';
 import { chamberTextures, drawChamber } from './chamberSprites';
 import { ChamberCloseUp } from './ChamberCloseUp';
 import { onMoment } from '../moments';
-import { CHAMBERS, CHAMBER_IDS, RESEARCH, isUnlocked, lvl, queueEndsAt, storageCapacity, type ChamberId, type ResearchId } from '@hormigas/shared';
+import { CHAMBERS, CHAMBER_IDS, isUnlocked, lvl, type ChamberId } from '@hormigas/shared';
 import { useGame } from '../game';
 import type { Nav } from '../nav';
 
@@ -63,7 +63,7 @@ function destroyApp(app: Application) {
   }
 }
 
-export function NestView({ nav }: { nav: Nav }) {
+export function NestView({ nav, onSwitch3d }: { nav: Nav; onSwitch3d?: () => void }) {
   const { colony, state, now } = useGame();
   const host = useRef<HTMLDivElement>(null);
   const appRef = useRef<Application | null>(null);
@@ -275,25 +275,7 @@ export function NestView({ nav }: { nav: Nav }) {
   const geo = w ? geometry(w, h) : null;
   const visible = CHAMBER_IDS.filter((id) => lvl(colony.chambers, id) > 0 || isUnlocked(CHAMBERS[id].unlock, colony.chambers, research));
   const entranceX = geo ? geo.shaftX(SURFACE * h) : 0;
-  const cap = storageCapacity(colony.chambers);
-  const qEnd = queueEndsAt(colony.unitQueue);
-  const raising = colony.unitQueue.reduce((s, i) => s + i.count - i.done, 0);
-  const rj = state?.player.researchJob;
-
-  /** What a chamber is busy with, shown under its name. */
-  const chamberTag = (id: ChamberId, level: number): { text: string; tone: string } | null => {
-    const job = colony.buildJob;
-    if (job?.chamber === id) return { text: `Digging · ${fmtDuration(job.endAt - now)}`, tone: 'dig' };
-    if (level === 0) return null;
-    if (id === 'pheromone_chamber' && rj) return { text: `${RESEARCH[rj.research as ResearchId].name} · ${fmtDuration(rj.endAt - now)}`, tone: 'learn' };
-    if (id === 'brood_hall' && qEnd) return { text: `Raising ${raising} · ${fmtDuration(qEnd - now)}`, tone: 'brood' };
-    const r = STORE_OF[id];
-    if (r) {
-      const pct = Math.floor((colony.resources[r] / cap[r]) * 100);
-      return pct >= 100 ? { text: 'Full', tone: 'full' } : { text: `${pct}% full`, tone: 'store' };
-    }
-    return null;
-  };
+  const chamberTagFor = (id: ChamberId, level: number) => chamberTag(colony, state, now, id, level);
 
   // timers float over the parties on the surface; parties close together take turns on two rows
   const parties: (SurfaceParty & { row: number; tx: number })[] = [];
@@ -308,9 +290,6 @@ export function NestView({ nav }: { nav: Nav }) {
       lastRow = row;
     }
   }
-  const partyLabel = (p: SurfaceParty) =>
-    p.kind === 'raid' ? 'Raid' : p.kind === 'scout' ? 'Scouts' : p.kind === 'delivery' ? 'Delivery' : `${MISSION_LABEL[p.type as MissionType] ?? p.type}${p.outbound ? '' : ' home'}`;
-
   return (
     <>
     <div className="nest" ref={host} style={{ height: h || 380 }}>
@@ -320,7 +299,7 @@ export function NestView({ nav }: { nav: Nav }) {
           const { x, y } = LAYOUT[id];
           const { rx, ry } = geo.size(id, level);
           const building = colony.buildJob?.chamber === id;
-          const tag = chamberTag(id, level);
+          const tag = chamberTagFor(id, level);
           return (
             <button
               key={id}
@@ -349,6 +328,11 @@ export function NestView({ nav }: { nav: Nav }) {
       >
         Motion: {motion}
       </button>
+      {onSwitch3d && (
+        <button type="button" className="nest-motion nest-switch" onClick={onSwitch3d} title="Show the nest as a 3D block of earth">
+          3D view
+        </button>
+      )}
       {geo && (
         <span className="nest-sign" style={{ left: entranceX + 14, top: SURFACE * h + 6 }} title={colony.name}>
           {colony.name}

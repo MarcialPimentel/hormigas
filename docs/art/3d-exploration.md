@@ -1,6 +1,13 @@
 # 3D exploration: the colony as a block of earth
 
-**Status:** proposal, not approved. Nothing in the design docs has changed yet.
+**Status:** approved on 2026-10-28, with these answers:
+1. Build it (the test slice); phones aren't a priority for 3D.
+2. Gentle orbit, no zoom and no inside views.
+3. The 2D nest stays for phones (and as the fallback).
+4. Yes to the light "field-guide paper" theme for menus.
+5. No 3D models for now: use the existing 2D art inside the 3D block ("2D in 3D"); replace later.
+
+Built in `client/src/components/nest3d/`; see [12-ui-nest-view.md](../12-ui-nest-view.md), "The 3D slab".
 **Mock-up:** [3d-nest-mockup.html](3d-nest-mockup.html) (open in a browser; published as "Hormigas in 3D"). The source with icon placeholders is `3d-nest-mockup.src.html`; icons are in `icons/`.
 
 ## The short version

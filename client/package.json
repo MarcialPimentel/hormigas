@@ -13,11 +13,13 @@
     "@hormigas/shared": "*",
     "pixi.js": "^8.22.0",
     "react": "^19.3.1",
-    "react-dom": "^19.3.1"
+    "react-dom": "^19.3.1",
+    "three": "^0.160.0"
   },
   "devDependencies": {
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
+    "@types/three": "^0.160.0",
     "@vitejs/plugin-react": "^6.1.2",
     "vite": "^8.3.5"
   }

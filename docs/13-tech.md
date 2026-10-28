@@ -6,7 +6,7 @@
 | Layer | Choice |
 |---|---|
 | Language | **TypeScript** everywhere |
-| Client | Vite + React or Svelte (decide before coding); **PixiJS** for Nest View |
+| Client | Vite + React; **Three.js** for the 3D nest (computers, lazy-loaded), **PixiJS** for the 2D nest (phones, fallback) |
 | Server | Node.js + Fastify (or Express) |
 | Database | PostgreSQL |
 | Realtime | WebSockets (raid incoming, mission updates) |

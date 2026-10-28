@@ -8,7 +8,7 @@ TypeScript everywhere, npm workspaces:
 
 - `shared/`: game rules used by both client and server. Reads the numbers in `docs/data/*.json`.
 - `server/`: Fastify + PostgreSQL. The API, WebSockets (`/api/ws`), the event loop, and SQL migrations in `server/src/migrations/` (applied automatically on start).
-- `client/`: Vite + React, with PixiJS for the nest view. In production, the server serves the built client.
+- `client/`: Vite + React. The nest is a Three.js 3D slab on computers (`client/src/components/nest3d/`, loaded only when shown) and a PixiJS 2D nest on phones and as the fallback. In production, the server serves the built client.
 - `docs/`: the game design document (start with `00-vision.md`; `13-tech.md` covers architecture).
 
 Core architecture (see `docs/13-tech.md`): the server is the authority. The game computes rather than ticks (resources are derived from `rate × elapsed`), and everything with a duration is a row in the `events` table, resolved in `due_at` order by an in-process event loop.

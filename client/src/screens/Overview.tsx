@@ -19,7 +19,7 @@ import { QuestCard } from '../components/QuestCard';
 import { AwayCard } from '../components/AwayCard';
 import { disableNotifications, enableNotifications, notificationsEnabled, notificationsSupported } from '../notify';
 
-const NestView = lazy(() => import('../components/NestView').then((m) => ({ default: m.NestView })));
+const NestHome = lazy(() => import('../components/NestHome').then((m) => ({ default: m.NestHome })));
 
 export function Overview({ go }: { go: (screen: string, params?: any) => void }) {
   const { colony, state, now, act, toast } = useGame();
@@ -38,7 +38,7 @@ export function Overview({ go }: { go: (screen: string, params?: any) => void })
   return (
     <div className="stack">
       <Suspense fallback={<div className="nest" style={{ height: 280 }} />}>
-        <NestView nav={go} />
+        <NestHome nav={go} />
       </Suspense>
       <AwayCard go={go} />
       <QuestCard nav={go} />
