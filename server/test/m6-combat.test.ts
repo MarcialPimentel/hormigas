@@ -116,6 +116,31 @@ describe('bash limit', () => {
     expect(r.error.code).toBe('bash_limit');
     await getPool().query('DELETE FROM raid_log');
   });
+
+  it('counts raids still on their way, so sending several at once cannot get past it', async () => {
+    // same army as the start of this file (the corpse tests below need the workers and scouts)
+    await setColony(ca.id, { nectar: 1e6, last_updated: clock.t, units: { major_soldier: 10, hauler: 10, worker: 20, scout: 2 } });
+    for (let i = 0; i < 3; i++)
+      await getPool().query("INSERT INTO raid_log (world_id, attacker_id, colony_id, winner, at) VALUES (1,$1,$2,'attacker',$3)", [aId, cb.id, clock.t]);
+    const fourth = await a.post('/api/missions', { colonyId: ca.id, type: 'raid', target: cb.coords, units: { major_soldier: 1 } });
+    expect(fourth.ok).toBe(true);
+    const fifth = await a.post('/api/missions', { colonyId: ca.id, type: 'raid', target: cb.coords, units: { major_soldier: 1 } });
+    expect(fifth.error.code).toBe('bash_limit');
+
+    // a recalled raid no longer counts
+    const recalled = await a.post(`/api/missions/${fourth.mission.id}/recall`);
+    expect(recalled.ok).toBe(true);
+    const again = await a.post('/api/missions', { colonyId: ca.id, type: 'raid', target: cb.coords, units: { major_soldier: 1 } });
+    expect(again.error?.code).not.toBe('bash_limit');
+
+    // tidy up for the next tests: bring every mission home and clear the log
+    for (let i = 0; i < 3; i++) {
+      const { missions } = await a.get('/api/state');
+      if (!missions.length) break;
+      await clock.advance(Math.max(...missions.map((m: any) => m.returnAt ?? m.arriveAt)) - clock.t + 10);
+    }
+    await getPool().query('DELETE FROM raid_log');
+  });
 });
 
 describe('corpses', () => {
