@@ -17,11 +17,13 @@ import {
   forageOddsSummary,
   isInactive,
   SPECIES,
+  NEST_REGROW_HOURS,
   type CasteId,
 } from '@hormigas/shared';
 import type { Tx } from '../db';
 import type { ArrivalOutcome, Mission } from './missions';
 import { GameError } from '../errors';
+import { cachedWorldSpeed } from '../world';
 import { advance, getColony, getPlayer, lockColony, saveColony } from '../colony';
 import { syncNest } from './nests';
 import { defineMission } from './missions';
@@ -112,6 +114,13 @@ defineMission('scout', {
       resources: target.resources,
       protectedEach: target.chambers.honeypot_gallery ? 1000 * Math.pow(1.6, target.chambers.honeypot_gallery) : 0,
     };
+    // Scouts outrun soldiers: if our own raid on this colony hasn't landed yet, say so, or the report reads as "the raid did nothing"
+    const raid = await q.query(
+      "SELECT min(arrive_at) AS at FROM missions WHERE player_id = $1 AND type = 'raid' AND target_colony_id = $2 AND status = 'outbound' AND arrive_at > $3",
+      [m.playerId, target.id, at],
+    );
+    if (raid.rows[0]?.at) data.raidArrivesAt = Number(raid.rows[0].at);
+    if (target.npc) data.regrowMs = (NEST_REGROW_HOURS * 3600_000) / cachedWorldSpeed();
     if (detail !== 'resources') data.units = target.units;
     if (detail === 'defenses' || detail === 'full') data.defenses = target.defenses;
     if (detail === 'full') {
