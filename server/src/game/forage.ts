@@ -1,5 +1,5 @@
 // Forage expeditions into the wilds (spot 13 of any patch).
-import { WILDS_SPOT, coordsKey, createRng, forageLuck, groupCargo, randomSeed, resolveForage, type CasteId, type UnitCounts } from '@hormigas/shared';
+import { WILDS_SPOT, coordsKey, createRng, forageLuck, groupCargo, randomSeed, resolveForage, returnLegMs, type CasteId, type UnitCounts } from '@hormigas/shared';
 import type { Q } from '../db';
 import { GameError } from '../errors';
 import { getPlayer } from '../colony';
@@ -19,9 +19,6 @@ const TITLES: Record<string, string> = {
 };
 
 defineMission('forage', {
-  allowsCargo: false,
-  allowsWilds: true,
-  slot: 'forage',
   async validate({ target }) {
     if (target.spot !== WILDS_SPOT) throw new GameError('bad_target', `Foragers can only go to the wilds (spot ${WILDS_SPOT}).`);
   },
@@ -50,7 +47,7 @@ defineMission('forage', {
     m.result = { outcome: r.outcome, found: m.cargo, lost };
     // the report arrives now, but the food lands only when the party is home (same sum as the return trip in missions.ts)
     const survivors = Object.values(m.units).some((n) => (n ?? 0) > 0);
-    const returnsAt = survivors ? at + Math.round((m.arriveAt - m.departAt) * r.returnTimeFactor) : null;
+    const returnsAt = survivors ? at + returnLegMs(m.departAt, m.arriveAt, r.returnTimeFactor) : null;
 
     await addReport(q, m.worldId, m.playerId, 'forage', `${TITLES[r.outcome]} (${coordsKey(m.target)})`, {
       outcome: r.outcome,

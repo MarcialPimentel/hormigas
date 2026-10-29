@@ -4,10 +4,8 @@ import {
   CASTE_IDS,
   DEFENSES,
   DEFENSE_IDS,
-  canAfford,
+  broodBlocker,
   lvl,
-  missingRequirements,
-  queuedCounts,
   scale,
   sub,
   unitSeconds,
@@ -50,15 +48,9 @@ export async function enqueueUnits(q: Tx, playerId: number, colonyId: number, ki
   c = advance(c, t);
 
   const broodHall = lvl(c.chambers, 'brood_hall');
-  if (broodHall < 1) throw new GameError('locked', 'Build a Brood Hall first.');
-  if (c.buildJob?.chamber === 'brood_hall') throw new GameError('busy', 'The Brood Hall is being enlarged.');
-  const missing = missingRequirements(def.unlock, c.chambers, player.research);
-  if (missing.length) throw new GameError('locked', `Requires ${missing.map((m) => `${m.name} ${m.need}`).join(', ')}.`);
-
-  if (kind === 'defense' && 'max' in def && def.max) {
-    const have = lvl(c.defenses, id as DefenseId) + (queuedCounts(c.unitQueue)[id] ?? 0);
-    if (have + count > def.max) throw new GameError('max', `You can only have ${def.max} ${def.name}.`);
-  }
+  // same checks the Brood screen uses to grey out the button
+  const blocked = broodBlocker(kind, id, def, count, c, player);
+  if (blocked) throw new GameError(blocked.code, blocked.message);
 
   // Feeding the brood (docs/05-castes-units.md): extra Protein per unit, raised faster
   const cost = scale(fedCost(def.cost, feed), count);

@@ -75,8 +75,6 @@ export async function leaveHerd(q: Tx, herd: Colony, at: number) {
 // ---------- the Tend mission ----------
 
 defineMission('tend', {
-  allowsCargo: false,
-  slot: 'mission',
   async validate({ q, player, colony, targetColony, units }) {
     const herd = herdOf(targetColony);
     if (!targetColony || !herd) throw new GameError('bad_target', 'Only aphid herds can be tended.');

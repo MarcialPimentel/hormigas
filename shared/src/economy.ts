@@ -131,9 +131,27 @@ export function workforce(chambers: ChamberLevels): Workforce {
 const PRODUCTION_PCT: Record<ResourceId, ResearchNumberEffect> = { foliage: 'foliagePct', protein: 'proteinPct', nectar: 'nectarPct' };
 
 /**
- * Resources produced per hour by a colony (base income + chambers × terrain × research × workforce ratio) × world speed.
- * Research: Group Hunting, Aphid Husbandry and Fungus Farming add a percentage to chamber output.
+ * What one producing chamber at `level` makes per hour: chamber base × level growth × terrain × research
+ * × workforce ratio × world speed. Research: Group Hunting, Aphid Husbandry and Fungus Farming add a percentage.
+ * Returns null for chambers that don't produce. The Chambers screen and productionPerHour both use this.
  */
+export function chamberOutputPerHour(
+  id: ChamberId,
+  level: number,
+  terrain: TerrainId,
+  research?: ResearchLevels,
+  worldSpeed = 1,
+  workforceRatio = 1,
+): { resource: ResourceId; amount: number } | null {
+  const def = CHAMBERS[id];
+  if (def.effect.type !== 'produce' || !def.effect.resource) return null;
+  const r = def.effect.resource;
+  const terrainPct = (TERRAIN[terrain].mods[`${r}Pct` as 'foliagePct'] ?? 0) / 100;
+  const amount = (def.effect.base ?? 0) * growth(level) * (1 + terrainPct) * researchFactor(research, PRODUCTION_PCT[r]) * workforceRatio * worldSpeed;
+  return { resource: r, amount };
+}
+
+/** Resources produced per hour by a colony (base income + every producing chamber) × world speed. */
 export function productionPerHour(chambers: ChamberLevels, terrain: TerrainId, worldSpeed = 1, research?: ResearchLevels): Resources {
   const out = res(
     RESOURCES_DATA.baseIncomePerHour.foliage,
@@ -141,13 +159,9 @@ export function productionPerHour(chambers: ChamberLevels, terrain: TerrainId, w
     RESOURCES_DATA.baseIncomePerHour.nectar,
   );
   const { ratio } = workforce(chambers);
-  const mods = TERRAIN[terrain].mods;
   for (const id of CHAMBER_IDS) {
-    const def = CHAMBERS[id];
-    if (def.effect.type !== 'produce' || !def.effect.resource) continue;
-    const r = def.effect.resource;
-    const terrainPct = (mods[`${r}Pct` as 'foliagePct'] ?? 0) / 100;
-    out[r] += (def.effect.base ?? 0) * growth(lvl(chambers, id)) * (1 + terrainPct) * researchFactor(research, PRODUCTION_PCT[r]) * ratio;
+    const made = chamberOutputPerHour(id, lvl(chambers, id), terrain, research, 1, ratio);
+    if (made) out[made.resource] += made.amount;
   }
   return scale(out, worldSpeed);
 }
@@ -163,10 +177,13 @@ const STORAGE_FOR = Object.fromEntries(
 export const storageForLevel = (level: number): number =>
   RESOURCES_DATA.baseStorage * Math.pow(FORMULAS.storage.capacityGrowth, level);
 
+/** How much one storage chamber at `level` holds, with Repletes research's percentage. */
+export const chamberStorage = (level: number, research?: ResearchLevels): number =>
+  storageForLevel(level) * researchFactor(research, 'storagePct');
+
 /** Storage per resource. Repletes research adds a percentage. */
 export function storageCapacity(chambers: ChamberLevels, research?: ResearchLevels): Resources {
-  const k = researchFactor(research, 'storagePct');
-  const cap = (r: ResourceId) => storageForLevel(lvl(chambers, STORAGE_FOR[r])) * k;
+  const cap = (r: ResourceId) => chamberStorage(lvl(chambers, STORAGE_FOR[r]), research);
   return res(cap('foliage'), cap('protein'), cap('nectar'));
 }
 

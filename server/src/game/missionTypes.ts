@@ -43,8 +43,6 @@ import { areAllies } from './diplomacy';
 import { DIPLOMACY_MESSAGES } from '@hormigas/shared';
 
 defineMission('transport', {
-  allowsCargo: true,
-  slot: 'mission',
   async validate({ q, targetColony, colony, player }) {
     if (!targetColony) throw new GameError('bad_target', 'There is no colony there.');
     if (targetColony.id === colony.id) throw new GameError('bad_target', 'Pick a different colony.');
@@ -71,8 +69,6 @@ defineMission('transport', {
 });
 
 defineMission('relocate', {
-  allowsCargo: true,
-  slot: 'mission',
   async validate({ targetColony, colony, player }) {
     if (!targetColony || targetColony.playerId !== player.id) throw new GameError('bad_target', 'You can only relocate to your own colonies.');
     if (targetColony.id === colony.id) throw new GameError('bad_target', 'Pick a different colony.');
@@ -94,8 +90,6 @@ defineMission('relocate', {
 
 // Hold Position (docs/23-supercolonies.md): soldiers stay at a supercolony member's colony and fight in its battles until recalled.
 defineMission('hold', {
-  allowsCargo: false,
-  slot: 'mission',
   async validate({ q, targetColony, player, units }) {
     if (!targetColony || targetColony.npc) throw new GameError('bad_target', 'There is no allied colony there.');
     if (targetColony.playerId === player.id) throw new GameError('bad_target', 'Your own colonies defend themselves. Use Relocate to move units there.');
@@ -119,11 +113,8 @@ defineMission('hold', {
 });
 
 defineMission('scout', {
-  allowsCargo: false,
-  allowsWilds: true,
-  slot: 'mission',
   async validate({ targetColony, player, units, target }) {
-    if (presentUnits(units).some((u) => u !== 'scout')) throw new GameError('scouts_only', 'Only Scouts can be sent to scout.');
+    // only Scouts may go: checked from MISSION_TYPES before this runs
     if (target.spot === WILDS_SPOT) return; // surveying the wilds is always allowed
     if (!targetColony) throw new GameError('bad_target', 'There is no colony there to scout.');
     if (targetColony.playerId === player.id) throw new GameError('bad_target', "You don't need to scout your own colony.");

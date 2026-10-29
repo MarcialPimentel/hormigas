@@ -9,14 +9,21 @@ import {
   DIPLOMACY_MESSAGES,
   raidBlockMessage,
   distance,
-  forageSlots,
   forageFindCap,
   maxColonies,
+  colonyCapMessage,
   groupCargo,
   groupSpeed,
   lvl,
   missionFuel,
-  missionSlots,
+  missionSlotUsage,
+  missionTimes,
+  missionUnitProblem,
+  missionUnitsAllowed,
+  noSlotsMessage,
+  returnLegMs,
+  MISSION_SPEED,
+  MISSION_TYPES,
   presentUnits,
   speedForReturnIn,
   travelSeconds,
@@ -68,10 +75,6 @@ function targetName(spot: Spot | null | undefined, at: Coords, home: Coords): st
   return spot.colony.name;
 }
 
-const UNITS_FOR: Partial<Record<MissionType, CasteId[]>> = {
-  scout: ['scout'],
-};
-
 export function Missions({ draft }: { draft?: MissionDraft }) {
   const { colony, state, act, now } = useGame();
   const [type, setType] = useState<MissionType>(draft?.type && ENABLED_MISSIONS.includes(draft.type) ? draft.type : 'transport');
@@ -101,26 +104,27 @@ export function Missions({ draft }: { draft?: MissionDraft }) {
 
   if (!colony || !state) return null;
   const research = state.player.research;
-  const allowed = (UNITS_FOR[type] ?? MVP_CASTES).filter((id) => lvl(colony.units, id) > 0 || chosen[id]);
-  const cargoAllowed = type === 'transport' || type === 'relocate' || type === 'colonize';
+  // the mission's fixed rules, the same table the server checks (shared/src/missions.ts)
+  const rules = MISSION_TYPES[type];
+  const allowed = (missionUnitsAllowed(type) ?? MVP_CASTES).filter((id) => lvl(colony.units, id) > 0 || chosen[id]);
+  const cargoAllowed = rules.allowsCargo;
   const cargoAmounts = Object.fromEntries(RESOURCE_IDS.map((r) => [r, cargoAllowed ? Math.floor(Number(cargo[r]) || 0) : 0])) as Record<'foliage' | 'protein' | 'nectar', number>;
   const cargoTotal = cargoAmounts.foliage + cargoAmounts.protein + cargoAmounts.nectar;
   const capacity = groupCargo(chosen, { corpses: type === 'haul' });
-  const wildsOk = type === 'forage' || type === 'scout';
+  const wildsOk = rules.allowsWilds;
   // wild sites (spots 14+) hold aphid herds, termite mounds and spider dens (docs/24-npcs.md)
-  const valid = validCoords(target, wildsOk, type !== 'colonize');
+  const valid = validCoords(target, wildsOk, rules.allowsSites);
   const dist = valid ? distance(colony.coords, target) : 0;
   const speed = groupSpeed(chosen, research);
   const oneWay = speed > 0 && valid ? travelSeconds(dist, speed, speedPct, state.world.speed) : 0;
   const fuel = speed > 0 && valid ? missionFuel(chosen, dist, speedPct) : 0;
-  const pool = type === 'forage' ? 'forage' : 'mission';
+  const pool = rules.slot;
   const missions: any[] = state.missions ?? [];
-  const used = missions.filter((m) => (m.type === 'forage' ? 'forage' : 'mission') === pool).length;
-  const max = pool === 'forage' ? forageSlots(research) : missionSlots(research);
+  const { used, max } = missionSlotUsage(missions, pool, research);
 
   const problems: string[] = [];
   if (!valid) problems.push(wildsOk ? 'Pick a real patch.' : 'Pick a real colony spot (spots 1–12).');
-  if (type === 'forage' && valid && target.spot !== WILDS_SPOT) problems.push(`Foragers go to the wilds (spot ${WILDS_SPOT}).`);
+  if (rules.target === 'wilds' && valid && target.spot !== WILDS_SPOT) problems.push(`Foragers go to the wilds (spot ${WILDS_SPOT}).`);
   const unscouted = isScent(targetSpot?.colony);
   if (unscouted && type === 'raid') problems.push(DISCOVERY_MESSAGES.raid_needs_scout);
   if (unscouted && type === 'transport') problems.push(DISCOVERY_MESSAGES.send_needs_scout);
@@ -136,21 +140,22 @@ export function Missions({ draft }: { draft?: MissionDraft }) {
   if (type === 'raid' && rel) problems.push(raidBlockMessage({ relation: rel, until: targetSpot?.colony?.relationUntil ?? undefined }));
   if (type === 'hold' && targetSpot !== undefined && rel !== 'ally') problems.push(DIPLOMACY_MESSAGES.hold_needs_ally);
   if (presentUnits(chosen).length === 0) problems.push('Choose units to send.');
+  const unitProblem = missionUnitProblem(type, chosen);
+  if (unitProblem && presentUnits(chosen).length > 0) problems.push(unitProblem.short);
   for (const [k, n] of Object.entries(chosen)) if (n! > lvl(colony.units, k as CasteId)) problems.push(`Only ${lvl(colony.units, k as CasteId)} ${CASTES[k as CasteId].name} at home.`);
   if (cargoTotal > capacity) problems.push(`Cargo is over capacity (${fmtFull(capacity)}).`);
   if (cargoAmounts.nectar + fuel > colony.resources.nectar) problems.push(`Not enough Nectar: needs ${fmtFull(fuel)} for the trip${cargoAmounts.nectar ? ' plus cargo' : ''}.`);
   for (const r of ['foliage', 'protein'] as const) if (cargoAmounts[r] > colony.resources[r]) problems.push(`Not enough ${RESOURCE_LABEL[r]} to load.`);
-  if (used >= max) problems.push(pool === 'forage' ? 'All forage parties are out.' : `All ${max} mission slots are in use.`);
+  if (used >= max) problems.push(noSlotsMessage(pool, max));
   if (valid && target.region === colony.coords.region && target.patch === colony.coords.patch && target.spot === colony.coords.spot) problems.push("That's this colony.");
   if (type === 'colonize') {
-    if ((chosen.winged_queen ?? 0) !== 1) problems.push('Send exactly one Winged Queen.');
     const flying = missions.filter((m) => m.type === 'colonize' && m.status === 'outbound').length;
     const cap = maxColonies(research);
-    if (state.colonies.length + flying >= cap) problems.push(`You can rule ${cap} ${cap === 1 ? 'colony' : 'colonies'} now. Research Nuptial Flight for more.`);
+    if (state.colonies.length + flying >= cap) problems.push(colonyCapMessage(cap));
   }
 
-  const stays = type === 'relocate' || type === 'colonize' || type === 'tend' || type === 'hold';
-  const returnTrip = stays ? 0 : oneWay;
+  const stays = rules.oneWay;
+  const times = oneWay ? missionTimes(type, now, oneWay) : null;
 
   function applyReturnBy(value: string) {
     setReturnBy(value);
@@ -212,8 +217,8 @@ export function Missions({ draft }: { draft?: MissionDraft }) {
               className={type === t ? 'on' : ''}
               onClick={() => {
                 setType(t);
-                if (t === 'forage' && target.spot !== WILDS_SPOT) setTarget({ ...colony.coords, spot: WILDS_SPOT });
-                if (t !== 'forage' && t !== 'scout' && target.spot === WILDS_SPOT) setTarget({ ...target, spot: 1 });
+                if (MISSION_TYPES[t].target === 'wilds' && target.spot !== WILDS_SPOT) setTarget({ ...colony.coords, spot: WILDS_SPOT });
+                if (!MISSION_TYPES[t].allowsWilds && target.spot === WILDS_SPOT) setTarget({ ...target, spot: 1 });
               }}
             >
               {MISSION_LABEL[t]}
@@ -320,7 +325,7 @@ export function Missions({ draft }: { draft?: MissionDraft }) {
         <fieldset className="field">
           <legend>Speed {speedPct}%</legend>
           <div className="speed">
-            <input type="range" min={10} max={100} step={10} value={speedPct} onChange={(e) => { setSpeedPct(Number(e.target.value)); setReturnBy(''); }} aria-label="Speed" />
+            <input type="range" min={MISSION_SPEED.min} max={MISSION_SPEED.max} step={MISSION_SPEED.step} value={speedPct} onChange={(e) => { setSpeedPct(Number(e.target.value)); setReturnBy(''); }} aria-label="Speed" />
             {!stays && (
               <label className="return-by">
                 Back no earlier than
@@ -336,8 +341,8 @@ export function Missions({ draft }: { draft?: MissionDraft }) {
         <dl className="summary">
           <div><dt>Distance</dt><dd>{valid ? fmtNum(dist) : '—'}</dd></div>
           <div><dt>One way</dt><dd>{oneWay ? fmtDuration(oneWay * 1000) : '—'}</dd></div>
-          <div><dt>Arrives</dt><dd>{oneWay ? fmtClock(now + oneWay * 1000) : '—'}</dd></div>
-          <div><dt>Back home</dt><dd>{returnTrip ? fmtClock(now + 2 * oneWay * 1000) : type === 'hold' ? 'when recalled' : stays ? 'stays' : '—'}</dd></div>
+          <div><dt>Arrives</dt><dd>{times ? fmtClock(times.arriveAt) : '—'}</dd></div>
+          <div><dt>Back home</dt><dd>{times?.returnAt ? fmtClock(times.returnAt) : type === 'hold' ? 'when recalled' : stays ? 'stays' : '—'}</dd></div>
           <div><dt>Nectar fuel (paid once)</dt><dd className={fuel > colony.resources.nectar ? 'warn' : ''}>{fuel ? fmtFull(fuel) : '—'}</dd></div>
           {type !== 'scout' && <div><dt>{type === 'haul' ? 'Corpse capacity' : 'Capacity'}</dt><dd>{fmtFull(capacity)}</dd></div>}
         </dl>
@@ -381,7 +386,7 @@ export function MissionList() {
               </div>
               <div className="mission-time">
                 <Trip departAt={m.departAt} arriveAt={m.arriveAt} returnAt={m.returnAt} status="holding" />
-                <span className="muted small">Back {fmtDuration(m.arriveAt - m.departAt)} after recall</span>
+                <span className="muted small">Back {fmtDuration(returnLegMs(m.departAt, m.arriveAt))} after recall</span>
                 <button className="btn ghost small" onClick={() => act(() => api.post(`/api/missions/${m.id}/recall`), 'Soldiers called home.')}>
                   Recall
                 </button>

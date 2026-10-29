@@ -12,6 +12,7 @@ import {
   canAfford,
   lvl,
   missingRequirements,
+  researchBlocker,
   researchCost,
   researchMaxLevel,
   researchSeconds,
@@ -196,7 +197,7 @@ export function ResearchTree({ blurbs }: { blurbs: Record<string, string> }) {
     else if (level >= max) st = 'maxed';
     else if (job?.research === id) st = 'active';
     else if (missing.length) st = 'locked';
-    else if (!job && canAfford(colony.resources, cost)) st = 'ready';
+    else if (!researchBlocker(id, colony, state.player) && canAfford(colony.resources, cost)) st = 'ready';
     else st = 'open';
     return { level, next, missing, cost, max, st };
   };
@@ -309,12 +310,9 @@ export function ResearchTree({ blurbs }: { blurbs: Record<string, string> }) {
 
   /** Why the Research button is off, or '' when it's on. Same rules as the list. */
   function whyNot(id: ResearchId): string {
-    const { level, missing, cost, max } = info(id);
-    if (!RESEARCH[id].mvp) return 'Coming in a later build';
-    if (level >= max) return 'Highest level reached';
-    if (missing.length) return `Needs ${missing.map((m) => `${m.name} ${m.need}`).join(', ')}`;
-    if (job) return job.research === id ? 'Researching now' : 'Another research is running';
-    if (colony!.buildJob?.chamber === 'pheromone_chamber') return 'Pheromone Chamber is being enlarged';
+    const { cost } = info(id);
+    const blocker = researchBlocker(id, colony!, state!.player);
+    if (blocker) return blocker.short;
     if (!canAfford(colony!.resources, cost)) return whyShort(colony!, cost, state!.world.speed);
     return '';
   }

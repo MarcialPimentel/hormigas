@@ -7,6 +7,8 @@ import {
   RESOURCE_IDS,
   lvl,
   missingRequirements,
+  broodBlocker,
+  defenseRoom,
   queueEndsAt,
   queuedCounts,
   scale,
@@ -155,17 +157,14 @@ export function Brood() {
             const f: Feeding = tab === 'caste' ? feed : 'normal';
             const unitCost: Resources = fedCost(def.cost, f);
             const maxAfford = affordableCount(unitCost, colony.resources);
-            const cap = def.max ? Math.max(0, def.max - have - (queued[id] ?? 0)) : Infinity;
+            const cap = tab === 'defense' ? defenseRoom(id as DefenseId, def.max, colony) : Infinity;
             const maxN = Math.min(maxAfford, cap, 100000);
             const raw = counts[id] ?? '';
             const n = Math.max(0, Math.floor(Number(raw) || 0));
             const per = unitSeconds(def.cost, { worldSpeed: state.world.speed, broodHall: Math.max(1, brood), timeMultiplier: state.player.timeMultiplier, research: state.player.research }) * feedingTimeFactor(f);
-            let blocked = '';
-            if (brood === 0) blocked = 'Build a Brood Hall first';
-            else if (missing.length) blocked = `Needs ${missing.map((m) => `${m.name} ${m.need}`).join(', ')}`;
-            else if (colony.buildJob?.chamber === 'brood_hall') blocked = 'Brood Hall is being enlarged';
-            else if (cap === 0) blocked = `Limit ${def.max} per colony`;
-            else if (n > maxN) blocked = maxAfford < n ? whyShort(colony, scale(unitCost, n), state.world.speed) : 'Over the limit';
+            // the server refuses with the same checks (shared/src/blockers.ts); affordability is explained here
+            const blocker = broodBlocker(tab, id, def, n, colony, state.player);
+            const blocked = blocker ? blocker.short : maxAfford < n ? whyShort(colony, scale(unitCost, n), state.world.speed) : n > maxN ? 'Over the limit' : '';
             return (
               <li key={id} className={`row has-pic${missing.length ? ' locked' : ''}`}>
                 <Pic kind={tab === 'caste' ? 'unit' : 'defense'} id={id} />

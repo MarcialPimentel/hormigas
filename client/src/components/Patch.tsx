@@ -3,7 +3,7 @@
 // Used by the Missions screen: tap a spot, then scout, raid, send or forage from its card.
 import { useEffect, useState, type ReactNode } from 'react';
 import {
-  WORLD, WILDS_SPOT, TERRAIN, CHAMBERS, CASTES, DEFENSES, DISCOVERY_MESSAGES, WILD_SCENTS, HERDS, isSiteSpot, raidBlockMessage, terrainForSpot,
+  WORLD, WILDS_SPOT, TERRAIN, CHAMBERS, CASTES, DEFENSES, DISCOVERY_MESSAGES, WILD_SCENTS, HERDS, foundColonyBlocker, isSiteSpot, raidBlockMessage, terrainForSpot,
   type Knowledge, type Relation, type ScentHint, type ScentKind, type TerrainId,
 } from '@hormigas/shared';
 import { api } from '../api';
@@ -348,7 +348,10 @@ function terrainSummary(t: (typeof TERRAIN)[keyof typeof TERRAIN]) {
 export function SpotCard({ s, at, onAct }: { s: Spot; at: Coords; onAct: (type: MissionType, at: Coords) => void }) {
   const { colony, state, now, act } = useGame();
   if (!colony || !state) return null;
-  const canFound = (state.player.research.nuptial_flight ?? 0) > 0;
+  // a Winged Queen at home (or one this colony could raise), and room under the colony cap: same rules the server checks
+  const flying = (state.missions ?? []).filter((m: any) => m.type === 'colonize' && m.status === 'outbound').length;
+  const foundBlocker = foundColonyBlocker(colony, state.player.research, state.colonies.length + flying);
+  const canFound = !foundBlocker;
   const c = s.colony;
   const wilds = s.spot === WILDS_SPOT;
   const terrain = wilds ? null : TERRAIN[terrainForSpot(s.spot)];
@@ -425,7 +428,7 @@ export function SpotCard({ s, at, onAct }: { s: Spot; at: Coords; onAct: (type: 
               <strong>Spot {s.spot}</strong>
               <span className="muted small">Empty {terrain?.name.toLowerCase()}. Nobody lives here yet.</span>
               {terrain && <span className="muted small">{terrainSummary(terrain)}</span>}
-              {!canFound && <span className="muted small">A Winged Queen could found a colony here. Research Nuptial Flight to raise one.</span>}
+              {foundBlocker && <span className="muted small">{foundBlocker.short}</span>}
             </>
           )}
           <span className="muted small coords">{fmtCoords(at)}{site ? ' · the wilds' : terrain && c ? ` · ${terrain.name}` : ''}</span>
