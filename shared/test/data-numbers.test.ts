@@ -2,7 +2,7 @@
 // (which would otherwise turn into NaN in players' resources) and check the code really reads the data.
 import { describe, expect, it } from 'vitest';
 import {
-  CASTES, CHAMBERS, CHAMBER_IDS, DEFENSES, FORMULAS, RESEARCH, RESOURCES_DATA, RESOURCE_IDS,
+  CASTES, CHAMBERS, CHAMBER_IDS, DEFENSES, FORMULAS, NEST_EVENTS_DATA, NPC_DATA, RESEARCH, RESOURCES_DATA, RESOURCE_IDS, SWARM, TERRAIN,
   distance, maxColonies, missionSlots, protectedForLevel, storageCapacity, storageForLevel, unitSpeed,
 } from '../src';
 
@@ -23,6 +23,23 @@ describe('data numbers', () => {
     expect(all.length).toBeGreaterThan(100);
     const bad = all.filter(([, n]) => !Number.isFinite(n) || n < 0).map(([p]) => p);
     expect(bad).toEqual([]);
+  });
+
+  it('terrain, wild nests, swarms and nest events have real numbers too (only *Pct bonuses may be negative)', () => {
+    const all = [...numbers(TERRAIN, 'terrain'), ...numbers(NPC_DATA, 'npc'), ...numbers(NEST_EVENTS_DATA, 'nestEvents')];
+    expect(all.length).toBeGreaterThan(50);
+    const bad = all.filter(([p, n]) => !Number.isFinite(n) || (n < 0 && !/Pct$/.test(p))).map(([p]) => p);
+    expect(bad).toEqual([]);
+  });
+
+  it('swarm numbers make sense', () => {
+    expect(SWARM.everyHours[0]).toBeLessThanOrEqual(SWARM.everyHours[1]);
+    expect(SWARM.warningHours).toBeGreaterThan(0);
+    expect(SWARM.minPacks).toBeGreaterThanOrEqual(1);
+    expect(SWARM.minPacks).toBeLessThanOrEqual(SWARM.maxPacks);
+    expect(SWARM.defenderWinRate).toBeGreaterThan(0);
+    expect(SWARM.defenderWinRate).toBeLessThanOrEqual(1);
+    for (const id of Object.keys(SWARM.pack)) expect(CASTES[id as keyof typeof CASTES], id).toBeTruthy();
   });
 
   it('the formula numbers the code reads are present', () => {
