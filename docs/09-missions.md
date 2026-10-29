@@ -18,7 +18,7 @@
 | **Relocate** | ✅ | Move units + resources to one of your own colonies; units stay |
 | **Haul Corpses** | ✅ | Collect a corpse field (Workers / Carrion Beetles) |
 | **Forage** | ✅ | Expedition into the wilds (below) |
-| **Found Colony** | v1 | Winged Queen founds a new colony at an empty spot |
+| **Found Colony** | ✅ | A Winged Queen (plus escorts and cargo) founds a new colony at an empty spot ([19-colonies](19-colonies.md)) |
 | **Joint Raid** | v1 | Several supercolony members raid together |
 | **Hold Position** | v1 | Station units at an ally's colony to defend it |
 

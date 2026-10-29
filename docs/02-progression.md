@@ -35,7 +35,7 @@ Why exponential: costs rising faster than production is what moves the player fr
 3. Queen's Chamber L3 → Pheromone Chamber (research), Aphid Pasture, Nectar Cellar
 4. Brood Hall L2 + Brood Science → Major Soldier (Brood Science 1), Hauler (Brood Science 2). Brood Hall L3 + Mandibles 2 → Acid Sentry
 5. Queen's Chamber L4 → Excavation Works, Honeypot Gallery
-6. Research: Nuptial Flight → Winged Queen (second colony)
+6. Pheromone Chamber 3 → research Nuptial Flight; Brood Hall 4 + Nuptial Flight 1 → Winged Queen → second colony ([19-colonies](19-colonies.md))
 
 The **Queen's Chamber** is the master gate: its level unlocks new chamber types, keeping the early UI small and adding options at a steady rate.
 
