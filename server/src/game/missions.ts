@@ -37,7 +37,7 @@ import type { Q, Tx } from '../db';
 import { now } from '../clock';
 import { GameError, notFound, forbidden } from '../errors';
 import { advance, colonyAt, getPlayer, lockColony, lockOwnColony, saveColony, type Colony, type Player } from '../colony';
-import { cancelEvent, onEvent, schedule } from '../events';
+import { cancelEvent, onEvent, schedule, type GameEvent } from '../events';
 import { getWorld } from '../world';
 import { refreshPointsAfterCommit } from './points';
 import { notify } from '../realtime';
@@ -147,6 +147,7 @@ export function defineMission(type: MissionType, rules: TypeRules) {
   RULES.set(type, rules);
 }
 export const enabledMissionTypes = () => [...RULES.keys()];
+export const missionRules = (type: MissionType): TypeRules | undefined => RULES.get(type);
 
 // ---------- dispatch ----------
 
@@ -362,7 +363,10 @@ export async function sendGarrisonsHome(q: Q, playerId: number, others: number[]
 
 // ---------- events ----------
 
-onEvent('mission_arrive', async (q, ev) => {
+onEvent('mission_arrive', arrive, { onFail: (q, ev) => arrivalFailed(q, ev.payload.missionId, ev.id, ev.due_at) });
+onEvent('mission_return', comeBack, { onFail: (q, ev) => returnFailed(q, ev.payload.missionId, ev.id) });
+
+async function arrive(q: Tx, ev: GameEvent<{ missionId: number }>) {
   const m = await lockMission(q, ev.payload.missionId);
   if (m.status !== 'outbound' || m.arriveEventId !== ev.id) return;
   const rules = RULES.get(m.type);
@@ -380,9 +384,9 @@ onEvent('mission_arrive', async (q, ev) => {
   }
   await saveMission(q, m);
   if (m.status === 'done') await refreshPointsAfterCommit(q, m.playerId);
-});
+}
 
-onEvent('mission_return', async (q, ev) => {
+async function comeBack(q: Tx, ev: GameEvent<{ missionId: number }>) {
   const m = await lockMission(q, ev.payload.missionId);
   if (m.status !== 'returning' || m.returnEventId !== ev.id) return;
   let c = await lockColony(q, m.originColonyId);
@@ -394,7 +398,77 @@ onEvent('mission_return', async (q, ev) => {
   await saveMission(q, m);
   await refreshPointsAfterCommit(q, m.playerId);
   notify(m.playerId, { type: 'returned', missionType: m.type });
-});
+}
+
+/**
+ * A mission whose arrival can't be resolved (a bug, rolled back) must not stay "outbound" forever: its ants
+ * would never come back, and it would keep counting toward raid limits and busy checks. Everyone turns around
+ * at the target and walks home with what they set out with. Swarms have no home, so they just end.
+ */
+async function sendHomeUnresolved(q: Q, m: Mission, at: number, result: object) {
+  m.arriveEventId = null;
+  m.result = { ...(m.result ?? {}), ...result };
+  if (m.type === 'swarm' || presentUnits(m.units).length === 0) {
+    m.status = 'done';
+    await saveMission(q, m);
+    return;
+  }
+  m.status = 'returning';
+  m.returnAt = Math.max(at, m.arriveAt) + (m.arriveAt - m.departAt);
+  m.returnEventId = await schedule(q, m.worldId, 'mission_return', m.returnAt, { missionId: m.id });
+  await saveMission(q, m);
+}
+
+async function arrivalFailed(q: Tx, missionId: number, eventId: number, at: number) {
+  const m = await lockMission(q, missionId);
+  if (m.status !== 'outbound' || m.arriveEventId !== eventId) return;
+  await sendHomeUnresolved(q, m, at, { unresolved: true }); // the error itself is on the event row
+}
+
+/**
+ * The trip home failed (say, the home colony can't be loaded). Close the mission so it stops blocking slots.
+ * Its units and cargo stay on the mission row, so they can be given back by hand once the cause is fixed.
+ */
+async function returnFailed(q: Tx, missionId: number, eventId: number) {
+  const m = await lockMission(q, missionId);
+  if (m.status !== 'returning' || m.returnEventId !== eventId) return;
+  m.status = 'done';
+  m.result = { ...(m.result ?? {}), returnFailed: true };
+  await saveMission(q, m);
+}
+
+/**
+ * Startup safety net (safe to run any number of times): missions on the move whose event is gone.
+ * Outbound without a pending arrival → turned home, as if the arrival had failed. Returning without a pending
+ * return → the return is scheduled again (right away if it is overdue). Holding missions have no event and are left alone.
+ */
+export async function repairStuckMissions(q: Tx, worldId: number, t: number): Promise<number> {
+  const r = await q.query(
+    `SELECT m.id FROM missions m
+      WHERE m.world_id = $1 AND m.status IN ('outbound', 'returning')
+        AND NOT EXISTS (SELECT 1 FROM events e WHERE NOT e.done
+                         AND e.id = CASE WHEN m.status = 'outbound' THEN m.arrive_event_id ELSE m.return_event_id END)
+      ORDER BY m.id`,
+    [worldId],
+  );
+  for (const row of r.rows) {
+    const m = await lockMission(q, row.id);
+    if (m.status === 'outbound') {
+      await sendHomeUnresolved(q, m, t, { unresolved: true });
+    } else {
+      m.returnAt = Math.max(t, m.returnAt ?? t);
+      m.returnEventId = await schedule(q, m.worldId, 'mission_return', m.returnAt, { missionId: m.id });
+      await saveMission(q, m);
+    }
+  }
+  return r.rows.length;
+}
+
+// Every MissionType, as a value (the compiler insists each one is listed), so tests can check each has its rules.
+const EVERY_TYPE: Record<MissionType, true> = {
+  transport: true, relocate: true, scout: true, raid: true, haul: true, forage: true, colonize: true, swarm: true, hold: true, tend: true,
+};
+export const ALL_MISSION_TYPES = Object.keys(EVERY_TYPE) as MissionType[];
 
 // ---------- views ----------
 

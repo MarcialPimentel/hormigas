@@ -25,6 +25,9 @@ export async function getWorld(q: Q): Promise<World> {
   return cached;
 }
 
+/** A span of game hours in real milliseconds at world speed `speed` (a ×5 world runs 5 times faster). */
+export const gameHoursMs = (hours: number, speed: number): number => (hours * 3600_000) / speed;
+
 /** World speed for synchronous rules code. getWorld() runs at startup and on every sign-up, so the cache is warm. */
 export const cachedWorldSpeed = (): number => cached?.speed ?? 1;
 

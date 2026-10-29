@@ -40,7 +40,7 @@ Since Build 6 research is a **tree**: research can need other research (not only
 | **Symbiosis** | Harvest | Pher 5, Aphid Husbandry 3, Chemical Mimicry 1 | Unlocks ally species (beetles, bullet ants) |
 
 ## Scouting detail by Scent Reading difference
-`diff = yourScentReading − theirScentReading + (scouts sent − 1) / 2` (rounded down)
+`diff = yourScentReading − theirScentReading + (scouts sent − 1) / 2` (rounded down). Scent Reading counts through its `scoutLevel` effect; the 2 and the thresholds below are in `formulas.json` → `scouting.detail`.
 | diff | Report shows |
 |---|---|
 | < 0 | Resources only |

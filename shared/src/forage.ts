@@ -1,25 +1,46 @@
 // Forage expeditions. Spec: docs/09-missions.md
-import { FORMULAS, type Resources } from './data';
+import { FORMULAS, type ResourceId, type Resources } from './data';
+import { researchSum, type ResearchLevels } from './economy';
 import { res } from './resources';
 import { randInt, type Rng } from './rng';
 
 export type ForageOutcome = keyof typeof FORMULAS.forage.outcomes;
 export const FORAGE_OUTCOMES = Object.keys(FORMULAS.forage.outcomes) as ForageOutcome[];
 
-/** Outcome weights after Foraging Instinct luck: each level moves 2 points from bad outcomes to good ones. */
+/** What one outcome does (formulas.json forage.results). Missing fields = no effect. */
+interface ForageResultDef {
+  cargoPct?: [number, number];
+  firstTripCargoPct?: [number, number];
+  mixPct?: Record<ResourceId, number>;
+  lossPct?: [number, number];
+  returnFactor?: number;
+}
+const F = FORMULAS.forage as typeof FORMULAS.forage & {
+  luck: { shiftPerLevel: number; takeFrom: ForageOutcome[]; keepPct: number; giveToPct: Partial<Record<ForageOutcome, number>> };
+  firstTripOutcome: ForageOutcome;
+  results: Partial<Record<ForageOutcome, ForageResultDef>>;
+};
+
+/** A player's forage luck: the forageLuck effect of Foraging Instinct. */
+export const forageLuck = (research: ResearchLevels | undefined): number => researchSum(research, 'forageLuck');
+
+/**
+ * Outcome weights after forage luck: each level moves shiftPerLevel points from bad outcomes to good ones,
+ * but never removes all the risk (each bad outcome keeps keepPct of its weight).
+ */
 export function forageWeights(luck: number): Record<ForageOutcome, number> {
+  const L = F.luck;
   const w = { ...FORMULAS.forage.outcomes } as Record<ForageOutcome, number>;
-  let shift = 2 * Math.max(0, luck);
-  for (const bad of ['nothing', 'lost_trail', 'spider_ambush', 'rainstorm', 'the_boot'] as ForageOutcome[]) {
-    // never fully remove risk: keep at least a quarter of each bad outcome
-    const take = Math.min(shift, w[bad] * 0.75);
+  const total = L.shiftPerLevel * Math.max(0, luck);
+  let shift = total;
+  for (const bad of L.takeFrom) {
+    const take = Math.min(shift, w[bad] * (1 - L.keepPct / 100));
     w[bad] -= take;
     shift -= take;
     if (shift <= 0) break;
   }
-  const moved = 2 * Math.max(0, luck) - Math.max(0, shift);
-  w.food_cache += moved * 0.7;
-  w.dead_beetle += moved * 0.3;
+  const moved = total - Math.max(0, shift);
+  for (const [good, pct] of Object.entries(L.giveToPct) as [ForageOutcome, number][]) w[good] += moved * (pct / 100);
   return w;
 }
 
@@ -53,7 +74,10 @@ export function forageOddsSummary(luck: number) {
 }
 
 /** Max resources a single expedition can find, so huge cargo fleets don't break the economy. */
-export const forageFindCap = (playerPoints: number, luck: number) => Math.round((3000 + 25 * playerPoints) * (1 + 0.1 * luck));
+export const forageFindCap = (playerPoints: number, luck: number) => {
+  const c = F.findCap;
+  return Math.round((c.base + c.perPoint * playerPoints) * (1 + (c.luckPctPerLevel / 100) * luck));
+};
 
 export interface ForageResult {
   outcome: ForageOutcome;
@@ -80,38 +104,21 @@ export function resolveForage(
   rng: Rng,
   opts: { cargo: number; playerPoints: number; luck: number; /** a player's first expedition always finds food */ firstTrip?: boolean },
 ): ForageResult {
-  const outcome: ForageOutcome = opts.firstTrip ? 'food_cache' : rollForageOutcome(rng, opts.luck);
+  const outcome: ForageOutcome = opts.firstTrip ? F.firstTripOutcome : rollForageOutcome(rng, opts.luck);
   const cap = Math.min(opts.cargo, forageFindCap(opts.playerPoints, opts.luck));
+  const def = F.results[outcome] ?? {};
   let found = res();
-  let lossFraction = 0;
-  let returnTimeFactor = 1;
-  switch (outcome) {
-    case 'food_cache': {
-      // a first trip is a good one: at least 70% of what the party can carry
-      const amount = cap * (opts.firstTrip ? 0.7 + rng() * 0.3 : 0.4 + rng() * 0.6);
-      // mostly foliage, some protein, a little nectar
-      found = res(Math.floor(amount * 0.55), Math.floor(amount * 0.3), Math.floor(amount * 0.15));
-      break;
-    }
-    case 'dead_beetle':
-      found = res(0, Math.floor(cap * (0.6 + rng() * 0.4)), 0);
-      break;
-    case 'lost_trail':
-      returnTimeFactor = 1.5;
-      break;
-    case 'shortcut':
-      returnTimeFactor = 0.5;
-      break;
-    case 'spider_ambush':
-      lossFraction = randInt(rng, 10, 30) / 100;
-      break;
-    case 'rainstorm':
-      lossFraction = randInt(rng, 20, 50) / 100;
-      break;
-    case 'the_boot':
-      lossFraction = 1;
-      break;
+  // a first trip is a good one (docs/09-missions.md): it uses firstTripCargoPct when the outcome has one
+  const range = (opts.firstTrip && def.firstTripCargoPct) || def.cargoPct;
+  if (range && def.mixPct) {
+    const amount = cap * (range[0] / 100 + rng() * ((range[1] - range[0]) / 100));
+    const mix = def.mixPct;
+    found = res(Math.floor(amount * (mix.foliage / 100)), Math.floor(amount * (mix.protein / 100)), Math.floor(amount * (mix.nectar / 100)));
   }
+  // no roll when the range is a single value (The Boot always takes everyone)
+  const loss = def.lossPct;
+  const lossFraction = !loss ? 0 : loss[0] === loss[1] ? loss[0] / 100 : randInt(rng, loss[0], loss[1]) / 100;
+  const returnTimeFactor = def.returnFactor ?? 1;
   const texts = TEXT[outcome];
   return { outcome, found, lossFraction, returnTimeFactor, text: texts[Math.floor(rng() * texts.length)] };
 }

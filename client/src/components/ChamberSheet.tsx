@@ -1,5 +1,5 @@
 // Tap a chamber in the nest: what it does, what it holds, and digging its next level, without leaving the colony.
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { CHAMBERS, protectedAmount, storageCapacity, type ChamberId, type ResourceId } from '@hormigas/shared';
 import { api } from '../api';
 import { useGame } from '../game';
@@ -10,7 +10,54 @@ import { Cost } from './ui';
 
 export const STORE_OF: Partial<Record<ChamberId, ResourceId>> = { granary: 'foliage', larder: 'protein', nectar_cellar: 'nectar' };
 
-export function ChamberSheet({ id, onClose, onLookInside, onAllChambers }: { id: ChamberId; onClose: () => void; onLookInside?: () => void; onAllChambers: () => void }) {
+interface SheetProps {
+  id: ChamberId;
+  onClose: () => void;
+  onLookInside?: () => void;
+  onAllChambers: () => void;
+}
+
+const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
+
+/**
+ * The chamber's card, popped up beside the chamber itself (the Colony screen on a computer). `at` says where the
+ * chamber is on screen right now, in pixels inside the nest; the card follows it as the nest turns.
+ */
+export function ChamberPopover({ at, ...sheet }: SheetProps & { at: () => { x: number; y: number; rx: number } | null }) {
+  const box = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    let raf = 0;
+    const place = () => {
+      raf = requestAnimationFrame(place);
+      const el = box.current;
+      const host = el?.offsetParent as HTMLElement | null;
+      const p = at();
+      if (!el || !host) return;
+      el.style.visibility = p ? 'visible' : 'hidden';
+      if (!p) return;
+      // keep clear of the cards floating down the right of the 3D nest (the flat nest already stops short of them)
+      const cards = host.classList.contains('n3') ? parseFloat(getComputedStyle(host).getPropertyValue('--cards-w')) + 28 || 0 : 0;
+      const W = host.clientWidth - cards, H = host.clientHeight, w = el.offsetWidth, h = el.offsetHeight, gap = 12;
+      // to the chamber's right if it fits, otherwise to its left
+      const right = p.x + p.rx + gap + w <= W - 8;
+      const x = clamp(right ? p.x + p.rx + gap : p.x - p.rx - gap - w, 8, Math.max(8, W - w - 8));
+      const y = clamp(p.y - 44, 8, Math.max(8, H - h - 8));
+      el.style.left = `${Math.round(x)}px`;
+      el.style.top = `${Math.round(y)}px`;
+      el.dataset.side = right ? 'right' : 'left';
+      el.style.setProperty('--arrow-y', `${Math.round(clamp(p.y - y, 18, h - 18))}px`);
+    };
+    place();
+    return () => cancelAnimationFrame(raf);
+  }, [at]);
+  return (
+    <div className="sheet-pop" ref={box}>
+      <ChamberSheet {...sheet} />
+    </div>
+  );
+}
+
+export function ChamberSheet({ id, onClose, onLookInside, onAllChambers }: SheetProps) {
   const { colony, state, act, now } = useGame();
 
   useEffect(() => {

@@ -122,9 +122,10 @@
   },
   "regrowHours": 24,
   "raids": {
-    "_note": "Raids by wild nests on players in their patch. Gentle: a fraction of the nest's soldiers, slow so players see them coming.",
+    "_note": "Raids by wild nests on players in their patch. Gentle: a fraction (partyShare) of the nest's soldiers (castes with attack >= soldierMinAttack; Workers stay home), slow so players see them coming. The party is worth at most maxPartyValuePctOfTargetPoints % of the target's points, counted in resources (formulas.json points.resourcesPerPoint).",
     "everyHours": [16, 32],
     "partyShare": 0.3,
+    "soldierMinAttack": 25,
     "minParty": {"minor_soldier": 2},
     "maxPartyValuePctOfTargetPoints": 10,
     "speedPct": 10,

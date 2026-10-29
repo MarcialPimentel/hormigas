@@ -10,6 +10,7 @@ import {
   FORMULAS,
   type ChamberId,
   type ResearchId,
+  type ResearchNumberEffect,
   type CasteId,
   type DefenseId,
   type Requirements,
@@ -31,32 +32,27 @@ export const levelGrowth = (level: number) => level * Math.pow(FORMULAS.producti
 const growth = levelGrowth;
 
 /**
- * A research bonus as a fraction: the percentage in research.json's `effect` (e.g. Mandibles attackPct 10)
- * times the research level. Mandibles 3 → 0.3, so attack × 1.3.
+ * One effect key summed over every research that has it, times its level (e.g. Mandibles 3 → attackPct 30).
+ * The one way the game reads research effects, so a key can come from more than one research. docs/21-tech-tree.md
  */
-export const researchBonus = (research: ResearchLevels, id: ResearchId, key: string): number =>
-  (Number(RESEARCH[id].effect[key] ?? 0) / 100) * lvl(research, id);
+export const researchSum = (research: ResearchLevels | undefined, key: ResearchNumberEffect): number => sumEffect(research, key, 1);
 
-/** A per-level research effect in research.json (e.g. Deep Digging space 5) times the research level. */
-export const researchPerLevel = (research: ResearchLevels, id: ResearchId, key: string): number =>
-  Number(RESEARCH[id].effect[key] ?? 0) * lvl(research, id);
+/** A percentage effect as a fraction: researchSum / 100 (Mandibles 3 → 0.3, so attack × 1.3). */
+export const researchFraction = (research: ResearchLevels | undefined, key: ResearchNumberEffect): number => sumEffect(research, key, 100);
 
-/**
- * One effect key summed over every research that has it (e.g. "foliagePct" from Fungus Farming).
- * Tech-tree effects use this so a key can come from more than one research. docs/21-tech-tree.md
- */
-export function researchSum(research: ResearchLevels | undefined, key: string): number {
+// Each research adds (value / per) × level. Dividing before multiplying keeps the numbers bit-for-bit what combat has always used.
+function sumEffect(research: ResearchLevels | undefined, key: ResearchNumberEffect, per: number): number {
   if (!research) return 0;
   let sum = 0;
   for (const [id, level] of Object.entries(research)) {
     const v = RESEARCH[id as ResearchId]?.effect[key];
-    if (typeof v === 'number' && level) sum += v * level;
+    if (typeof v === 'number' && level) sum += (v / per) * level;
   }
   return sum;
 }
 
 /** A percentage research effect as a multiplier: researchSum 15 → 1.15, -30 → 0.7. Never below 0.1. */
-export const researchFactor = (research: ResearchLevels | undefined, key: string): number =>
+export const researchFactor = (research: ResearchLevels | undefined, key: ResearchNumberEffect): number =>
   Math.max(0.1, 1 + researchSum(research, key) / 100);
 
 /** Highest level a research can reach (Infinity when it has no cap). */
@@ -131,6 +127,9 @@ export function workforce(chambers: ChamberLevels): Workforce {
   return { supply: Math.round(supply), demand: Math.round(demand), ratio };
 }
 
+/** The research effect that raises each resource's chamber output. */
+const PRODUCTION_PCT: Record<ResourceId, ResearchNumberEffect> = { foliage: 'foliagePct', protein: 'proteinPct', nectar: 'nectarPct' };
+
 /**
  * What one producing chamber at `level` makes per hour: chamber base × level growth × terrain × research
  * × workforce ratio × world speed. Research: Group Hunting, Aphid Husbandry and Fungus Farming add a percentage.
@@ -148,7 +147,7 @@ export function chamberOutputPerHour(
   if (def.effect.type !== 'produce' || !def.effect.resource) return null;
   const r = def.effect.resource;
   const terrainPct = (TERRAIN[terrain].mods[`${r}Pct` as 'foliagePct'] ?? 0) / 100;
-  const amount = (def.effect.base ?? 0) * growth(level) * (1 + terrainPct) * researchFactor(research, `${r}Pct`) * workforceRatio * worldSpeed;
+  const amount = (def.effect.base ?? 0) * growth(level) * (1 + terrainPct) * researchFactor(research, PRODUCTION_PCT[r]) * workforceRatio * worldSpeed;
   return { resource: r, amount };
 }
 
@@ -217,7 +216,7 @@ export const spaceUsed = (chambers: ChamberLevels): number =>
   CHAMBER_IDS.reduce((sum, id) => sum + lvl(chambers, id), 0);
 
 export const spaceMax = (baseSpace: number, research: ResearchLevels): number =>
-  baseSpace + researchPerLevel(research, 'deep_digging', 'space');
+  baseSpace + researchSum(research, 'space');
 
 // ---------- requirements ----------
 
@@ -249,8 +248,9 @@ export const isUnlocked = (req: Requirements, chambers: ChamberLevels, research:
 
 // ---------- why can't I afford it? ----------
 
-const STORE_NAME: Record<ResourceId, string> = { foliage: 'Granary', protein: 'Larder', nectar: 'Nectar Cellar' };
-const RES_NAME: Record<ResourceId, string> = { foliage: 'Foliage', protein: 'Protein', nectar: 'Nectar' };
+/** Names from the data: each resource's own name, and the chamber that stores it. */
+const RES_NAME = (r: ResourceId): string => RESOURCES_DATA.resources[r].name;
+const STORE_NAME = (r: ResourceId): string => CHAMBERS[STORAGE_FOR[r]].name;
 
 export interface Shortfall {
   resource: ResourceId;
@@ -295,8 +295,8 @@ export function explainShortfall(list: Shortfall[]): string {
   if (list.length === 0) return '';
   const order = { storage: 0, no_income: 1, wait: 2 } as const;
   const s = [...list].sort((a, b) => order[a.kind] - order[b.kind] || (b.eta ?? 0) - (a.eta ?? 0))[0];
-  const name = RES_NAME[s.resource];
-  if (s.kind === 'storage') return `Costs ${n(s.need)} ${name}, but your ${STORE_NAME[s.resource]} only holds ${n(s.cap)}.`;
+  const name = RES_NAME(s.resource);
+  if (s.kind === 'storage') return `Costs ${n(s.need)} ${name}, but your ${STORE_NAME(s.resource)} only holds ${n(s.cap)}.`;
   if (s.kind === 'no_income') return `Needs ${n(s.need - s.have)} more ${name}. You don't produce ${name} yet.`;
   return `Needs ${n(s.need - s.have)} more ${name} (about ${dur(s.eta!)}).`;
 }

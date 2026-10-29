@@ -8,6 +8,7 @@ import { refreshAllPoints } from './game/points';
 import { ensureWildNests } from './game/nests';
 import { ensureNestEvents } from './game/nestEvents';
 import { ensureSwarms } from './game/swarms';
+import { repairStuckMissions } from './game/missions';
 import { now } from './clock';
 
 async function main() {
@@ -21,6 +22,8 @@ async function main() {
   if (armed) console.log(`Nest events scheduled for ${armed} colon${armed === 1 ? 'y' : 'ies'}`);
   const swarms = await tx((q) => ensureSwarms(q, world.id, now()));
   if (swarms) console.log(`Swarm sightings scheduled for ${swarms} colon${swarms === 1 ? 'y' : 'ies'}`);
+  const stuck = await tx((q) => repairStuckMissions(q, world.id, now()));
+  if (stuck) console.warn(`Repaired ${stuck} mission${stuck === 1 ? '' : 's'} that had lost their arrival or return event`);
   const app = await buildApp({ logger: true });
   const unknown = await unknownPendingEventTypes(getPool());
   if (unknown.length) console.warn(`Pending events with no handler on this build (left alone): ${unknown.join(', ')}`);

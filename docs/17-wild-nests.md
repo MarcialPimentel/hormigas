@@ -57,7 +57,7 @@ Different species make scouting matter: the right army depends on what lives nex
 - Every **16–32 h** (÷ world speed) a nest may send a raid at **one player colony in its patch**.
 - **Never** at players under new-colony protection, inactive players (7+ days), or anyone a nest raided in the last 24 h.
 - **Revenge:** players who raided this nest in the last 24 h are twice as likely to be picked.
-- **The party is small:** 30% of the nest's soldiers, at least 2 Minor Soldiers, and never worth more than 10% of the target's points (in resources).
+- **The party is small:** 30% of the nest's soldiers (castes with 25+ attack, so Workers stay home), at least 2 Minor Soldiers, and never worth more than 10% of the target's points (in resources, 1,000 per point). Numbers: `npc.json` → `raids`.
 - **The party is slow:** it marches at 10% speed, so a same-patch raid gives about **50 minutes of warning** at ×1. That's enough to send the army away or reinforce. "Raid incoming" notifications fire as for any raid.
 - Loot is small (soldiers carry little) and goes into the nest's store, where the player can raid it back. Corpses land at the player's colony, so a well-defended player gets free Protein.
 - Raids teach the core skill ("protect before you leave", [09-missions](09-missions.md#army-saving-the-core-skill)) long before real players threaten.
