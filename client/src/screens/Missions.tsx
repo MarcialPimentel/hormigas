@@ -5,6 +5,7 @@ import {
   RESOURCE_IDS,
   WILDS_SPOT,
   DISCOVERY_MESSAGES,
+  HERDS,
   distance,
   forageSlots,
   forageFindCap,
@@ -94,7 +95,7 @@ export function Missions({ draft }: { draft?: MissionDraft }) {
     return u;
   }, [units]);
 
-  const targetSpot = useTargetSpot(target, validCoords(target, true));
+  const targetSpot = useTargetSpot(target, validCoords(target, true, true));
 
   if (!colony || !state) return null;
   const research = state.player.research;
@@ -104,7 +105,8 @@ export function Missions({ draft }: { draft?: MissionDraft }) {
   const cargoTotal = cargoAmounts.foliage + cargoAmounts.protein + cargoAmounts.nectar;
   const capacity = groupCargo(chosen, { corpses: type === 'haul' });
   const wildsOk = type === 'forage' || type === 'scout';
-  const valid = validCoords(target, wildsOk);
+  // wild sites (spots 14+) hold aphid herds, termite mounds and spider dens (docs/23-npcs.md)
+  const valid = validCoords(target, wildsOk, type !== 'colonize');
   const dist = valid ? distance(colony.coords, target) : 0;
   const speed = groupSpeed(chosen, research);
   const oneWay = speed > 0 && valid ? travelSeconds(dist, speed, speedPct, state.world.speed) : 0;
@@ -120,6 +122,14 @@ export function Missions({ draft }: { draft?: MissionDraft }) {
   const unscouted = isScent(targetSpot?.colony);
   if (unscouted && type === 'raid') problems.push(DISCOVERY_MESSAGES.raid_needs_scout);
   if (unscouted && type === 'transport') problems.push(DISCOVERY_MESSAGES.send_needs_scout);
+  const herd = targetSpot?.colony?.herd;
+  if (type === 'tend') {
+    if (unscouted) problems.push(DISCOVERY_MESSAGES.tend_needs_scout);
+    else if (targetSpot !== undefined && !herd) problems.push('Only aphid herds can be tended. Tap a herd on the patch above.');
+    else if (herd?.tended && !herd.yours) problems.push(`${herd.tenderName}'s ants tend this herd. Raid it to drive them off first.`);
+  }
+  if (type === 'raid' && herd && !herd.tended) problems.push('Nobody tends this herd, so there is no one to fight. Send ants to tend it instead.');
+  if (type === 'raid' && herd?.yours) problems.push('Your own ants tend this herd.');
   if (presentUnits(chosen).length === 0) problems.push('Choose units to send.');
   for (const [k, n] of Object.entries(chosen)) if (n! > lvl(colony.units, k as CasteId)) problems.push(`Only ${lvl(colony.units, k as CasteId)} ${CASTES[k as CasteId].name} at home.`);
   if (cargoTotal > capacity) problems.push(`Cargo is over capacity (${fmtFull(capacity)}).`);
@@ -134,7 +144,8 @@ export function Missions({ draft }: { draft?: MissionDraft }) {
     if (state.colonies.length + flying >= cap) problems.push(`You can rule ${cap} ${cap === 1 ? 'colony' : 'colonies'} now. Research Nuptial Flight for more.`);
   }
 
-  const returnTrip = type === 'relocate' || type === 'colonize' ? 0 : oneWay;
+  const stays = type === 'relocate' || type === 'colonize' || type === 'tend';
+  const returnTrip = stays ? 0 : oneWay;
 
   function applyReturnBy(value: string) {
     setReturnBy(value);
@@ -237,6 +248,12 @@ export function Missions({ draft }: { draft?: MissionDraft }) {
           {type === 'scout' && target.spot === WILDS_SPOT && (
             <p className="muted small">Scouts will survey the wilds: what foragers can expect there, who lives in the patch, and any corpses lying around.</p>
           )}
+          {type === 'tend' && herd && (
+            <p className="muted small">
+              This herd makes {fmtFull(herd.nectarPerHour)} Nectar an hour while tended, carried home every {HERDS.deliverEveryHours} hours. Tenders stay
+              until you call them home from the herd's card. Anyone can raid them to take the herd, so soldiers make good tenders.
+            </p>
+          )}
           {type === 'scout' && unscouted && (
             <p className="muted small">Scouting turns this scent into a colony you know: its name, owner and what's inside. Then you can raid it.</p>
           )}
@@ -299,7 +316,7 @@ export function Missions({ draft }: { draft?: MissionDraft }) {
           <legend>Speed {speedPct}%</legend>
           <div className="speed">
             <input type="range" min={10} max={100} step={10} value={speedPct} onChange={(e) => { setSpeedPct(Number(e.target.value)); setReturnBy(''); }} aria-label="Speed" />
-            {type !== 'relocate' && (
+            {!stays && (
               <label className="return-by">
                 Back no earlier than
                 <input type="time" value={returnBy} onChange={(e) => applyReturnBy(e.target.value)} disabled={speed <= 0 || !valid} />
@@ -315,7 +332,7 @@ export function Missions({ draft }: { draft?: MissionDraft }) {
           <div><dt>Distance</dt><dd>{valid ? fmtNum(dist) : '—'}</dd></div>
           <div><dt>One way</dt><dd>{oneWay ? fmtDuration(oneWay * 1000) : '—'}</dd></div>
           <div><dt>Arrives</dt><dd>{oneWay ? fmtClock(now + oneWay * 1000) : '—'}</dd></div>
-          <div><dt>Back home</dt><dd>{returnTrip ? fmtClock(now + 2 * oneWay * 1000) : type === 'relocate' ? 'stays' : '—'}</dd></div>
+          <div><dt>Back home</dt><dd>{returnTrip ? fmtClock(now + 2 * oneWay * 1000) : stays ? 'stays' : '—'}</dd></div>
           <div><dt>Nectar fuel (paid once)</dt><dd className={fuel > colony.resources.nectar ? 'warn' : ''}>{fuel ? fmtFull(fuel) : '—'}</dd></div>
           {type !== 'scout' && <div><dt>{type === 'haul' ? 'Corpse capacity' : 'Capacity'}</dt><dd>{fmtFull(capacity)}</dd></div>}
         </dl>
@@ -355,7 +372,7 @@ export function MissionList() {
             <div>
               <strong>{MISSION_LABEL[m.type as MissionType] ?? m.type}</strong> {out ? '→' : '←'} {fmtCoords(m.target)}
               <span className="muted small">
-                {' '}· {fmtFull(count)} units{m.result?.recalled ? ' · recalled' : ''}
+                {' '}· {fmtFull(count)} units{m.result?.recalled ? ' · recalled' : ''}{m.result?.calledHome ? ` · called home with ${fmtFull(m.result.carried ?? 0)} Nectar` : ''}
               </span>
             </div>
             <div className="mission-time">

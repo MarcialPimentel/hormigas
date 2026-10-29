@@ -353,7 +353,8 @@ export function missionView(m: Mission) {
 export async function incomingMissions(q: Q, playerId: number) {
   const r = await q.query(
     `SELECT m.id, m.type, m.depart_at, m.arrive_at, m.target_colony_id, m.origin_region, m.origin_patch, m.origin_spot, m.units,
-            CASE WHEN m.type = 'swarm' THEN $2 WHEN p.is_npc THEN o.name ELSE p.username END AS username, p.is_npc
+            CASE WHEN m.type = 'swarm' THEN $2 WHEN p.is_npc THEN o.name ELSE p.username END AS username, p.is_npc,
+            c.npc->>'kind' = 'herd' AS at_herd, c.region AS t_region, c.patch AS t_patch, c.spot AS t_spot
        FROM missions m JOIN colonies c ON c.id = m.target_colony_id JOIN players p ON p.id = m.player_id
        JOIN colonies o ON o.id = m.origin_colony_id
       WHERE (c.player_id = $1 OR (c.npc->'tender'->>'playerId')::int = $1) AND m.player_id <> $1 AND m.status = 'outbound' ORDER BY m.arrive_at`,
@@ -371,6 +372,8 @@ export async function incomingMissions(q: Q, playerId: number) {
     /** a wild nest, not a player */
     wild: row.is_npc,
     hostile: row.type === 'raid' || row.type === 'scout' || row.type === 'swarm',
+    /** aimed at the ants you keep at an aphid herd, not at a colony (docs/23-npcs.md) */
+    herd: row.at_herd ? { region: row.t_region, patch: row.t_patch, spot: row.t_spot } : null,
     unitCount: Object.values(row.units as Record<string, number>).reduce((a, b) => a + b, 0),
   }));
 }

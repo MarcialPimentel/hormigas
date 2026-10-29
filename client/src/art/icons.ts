@@ -94,7 +94,40 @@ const UNIT: Record<CasteId, () => string> = {
     `<circle cx="51" cy="35" r="5.5" fill="#2a2420" stroke="${INK}" stroke-width="2"/><circle cx="59" cy="31.5" r="1.8" fill="#e08a2c"/>` +
     `<path d="M18,30 a16,9 0 0 1 14,-4" stroke="#8a7a70" stroke-width="1.6" fill="none" stroke-linecap="round"/>`,
   bullet_ant: () => ground() + ant('worker', 33, 51, 66, { palette: BULLET }) + `<path d="M6,38 l-4,2 l4,1" fill="${BULLET.base}" stroke="${INK}" stroke-width="1"/>`,
+  // NPC-only (docs/23-npcs.md): termites have no waist, spiders have eight legs
+  termite_worker: () => ground() + termite(false),
+  termite_soldier: () => ground() + termite(true),
+  spiderling: () => ground() + spider(32, 40, 0.55),
+  trapdoor_spider: () =>
+    `<path d="M2,50 Q32,44 62,50 L62,60 L2,60Z" fill="#7a5c40"/><path d="M8,47 L30,30 L34,32 L14,48Z" fill="#8f6d4c" stroke="${INK}" stroke-width="1.6"/>` +
+    `<path d="M14,47 Q28,40 30,30" stroke="#e8e2d6" stroke-width="0.8" fill="none" opacity="0.8"/>` + spider(38, 42, 1),
 };
+
+/** A termite side-on: pale, soft, no waist. Soldiers carry a big amber head and long jaws. */
+function termite(soldier: boolean) {
+  const legs = `<g stroke="${INK}" stroke-width="1.4" stroke-linecap="round" fill="none"><path d="M22,42 l-4,7 M28,43 l-1,7 M34,43 l2,7 M40,42 l5,7"/></g>`;
+  const body = [16, 23, 30, 37].map((x, i) => `<ellipse cx="${x}" cy="${38 - i * 0.3}" rx="7.5" ry="6.2" fill="#efe2c4" stroke="${INK}" stroke-width="1.6"/>`).join('');
+  const head = soldier
+    ? `<ellipse cx="47" cy="35" rx="8.5" ry="6.5" fill="#d08a3a" stroke="${INK}" stroke-width="1.8"/><path d="M54,33 q8,-3 9,-9 M54,37 q8,1 9,-4" stroke="${INK}" stroke-width="2.2" fill="none" stroke-linecap="round"/>`
+    : `<circle cx="46" cy="36" r="5.6" fill="#e5c995" stroke="${INK}" stroke-width="1.8"/>`;
+  return legs + body + head + `<path d="M${soldier ? 50 : 48},${soldier ? 30 : 31} l4,-7" stroke="${INK}" stroke-width="1.2"/>`;
+}
+
+/** A spider seen from the side and a little above: round abdomen, small head, eight bent legs. */
+function spider(cx: number, cy: number, k: number) {
+  const legs: string[] = [];
+  for (let i = 0; i < 4; i++) {
+    const dx = (i - 1.5) * 7 * k;
+    legs.push(`<path d="M${f(cx + dx * 0.4)},${f(cy)} q${f(dx * 1.2)},${f(-14 * k)} ${f(dx * 2.4)},${f(10 * k)}" />`);
+  }
+  return (
+    `<g stroke="${INK}" stroke-width="${f(1.8 * k + 0.4)}" fill="none" stroke-linecap="round">${legs.join('')}</g>` +
+    `<ellipse cx="${f(cx - 9 * k)}" cy="${f(cy - 2 * k)}" rx="${f(12 * k)}" ry="${f(9 * k)}" fill="#3a2a22" stroke="${INK}" stroke-width="1.8"/>` +
+    `<path d="M${f(cx - 15 * k)},${f(cy - 5 * k)} q${f(6 * k)},${f(-4 * k)} ${f(12 * k)},0" stroke="#a07a4a" stroke-width="${f(1.6 * k)}" fill="none"/>` +
+    `<circle cx="${f(cx + 6 * k)}" cy="${f(cy)}" r="${f(6 * k)}" fill="#4a362a" stroke="${INK}" stroke-width="1.8"/>` +
+    `<circle cx="${f(cx + 9 * k)}" cy="${f(cy - 2 * k)}" r="${f(1.3 * k)}" fill="#e8b23a"/>`
+  );
+}
 
 // ---------- defenses ----------
 
