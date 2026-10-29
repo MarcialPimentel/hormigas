@@ -259,7 +259,7 @@ function Digestion() {
               <span className="muted"> / {fmtFull(job.nectar)} Nectar</span>
             </span>
             <span className="muted small">
-              done in <Countdown endAt={job.endAt} startAt={job.startAt} />
+              done in <Countdown endAt={job.endAt} />
             </span>
           </div>
           <button
