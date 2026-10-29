@@ -36,11 +36,9 @@ import {
 } from '@hormigas/shared';
 import type { Q, Tx } from '../db';
 import { advance, lockColony, saveColony, type Colony } from '../colony';
-import { onEvent, schedule } from '../events';
-import { getWorld } from '../world';
+import { recurringColonyEvent } from '../recurring';
+import { gameHoursMs, getWorld } from '../world';
 import { launchMission } from './missions';
-
-const HOUR = 3600_000;
 
 /** The hidden player that owns every wild nest in a world. Its name can't be registered or logged into. */
 export async function wildPlayerId(q: Q, worldId: number, t: number): Promise<number> {
@@ -127,8 +125,7 @@ export async function ensureNest(q: Tx, worldId: number, region: number, patch: 
   const npc: NestState = { species, level, at: t };
   const id = await insertWild(q, worldId, { region, patch, spot }, nestName(species), terrain, nestTargets(species, level), npc, t);
   if (!id) return null;
-  const world = await getWorld(q);
-  await schedule(q, worldId, 'nest_raid', t + (nextNestRaidHours(rng) * HOUR) / world.speed, { colonyId: id });
+  await nestRaids.scheduleNext(q, worldId, id, t);
   return id;
 }
 
@@ -182,18 +179,8 @@ export async function ensureWildNests(q: Tx, worldId: number, t: number): Promis
   );
   let spawned = 0;
   for (const row of r.rows) spawned += await ensureArea(q, worldId, row.region, row.patch, t);
-  // safety net: a nest whose raid event was lost (or failed) gets a fresh one. Mounds, dens and herds never raid.
-  const idle = await q.query(
-    `SELECT c.id, c.npc FROM colonies c WHERE c.world_id = $1 AND c.npc IS NOT NULL AND c.spot <= $2
-        AND NOT EXISTS (SELECT 1 FROM events e WHERE NOT e.done AND e.type = 'nest_raid' AND (e.payload->>'colonyId')::int = c.id)`,
-    [worldId, WORLD.spotsPerPatch],
-  );
-  const speed = (await getWorld(q)).speed;
-  const rng = createRng(randomSeed());
-  for (const row of idle.rows) {
-    if (isHerdState(row.npc) || !nestRaidsBack(row.npc.species)) continue;
-    await schedule(q, worldId, 'nest_raid', t + (nextNestRaidHours(rng) * HOUR) / speed, { colonyId: row.id });
-  }
+  // safety net: a nest whose raid event was lost gets a fresh one. Mounds, dens and herds never raid.
+  await nestRaids.ensure(q, worldId, t);
   return spawned;
 }
 
@@ -230,31 +217,30 @@ export const nestStateOf = (c: Colony): NestState | null => (c.npc && !isHerdSta
 
 // ---------- nests raid back (gently) ----------
 
-onEvent('nest_raid', async (q, ev) => {
-  const t = ev.due_at;
-  const world = await getWorld(q);
-  const rearm = () => schedule(q, ev.world_id, 'nest_raid', t + (nextNestRaidHours(createRng(randomSeed())) * HOUR) / world.speed, { colonyId: ev.payload.colonyId });
-  const found = await q.query('SELECT id, npc FROM colonies WHERE id = $1 AND npc IS NOT NULL', [ev.payload.colonyId]);
-  if (!found.rows[0]) return; // the nest is gone: stop raiding
-  if (isHerdState(found.rows[0].npc) || !nestRaidsBack(found.rows[0].npc.species)) return; // herds, mounds and dens never raid
-  let nest = await syncNest(q, await lockColony(q, ev.payload.colonyId), t);
+const nestRaids = recurringColonyEvent('nest_raid', {
+  // wild nests live on colony spots; herds, mounds and dens never raid
+  where: `c.npc IS NOT NULL AND c.spot <= ${Number(WORLD.spotsPerPatch)}`,
+  qualifies: (c) => !isHerdState(c.npc) && nestRaidsBack(c.npc.species),
+  gapHours: () => nextNestRaidHours(createRng(randomSeed())),
+  async run(q, ev, { id }) {
+    const t = ev.due_at;
+    const world = await getWorld(q);
+    let nest = await syncNest(q, await lockColony(q, id), t);
 
-  const target = await pickNestTarget(q, nest, t);
-  if (target) {
+    const target = await pickNestTarget(q, nest, t);
+    if (!target) return;
     const party = nestRaidParty(nest.units, target.points);
-    if (Object.keys(party).length > 0) {
-      nest = { ...nest, units: subCounts(nest.units, party) };
-      await saveColony(q, nest);
-      const dest = { region: target.colony.region, patch: target.colony.patch, spot: target.colony.spot };
-      const secs = travelSeconds(distance(nest, dest), groupSpeed(party, {}), NEST_RAIDS.speedPct, world.speed);
-      await launchMission(q, {
-        worldId: nest.worldId, playerId: nest.playerId, type: 'raid', origin: nest, target: dest, targetColony: target.colony,
-        units: party, cargo: { foliage: 0, protein: 0, nectar: 0 }, speedPct: NEST_RAIDS.speedPct, fuel: 0,
-        departAt: t, arriveAt: t + secs * 1000, senderName: nest.name,
-      });
-    }
-  }
-  await rearm();
+    if (Object.keys(party).length === 0) return;
+    nest = { ...nest, units: subCounts(nest.units, party) };
+    await saveColony(q, nest);
+    const dest = { region: target.colony.region, patch: target.colony.patch, spot: target.colony.spot };
+    const secs = travelSeconds(distance(nest, dest), groupSpeed(party, {}), NEST_RAIDS.speedPct, world.speed);
+    await launchMission(q, {
+      worldId: nest.worldId, playerId: nest.playerId, type: 'raid', origin: nest, target: dest, targetColony: target.colony,
+      units: party, cargo: { foliage: 0, protein: 0, nectar: 0 }, speedPct: NEST_RAIDS.speedPct, fuel: 0,
+      departAt: t, arriveAt: t + secs * 1000, senderName: nest.name,
+    });
+  },
 });
 
 /**
@@ -262,7 +248,7 @@ onEvent('nest_raid', async (q, ev) => {
  * (or is on its way to raid) in the cooldown. Players who raided this nest recently are likelier picks.
  */
 async function pickNestTarget(q: Q, nest: Colony, t: number): Promise<{ colony: Colony; points: number } | null> {
-  const cooldown = (NEST_RAIDS.perPlayerCooldownHours * HOUR) / (await getWorld(q)).speed;
+  const cooldown = gameHoursMs(NEST_RAIDS.perPlayerCooldownHours, (await getWorld(q)).speed);
   const r = await q.query(
     `SELECT c.id, p.id AS player_id, p.points_total, p.protected_until, p.last_active,
             EXISTS (SELECT 1 FROM raid_log l WHERE l.attacker_id = p.id AND l.colony_id = $4 AND l.at > $5::bigint - $7::bigint) AS raided_us

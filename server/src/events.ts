@@ -3,21 +3,52 @@
 import { getPool, tx, type Q, type Tx, afterCommitMark, dropAfterCommitSince } from './db';
 import { now } from './clock';
 
-export interface GameEvent {
+/** What each event type carries. The loop itself may add `attempts` and `error` to any payload. */
+export interface EventPayloads {
+  build_complete: { colonyId: number };
+  research_complete: { playerId: number };
+  mission_arrive: { missionId: number };
+  mission_return: { missionId: number };
+  nest_event: { colonyId: number };
+  swarm_spotted: { colonyId: number };
+  nest_raid: { colonyId: number };
+  herd_deliver: { colonyId: number; since: number };
+  herd_wander: { colonyId: number; untendedSince: number };
+  truce_end: { truceId: number };
+  scent_faded: { memberRowId: number };
+}
+export type EventType = keyof EventPayloads;
+
+export interface GameEvent<P = any> {
   id: number;
   world_id: number;
   type: string;
   due_at: number;
-  payload: any;
+  payload: P & { attempts?: number; error?: string };
 }
 
-type Handler = (q: Tx, ev: GameEvent) => Promise<void>;
-const handlers = new Map<string, Handler>();
+type Handler<P = any> = (q: Tx, ev: GameEvent<P>) => Promise<void>;
+/** Runs, in its own savepoint, after the handler failed for good and its work was rolled back. */
+type FailHandler<P = any> = (q: Tx, ev: GameEvent<P>, error: unknown) => Promise<void>;
 
-export function onEvent(type: string, handler: Handler) {
-  handlers.set(type, handler);
+interface Registered {
+  run: Handler;
+  onFail?: FailHandler;
+}
+const handlers = new Map<string, Registered>();
+
+/**
+ * Register what happens when an event of `type` is due.
+ * `onFail` cleans up when the handler throws and gives up (e.g. sends a mission's ants home), so nothing is left stuck.
+ */
+export function onEvent<K extends EventType>(type: K, handler: Handler<EventPayloads[K]>, opts?: { onFail?: FailHandler<EventPayloads[K]> }): void;
+export function onEvent(type: string, handler: Handler, opts?: { onFail?: FailHandler }): void;
+export function onEvent(type: string, handler: Handler, opts?: { onFail?: FailHandler }) {
+  handlers.set(type, { run: handler, onFail: opts?.onFail });
 }
 
+export function schedule<K extends EventType>(q: Q, worldId: number, type: K, dueAt: number, payload: EventPayloads[K]): Promise<number>;
+export function schedule(q: Q, worldId: number, type: string, dueAt: number, payload: object): Promise<number>;
 export async function schedule(q: Q, worldId: number, type: string, dueAt: number, payload: object): Promise<number> {
   const r = await q.query('INSERT INTO events (world_id, type, due_at, payload) VALUES ($1,$2,$3,$4) RETURNING id', [
     worldId, type, Math.round(dueAt), payload,
@@ -71,7 +102,7 @@ async function runDue(max: number): Promise<number> {
       const mark = afterCommitMark(q);
       try {
         await q.query('SAVEPOINT ev');
-        await handlers.get(ev.type)!(q, ev);
+        await handlers.get(ev.type)!.run(q, ev);
         await q.query('RELEASE SAVEPOINT ev');
       } catch (e) {
         await q.query('ROLLBACK TO SAVEPOINT ev');
@@ -87,6 +118,7 @@ async function runDue(max: number): Promise<number> {
         // Never let one broken event block the queue: roll back its effects, record the error, move on.
         console.error(`Event ${ev.id} (${ev.type}) failed:`, e);
         await q.query("UPDATE events SET payload = payload || jsonb_build_object('error', $2::text) WHERE id = $1", [ev.id, String(e)]);
+        await runOnFail(q, ev, e);
       }
       await q.query('UPDATE events SET done = true WHERE id = $1', [ev.id]);
       return 'done';
@@ -97,6 +129,22 @@ async function runDue(max: number): Promise<number> {
     processed++;
   }
   return processed;
+}
+
+/** Give a failed event's cleanup its own savepoint: if the cleanup fails too, log it and keep the queue moving. */
+async function runOnFail(q: Tx, ev: GameEvent, error: unknown) {
+  const onFail = handlers.get(ev.type)?.onFail;
+  if (!onFail) return;
+  const mark = afterCommitMark(q);
+  try {
+    await q.query('SAVEPOINT ev_fail');
+    await onFail(q, ev, error);
+    await q.query('RELEASE SAVEPOINT ev_fail');
+  } catch (e) {
+    await q.query('ROLLBACK TO SAVEPOINT ev_fail');
+    dropAfterCommitSince(q, mark);
+    console.error(`Cleanup for failed event ${ev.id} (${ev.type}) failed too:`, e);
+  }
 }
 
 /** Event types with pending rows that no handler on this server knows (logged at startup). */
