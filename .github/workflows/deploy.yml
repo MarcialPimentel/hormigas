@@ -97,8 +97,11 @@ jobs:
           key: ${{ secrets.DROPLET_SSH_KEY }}
           envs: IMAGE,DEPLOY_SHA
           command_timeout: 15m
+          # The script is written to a file and run from there. Feeding it to bash on stdin let
+          # `docker compose exec` read the rest of the script as its own input, so it silently stopped.
           script: |
-            bash -euo pipefail <<'REMOTE'
+            script=$(mktemp)
+            cat > "$script" <<'REMOTE'
             cd /opt/hub
             short=${DEPLOY_SHA:0:7}
 
@@ -106,7 +109,7 @@ jobs:
             mkdir -p backups
             out="backups/predeploy-$(date -u +%Y%m%d-%H%M%S)-$short.sql.gz"
             trap 'rm -f "$out.part"' EXIT
-            docker compose exec -T db pg_dump -U postgres --clean --if-exists --create hormigas | gzip > "$out.part"
+            docker compose exec -T db pg_dump -U postgres --clean --if-exists --create hormigas < /dev/null | gzip > "$out.part"
             gzip -t "$out.part"
             [ "$(stat -c %s "$out.part")" -gt 1000 ] || { echo "::error::The backup came out empty, so nothing was deployed."; exit 1; }
             mv "$out.part" "$out"
@@ -162,6 +165,10 @@ jobs:
             fi
             exit 1
             REMOTE
+            rc=0
+            bash -euo pipefail "$script" < /dev/null || rc=$?
+            rm -f "$script"
+            exit "$rc"
 
       - name: Check the live site
         run: |
