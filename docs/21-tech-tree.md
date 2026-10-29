@@ -67,7 +67,7 @@ At ×1 speed, roughly:
 The two Jaws capstones are deliberately balanced: Raiding Columns adds at most 15 points of loot share; Nest Plugging grows protected storage without a cap. A turtle can always out-protect a raider (pillar 2).
 
 ## Decisions (2026-10-29)
-Made by the rules session as defaults; Marz can overturn any of them before the PR ships.
+Proposed by the rules session as defaults and approved by Marz on 2026-10-29 before shipping (PR #63).
 - **No exclusive branch choices.** Everyone can learn everything; order is the choice. (Answers the open question in 07-research.md.)
 - **Stay account-wide with one research at a time.** Unchanged.
 - **Tree lives inside the Research tab**, with the four branches (the art session designs the view).
