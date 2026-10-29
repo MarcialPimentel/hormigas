@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useState } from 'react';
+import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import {
   RESOURCE_IDS,
   TERRAIN,
@@ -34,20 +34,48 @@ function useWide() {
   }, []);
   return wide;
 }
-/** Room the floating cards take at the nest's edges (match .float-col and .float-name in styles.css). */
-const insetFor = (w: number) => ({ left: 0, right: (w >= 1280 ? 340 : 300) + 16, top: 64, bottom: 56 });
+type Inset = { left: number; right: number; top: number; bottom: number };
+
+/**
+ * Where the 3D nest should be framed: centred left to right, below the cards at the top (the colony's name,
+ * Happening now) and above the founding task at the bottom. Measured, since the cards grow and shrink.
+ */
+function useCardInset(on: boolean) {
+  const stage = useRef<HTMLDivElement>(null);
+  const top = [useRef<HTMLDivElement>(null), useRef<HTMLDivElement>(null)];
+  const bottom = useRef<HTMLDivElement>(null);
+  const [inset, setInset] = useState<Inset>({ left: 16, right: 16, top: 72, bottom: 56 });
+  useEffect(() => {
+    const s = stage.current;
+    if (!on || !s) return;
+    const measure = () => {
+      const box = s.getBoundingClientRect();
+      const lowest = Math.max(0, ...top.map((r) => (r.current?.offsetHeight ? r.current.getBoundingClientRect().bottom - box.top : 0)));
+      const b = bottom.current?.offsetHeight ? box.bottom - bottom.current.getBoundingClientRect().top : 0;
+      // very tall cards may cover a little of the nest rather than shrink it to nothing
+      const next = {
+        left: 16,
+        right: 16,
+        top: Math.round(Math.min(box.height * 0.4, lowest) + 12),
+        bottom: Math.round(Math.max(56, Math.min(box.height * 0.3, b + 12))),
+      };
+      setInset((p) => (p.top === next.top && p.bottom === next.bottom ? p : next));
+    };
+    const ro = new ResizeObserver(measure);
+    for (const el of [s, ...top.map((r) => r.current), bottom.current]) if (el) ro.observe(el);
+    measure();
+    return () => ro.disconnect();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [on]);
+  return { stage, top, bottom, inset };
+}
 
 export function Overview({ go }: { go: (screen: string, params?: any) => void }) {
   const { colony, state, now, act } = useGame();
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState('');
   const wide = useWide();
-  const [vw, setVw] = useState(() => window.innerWidth);
-  useEffect(() => {
-    const on = () => setVw(window.innerWidth);
-    window.addEventListener('resize', on);
-    return () => window.removeEventListener('resize', on);
-  }, []);
+  const frame = useCardInset(wide);
   if (!colony || !state) return null;
 
   const rate = productionPerHour(colony.chambers, colony.terrain, state.world.speed, colony.research);
@@ -103,15 +131,21 @@ export function Overview({ go }: { go: (screen: string, params?: any) => void })
   // On a computer the colony is the screen: the nest fills it and these cards float in its sky and corners.
   if (wide) {
     return (
-      <div className="colony-stage">
+      <div className="colony-stage" ref={frame.stage}>
         <Suspense fallback={<div className="nest fill" />}>
-          <NestHome nav={go} fill inset={insetFor(vw)} />
+          <NestHome nav={go} fill inset={frame.inset} />
         </Suspense>
-        <div className="float-name">{nameCard}</div>
+        <div className="float-name" ref={frame.top[0]}>
+          {nameCard}
+        </div>
         <div className="float-col">
-          <AwayCard go={go} />
-          {happening}
-          <QuestCard nav={go} />
+          <div className="float-top" ref={frame.top[1]}>
+            <AwayCard go={go} />
+            {happening}
+          </div>
+          <div className="float-bottom" ref={frame.bottom}>
+            <QuestCard nav={go} />
+          </div>
         </div>
       </div>
     );

@@ -29,6 +29,7 @@ export interface Layout {
   soldiers: number;
 }
 /** Room at the edges of the view that floating cards cover, in CSS pixels: the block is framed in what's left. */
+export const MAX_ZOOM = 3.5;
 export interface Inset {
   left: number;
   right: number;
@@ -39,6 +40,12 @@ export interface NestScene {
   setLayout(l: Layout): void;
   setReduced(r: boolean): void;
   setInset(i: Inset): void;
+  /** Zoom in (>1) or out (<1) on the middle of the view; 1 is the whole block. */
+  zoomBy(f: number): void;
+  /** Back to the whole block, facing the starting way. */
+  resetView(): void;
+  /** `fn` hears the zoom level whenever it changes (1 = whole block). */
+  setOnZoom(fn: (z: number) => void): void;
   /** Where a chamber is on screen (CSS pixels in the host), and about how wide its hollow is; null if it isn't drawn. */
   where(id: ChamberId): { x: number; y: number; rx: number } | null;
   dispose(): void;
@@ -489,7 +496,8 @@ export async function createNestScene(
     seen.add(key);
     v.set(x, y, z).project(camera);
     const ok = v.z < 1 && Math.abs(v.x) < 1.05 && Math.abs(v.y) < 1.05;
-    el.hidden = !ok;
+    // display, not `hidden`: the label classes set display, which would win over the hidden attribute
+    el.style.display = ok ? '' : 'none';
     if (!ok) return;
     el.className = cls;
     el.style.left = `${((v.x + 1) / 2) * host.clientWidth}px`;
@@ -551,8 +559,11 @@ export async function createNestScene(
     });
   }
 
-  // ---------- camera: a gentle orbit, no zoom ----------
-  const target = new THREE.Vector3(0, -13.5, -3);
+  // ---------- camera: a gentle orbit, plus zoom toward the cursor (docs/12-ui-nest-view.md, "The 3D slab") ----------
+  const home = new THREE.Vector3(0, -13.5, -3);
+  const target = home.clone();
+  // zoom (1 = whole block) and how far the view has moved across the face of the block, eased toward their goals
+  const zm = { z: 1, x: 0, y: 0 }, zGoal = { z: 1, x: 0, y: 0 };
   const view = { yaw: 0.3, pitch: 0.16 }, goal = { ...view };
   let dist = 80;
   let inset: Inset = { left: 0, right: 0, top: 0, bottom: 0 };
@@ -574,7 +585,9 @@ export async function createNestScene(
   fit();
   function placeCamera() {
     const cp = Math.cos(view.pitch);
-    camera.position.set(target.x + dist * cp * Math.sin(view.yaw), target.y + dist * Math.sin(view.pitch), target.z + dist * cp * Math.cos(view.yaw));
+    target.set(home.x + zm.x, home.y + zm.y, home.z);
+    const dd = dist / zm.z;
+    camera.position.set(target.x + dd * cp * Math.sin(view.yaw), target.y + dd * Math.sin(view.pitch), target.z + dd * cp * Math.cos(view.yaw));
     camera.lookAt(target);
   }
 
@@ -587,6 +600,43 @@ export async function createNestScene(
     ray.setFromCamera(ndc, camera);
     return ray.intersectObjects(taps, false)[0]?.object ?? null;
   };
+  // keep a zoomed view over the block: the further in, the further it may move from the middle
+  const clampPan = () => {
+    const k = 1 - 1 / zGoal.z;
+    zGoal.x = THREE.MathUtils.clamp(zGoal.x, -(W / 2) * k, (W / 2) * k);
+    zGoal.y = THREE.MathUtils.clamp(zGoal.y, -(H / 2) * k, (H / 2) * k);
+  };
+  let zoomShown = 1;
+  const api: { onZoom?: (z: number) => void } = {};
+  /** Zoom by `f`, keeping the point of the face under (cx, cy) (CSS pixels in the canvas) where it is. */
+  const face = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0), hit = new THREE.Vector3();
+  function zoomAt(f: number, cx: number, cy: number) {
+    const z = THREE.MathUtils.clamp(zGoal.z * f, 1, MAX_ZOOM);
+    if (z === zGoal.z) return;
+    ndc.set((cx / host.clientWidth) * 2 - 1, -(cy / host.clientHeight) * 2 + 1);
+    ray.setFromCamera(ndc, camera);
+    if (ray.ray.intersectPlane(face, hit)) {
+      const k = 1 - zGoal.z / z;
+      zGoal.x += (hit.x - (home.x + zGoal.x)) * k;
+      zGoal.y += (hit.y - (home.y + zGoal.y)) * k;
+    }
+    zGoal.z = z;
+    if (z === 1) Object.assign(zGoal, { x: 0, y: 0 });
+    clampPan();
+  }
+  // world units per CSS pixel on the face of the block, at the zoom we're heading to
+  const unitsPerPx = () => (2 * (dist / zGoal.z) * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2))) / Math.max(200, host.clientHeight - inset.top - inset.bottom);
+  const onWheel = (e: WheelEvent) => {
+    // only where the nest fills the screen; elsewhere the wheel scrolls the page as usual
+    if (!host.classList.contains('fill')) return;
+    e.preventDefault();
+    const r = canvas.getBoundingClientRect();
+    // trackpad pinches arrive as ctrl+wheel with small steps
+    zoomAt(Math.exp(-e.deltaY * (e.ctrlKey ? 0.012 : 0.0015)), e.clientX - r.left, e.clientY - r.top);
+    if (reduced) step(0);
+  };
+  canvas.addEventListener('wheel', onWheel, { passive: false });
+
   const onDown = (e: PointerEvent) => {
     drag = { x: e.clientX, y: e.clientY, sx: e.clientX, sy: e.clientY, t: performance.now() };
     canvas.setPointerCapture?.(e.pointerId);
@@ -596,8 +646,16 @@ export async function createNestScene(
       if (e.pointerType === 'mouse') canvas.classList.toggle('pointing', !!pickAt(e));
       return;
     }
-    goal.yaw = THREE.MathUtils.clamp(goal.yaw - (e.clientX - drag.x) * 0.004, -0.5, 0.75);
-    if (e.pointerType === 'mouse') goal.pitch = THREE.MathUtils.clamp(goal.pitch + (e.clientY - drag.y) * 0.003, 0.04, 0.36);
+    if (zGoal.z > 1.02) {
+      // zoomed in: dragging moves around the nest
+      const u = unitsPerPx();
+      zGoal.x -= (e.clientX - drag.x) * u;
+      zGoal.y += (e.clientY - drag.y) * u;
+      clampPan();
+    } else {
+      goal.yaw = THREE.MathUtils.clamp(goal.yaw - (e.clientX - drag.x) * 0.004, -0.5, 0.75);
+      if (e.pointerType === 'mouse') goal.pitch = THREE.MathUtils.clamp(goal.pitch + (e.clientY - drag.y) * 0.003, 0.04, 0.36);
+    }
     drag.x = e.clientX;
     drag.y = e.clientY;
   };
@@ -613,7 +671,11 @@ export async function createNestScene(
   canvas.addEventListener('pointermove', onMove);
   canvas.addEventListener('pointerup', onUp);
   canvas.addEventListener('pointercancel', () => (drag = null));
-  const onDbl = () => Object.assign(goal, { yaw: 0.3, pitch: 0.16 });
+  const resetView = () => {
+    Object.assign(goal, { yaw: 0.3, pitch: 0.16 });
+    Object.assign(zGoal, { z: 1, x: 0, y: 0 });
+  };
+  const onDbl = resetView;
   canvas.addEventListener('dblclick', onDbl);
 
   // ---------- loop ----------
@@ -630,6 +692,15 @@ export async function createNestScene(
     if (hour !== hourShown) applySky(hour);
     view.yaw += (goal.yaw - view.yaw) * Math.min(1, dt * 8);
     view.pitch += (goal.pitch - view.pitch) * Math.min(1, dt * 8);
+    const ease = reduced ? 1 : Math.min(1, dt * 10);
+    zm.z += (zGoal.z - zm.z) * ease;
+    zm.x += (zGoal.x - zm.x) * ease;
+    zm.y += (zGoal.y - zm.y) * ease;
+    const zr = Math.round(zGoal.z * 100) / 100;
+    if (zr !== zoomShown) {
+      zoomShown = zr;
+      api.onZoom?.(zr);
+    }
     placeCamera();
 
     for (const w of walkers) {
@@ -688,8 +759,20 @@ export async function createNestScene(
     return { x: ((pv.x + 1) / 2) * host.clientWidth, y: ((1 - pv.y) / 2) * host.clientHeight };
   };
 
-  return {
+  const still = () => reduced && step(0);
+  const out: NestScene = {
     setLayout,
+    zoomBy(f: number) {
+      zoomAt(f, inset.left + (host.clientWidth - inset.left - inset.right) / 2, inset.top + (host.clientHeight - inset.top - inset.bottom) / 2);
+      still();
+    },
+    resetView() {
+      resetView();
+      still();
+    },
+    setOnZoom(fn: (z: number) => void) {
+      api.onZoom = fn;
+    },
     setReduced(r: boolean) {
       reduced = r;
     },
@@ -712,6 +795,7 @@ export async function createNestScene(
       canvas.removeEventListener('pointermove', onMove);
       canvas.removeEventListener('pointerup', onUp);
       canvas.removeEventListener('dblclick', onDbl);
+      canvas.removeEventListener('wheel', onWheel);
       for (const el of labelEls.values()) el.remove();
       for (const d of [...layoutDisposables, ...disposables]) d.dispose();
       for (const g of glows) g.l.dispose();
@@ -719,5 +803,6 @@ export async function createNestScene(
       canvas.remove();
     },
   };
+  return out;
 }
 

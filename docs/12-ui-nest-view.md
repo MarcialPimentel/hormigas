@@ -34,7 +34,7 @@ Feedback is read on the admin-only **Feedback** screen. Admins are players with 
 ## The 3D slab (computers)
 On computers the nest is a block of earth cut open at the front, like an ant farm on a plinth (approved from [art/3d-exploration.md](art/3d-exploration.md)). Built with Three.js in `client/src/components/nest3d/`, loaded only when shown.
 - **The block is 3D; everything living in it is the 2D art.** Hollows and tunnels are carved into the face; each chamber's own art (`client/src/art/chambers.ts`) is on its hollow's back wall; ants are the 2D sprites on flat cards, walking at slightly different depths. A paper diorama you can turn; real models can replace the cards later.
-- **Gentle orbit only:** drag to turn (about ±30°) and, with a mouse, tilt a little. No zoom and no inside views: the whole colony stays in sight. Double-click resets.
+- **Gentle orbit, and zoom on the Colony screen:** drag to turn (about ±30°) and, with a mouse, tilt a little. Where the nest fills the screen, scroll (or pinch on a trackpad, or the + and − buttons) zooms up to 3.5× toward the cursor; zoomed in, dragging moves around the nest instead of turning it, and it can't leave the block. **Whole nest** (or double-click) goes back to the full view. Still no inside views. Zoom came in with the full-screen Colony screen (Marz, 2026-10-29); it was left out at first to keep the whole colony in sight.
 - **Same information as the 2D nest:** chamber names, levels and tags; dashed outlines for chambers you could dig next; surface parties with timers; raiders in red with the entrance ringing; diggers on the rim; the Pheromone Chamber glowing while research runs; a sky by the player's clock, with chambers glowing at night.
 - **Taps:** a chamber opens its sheet (no Look inside); the entrance opens Missions.
 - **Which nest:** 3D on computers, 2D on phones. A button in the corner switches (saved per browser). Without WebGL the 2D nest shows. Motion off draws a still slab, refreshed about once a second.
@@ -57,7 +57,7 @@ The Colony screen opens on the nest, and the important information sits in the w
 **On a computer (900px and wider), the nest is the whole screen.** It fills everything right of the left nav and below the resource bar, edge to edge, and the rest floats over it as small paper cards:
 - **Top left, in the sky:** the colony's name (with Rename), its coordinates, terrain, space and points, and how long raid protection lasts.
 - **Down the right:** "While you were away" (when there is one), **Happening now**, and the next founding task at the bottom. The column scrolls if it gets long.
-- The 3D slab is framed in the space the cards leave free, so they sit over sky rather than over chambers. The flat 2D nest can't be framed like that, so it stops short of the card column.
+- The 3D slab is centred left to right and framed between the cards at the top and the founding task at the bottom (measured, as the cards grow and shrink), so they sit over sky rather than over chambers. Very tall cards may cover a little of the nest rather than shrink it to nothing. The flat 2D nest can't be framed like that, so it stops short of the card column.
 - The nest's own buttons (2D/3D view, Motion) sit bottom left; the "drag to turn" hint shows when there's room.
 - The Production table is gone here: the resource bar carries it.
 
