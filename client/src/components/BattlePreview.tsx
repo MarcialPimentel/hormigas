@@ -30,7 +30,8 @@ export function BattlePreview({ target, units }: { target: Coords; units: UnitCo
     const d = intel.data;
     return previewBattle(
       { units, research: state.player.research },
-      { units: d.units ?? {}, defenses: d.defenses ?? {}, research: d.research ?? {} },
+      // allied soldiers holding position fight too; their research is unknown, so count them unboosted
+      { units: d.units ?? {}, defenses: d.defenses ?? {}, research: d.research ?? {}, allies: d.garrison ? [{ units: d.garrison, research: {} }] : [] },
       { defenderResources: d.resources, protectedEach: d.protectedEach ?? 0, cargoOf: (u) => groupCargo(u) },
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps

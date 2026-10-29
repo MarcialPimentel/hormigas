@@ -16,7 +16,7 @@ let nestSpot: any;
 const H = 3600_000;
 
 const mapOf = async (client: Client, coords: any) => (await client.get(`/api/map?region=${coords.region}&patch=${coords.patch}`)).spots;
-// the patch's wild nest lives on a colony spot (1-12); herds, mounds and dens sit on wild sites (docs/23-npcs.md)
+// the patch's wild nest lives on a colony spot (1-12); herds, mounds and dens sit on wild sites (docs/24-npcs.md)
 const nestRow = async () => (await getPool().query('SELECT * FROM colonies WHERE npc IS NOT NULL AND spot <= 12 AND region = $1 AND patch = $2', [c.coords.region, c.coords.patch])).rows[0];
 const isNest = (s: any) => s.colony?.kind === 'wild' && s.spot <= 12;
 const latest = async (client: Client, type: string) => (await client.get('/api/reports?limit=100')).reports.find((r: any) => r.type === type);

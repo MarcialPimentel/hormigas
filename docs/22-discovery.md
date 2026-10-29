@@ -48,8 +48,8 @@ No row means a scent. Rows are never deleted. Colonies are never destroyed (pill
 The map API (`/api/map`) sends each colony with `known` and `kind` (`'player' | 'wild'`). For a scent it sends only those plus a generic name ("Ant scent", "Wild scent"). The client draws a scent for `known` = `scent` or `familiar`.
 
 ### Notes for the next builds
-- **NPCs (#67, done in Build 9):** new NPCs are ordinary colony rows owned by the hidden wild player, so scouting, raiding and discovery work with no new rules. Aphid herds, termite mounds and spider dens sit on new **wild sites** (spots 14–16), and wild scents carry a hint: sharp, sweet, woody or danger ([23-npcs](23-npcs.md)). Tending a herd needs a scouted herd, like a raid.
-- **Alliances (#68):** "contact" can be read as *both sides know each other* (two `known` rows), or as either side knowing the other. Add a new `via` value if contact can come from something other than scouting. Truces and supercolonies belong in their own tables that refer to players, not in this one.
+- **NPCs (#67, done in Build 9):** new NPCs are ordinary colony rows owned by the hidden wild player, so scouting, raiding and discovery work with no new rules. Aphid herds, termite mounds and spider dens sit on new **wild sites** (spots 14–16), and wild scents carry a hint: sharp, sweet, woody or danger ([24-npcs](24-npcs.md)). Tending a herd needs a scouted herd, like a raid.
+- **Alliances (#68), built:** contact = *either* side has scouted the other ([23-supercolonies](23-supercolonies.md)). Sharing a supercolony's scent records each other's colonies with `via = 'ally'`. Truces and supercolonies live in their own tables.
 
 ## Where it shows
 - **Missions tab:** your patch is drawn at the top. Tap a scent or colony, then Scout / Raid / Send. The send form names the target and flags a scent. The old Map tab is folded in: **World** opens the region grid to look at other patches ([11-world](11-world.md#missions-screen-the-patch-and-the-world)).

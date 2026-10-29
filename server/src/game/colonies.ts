@@ -27,6 +27,7 @@ import { ensureArea } from './nests';
 import { scheduleNestEvent } from './nestEvents';
 import { scheduleSwarm } from './swarms';
 import { refreshPointsAfterCommit } from './points';
+import { shareNewColony } from './diplomacy';
 
 /**
  * Insert a player colony with Queen's Chamber 1 and the starting stores (plus `extra`), arm its nest events,
@@ -46,7 +47,7 @@ export async function createColony(
   const id = r.rows[0].id as number;
   await scheduleNestEvent(q, o.worldId, id, o.t);
   await scheduleSwarm(q, o.worldId, id, o.t);
-  // the area around players fills with wild things: nests, aphid herds, termite mounds, spider dens (docs/23-npcs.md)
+  // the area around players fills with wild things: nests, aphid herds, termite mounds, spider dens (docs/24-npcs.md)
   await ensureArea(q, o.worldId, o.at.region, o.at.patch, o.t);
   return id;
 }
@@ -100,6 +101,8 @@ defineMission('colonize', {
     await addReport(q, m.worldId, m.playerId, 'colonize', `New colony founded at ${where}`, {
       target: m.target, founded: true, colonyId: id, name, terrain: TERRAIN[terrain].name, units: escorts, cargo: m.cargo,
     }, at);
+    // supercolony mates know the new nest at once: they share its scent (docs/23-supercolonies.md)
+    await shareNewColony(q, m.playerId, id, at);
     m.result = { founded: true, colonyId: id };
     m.units = {};
     m.cargo = res();

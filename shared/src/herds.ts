@@ -1,4 +1,4 @@
-// Aphid herds and where wild things live. Spec: docs/23-npcs.md
+// Aphid herds and where wild things live. Spec: docs/24-npcs.md
 import { NPC_DATA, WILDS_SPOT } from './data';
 import { WORLD } from './world';
 import { nestLevelFor, type NestKind, type NestState } from './nests';

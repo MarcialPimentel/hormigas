@@ -9,6 +9,7 @@ import terrainJson from '../../docs/data/terrain.json';
 import formulasJson from '../../docs/data/formulas.json';
 import npcJson from '../../docs/data/npc.json';
 import nestEventsJson from '../../docs/data/nest-events.json';
+import diplomacyJson from '../../docs/data/diplomacy.json';
 
 export const RESOURCE_IDS = ['foliage', 'protein', 'nectar'] as const;
 export type ResourceId = (typeof RESOURCE_IDS)[number];
@@ -39,7 +40,7 @@ export const CASTE_IDS = [
   'winged_queen',
   'carrion_beetle',
   'bullet_ant',
-  // NPC-only (docs/23-npcs.md)
+  // NPC-only (docs/24-npcs.md)
   'termite_worker',
   'termite_soldier',
   'spiderling',
@@ -171,6 +172,8 @@ export const FORMULAS = formulasJson;
 export const NPC_DATA = npcJson;
 /** Small random events inside the nest (docs/04-colony.md). Typed in nestEvents.ts. */
 export const NEST_EVENTS_DATA = nestEventsJson;
+/** Truces and supercolonies (docs/23-supercolonies.md). Typed in diplomacy.ts. */
+export const DIPLOMACY_DATA = diplomacyJson;
 
 /** Units that exist in the MVP (data also contains designed-but-later units). */
 export const MVP_CASTES = CASTE_IDS.filter((id) => CASTES[id].mvp);

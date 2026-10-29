@@ -1,4 +1,4 @@
-// Wild things: NPC colonies near players (docs/17-wild-nests.md, docs/23-npcs.md).
+// Wild things: NPC colonies near players (docs/17-wild-nests.md, docs/24-npcs.md).
 // Each is an ordinary colony row with an `npc` state, owned by one hidden wild player per world: wild nests on colony
 // spots, and aphid herds, termite mounds and spider dens on wild sites in the patch's wilds.
 // Nests regrow over time (see advance() in colony.ts); levels follow the strongest player nearby.
@@ -66,7 +66,7 @@ export async function patchLeaderPoints(q: Q, worldId: number, region: number, p
 }
 
 /**
- * Points that set a wild thing's level (docs/23-npcs.md): the strongest active player in its own patch, or, in a
+ * Points that set a wild thing's level (docs/24-npcs.md): the strongest active player in its own patch, or, in a
  * patch with no active players, the strongest within AREA_RANGE patches. A patch's own wild nest keeps following its
  * own players, as before.
  */
@@ -110,7 +110,7 @@ async function insertWild(
 /** Spawn the patch's wild nest if it has none and there is a free spot. Returns the nest's colony id, or null. */
 export async function ensureNest(q: Tx, worldId: number, region: number, patch: number, t: number): Promise<number | null> {
   const taken = await q.query('SELECT id, spot, npc FROM colonies WHERE world_id = $1 AND region = $2 AND patch = $3', [worldId, region, patch]);
-  // the wild nest lives on a colony spot; herds, mounds and dens live on wild sites (docs/23-npcs.md)
+  // the wild nest lives on a colony spot; herds, mounds and dens live on wild sites (docs/24-npcs.md)
   const existing = taken.rows.find((r: any) => r.npc && r.spot <= WORLD.spotsPerPatch);
   if (existing) return existing.id;
   const used = new Set(taken.rows.map((r: any) => r.spot));
@@ -155,7 +155,7 @@ export async function ensureHerd(q: Tx, worldId: number, region: number, patch: 
 }
 
 /**
- * Fill the area around a patch where a player lives (docs/23-npcs.md): a wild nest and an aphid herd in every patch
+ * Fill the area around a patch where a player lives (docs/24-npcs.md): a wild nest and an aphid herd in every patch
  * within range, plus the termite mounds and spider dens in reach. Returns how many wild things were spawned.
  */
 export async function ensureArea(q: Tx, worldId: number, region: number, patch: number, t: number): Promise<number> {

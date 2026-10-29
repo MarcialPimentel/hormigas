@@ -79,3 +79,25 @@ describe('aftermath', () => {
     expect(p.avgLootOnWin).toBeGreaterThan(0);
   });
 });
+
+describe('allied defenders (Hold Position, docs/23-supercolonies.md)', () => {
+  it('a battle without allies runs exactly as before', () => {
+    const plain = simulateBattle({ units: { minor_soldier: 50 }, research: {} }, { units: { worker: 40 }, research: {} }, createRng(42));
+    const empty = simulateBattle({ units: { minor_soldier: 50 }, research: {} }, { units: { worker: 40 }, research: {}, allies: [] }, createRng(42));
+    expect(empty).toEqual(plain);
+    expect(plain.alliesLost).toEqual([]);
+  });
+
+  it('allies fight on the defending side and are counted per group, with their own research', () => {
+    const attacker = { units: { minor_soldier: 60 }, research: {} };
+    const alone = simulateBattle(attacker, { units: {}, research: {} }, createRng(5));
+    expect(alone.winner).toBe('attacker');
+    const r = simulateBattle(attacker, { units: {}, research: {}, allies: [{ units: { minor_soldier: 80 }, research: { chitin: 5 } }, { units: { worker: 10 }, research: {} }] }, createRng(5));
+    expect(r.winner).not.toBe('attacker');
+    expect(r.alliesLost).toHaveLength(2);
+    expect((r.alliesSurvivors[0].minor_soldier ?? 0) + (r.alliesLost[0].minor_soldier ?? 0)).toBe(80);
+    expect((r.alliesSurvivors[1].worker ?? 0) + (r.alliesLost[1].worker ?? 0)).toBe(10);
+    // the host's own counts stay separate
+    expect(r.defenderLost).toEqual({});
+  });
+});

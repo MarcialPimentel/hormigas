@@ -125,7 +125,7 @@ export async function saveColony(q: Q, c: Colony) {
 /** Bring a colony up to time `to`. Wild nests regrow instead of producing (docs/17-wild-nests.md); herds make honeydew. */
 export const advance = (c: Colony, to: number): Colony => {
   if (isHerdState(c.npc)) {
-    // aphid herds make honeydew while tended (docs/23-npcs.md); the tenders are the herd's units
+    // aphid herds make honeydew while tended (docs/24-npcs.md); the tenders are the herd's units
     const nectar = herdHoneydewAt(c.npc, c.resources.nectar, to, cachedWorldSpeed());
     return { ...c, resources: { ...c.resources, nectar }, lastUpdated: to, npc: { ...c.npc, at: to } };
   }

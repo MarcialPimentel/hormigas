@@ -6,6 +6,8 @@ import {
 } from '@hormigas/shared';
 import { leaderOf } from '../game/nests';
 import { knowledgeOf, type KnownEntry } from '../game/discovery';
+import { relationsOf, supercolonyTags } from '../game/diplomacy';
+import type { RelationInfo } from '@hormigas/shared';
 import { getPool, tx } from '../db';
 import { now } from '../clock';
 import { requireAuth } from '../auth';
@@ -16,7 +18,7 @@ import { missionView, recallMission, sendMission } from '../game/missions';
 import { recallTenders } from '../game/herds';
 import { cachedWorldSpeed } from '../world';
 
-/** What a wild scent smells of (docs/23-npcs.md): sharp = ant nest, sweet = aphids, woody = termites, danger = spider. */
+/** What a wild scent smells of (docs/24-npcs.md): sharp = ant nest, sweet = aphids, woody = termites, danger = spider. */
 function scentHint(npc: any): ScentHint {
   if (isHerdState(npc)) return 'herd';
   const kind = speciesKind(npc.species);
@@ -28,7 +30,7 @@ function scentHint(npc: any): ScentHint {
  * A scent shows only whose ants it smells of (and, for wild things, a hint of what they are); a familiar scent adds
  * its name; a known colony shows everything.
  */
-function colonyView(c: any, k: KnownEntry, leader: number, t: number, me: number) {
+function colonyView(c: any, k: KnownEntry, leader: number, t: number, me: number, rel?: RelationInfo, tag?: { id: number; name: string }) {
   const kind = c.npc ? 'wild' : 'player';
   const hint = c.npc ? scentHint(c.npc) : undefined;
   const base = { known: k.knowledge, kind, hint, smelledAt: k.smelledAt, discoveredAt: k.discoveredAt };
@@ -49,6 +51,9 @@ function colonyView(c: any, k: KnownEntry, leader: number, t: number, me: number
     mine: k.knowledge === 'mine',
     inactive: !c.npc && isInactive(pvp, t),
     protected: !c.npc && isNewPlayerProtected(pvp, t),
+    // truces and supercolonies (docs/23-supercolonies.md)
+    ...(rel ? { relation: rel.relation, relationUntil: rel.until ?? null } : {}),
+    ...(tag ? { supercolony: tag.name } : {}),
     ...(wild
       ? { wild: { species: c.npc.species, kind: speciesKind(c.npc.species), level: speciesKind(c.npc.species) === 'nest' ? nestLevelFor(leader, c.npc.level) : c.npc.level, style: species!.style } }
       : {}),
@@ -102,15 +107,18 @@ export async function worldRoutes(app: FastifyInstance) {
     // a wild nest's level follows the strongest active player in its patch
     const leader = leaderOf(r.rows.filter((x: any) => !x.npc), t);
     const known = await knowledgeOf(q, req.playerId, r.rows.map((x: any) => x.id));
+    const owners = [...new Set(r.rows.filter((x: any) => !x.npc).map((x: any) => x.player_id as number))];
+    const rels = await relationsOf(q, req.playerId, owners, t);
+    const tags = await supercolonyTags(q, owners);
     const spots = [];
-    // colony spots, the wilds, then any wild sites that hold something (herds, mounds, dens: docs/23-npcs.md)
+    // colony spots, the wilds, then any wild sites that hold something (herds, mounds, dens: docs/24-npcs.md)
     for (let spot = 1; spot <= MAX_SPOT; spot++) {
       const c = r.rows.find((x: any) => x.spot === spot);
       if (spot > WORLD.spotsPerPatch + 1 && !c) continue;
       const corpse = corpses.find((x: any) => x.spot === spot);
       spots.push({
         spot,
-        colony: c ? colonyView(c, known.get(c.id)!, leader, t, req.playerId) : null,
+        colony: c ? colonyView(c, known.get(c.id)!, leader, t, req.playerId, rels.get(c.player_id), tags.get(c.player_id)) : null,
         corpses: corpse ? corpseFieldAmount(corpse.protein, corpse.created_at, t) : 0,
       });
     }
@@ -167,7 +175,7 @@ export async function worldRoutes(app: FastifyInstance) {
     return { ok: true, mission: missionView(m) };
   });
 
-  /** Call your tenders home from an aphid herd (docs/23-npcs.md). */
+  /** Call your tenders home from an aphid herd (docs/24-npcs.md). */
   app.post('/api/herds/:id/recall', async (req) => {
     const m = await tx((q) => recallTenders(q, req.playerId, Number((req.params as any).id)));
     return { ok: true, mission: missionView(m) };

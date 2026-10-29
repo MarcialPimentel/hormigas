@@ -33,10 +33,12 @@ import { cachedWorldSpeed } from '../world';
 import { advance, getColony, getPlayer, lockColony, saveColony } from '../colony';
 import { nestStateOf, syncNest } from './nests';
 import { herdOf } from './herds';
-import { defineMission } from './missions';
+import { defineMission, garrisonUnits } from './missions';
 import { addReport } from './reports';
 import { refreshPointsAfterCommit } from './points';
 import { discover, requireKnown, smelledBy } from './discovery';
+import { areAllies } from './diplomacy';
+import { DIPLOMACY_MESSAGES } from '@hormigas/shared';
 
 defineMission('transport', {
   allowsCargo: true,
@@ -88,6 +90,32 @@ defineMission('relocate', {
   },
 });
 
+// Hold Position (docs/23-supercolonies.md): soldiers stay at a supercolony member's colony and fight in its battles until recalled.
+defineMission('hold', {
+  allowsCargo: false,
+  slot: 'mission',
+  async validate({ q, targetColony, player, units }) {
+    if (!targetColony || targetColony.npc) throw new GameError('bad_target', 'There is no allied colony there.');
+    if (targetColony.playerId === player.id) throw new GameError('bad_target', 'Your own colonies defend themselves. Use Relocate to move units there.');
+    if (!(await areAllies(q, player.id, targetColony.playerId))) throw new GameError('not_ally', DIPLOMACY_MESSAGES.hold_needs_ally);
+    if (!presentUnits(units).some((u) => CASTES[u].attack > 0)) throw new GameError('no_fighters', 'Send at least one unit that can fight.');
+  },
+  async arrive(q, m, at) {
+    if (!m.targetColonyId) return { home: true };
+    const c = await getColony(q, m.targetColonyId);
+    const sender = await getPlayer(q, m.playerId);
+    if (!(await areAllies(q, m.playerId, c.playerId))) {
+      m.result = { turnedBack: true };
+      await addReport(q, m.worldId, m.playerId, 'hold', `Your soldiers turned back from ${c.name}: you no longer share a scent`, { colony: c.name, target: m.target, turnedBack: true }, at);
+      return { home: true };
+    }
+    m.result = { holding: true };
+    await addReport(q, m.worldId, m.playerId, 'hold', `Your soldiers are holding position at ${c.name}`, { colony: c.name, target: m.target, units: m.units }, at);
+    await addReport(q, m.worldId, c.playerId, 'hold', `${sender.username}'s soldiers arrived to defend ${c.name}`, { colony: c.name, from: sender.username, units: m.units }, at);
+    return { home: true, stay: true };
+  },
+});
+
 defineMission('scout', {
   allowsCargo: false,
   allowsWilds: true,
@@ -104,7 +132,7 @@ defineMission('scout', {
     const found = await getColony(q, m.targetColonyId);
     const target = found.npc ? await syncNest(q, await lockColony(q, found.id), at) : advance(found, at);
     const attacker = await getPlayer(q, m.playerId);
-    // at an aphid herd, the tenders (if any) are the ones who might spot the scouts (docs/23-npcs.md)
+    // at an aphid herd, the tenders (if any) are the ones who might spot the scouts (docs/24-npcs.md)
     const herd = herdOf(target);
     const defender = await getPlayer(q, herd?.tender ? herd.tender.playerId : target.playerId);
     const scouts = lvl(m.units, 'scout');
@@ -135,7 +163,12 @@ defineMission('scout', {
     );
     if (raid.rows[0]?.at) data.raidArrivesAt = Number(raid.rows[0].at);
     if (nest) data.regrowMs = (regrowHours(nest.species) * 3600_000) / cachedWorldSpeed();
-    if (detail !== 'resources') data.units = target.units;
+    if (detail !== 'resources') {
+      data.units = target.units;
+      // allied soldiers holding position fight too, so scouts count them
+      const garrison = await garrisonUnits(q, target.id);
+      if (presentUnits(garrison).length > 0) data.garrison = garrison;
+    }
     if (detail === 'defenses' || detail === 'full') data.defenses = target.defenses;
     if (detail === 'full') {
       data.chambers = target.chambers;

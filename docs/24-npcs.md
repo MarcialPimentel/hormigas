@@ -1,4 +1,4 @@
-# 23 — More Wild Things (NPCs)
+# 24 — More Wild Things (NPCs)
 
 **Version:** 0.1
 **Data:** [`data/npc.json`](data/npc.json) (`species`, `area`, `herds`, `scents`), [`data/castes.json`](data/castes.json) (NPC-only units)

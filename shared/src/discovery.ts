@@ -14,7 +14,7 @@ export type Knowledge = 'mine' | 'known' | 'familiar' | 'scent';
 export type ScentKind = 'player' | 'wild';
 
 /** How a colony became known or familiar (known_colonies.via). Later builds add their own values. */
-export type DiscoveryVia = 'scouted' | 'raided' | 'earlier' | 'scouted_you' | 'raided_you';
+export type DiscoveryVia = 'scouted' | 'raided' | 'earlier' | 'scouted_you' | 'raided_you' | 'ally';
 
 export interface KnownRow {
   /** set once you have scouted it: then it's 'known' */
@@ -35,7 +35,7 @@ export const canActOn = (k: Knowledge) => k === 'known';
 
 export const SCENT_NAME: Record<ScentKind, string> = { player: 'Ant scent', wild: 'Wild scent' };
 
-/** What an unscouted wild scent hints at (docs/23-npcs.md): sharp = ant nest, sweet = aphids, woody = termites, danger = spider. */
+/** What an unscouted wild scent hints at (docs/24-npcs.md): sharp = ant nest, sweet = aphids, woody = termites, danger = spider. */
 export type ScentHint = 'nest' | 'herd' | 'mound' | 'den';
 export const WILD_SCENTS = NPC_DATA.scents as unknown as Record<ScentHint, { name: string; text: string }>;
 

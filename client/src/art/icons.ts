@@ -94,7 +94,7 @@ const UNIT: Record<CasteId, () => string> = {
     `<circle cx="51" cy="35" r="5.5" fill="#2a2420" stroke="${INK}" stroke-width="2"/><circle cx="59" cy="31.5" r="1.8" fill="#e08a2c"/>` +
     `<path d="M18,30 a16,9 0 0 1 14,-4" stroke="#8a7a70" stroke-width="1.6" fill="none" stroke-linecap="round"/>`,
   bullet_ant: () => ground() + ant('worker', 33, 51, 66, { palette: BULLET }) + `<path d="M6,38 l-4,2 l4,1" fill="${BULLET.base}" stroke="${INK}" stroke-width="1"/>`,
-  // NPC-only (docs/23-npcs.md): termites have no waist, spiders have eight legs
+  // NPC-only (docs/24-npcs.md): termites have no waist, spiders have eight legs
   termite_worker: () => ground() + termite(false),
   termite_soldier: () => ground() + termite(true),
   spiderling: () => ground() + spider(32, 40, 0.55),

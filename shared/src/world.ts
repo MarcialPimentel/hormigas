@@ -17,7 +17,7 @@ export const WORLD = FORMULAS.world;
 export const coordsKey = (c: Coords) => `${c.region}:${c.patch}:${c.spot}`;
 export const sameCoords = (a: Coords, b: Coords) => a.region === b.region && a.patch === b.patch && a.spot === b.spot;
 
-/** Wild sites: extra spots in the wilds for aphid herds, termite mounds and spider dens (docs/23-npcs.md). */
+/** Wild sites: extra spots in the wilds for aphid herds, termite mounds and spider dens (docs/24-npcs.md). */
 const SITE_SPOT_LIST = Object.values(NPC_DATA.area.sites) as number[];
 
 /** A real place: a colony spot (1–12), optionally the wilds (13), optionally a wild site (14+). */

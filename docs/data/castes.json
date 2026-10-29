@@ -1,6 +1,6 @@
 {
   "_version": "0.1",
-  "_note": "npcOnly castes live only in NPC colonies (docs/23-npcs.md): players never raise them. health defaults to (foliage + protein) / 10. speed in map units/hour (see formulas.json). frenzy: chance to fire again = (N-1)/N vs that target.",
+  "_note": "npcOnly castes live only in NPC colonies (docs/24-npcs.md): players never raise them. health defaults to (foliage + protein) / 10. speed in map units/hour (see formulas.json). frenzy: chance to fire again = (N-1)/N vs that target.",
   "castes": {
     "worker":        { "name": "Worker",        "mvp": true,  "cost": { "foliage": 300,  "protein": 100,  "nectar": 0 },    "attack": 5,   "guard": 10,  "health": 40,   "speed": 5000,  "cargo": 1500,  "nectarUse": 10, "unlock": { "brood_hall": 1 },                         "frenzy": {}, "canHaulCorpses": true },
     "minor_soldier": { "name": "Minor Soldier", "mvp": true,  "cost": { "foliage": 300,  "protein": 100,  "nectar": 0 },    "attack": 50,  "guard": 10,  "health": 40,   "speed": 12500, "cargo": 50,    "nectarUse": 20, "unlock": { "brood_hall": 1 },                         "frenzy": { "worker": 3, "scout": 5 } },

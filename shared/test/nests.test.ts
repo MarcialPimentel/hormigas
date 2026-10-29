@@ -96,7 +96,7 @@ describe('wild nests', () => {
   });
 });
 
-// Termite mounds and spider dens (docs/23-npcs.md, tuning check). The armies a player is expected to bring.
+// Termite mounds and spider dens (docs/24-npcs.md, tuning check). The armies a player is expected to bring.
 const MOUND_FAIR: UnitCounts[] = [
   { minor_soldier: 120, major_soldier: 40 },
   { minor_soldier: 250, major_soldier: 110 },

@@ -75,7 +75,7 @@ export async function pickStartingSpot(q: Q, worldId: number): Promise<{ region:
   if (joinable[0]) return place(joinable[0].region, joinable[0].patch, joinable[0].free);
 
   // 2. a fresh patch beside the newest player
-  // patches holding only wild things (nests, herds, mounds, dens: docs/23-npcs.md) are still open for players
+  // patches holding only wild things (nests, herds, mounds, dens: docs/24-npcs.md) are still open for players
   const used = new Set(patches.filter((p) => p.players > 0).map((p) => idx(p.region, p.patch)));
   const newest = await q.query(
     `SELECT c.region, c.patch FROM colonies c JOIN players p ON p.id = c.player_id

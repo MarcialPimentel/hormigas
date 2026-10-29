@@ -1,4 +1,4 @@
-// Aphid herds (docs/23-npcs.md): claimed by stationing tenders, who carry the honeydew home every few hours.
+// Aphid herds (docs/24-npcs.md): claimed by stationing tenders, who carry the honeydew home every few hours.
 // A herd is a colony row on the patch's herd site, owned by the hidden wild player. Its units are the tenders
 // (they still belong to `npc.tender`), its Nectar is the honeydew waiting to be carried home.
 import {

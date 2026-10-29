@@ -162,7 +162,7 @@ export function surfaceParties(w: number, entranceX: number, c: ServerColony, st
   const home = c.coords;
   let lane = 0;
   for (const m of state.missions ?? []) {
-    if (m.originColonyId !== c.id) continue;
+    if (m.originColonyId !== c.id || m.status === 'holding') continue;
     const toLeft = leftOf(m.target, home);
     const edge = toLeft ? -8 : w + 8;
     const ob = m.status === 'outbound';

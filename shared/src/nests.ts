@@ -1,5 +1,5 @@
 // Wild nests: NPC colonies, one per patch near players. Spec: docs/17-wild-nests.md
-// Termite mounds and spider dens (docs/23-npcs.md) are nests of special species: same regrowth, scouting and raids,
+// Termite mounds and spider dens (docs/24-npcs.md) are nests of special species: same regrowth, scouting and raids,
 // their own level table, store and regrow time, and they never raid back.
 import { NPC_DATA, CASTES, DEFENSES, type CasteId, type DefenseId, type Resources, type TerrainId } from './data';
 import type { DefenseCounts, UnitCounts } from './economy';

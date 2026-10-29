@@ -11,14 +11,18 @@ const bonus = (b: Record<string, number>) => {
 };
 
 export function BattleReport({ data }: { data: any }) {
+  // a raid that met a truce or a shared scent on the way (docs/23-supercolonies.md)
+  if (data.turnedBack)
+    return <p className="report-body">Your soldiers reached {data.colony} ({fmtCoords(data.target)}) and turned back without a fight. {data.why} They are on their way home.</p>;
   const youAttacked = data.perspective === 'attacker';
+  const asAlly = data.perspective === 'ally';
   const youWon = (data.winner === 'attacker') === youAttacked && data.winner !== 'draw';
   const outcome =
     data.winner === 'draw'
       ? 'Draw — both sides still standing after six rounds.'
       : youWon
-        ? youAttacked ? 'Victory. Your raiders broke the defense.' : 'Your colony held.'
-        : youAttacked ? 'Defeat. Your raiders were wiped out.' : 'Your colony was overrun.';
+        ? youAttacked ? 'Victory. Your raiders broke the defense.' : asAlly ? 'Your soldiers helped your ally hold.' : 'Your colony held.'
+        : youAttacked ? 'Defeat. Your raiders were wiped out.' : asAlly ? "Your ally's colony was overrun." : 'Your colony was overrun.';
   return (
     <div className="report-body battle">
       <p className={`outcome ${youWon ? 'good' : data.winner === 'draw' ? '' : 'bad'}`}>{outcome}</p>
@@ -36,6 +40,16 @@ export function BattleReport({ data }: { data: any }) {
           <Counts counts={{ ...data.defender.units, ...data.defender.defenses }} empty="Nobody home" />
           <p className="small">Lost:</p>
           <Counts counts={{ ...data.defender.lost, ...data.defender.defensesDestroyed }} empty="Nothing" />
+          {(data.defender.allies ?? []).map((a: any, i: number) => (
+            <div key={i} className="ally-group">
+              <p className="small">
+                <strong>{asAlly && data.allyIndex === i ? 'Your soldiers' : `${a.name}'s soldiers`}</strong>, holding position:
+              </p>
+              <Counts counts={a.units} />
+              <p className="small">Lost:</p>
+              <Counts counts={a.lost} empty="Nothing" />
+            </div>
+          ))}
           {Object.keys(data.defender.defensesRebuilt ?? {}).length > 0 && (
             <>
               <p className="small">Rebuilt for free:</p>

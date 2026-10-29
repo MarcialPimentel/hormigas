@@ -14,7 +14,7 @@
 |---|---|---|
 | Region | 5 | The Backyard, The Old Garden, Creekside, The Woodpile, The Long Grass (`regionNames` in `formulas.json`) |
 | Patch | 100 per region | A patch of ground |
-| Spot | 12 colony spots per patch (+ spot 13 = the wilds, for Forage; spots 14–16 = wild sites for an aphid herd, a termite mound and a spider den, [23-npcs](23-npcs.md)) | |
+| Spot | 12 colony spots per patch (+ spot 13 = the wilds, for Forage; spots 14–16 = wild sites for an aphid herd, a termite mound and a spider den, [24-npcs](24-npcs.md)) | |
 
 That's 6,000 colony spots — plenty for MVP. Increase regions as the population grows.
 
@@ -34,7 +34,7 @@ Players should meet. Until Build 7 each sign-up went to the least-populated regi
 - Terrain at start: always **Grassland** (no modifiers) to keep the first experience even.
 
 ## Wild nests and other wild things
-Every patch with players, and every patch within 2 of one, holds a **wild nest** (a rival colony of another ant species on a non-Grassland spot) and an **aphid herd** on a wild site. Termite mounds (about one per 5 patches) and spider dens (one per 10) sit on their own wild sites nearby. All of them appear when a player first arrives nearby. See [17-wild-nests](17-wild-nests.md) and [23-npcs](23-npcs.md).
+Every patch with players, and every patch within 2 of one, holds a **wild nest** (a rival colony of another ant species on a non-Grassland spot) and an **aphid herd** on a wild site. Termite mounds (about one per 5 patches) and spider dens (one per 10) sit on their own wild sites nearby. All of them appear when a player first arrives nearby. See [17-wild-nests](17-wild-nests.md) and [24-npcs](24-npcs.md).
 
 ## Missions screen: the patch and the world
 Since Build 7 the map lives in the **Missions** tab (the separate Map tab is gone). It opens on **your own patch**, drawn. Tap a spot to scout, raid, send or forage from it, and the send form below fills in the target. Colonies you haven't scouted show as **scents** ([22-discovery](22-discovery.md)). **World** opens the region grid to look at other patches; **Back to my patch** returns.

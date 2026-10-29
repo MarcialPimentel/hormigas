@@ -139,7 +139,7 @@ export function Trip({
   departAt?: number;
   arriveAt: number;
   returnAt?: number;
-  status: 'outbound' | 'returning';
+  status: 'outbound' | 'returning' | 'holding';
   cargo?: Record<string, number>;
   incoming?: boolean;
   hostile?: boolean;
@@ -153,6 +153,7 @@ export function Trip({
     pos = 100 - 100 * k(departAt, arriveAt);
     back = true;
   } else if (status === 'outbound') pos = 100 * k(departAt, arriveAt);
+  else if (status === 'holding') pos = 100;
   else {
     pos = 100 - 100 * k(arriveAt, returnAt);
     back = true;

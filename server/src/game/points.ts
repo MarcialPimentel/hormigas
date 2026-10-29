@@ -17,7 +17,7 @@ export async function refreshPoints(q: Q, playerId: number) {
     const away = await q.query("SELECT units FROM missions WHERE player_id = $1 AND status <> 'done'", [playerId]);
     for (const m of away.rows) colonies.push({ chambers: {}, units: m.units, defenses: {} });
   }
-  // ants stationed at aphid herds are still yours (docs/23-npcs.md)
+  // ants stationed at aphid herds are still yours (docs/24-npcs.md)
   const tending = await q.query("SELECT units FROM colonies WHERE npc->>'kind' = 'herd' AND (npc->'tender'->>'playerId')::int = $1", [playerId]);
   for (const h of tending.rows) colonies.push({ chambers: {}, units: h.units, defenses: {} });
   const points = computePoints(colonies, p.rows[0].research);

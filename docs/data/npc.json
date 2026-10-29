@@ -1,6 +1,6 @@
 {
   "_version": "0.1",
-  "_note": "Wild nests (NPC colonies), docs/17-wild-nests.md; termite mounds, spider dens and aphid herds, docs/23-npcs.md. Level = highest level whose minPatchPoints <= the points of the strongest active player in the patch; never goes down. Times are hours at world speed 1 (divide by world speed).",
+  "_note": "Wild nests (NPC colonies), docs/17-wild-nests.md; termite mounds, spider dens and aphid herds, docs/24-npcs.md. Level = highest level whose minPatchPoints <= the points of the strongest active player in the patch; never goes down. Times are hours at world speed 1 (divide by world speed).",
   "levels": [
     {"level": 1, "minPatchPoints": 0, "stock": {"foliage": 1600, "protein": 1000, "nectar": 400}},
     {"level": 2, "minPatchPoints": 20, "stock": {"foliage": 4000, "protein": 2800, "nectar": 1200}},
@@ -74,7 +74,7 @@
     },
     "termite": {
       "kind": "mound", "name": "Termites", "nest": "Termite Mound", "terrains": [],
-      "_note": "A termite mound (docs/23-npcs.md): a rich, heavily defended mid-game target on its own wild site. Its tier follows the area's strongest active player (minPoints), never drops. Regrows slowly and never raids.",
+      "_note": "A termite mound (docs/24-npcs.md): a rich, heavily defended mid-game target on its own wild site. Its tier follows the area's strongest active player (minPoints), never drops. Regrows slowly and never raids.",
       "style": "A fortress of armoured soldiers and walls, packed with chewed wood. Bring a big army of Major Soldiers and plenty of carriers.",
       "regrowHours": 72,
       "raids": false,
@@ -86,7 +86,7 @@
     },
     "spider": {
       "kind": "den", "name": "Trapdoor Spider", "nest": "Spider Den", "terrains": [],
-      "_note": "A boss (docs/23-npcs.md): one huge spider and her young under a silk lid. One player can beat it late in the game; the Alliances build may reuse it for joint raids. Regrows over a week and never raids.",
+      "_note": "A boss (docs/24-npcs.md): one huge spider and her young under a silk lid. One player can beat it late in the game; the Alliances build may reuse it for joint raids. Regrows over a week and never raids.",
       "style": "One giant spider and her spiderlings. Her fangs cut through any ant; only a large army brings her down. A small raid can't wear her down: she's whole again next time.",
       "regrowHours": 168,
       "raids": false,
@@ -96,7 +96,7 @@
       ]
     }
   },
-  "_area": "Where wild things live (docs/23-npcs.md): every patch within `range` patches (same region) of a patch with players gets a wild nest and an aphid herd. Termite mounds sit in patches where patch % every == offset, spider dens likewise, each spawned once a player lives within its range. Sites are extra spots in the wilds that never take one of the 12 colony spots.",
+  "_area": "Where wild things live (docs/24-npcs.md): every patch within `range` patches (same region) of a patch with players gets a wild nest and an aphid herd. Termite mounds sit in patches where patch % every == offset, spider dens likewise, each spawned once a player lives within its range. Sites are extra spots in the wilds that never take one of the 12 colony spots.",
   "area": {
     "range": 2,
     "mound": {"every": 5, "offset": 3, "range": 2},
@@ -104,7 +104,7 @@
     "sites": {"herd": 14, "mound": 15, "den": 16}
   },
   "herds": {
-    "_note": "Aphid herds (docs/23-npcs.md). A herd makes Nectar only while a player's ants tend it. nectarPerHour by level (levels follow the area leader like wild nests: npc.levels[].minPatchPoints). Honeydew piles up in the herd (up to storeHours of production) and the tenders carry it home every deliverEveryHours. Left untended for wanderAfterHours, the herd wanders to another patch nearby. Hours at world speed 1.",
+    "_note": "Aphid herds (docs/24-npcs.md). A herd makes Nectar only while a player's ants tend it. nectarPerHour by level (levels follow the area leader like wild nests: npc.levels[].minPatchPoints). Honeydew piles up in the herd (up to storeHours of production) and the tenders carry it home every deliverEveryHours. Left untended for wanderAfterHours, the herd wanders to another patch nearby. Hours at world speed 1.",
     "name": "Aphid Herd",
     "nectarPerHour": [10, 20, 35, 60, 100, 160],
     "storeHours": 12,
@@ -114,7 +114,7 @@
     "style": "Aphids on a stem, dripping honeydew. Tend them and they make Nectar for you; anyone can drive your tenders off and take over."
   },
   "scents": {
-    "_note": "What an unscouted wild scent hints at (docs/23-npcs.md).",
+    "_note": "What an unscouted wild scent hints at (docs/24-npcs.md).",
     "nest": {"name": "Wild scent", "text": "It smells sharp, of wild ants. You can't tell which kind, how many, or what they store."},
     "herd": {"name": "Sweet scent", "text": "It smells sweet, like honeydew. Something here could make Nectar."},
     "mound": {"name": "Woody scent", "text": "It smells of chewed wood and damp earth. Something big was built here."},

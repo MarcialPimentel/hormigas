@@ -1,4 +1,4 @@
-// Build 9: more wild things (docs/23-npcs.md): nests in neighbouring patches, aphid herds, termite mounds, spider dens.
+// Build 9: more wild things (docs/24-npcs.md): nests in neighbouring patches, aphid herds, termite mounds, spider dens.
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { FastifyInstance } from 'fastify';
 import { HERDS, SITE_SPOTS, WILD_SCENTS, herdNectarPerHour, herdStoreCap, nestTargets, regrowHours } from '@hormigas/shared';
@@ -170,6 +170,12 @@ describe('aphid herds', () => {
   });
 
   it('raiding a herd is a fight with its tenders; win and the herd is free, with the honeydew', async () => {
+    // a truce with the player who tends it covers the tenders too (docs/23-supercolonies.md)
+    const [lo, hi] = [Math.min(alpha, beta), Math.max(alpha, beta)];
+    await getPool().query("INSERT INTO truces (world_id, player_a, player_b, proposed_by, status, created_at, accepted_at) VALUES (1, $1, $2, $1, 'active', 0, 0)", [lo, hi]);
+    const blocked = await b.post('/api/missions', { colonyId: cb.id, type: 'raid', target: herd(), units: { minor_soldier: 60, worker: 4 } });
+    expect(blocked.error.code).toBe('pact_truce');
+    await getPool().query('DELETE FROM truces');
     const r = await b.post('/api/missions', { colonyId: cb.id, type: 'raid', target: herd(), units: { minor_soldier: 60, worker: 4 } });
     expect(r.ok).toBe(true);
     // the tender is warned
