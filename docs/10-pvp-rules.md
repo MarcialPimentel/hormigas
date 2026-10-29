@@ -12,6 +12,9 @@ PvP is **open early**. The rules below exist so that open PvP doesn't turn new p
 ## Wild nests
 Wild nests (NPC colonies, see [17-wild-nests](17-wild-nests.md)) have no new-colony or strength protection, but the bash limit applies. Raiding a nest does **not** end your own new-colony protection. Nests raid back gently, never at protected or inactive players, at most once per player per 24 h.
 
+## Army-ant swarms
+Swarms from the wilds ([20-swarms](20-swarms.md)) never come during new-colony protection or at inactive players, and don't count toward anyone's bash limit. They take only unprotected food.
+
 ## Strength protection
 - You can't raid a colony whose owner has **less than 20%** of your points.
 - Exception: **inactive** players (no login for 7+ days) can be raided regardless — they're the world's PvE farmland. They're marked on the map.

@@ -67,6 +67,7 @@ Live at **https://hormigas.marz.gg**. Every merge to `main` that passes CI deplo
 | 17 | [Wild Nests](docs/17-wild-nests.md) | NPC colonies in every patch: levels, species, raids |
 | 18 | [Art Direction](docs/18-art-direction.md) | Look and feel: ants, chambers, palette, the 3D nest |
 | 19 | [More Colonies](docs/19-colonies.md) | Nuptial Flight, the Winged Queen and founding a second colony |
+| 20 | [Army-Ant Swarms](docs/20-swarms.md) | Raids from the wilds: schedule, warning, sizing, rewards |
 
 ## Doc conventions
 - **Numbers live in `docs/data/`**, reasoning lives in the markdown. If they disagree, the data file wins and the doc gets fixed.
