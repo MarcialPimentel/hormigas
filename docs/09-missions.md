@@ -19,6 +19,7 @@
 | **Haul Corpses** | ✅ | Collect a corpse field (Workers / Carrion Beetles) |
 | **Forage** | ✅ | Expedition into the wilds (below) |
 | **Found Colony** | ✅ | A Winged Queen (plus escorts and cargo) founds a new colony at an empty spot ([19-colonies](19-colonies.md)) |
+| **Tend Aphids** | ✅ | Station ants at a scouted aphid herd. They stay, and carry its honeydew home as Nectar every 6 h; call them home from the herd's card ([23-npcs](23-npcs.md)) |
 | **Joint Raid** | v1 | Several supercolony members raid together |
 | **Hold Position** | v1 | Station units at an ally's colony to defend it |
 
