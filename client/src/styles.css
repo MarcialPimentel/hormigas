@@ -363,6 +363,23 @@ input:focus, textarea:focus { border-color: var(--honey-ink); outline: none; }
 .spot-card-head > div:first-child { display: grid; min-width: 0; }
 .spot-card .coords { opacity: 0.85; }
 .spot-actions { display: flex; gap: 0.35rem; flex-wrap: wrap; }
+/* Scents (docs/22-discovery.md): colonies you haven't scouted */
+.spot-card.player { box-shadow: inset 3px 0 0 #c98b52; }
+.spot-card .why { margin: 0; color: var(--danger); }
+.scent-tag { font: 700 0.7rem var(--font-body); padding: 0.1rem 0.45rem; margin-left: 0.4rem; border-radius: 999px; background: var(--scent-soft); color: var(--scent); white-space: nowrap; vertical-align: middle; }
+.ps-scent { animation: ps-waft 3.2s ease-in-out infinite; transform-box: fill-box; transform-origin: bottom; }
+.ps-scent:nth-of-type(2n) { animation-delay: -1.1s; }
+@keyframes ps-waft { 50% { transform: translateY(-3px) skewX(-6deg); opacity: 0.75; } }
+@media (prefers-reduced-motion: reduce) { .ps-scent { animation: none; } }
+/* Missions: the patch view on top */
+.patch-view { display: grid; gap: 0.6rem; }
+.patch-head { display: flex; flex-wrap: wrap; gap: 0.5rem; justify-content: space-between; align-items: center; }
+.patch-head h3 { margin: 0; font-family: var(--font-display); font-size: 1rem; }
+.patch-head-actions { display: flex; gap: 0.35rem; }
+.btn.on { background: var(--raised); border-color: var(--leaf-ink); }
+.world-picker { padding: 0.6rem; border: 1px solid var(--seam); border-radius: var(--r-sm); }
+.target-line { display: flex; flex-wrap: wrap; gap: 0.5rem; justify-content: space-between; align-items: center; }
+.scroll-anchor { scroll-margin-top: 0.5rem; }
 .corpses { font-size: 0.8rem; color: var(--protein-ink); }
 .intel { display: grid; gap: 0.35rem; }
 .intel p { margin: 0; }

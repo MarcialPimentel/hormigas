@@ -4,7 +4,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { FastifyInstance } from 'fastify';
 import { getPool } from '../src/db';
 import { MAX_ATTEMPTS, onEvent, processDueEvents, schedule, unknownPendingEventTypes } from '../src/events';
-import { setupTest, teardownTest, newPlayer, setColony, calmWildNests } from './helpers';
+import { setupTest, teardownTest, newPlayer, setColony, calmWildNests, knowAll } from './helpers';
 
 let app: FastifyInstance;
 let clock: Awaited<ReturnType<typeof setupTest>>['clock'];
@@ -20,6 +20,7 @@ beforeAll(async () => {
   ({ app, clock } = await setupTest());
   await newPlayer(app, 'setup'); // creates the world
   await calmWildNests();
+  await knowAll();
   worldId = (await getPool().query('SELECT id FROM worlds LIMIT 1')).rows[0].id;
 });
 afterAll(async () => teardownTest(app));
@@ -126,6 +127,7 @@ describe('lock order', () => {
     const cb = (await b.get('/api/state')).colony;
     await setColony(ca.id, { foliage: 50000, protein: 50000, nectar: 50000, last_updated: clock.t, units: { worker: 20 } });
     await calmWildNests();
+    await knowAll();
     const playerId = (await getPool().query('SELECT player_id FROM colonies WHERE id = $1', [ca.id])).rows[0].player_id;
 
     const sent = await a.post('/api/missions', { colonyId: ca.id, type: 'transport', target: cb.coords, units: { worker: 10 }, cargo: {}, speedPct: 100 });

@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { FastifyInstance } from 'fastify';
 import { getPool } from '../src/db';
-import { setupTest, teardownTest, newPlayer, setColony, setPlayer, calmWildNests, type Client } from './helpers';
+import { setupTest, teardownTest, newPlayer, setColony, setPlayer, calmWildNests, knowAll, type Client } from './helpers';
 
 let app: FastifyInstance;
 let clock: Awaited<ReturnType<typeof setupTest>>['clock'];
@@ -27,6 +27,7 @@ beforeAll(async () => {
   aId = sa.player.id;
   bId = sb.player.id;
   await calmWildNests();
+  await knowAll();
 });
 afterAll(async () => teardownTest(app));
 

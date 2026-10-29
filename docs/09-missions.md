@@ -22,6 +22,9 @@
 | **Joint Raid** | v1 | Several supercolony members raid together |
 | **Hold Position** | v1 | Station units at an ally's colony to defend it |
 
+## Scout before you raid
+Raids and transports need a target you have scouted. A colony you haven't is a **scent** on the map, and the game refuses with "Scout this scent first" ([22-discovery](22-discovery.md)). Scouting is always allowed. Targets are picked by tapping them on the patch at the top of the Missions tab; typing coordinates is still possible behind **Enter coordinates**.
+
 ## Forage expeditions (the PvE "slot machine")
 Sent to the wild edge of a patch (spot 13). Outcome rolled on arrival:
 

@@ -31,6 +31,7 @@ import { syncNest } from './nests';
 import { defineMission, type Mission } from './missions';
 import { addReport } from './reports';
 import { refreshPointsAfterCommit } from './points';
+import { requireKnown, smelledBy } from './discovery';
 
 const nonZero = <T extends Record<string, number | undefined>>(u: T): T => Object.fromEntries(Object.entries(u).filter(([, n]) => (n ?? 0) > 0)) as T;
 
@@ -75,6 +76,8 @@ defineMission('raid', {
     if (!targetColony) throw new GameError('bad_target', 'There is no colony there to raid.');
     if (targetColony.playerId === player.id) throw new GameError('bad_target', "You can't raid your own colony.");
     if (!presentUnits(units).some((u) => CASTES[u].attack > 0)) throw new GameError('no_fighters', 'Send at least one unit that can fight.');
+    // Scout before raiding: nobody raids a scent (docs/22-discovery.md).
+    await requireKnown(q, player.id, targetColony.id, 'raid');
     const recentWins = await raidsInLast24h(q, player.id, targetColony.id, t);
     if (targetColony.npc) {
       // Wild nests: no protection of any kind, but the bash limit still applies.
@@ -172,6 +175,8 @@ export async function resolveRaid(q: Tx, m: Mission, at: number, opts: { attacke
   if (!attacker.isNpc)
     await addReport(q, m.worldId, attacker.id, 'battle', `Raid on ${target.name} (${coordsKey(m.target)}): you ${verb}`, { ...data, perspective: 'attacker' }, at);
   const dverb = result.winner === 'defender' ? 'held' : result.winner === 'attacker' ? 'was raided' : 'held (draw)';
+  // The defender now recognizes the raiders' scent (one way: they still scout before striking back). Swarms have no home.
+  if (!defender.isNpc && m.type === 'raid') await smelledBy(q, defender.id, m.originColonyId, 'raided_you', at);
   if (!defender.isNpc)
     await addReport(q, m.worldId, defender.id, 'battle', `${target.name} ${dverb} — attack by ${attackerName}`, { ...data, perspective: 'defender' }, at);
   if (!defender.isNpc) await refreshPointsAfterCommit(q, defender.id);

@@ -18,13 +18,14 @@ Keep the MVP **brutally small**. Its only job is to answer: *is the core loop fu
 - Wild nests: one NPC colony per patch with players, raidable, raiding back gently ([17-wild-nests](17-wild-nests.md)).
 - Army-ant swarms (Build 5): every colony is visited about every 4 days, 4 h warning, beatable ([20-swarms](20-swarms.md)).
 - The tech tree (Build 6): research that needs other research, four branches (Jaws, Harvest, Nest, Scent), ten new research and Aphid Husbandry made playable ([21-tech-tree](21-tech-tree.md)).
+- Scents and neighbours (Build 7): the Missions tab shows your patch; unscouted colonies are player or wild scents; scout before you raid; new players are placed together, up to 4 per patch ([22-discovery](22-discovery.md), [11-world](11-world.md)).
 - The colony comes alive (Build 3): the Nest View shows parties, raids, storage, brood, digging and research; while-you-were-away card; small nest events ([12-ui-nest-view](12-ui-nest-view.md), [04-colony](04-colony.md)).
 
 **Systems**
 - Accounts & login
 - Compute-don't-tick economy + event queue
 - Combat + battle reports + in-game battle preview
-- Map, Overview, Chambers, Brood Hall, Research, Missions, Reports, Rankings
+- Overview, Chambers, Brood Hall, Research, Missions, Reports, Rankings
 - Simple schematic Nest View
 - Browser notifications + tab badges
 - Onboarding quest chain

@@ -8,7 +8,6 @@ import { Overview } from './screens/Overview';
 import { Chambers } from './screens/Chambers';
 import { Brood } from './screens/Brood';
 import { Research } from './screens/Research';
-import { MapScreen } from './screens/Map';
 import { Missions } from './screens/Missions';
 import { Reports } from './screens/Reports';
 import { Rankings } from './screens/Rankings';
@@ -68,13 +67,13 @@ export function App() {
     { id: 'chambers', label: 'Chambers', icon: ICONS.chambers, render: () => <Chambers /> },
     { id: 'brood', label: 'Brood Hall', icon: ICONS.brood, render: () => <Brood /> },
     { id: 'research', label: 'Research', icon: ICONS.research, render: () => <Research /> },
-    { id: 'map', label: 'Map', icon: ICONS.map, render: (n) => <MapScreen nav={n} start={params} /> },
     { id: 'missions', label: 'Missions', icon: ICONS.missions, render: () => <Missions draft={params} />, badge: (state.incoming ?? []).filter((i: any) => i.hostile).length },
     { id: 'reports', label: 'Reports', icon: ICONS.reports, render: () => <Reports />, badge: state.unreadReports },
     { id: 'rankings', label: 'Rankings', icon: ICONS.ranks, render: () => <Rankings /> },
   ];
   if (isAdmin) screens.push({ id: 'feedback', label: 'Feedback', icon: ICONS.feedback, render: () => <FeedbackAdmin onCount={onFeedbackCount} />, badge: openFeedback });
-  const current = screens.find((s) => s.id === screen) ?? screens[0];
+  // The Map tab folded into Missions in Build 7 (docs/11-world.md): old links to 'map' land there.
+  const current = screens.find((s) => s.id === (screen === 'map' ? 'missions' : screen)) ?? screens[0];
 
   return (
     <div className="app">
