@@ -24,11 +24,11 @@ Units are **castes** raised in the Brood Hall. Each unit represents a squad of a
 | **Major Soldier** | Main fighting caste | Expensive, strong. Frenzy vs Minor Soldiers. |
 | **Scout** | Espionage | Near-zero combat value; dies easily. |
 | **Hauler** | Bulk cargo | Unlocked after Major Soldier. |
+| **Winged Queen** | Founds a new colony | Brood Hall 4 + Nuptial Flight 1. Used up on landing ([19-colonies](19-colonies.md)). |
 
 ## v1 castes (designed, not in MVP)
 | Caste | Role |
 |---|---|
-| **Winged Queen** | Founds a new colony (consumed on arrival) |
 | **Carrion Beetle** (ally species) | Dedicated corpse hauler, huge corpse cargo |
 | **Bullet Ant** (ally) | Elite striker, frenzy vs Major Soldiers |
 | **Trap-jaw Ant** | Anti-defense specialist (siege role) |

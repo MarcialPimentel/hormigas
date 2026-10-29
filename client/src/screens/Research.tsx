@@ -24,6 +24,7 @@ export const RESEARCH_BLURB: Record<string, string> = {
   foraging_instinct: 'Better luck on forage expeditions. +1 forage slot every 2 levels.',
   brood_science: 'Unlocks Major Soldiers (level 1) and Haulers (level 2).',
   deep_digging: '+5 space in every colony, per level.',
+  nuptial_flight: 'Unlocks the Winged Queen (Brood Hall 4). Rule one more colony at levels 1, 3, 5…',
 };
 
 export function Research() {

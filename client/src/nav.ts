@@ -1,6 +1,6 @@
 export type Nav = (screen: string, params?: any) => void;
 
-export type MissionType = 'transport' | 'relocate' | 'scout' | 'raid' | 'haul' | 'forage';
+export type MissionType = 'transport' | 'relocate' | 'scout' | 'raid' | 'haul' | 'forage' | 'colonize';
 
 export const MISSION_LABEL: Record<MissionType, string> = {
   raid: 'Raid',
@@ -9,6 +9,7 @@ export const MISSION_LABEL: Record<MissionType, string> = {
   relocate: 'Relocate',
   haul: 'Haul corpses',
   forage: 'Forage',
+  colonize: 'Found colony',
 };
 
 export const MISSION_HELP: Record<MissionType, string> = {
@@ -18,7 +19,8 @@ export const MISSION_HELP: Record<MissionType, string> = {
   relocate: 'Move units and resources to another of your colonies. They stay there.',
   haul: 'Collect battlefield corpses as Protein. Workers and Haulers can carry them.',
   forage: 'Explore the wilds at the edge of a patch. Anything can happen.',
+  colonize: 'Send one Winged Queen to an empty spot to found a new colony. Escorts and cargo stay with her.',
 };
 
 /** Mission types the server supports right now (grows with each milestone). */
-export const ENABLED_MISSIONS: MissionType[] = ['raid', 'scout', 'forage', 'transport', 'relocate', 'haul'];
+export const ENABLED_MISSIONS: MissionType[] = ['raid', 'scout', 'forage', 'transport', 'relocate', 'haul', 'colonize'];

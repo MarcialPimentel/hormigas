@@ -9,12 +9,12 @@ Keep the MVP **brutally small**. Its only job is to answer: *is the core loop fu
 **Content**
 - One world, one species.
 - Chambers: Queen's Chamber, Leaf Garden, Hunting Grounds, Nursery, Granary, Larder, Brood Hall, Pheromone Chamber, Aphid Pasture, Nectar Cellar, Excavation Works, Honeypot Gallery.
-- Castes: Worker, Minor Soldier, Major Soldier, Scout, Hauler.
+- Castes: Worker, Minor Soldier, Major Soldier, Scout, Hauler, Winged Queen.
 - Defenses: Soil Wall, Pit Trap, Acid Sentry.
-- Research: Mandibles, Chitin, Guard Formation, Pheromone Trails, Scent Reading, Colony Mind, Foraging Instinct, Brood Science, Deep Digging.
-- Missions: Raid, Scout, Transport, Relocate, Haul Corpses, Forage.
+- Research: Mandibles, Chitin, Guard Formation, Pheromone Trails, Scent Reading, Colony Mind, Foraging Instinct, Brood Science, Deep Digging, Nuptial Flight.
+- Missions: Raid, Scout, Transport, Relocate, Haul Corpses, Forage, Found Colony.
 - PvP rules: new-colony protection, strength protection, bash limit, Honeypot protection, Late Founding Boost (catch-up).
-- One colony per player.
+- More colonies (Build 4): Nuptial Flight research, Winged Queen, Found Colony mission ([19-colonies](19-colonies.md)). Moved up from v1.
 - Wild nests: one NPC colony per patch with players, raidable, raiding back gently ([17-wild-nests](17-wild-nests.md)).
 - The colony comes alive (Build 3): the Nest View shows parties, raids, storage, brood, digging and research; while-you-were-away card; small nest events ([12-ui-nest-view](12-ui-nest-view.md), [04-colony](04-colony.md)).
 
@@ -45,7 +45,6 @@ Keep the MVP **brutally small**. Its only job is to answer: *is the core loop fu
 9. Playtest with a small group at ×5 world speed
 
 ## v1 — "A world worth staying in"
-- Multiple colonies (Winged Queen, Nuptial Flight, Found Colony)
 - Supercolonies (alliances): chat, joint raids, hold position
 - Ally species: Carrion Beetle, Bullet Ant
 - Aphid herding (raidable livestock economy)
@@ -61,4 +60,3 @@ Keep the MVP **brutally small**. Its only job is to answer: *is the core loop fu
 
 ## Open Questions
 - Is Aphid Pasture needed in MVP, or can Nectar come only from foraging at first?
-- Should multiple colonies move into MVP if testers plateau early?

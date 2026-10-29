@@ -34,7 +34,7 @@ import { getWorld } from '../world';
 import { refreshPointsAfterCommit } from './points';
 import { notify } from '../realtime';
 
-export type MissionType = 'transport' | 'relocate' | 'scout' | 'raid' | 'haul' | 'forage';
+export type MissionType = 'transport' | 'relocate' | 'scout' | 'raid' | 'haul' | 'forage' | 'colonize';
 
 export interface Mission {
   id: number;

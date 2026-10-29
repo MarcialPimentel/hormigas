@@ -5,7 +5,7 @@
 
 ## Colony basics
 - A colony is one nest at one world coordinate (see [11-world](11-world.md)).
-- Players start with one colony; more are founded via **Nuptial Flight** (Winged Queen caste).
+- Players start with one colony; more are founded by sending a **Winged Queen** on a nuptial flight (see [19-colonies](19-colonies.md)).
 - Research is account-wide; chambers, castes, defenses and resources are per colony.
 
 ## Space

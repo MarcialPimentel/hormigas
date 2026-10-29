@@ -1,5 +1,5 @@
 // Map, distance, travel and mission rules. Spec: docs/09-missions.md, docs/11-world.md
-import { CASTES, FORMULAS, TERRAIN, TERRAIN_IDS, type CasteId, type TerrainId } from './data';
+import { CASTES, FORMULAS, RESEARCH, TERRAIN, TERRAIN_IDS, type CasteId, type TerrainId } from './data';
 import { lvl, type ResearchLevels, type UnitCounts } from './economy';
 
 export interface Coords {
@@ -76,6 +76,10 @@ export function missionFuel(units: UnitCounts, dist: number, speedPct: number): 
 
 export const missionSlots = (research: ResearchLevels): number =>
   FORMULAS.missions.baseSlots + lvl(research, 'colony_mind');
+
+/** Most colonies a player may hold (docs/19-colonies.md): 1, plus one at Nuptial Flight levels 1, 3, 5… */
+export const maxColonies = (research: ResearchLevels): number =>
+  1 + Math.ceil((lvl(research, 'nuptial_flight') * Number(RESEARCH.nuptial_flight.effect.coloniesPer2Levels ?? 1)) / 2);
 
 export const forageSlots = (research: ResearchLevels): number =>
   1 + Math.floor(lvl(research, 'foraging_instinct') / 2);

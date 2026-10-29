@@ -6,6 +6,7 @@ import {
   WILDS_SPOT,
   distance,
   forageSlots,
+  maxColonies,
   groupCargo,
   groupSpeed,
   lvl,
@@ -63,7 +64,7 @@ export function Missions({ draft }: { draft?: MissionDraft }) {
   if (!colony || !state) return null;
   const research = state.player.research;
   const allowed = (UNITS_FOR[type] ?? MVP_CASTES).filter((id) => lvl(colony.units, id) > 0 || chosen[id]);
-  const cargoAllowed = type === 'transport' || type === 'relocate';
+  const cargoAllowed = type === 'transport' || type === 'relocate' || type === 'colonize';
   const cargoAmounts = Object.fromEntries(RESOURCE_IDS.map((r) => [r, cargoAllowed ? Math.floor(Number(cargo[r]) || 0) : 0])) as Record<'foliage' | 'protein' | 'nectar', number>;
   const cargoTotal = cargoAmounts.foliage + cargoAmounts.protein + cargoAmounts.nectar;
   const capacity = groupCargo(chosen, { corpses: type === 'haul' });
@@ -88,8 +89,14 @@ export function Missions({ draft }: { draft?: MissionDraft }) {
   for (const r of ['foliage', 'protein'] as const) if (cargoAmounts[r] > colony.resources[r]) problems.push(`Not enough ${RESOURCE_LABEL[r]} to load.`);
   if (used >= max) problems.push(pool === 'forage' ? 'All forage parties are out.' : `All ${max} mission slots are in use.`);
   if (valid && target.region === colony.coords.region && target.patch === colony.coords.patch && target.spot === colony.coords.spot) problems.push("That's this colony.");
+  if (type === 'colonize') {
+    if ((chosen.winged_queen ?? 0) !== 1) problems.push('Send exactly one Winged Queen.');
+    const flying = missions.filter((m) => m.type === 'colonize' && m.status === 'outbound').length;
+    const cap = maxColonies(research);
+    if (state.colonies.length + flying >= cap) problems.push(`You can rule ${cap} ${cap === 1 ? 'colony' : 'colonies'} now. Research Nuptial Flight for more.`);
+  }
 
-  const returnTrip = type === 'relocate' ? 0 : oneWay;
+  const returnTrip = type === 'relocate' || type === 'colonize' ? 0 : oneWay;
 
   function applyReturnBy(value: string) {
     setReturnBy(value);

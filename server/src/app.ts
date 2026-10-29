@@ -19,6 +19,7 @@ import './game/combat';
 import './game/forage';
 import './game/nests';
 import './game/nestEvents';
+import './game/colonies';
 import { worldRoutes } from './routes/world';
 import { feedbackRoutes } from './routes/feedback';
 import { feedbackPageRoutes } from './routes/feedbackPage';

@@ -12,6 +12,7 @@ const GROUP: Record<string, string> = {
   scouted: 'Spotted by scouts',
   nest_event: 'In the nest',
   transport: 'Deliveries',
+  colonize: 'New colonies',
   haul: 'Corpse hauls',
   milestone: 'Milestones',
 };

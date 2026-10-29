@@ -18,11 +18,11 @@ Research represents the colony evolving new instincts. It happens in the **Phero
 | **Foraging Instinct** | +1 forage expedition slot every 2 levels; better forage outcomes | Utility |
 | **Brood Science** | Unlocks advanced castes (Major Soldier, Hauler) | Unlock |
 | **Deep Digging** | +5 space per level in all colonies | Utility |
+| **Nuptial Flight** | Unlocks the Winged Queen; +1 colony at levels 1, 3, 5… ([19-colonies](19-colonies.md)) | Expansion |
 
 ## v1 research
 | Research | Effect |
 |---|---|
-| **Nuptial Flight** | Unlocks Winged Queen; +1 colony every 2 levels |
 | **Aphid Husbandry** | +Nectar production; unlocks aphid herding |
 | **Symbiosis** | Unlocks ally species (beetles, bullet ants) |
 | **Supercolony** | Unlocks supercolonies (alliances) and joint raids |

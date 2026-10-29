@@ -104,7 +104,10 @@ describe('brood hall', () => {
     expect(wall2.error.code).toBe('max');
     const bad = await p.post(`/api/colonies/${colonyId}/brood`, { kind: 'caste', id: 'worker', count: 0 });
     expect(bad.error.code).toBe('bad_count');
-    const later = await p.post(`/api/colonies/${colonyId}/brood`, { kind: 'caste', id: 'winged_queen', count: 1 });
+    // the Winged Queen exists since Build 4, but needs Brood Hall 4 and Nuptial Flight
+    const queen = await p.post(`/api/colonies/${colonyId}/brood`, { kind: 'caste', id: 'winged_queen', count: 1 });
+    expect(queen.error.code).toBe('locked');
+    const later = await p.post(`/api/colonies/${colonyId}/brood`, { kind: 'caste', id: 'carrion_beetle', count: 1 });
     expect(later.error.code).toBe('bad_unit');
   });
 

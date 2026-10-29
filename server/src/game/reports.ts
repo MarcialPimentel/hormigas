@@ -1,6 +1,6 @@
 import type { Q } from '../db';
 
-export type ReportType = 'transport' | 'relocate' | 'scout' | 'scouted' | 'battle' | 'haul' | 'forage' | 'return' | 'milestone' | 'nest_event';
+export type ReportType = 'transport' | 'relocate' | 'scout' | 'scouted' | 'battle' | 'haul' | 'forage' | 'return' | 'milestone' | 'nest_event' | 'colonize';
 
 export async function addReport(q: Q, worldId: number, playerId: number, type: ReportType, title: string, data: object, at: number) {
   const r = await q.query(
