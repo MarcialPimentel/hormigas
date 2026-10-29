@@ -48,6 +48,9 @@ defineMission('forage', {
     const k = sum > cap && sum > 0 ? cap / sum : 1;
     m.cargo = { foliage: Math.floor(r.found.foliage * k), protein: Math.floor(r.found.protein * k), nectar: Math.floor(r.found.nectar * k) };
     m.result = { outcome: r.outcome, found: m.cargo, lost };
+    // the report arrives now, but the food lands only when the party is home (same sum as the return trip in missions.ts)
+    const survivors = Object.values(m.units).some((n) => (n ?? 0) > 0);
+    const returnsAt = survivors ? at + Math.round((m.arriveAt - m.departAt) * r.returnTimeFactor) : null;
 
     await addReport(q, m.worldId, m.playerId, 'forage', `${TITLES[r.outcome]} (${coordsKey(m.target)})`, {
       outcome: r.outcome,
@@ -55,6 +58,7 @@ defineMission('forage', {
       found: m.cargo,
       lost,
       target: m.target,
+      returnsAt,
     }, at);
     if (Object.keys(lost).length) await refreshPointsAfterCommit(q, m.playerId);
     return { home: true, returnFactor: r.returnTimeFactor };

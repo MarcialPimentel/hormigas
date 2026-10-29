@@ -51,6 +51,16 @@ export function ActivityList({ go }: { go: (screen: string) => void }) {
       screen: 'brood',
     });
   }
+  if (colony.digestJob) {
+    const j = colony.digestJob;
+    items.push({
+      key: 'digest',
+      startAt: j.startAt,
+      endAt: j.endAt,
+      label: <>Larvae digesting Protein into <strong>{j.nectar.toLocaleString()}</strong> Nectar</>,
+      screen: 'brood',
+    });
+  }
   for (const m of state.missions ?? []) {
     const out = m.status === 'outbound';
     items.push({

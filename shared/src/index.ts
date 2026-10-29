@@ -8,6 +8,7 @@ export * from './points';
 export * from './pvp';
 export * from './forage';
 export * from './queue';
+export * from './brood';
 export * from './colony';
 export * from './quests';
 export * from './nests';

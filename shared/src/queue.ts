@@ -1,5 +1,6 @@
 // Brood Hall production queue. Units come out one at a time; computed on demand, never ticked.
 import type { CasteId, DefenseId } from './data';
+import type { Feeding } from './brood';
 import type { DefenseCounts, UnitCounts } from './economy';
 
 export interface QueueItem {
@@ -10,6 +11,8 @@ export interface QueueItem {
   perUnitMs: number;
   /** When this item started; null while waiting behind earlier items. */
   startAt: number | null;
+  /** How well the brood was fed (castes only; missing = normal). docs/05-castes-units.md */
+  feed?: Feeding;
 }
 
 export interface QueueAdvance {

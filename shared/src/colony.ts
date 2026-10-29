@@ -2,6 +2,7 @@
 import type { Resources, TerrainId } from './data';
 import { accrue, productionPerHour, storageCapacity, type ChamberLevels, type DefenseCounts, type ResearchLevels, type UnitCounts } from './economy';
 import { advanceUnitQueue, type QueueItem } from './queue';
+import { advanceDigest, type DigestJob } from './brood';
 
 export interface ColonyState {
   terrain: TerrainId;
@@ -13,6 +14,8 @@ export interface ColonyState {
   unitQueue: QueueItem[];
   /** The owner's research (production and storage bonuses). Missing for wild nests. */
   research?: ResearchLevels;
+  /** Larval digestion running in the Brood Hall (Protein → Nectar), if any. */
+  digestJob?: DigestJob | null;
 }
 
 export function addCounts<T extends Record<string, number | undefined>>(a: T, b: T): T {
@@ -27,15 +30,19 @@ export function subCounts<T extends Record<string, number | undefined>>(a: T, b:
   return out as T;
 }
 
-/** Bring a colony's resources and Brood Hall queue forward to time `to`. Never moves backwards. */
+/** Bring a colony's resources, Brood Hall queue and larval digestion forward to time `to`. Never moves backwards. */
 export function syncColony<S extends ColonyState>(state: S, to: number, worldSpeed = 1): S {
   if (to <= state.lastUpdated) return state;
   const seconds = (to - state.lastUpdated) / 1000;
   const resources = accrue(state.resources, productionPerHour(state.chambers, state.terrain, worldSpeed, state.research), storageCapacity(state.chambers, state.research), seconds);
   const adv = advanceUnitQueue(state.unitQueue, to);
+  // digested Nectar lands like mission cargo: it may go over the storage cap
+  const digest = advanceDigest(state.digestJob, to);
+  if (digest.nectar > 0) resources.nectar += digest.nectar;
   return {
     ...state,
     resources,
+    ...(state.digestJob !== undefined ? { digestJob: digest.job } : {}),
     lastUpdated: to,
     unitQueue: adv.queue,
     units: addCounts(state.units, adv.castes),
