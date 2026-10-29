@@ -11,7 +11,7 @@ import {
 import { api } from '../api';
 import { useGame } from '../game';
 import { fmtDuration } from '../format';
-import { Cost, Countdown, Panel } from '../components/ui';
+import { Cost, Countdown, Panel, Pic } from '../components/ui';
 import { whyShort } from '../describe';
 
 export const RESEARCH_BLURB: Record<string, string> = {
@@ -69,7 +69,8 @@ export function Research() {
             else if (colony.buildJob?.chamber === 'pheromone_chamber') blocked = 'Pheromone Chamber is being enlarged';
             else if (!canAfford(colony.resources, cost)) blocked = whyShort(colony, cost, state.world.speed);
             return (
-              <li key={id} className={`row${missing.length ? ' locked' : ''}`}>
+              <li key={id} className={`row has-pic${missing.length ? ' locked' : ''}`}>
+                <Pic kind="research" id={id} />
                 <div className="row-main">
                   <div className="row-title">
                     <h3>{RESEARCH[id].name}</h3>
