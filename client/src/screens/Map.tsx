@@ -228,9 +228,18 @@ function ScoutView({ at }: { at: Coords }) {
   );
 }
 
+/** What a terrain does, for picking where to found a colony: "+20% Foliage, −10% Nectar · space 120–150". */
+function terrainSummary(t: (typeof TERRAIN)[keyof typeof TERRAIN]) {
+  const mods = t.mods as Record<string, number>;
+  const label: Record<string, string> = { foliagePct: 'Foliage', proteinPct: 'Protein', nectarPct: 'Nectar', buildTimePct: 'build time' };
+  const parts = Object.entries(mods).map(([k, v]) => `${v > 0 ? '+' : '−'}${Math.abs(v)}% ${label[k] ?? k}`);
+  return `${parts.length ? parts.join(', ') : 'No bonuses'} · space ${t.space[0]}–${t.space[1]}`;
+}
+
 function SpotCard({ s, at, nav }: { s: Spot; at: Coords; nav: Nav }) {
-  const { colony } = useGame();
-  if (!colony) return null;
+  const { colony, state } = useGame();
+  if (!colony || !state) return null;
+  const canFound = (state.player.research.nuptial_flight ?? 0) > 0;
   const c = s.colony;
   const wilds = s.spot === WILDS_SPOT;
   const terrain = wilds ? null : TERRAIN[terrainForSpot(s.spot)];
@@ -264,6 +273,8 @@ function SpotCard({ s, at, nav }: { s: Spot; at: Coords; nav: Nav }) {
             <>
               <strong>Spot {s.spot}</strong>
               <span className="muted small">Empty {terrain?.name.toLowerCase()}. Nobody lives here yet.</span>
+              {terrain && <span className="muted small">{terrainSummary(terrain)}</span>}
+              {!canFound && <span className="muted small">A Winged Queen could found a colony here. Research Nuptial Flight to raise one.</span>}
             </>
           )}
           <span className="muted small coords">{fmtCoords(at)}{terrain && c ? ` · ${terrain.name}` : ''}</span>
@@ -280,6 +291,7 @@ function SpotCard({ s, at, nav }: { s: Spot; at: Coords; nav: Nav }) {
             </>
           )}
           {c?.mine && c.id !== colony.id && <button className="btn small" onClick={() => go('relocate')}>Relocate</button>}
+          {!c && !wilds && canFound && can('colonize') && <button className="btn small" onClick={() => go('colonize')}>Found colony</button>}
         </div>
       </div>
       {s.corpses > 0 && <span className="corpses">{fmtNum(s.corpses)} protein in corpses</span>}

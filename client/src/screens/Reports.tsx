@@ -116,6 +116,23 @@ function ReportBody({ r }: { r: Report }) {
           {d.from ? `${d.from} sent` : 'Delivered'} to {d.colony}: <ResLine r={d.delivered} />
         </p>
       );
+    case 'colonize':
+      return d.founded ? (
+        <div className="report-body">
+          <p>
+            Your Winged Queen landed at {fmtCoords(d.target)} ({d.terrain}), shed her wings and dug the first chamber of <strong>{d.name}</strong>. Switch to it from the colony picker at the top.
+          </p>
+          {d.units && Object.keys(d.units).length > 0 && (
+            <>
+              <h4>Escorts who stayed</h4>
+              <Counts counts={d.units} />
+            </>
+          )}
+          {d.cargo && <ResLine r={d.cargo} />}
+        </div>
+      ) : (
+        <p className="report-body">She turned back from {fmtCoords(d.target)}: {d.why} She is flying home with everyone.</p>
+      );
     case 'relocate':
       return (
         <div className="report-body">
