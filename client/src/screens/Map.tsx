@@ -52,7 +52,7 @@ function Movements({ at, home }: { at: Coords; home: Coords }) {
   }
   for (const i of theirs) {
     const toHere = same(at, home);
-    const what = i.type === 'raid' ? 'Raid' : i.type === 'scout' ? 'Scouts' : 'Delivery';
+    const what = i.type === 'swarm' ? 'Army ant swarm' : i.type === 'raid' ? 'Raid' : i.type === 'scout' ? 'Scouts' : 'Delivery';
     rows.push(
       <li key={`i${i.id}`} className={i.hostile ? 'danger' : ''}>
         <Trip departAt={i.departAt} arriveAt={i.arriveAt} status="outbound" incoming hostile={i.hostile} />

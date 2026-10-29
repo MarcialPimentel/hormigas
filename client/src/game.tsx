@@ -184,8 +184,9 @@ export function GameProvider({ children }: { children: ReactNode }) {
           if (!pushNotification(msg.report.title, undefined, `report-${msg.report.id}`) && document.visibilityState === 'visible') toast('ok', msg.report.title);
           if (msg.report.type === 'nest_event' && msg.report.kind) emitMoment({ kind: 'nest_event', event: msg.report.kind });
         }
-        if (msg.type === 'incoming' && (msg.missionType === 'raid' || msg.missionType === 'scout')) {
-          const text = msg.missionType === 'raid' ? `Raid incoming from ${msg.from}!` : `Enemy scouts heading for ${msg.colony}`;
+        if (msg.type === 'incoming' && (msg.missionType === 'raid' || msg.missionType === 'scout' || msg.missionType === 'swarm')) {
+          const text =
+            msg.missionType === 'swarm' ? `An army ant swarm is heading for ${msg.colony}!` : msg.missionType === 'raid' ? `Raid incoming from ${msg.from}!` : `Enemy scouts heading for ${msg.colony}`;
           if (!pushNotification(text, `Arrives ${new Date(msg.arriveAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`, 'incoming'))
             toast('error', text);
         }
@@ -269,7 +270,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!state) return setTitleBadge(0);
     const hostile = (state.incoming ?? []).filter((i: any) => i.hostile);
-    const raid = hostile.some((i: any) => i.type === 'raid');
+    const raid = hostile.some((i: any) => i.type === 'raid' || i.type === 'swarm');
     setTitleBadge((state.unreadReports ?? 0) + hostile.length, raid ? 'Raid incoming!' : hostile.length ? 'Scouts incoming' : undefined);
   }, [state]);
 
