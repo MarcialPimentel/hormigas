@@ -1,5 +1,7 @@
 // Points & rankings. Spec: docs/02-progression.md (1 point per 1,000 resources spent)
-import { CHAMBER_IDS, RESEARCH_IDS, type Resources } from './data';
+import { CHAMBER_IDS, FORMULAS, RESEARCH_IDS, type Resources } from './data';
+
+const PER_POINT = FORMULAS.points.resourcesPerPoint;
 import { chamberCost, researchCost, lvl, type ChamberLevels, type DefenseCounts, type ResearchLevels, type UnitCounts } from './economy';
 import { defensesValue, unitsValue } from './combat';
 import { total } from './resources';
@@ -38,8 +40,8 @@ export function computePoints(
     military += militarySpent(c.units, c.defenses) + (c.unitsAway ? militarySpent(c.unitsAway, {}) : 0);
   }
   const researchP = researchSpent(research);
-  const p = (v: number) => Math.floor(v / 1000);
+  const p = (v: number) => Math.floor(v / PER_POINT);
   return { economy: p(economy), research: p(researchP), military: p(military), total: p(economy + researchP + military) };
 }
 
-export const pointsForSpend = (cost: Resources) => total(cost) / 1000;
+export const pointsForSpend = (cost: Resources) => total(cost) / PER_POINT;

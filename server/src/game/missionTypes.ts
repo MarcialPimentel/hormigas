@@ -7,6 +7,7 @@ import {
   createRng,
   lvl,
   presentUnits,
+  protectedAmount,
   randomSeed,
   res,
   scoutDetail,
@@ -110,7 +111,7 @@ defineMission('scout', {
       detectionChance: chance,
       caught,
       resources: target.resources,
-      protectedEach: target.chambers.honeypot_gallery ? 1000 * Math.pow(1.6, target.chambers.honeypot_gallery) : 0,
+      protectedEach: protectedAmount(target.chambers),
     };
     if (detail !== 'resources') data.units = target.units;
     if (detail === 'defenses' || detail === 'full') data.defenses = target.defenses;

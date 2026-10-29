@@ -39,8 +39,9 @@ export const BLOCK_MESSAGES: Record<Exclude<AttackBlockReason, null>, string> = 
   bash_limit: "You've hit the daily raid limit on this colony.",
 };
 
-/** Late Founding Boost: time multiplier 0.5..1 for players below the world median. */
+/** Late Founding Boost: time multiplier lateFoundingMinMultiplier..1 for players below the world median. */
 export function lateFoundingMultiplier(playerPoints: number, worldMedianPoints: number): number {
   if (worldMedianPoints <= 0) return 1;
-  return 0.5 + 0.5 * Math.min(1, playerPoints / worldMedianPoints);
+  const min = P.lateFoundingMinMultiplier;
+  return min + (1 - min) * Math.min(1, playerPoints / worldMedianPoints);
 }

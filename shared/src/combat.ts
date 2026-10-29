@@ -10,7 +10,7 @@ import {
   type DefenseId,
   type Resources,
 } from './data';
-import { lvl, type DefenseCounts, type ResearchLevels, type UnitCounts } from './economy';
+import { lvl, researchBonus, type DefenseCounts, type ResearchLevels, type UnitCounts } from './economy';
 import { res, add, scale } from './resources';
 import { createRng, type Rng } from './rng';
 
@@ -61,9 +61,9 @@ function statsFor(key: EntityKey, research: ResearchLevels) {
   const base: CombatStats = key[0] === 'c' ? CASTES[id as CasteId] : DEFENSES[id as DefenseId];
   return {
     id,
-    attack: base.attack * (1 + 0.1 * lvl(research, 'mandibles')),
-    guard: base.guard * (1 + 0.1 * lvl(research, 'guard_formation')),
-    health: base.health * (1 + 0.1 * lvl(research, 'chitin')),
+    attack: base.attack * (1 + researchBonus(research, 'mandibles', 'attackPct')),
+    guard: base.guard * (1 + researchBonus(research, 'guard_formation', 'guardPct')),
+    health: base.health * (1 + researchBonus(research, 'chitin', 'healthPct')),
     frenzy: base.frenzy ?? {},
   };
 }
