@@ -11,6 +11,7 @@ import { Research } from './screens/Research';
 import { Missions } from './screens/Missions';
 import { Reports } from './screens/Reports';
 import { Rankings } from './screens/Rankings';
+import { Allies } from './screens/Allies';
 import { FeedbackAdmin } from './screens/FeedbackAdmin';
 import { FeedbackButton } from './components/Feedback';
 import type { Nav } from './nav';
@@ -38,6 +39,7 @@ export const ICONS = {
   missions: I('M4 18c4-1 6-5 8-9s5-5 8-5M16 4h4v4M4 18l2 2'),
   reports: I('M6 3h9l4 4v14H6zM14 3v5h5M9 12h7M9 16h7'),
   ranks: I('M8 21V11M16 21V7M12 21V3M4 21h16'),
+  allies: I('M8 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM16 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM2 20c0-3 3-5 6-5s6 2 6 5M12 15.5c1-.3 2.4-.5 4-.5 3 0 6 2 6 5'),
   feedback: I('M4 5h16v11H9l-5 4V5ZM8 9.5h8M8 12.5h5'),
 };
 
@@ -68,6 +70,7 @@ export function App() {
     { id: 'brood', label: 'Brood Hall', icon: ICONS.brood, render: () => <Brood /> },
     { id: 'research', label: 'Research', icon: ICONS.research, render: () => <Research /> },
     { id: 'missions', label: 'Missions', icon: ICONS.missions, render: () => <Missions draft={params} />, badge: (state.incoming ?? []).filter((i: any) => i.hostile).length },
+    { id: 'allies', label: 'Allies', icon: ICONS.allies, render: (n) => <Allies go={n} />, badge: state.player.pendingDiplomacy },
     { id: 'reports', label: 'Reports', icon: ICONS.reports, render: () => <Reports />, badge: state.unreadReports },
     { id: 'rankings', label: 'Rankings', icon: ICONS.ranks, render: () => <Rankings /> },
   ];

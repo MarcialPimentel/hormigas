@@ -62,6 +62,7 @@ export function ActivityList({ go }: { go: (screen: string) => void }) {
     });
   }
   for (const m of state.missions ?? []) {
+    if (m.status === 'holding') continue; // no timer: holding until recalled (shown under Missions)
     const out = m.status === 'outbound';
     items.push({
       key: `m${m.id}`,
