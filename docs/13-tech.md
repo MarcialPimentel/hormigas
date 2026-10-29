@@ -33,6 +33,7 @@ Rates are recalculated whenever a chamber, workforce or research changes. When a
 - A worker process picks due events **in `due_at` order** and resolves them.
 - When resolving an event that touches a colony, first bring that colony's resources up to the event's `due_at` time (not "now").
 - Ordering matters: if a raid and a build complete at the same second, define a strict order (e.g., builds before battles).
+- A broken event never blocks the queue or leaves things stuck. A handler that fails is rolled back and its error saved on the event row, then its cleanup (`onEvent(..., { onFail })`) runs: a mission whose arrival fails turns for home with its units and cargo; a failed return closes the mission (units stay on the row so they can be given back by hand). Recurring per-colony events (`nest_event`, `swarm_spotted`, `nest_raid`) use one helper, `recurringColonyEvent` in `server/src/recurring.ts`, which schedules the next one even after a failure. On startup, `repairStuckMissions` turns home outbound missions that lost their arrival event and reschedules lost returns.
 
 ## Data model sketch
 ```
