@@ -15,3 +15,4 @@ export * from './nests';
 export * from './nestEvents';
 export * from './swarms';
 export * from './discovery';
+export * from './diplomacy';

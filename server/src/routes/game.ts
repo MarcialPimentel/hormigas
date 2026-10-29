@@ -13,6 +13,7 @@ import { enqueueUnits, startDigestion, stopDigestion } from '../game/brood';
 import { activeMissions, incomingMissions, missionView } from '../game/missions';
 import { claimQuest, questStatus } from '../game/quests';
 import { hasForagedBefore } from '../game/forage';
+import { membershipOf } from '../game/diplomacy';
 import { isInactive } from '@hormigas/shared';
 
 export function colonyView(c: Colony) {
@@ -70,6 +71,16 @@ export async function gameRoutes(app: FastifyInstance) {
         isAdmin: player.isAdmin,
         /** The next forage party is sure to find food (docs/09-missions.md). */
         firstForage: !(await hasForagedBefore(q, req.playerId)),
+        /** the supercolony you belong to, if any (docs/23-supercolonies.md) */
+        supercolony: await membershipOf(q, req.playerId),
+        /** truce offers and supercolony invitations waiting for your answer */
+        pendingDiplomacy: (
+          await q.query(
+            `SELECT (SELECT count(*)::int FROM truces WHERE (player_a = $1 OR player_b = $1) AND proposed_by <> $1 AND status = 'proposed')
+                  + (SELECT count(*)::int FROM supercolony_invites WHERE player_id = $1) AS n`,
+            [req.playerId],
+          )
+        ).rows[0].n,
       },
       colonies: colonies.map((c) => ({ id: c.id, name: c.name, coords: { region: c.region, patch: c.patch, spot: c.spot } })),
       colony: current ? colonyView(advance(current, t)) : null,

@@ -27,7 +27,7 @@ Return → collect results (reports, finished builds, returned foragers)
 
 ## Week loop
 - Bigger goals: a new chamber tier, a new caste, founding a second colony (nuptial flight), climbing the rankings.
-- Social layer (v1+): supercolonies (alliances), coordinated raids, defense pacts.
+- Social layer: truces, supercolonies and holding position at an ally's nest ([23-supercolonies](23-supercolonies.md)); coordinated raids next.
 
 ## Loss and recovery loop
 Being raided is part of the loop, not the end of it:

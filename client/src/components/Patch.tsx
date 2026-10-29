@@ -1,7 +1,7 @@
 // A patch drawn as ground with its colonies, scents and the wilds, plus the world picker (docs/11-world.md, docs/22-discovery.md).
 // Used by the Missions screen: tap a spot, then scout, raid, send or forage from its card.
 import { useEffect, useState, type ReactNode } from 'react';
-import { WORLD, WILDS_SPOT, TERRAIN, CHAMBERS, CASTES, DEFENSES, DISCOVERY_MESSAGES, terrainForSpot, type Knowledge, type ScentKind, type TerrainId } from '@hormigas/shared';
+import { WORLD, WILDS_SPOT, TERRAIN, CHAMBERS, CASTES, DEFENSES, DISCOVERY_MESSAGES, raidBlockMessage, terrainForSpot, type Knowledge, type Relation, type ScentKind, type TerrainId } from '@hormigas/shared';
 import { api } from '../api';
 import { useGame } from '../game';
 import { fmtAgo, fmtCoords, fmtDuration, fmtNum } from '../format';
@@ -25,6 +25,24 @@ export interface SpotColony {
   protected?: boolean;
   /** set for known wild nests (docs/17-wild-nests.md) */
   wild?: { species: string; level: number; style: string };
+  /** a truce or shared supercolony scent with its owner (docs/23-supercolonies.md) */
+  relation?: Relation;
+  /** when a fading scent or an ending truce runs out */
+  relationUntil?: number | null;
+  /** the owner's supercolony */
+  supercolony?: string;
+}
+
+/** "Truce", "Ally", "Scent fading (2 h)": the pact with a colony's owner, for its card. */
+export function relationLabel(c: SpotColony, now: number): string | null {
+  const left = c.relationUntil ? ` · ${fmtDuration(Math.max(0, c.relationUntil - now))} left` : '';
+  switch (c.relation) {
+    case 'ally': return 'Supercolony mate';
+    case 'fading': return `Shared scent fading${left}`;
+    case 'truce': return 'Truce';
+    case 'truce_ending': return `Truce ending${left}`;
+    default: return null;
+  }
 }
 
 export interface Spot {
@@ -61,14 +79,16 @@ function Movements({ at, home }: { at: Coords; home: Coords }) {
       <li key={`m${m.id}`}>
         <Trip departAt={m.departAt} arriveAt={m.arriveAt} returnAt={m.returnAt} status={m.status} cargo={m.cargo} />
         <span>
-          Your {(MISSION_LABEL[m.type as MissionType] ?? m.type).toLowerCase()} party {out ? `arrives ${inT(m.arriveAt)}` : `is heading home, back ${inT(m.returnAt)}`}
+          {m.status === 'holding'
+            ? 'Your soldiers are holding position here'
+            : `Your ${(MISSION_LABEL[m.type as MissionType] ?? m.type).toLowerCase()} party ${out ? `arrives ${inT(m.arriveAt)}` : `is heading home, back ${inT(m.returnAt)}`}`}
         </span>
       </li>,
     );
   }
   for (const i of theirs) {
     const toHere = same(at, home);
-    const what = i.type === 'swarm' ? 'Army ant swarm' : i.type === 'raid' ? 'Raid' : i.type === 'scout' ? 'Scouts' : 'Delivery';
+    const what = i.type === 'swarm' ? 'Army ant swarm' : i.type === 'raid' ? 'Raid' : i.type === 'scout' ? 'Scouts' : i.type === 'hold' ? 'Allied soldiers' : 'Delivery';
     rows.push(
       <li key={`i${i.id}`} className={i.hostile ? 'danger' : ''}>
         <Trip departAt={i.departAt} arriveAt={i.arriveAt} status="outbound" incoming hostile={i.hostile} />
@@ -273,6 +293,8 @@ export function SpotCard({ s, at, onAct }: { s: Spot; at: Coords; onAct: (type: 
   const go = (type: MissionType) => onAct(type, at);
   const scent = isScent(c);
   const wildKind = c?.kind === 'wild';
+  const pact = c && !scent && c.relation ? raidBlockMessage({ relation: c.relation, until: c.relationUntil ?? undefined }) : null;
+  const pactLabel = c ? relationLabel(c, now) : null;
   return (
     <div className={`spot-card${c?.mine ? ' mine' : ''}${wildKind ? ' wild-nest' : c && !c.mine ? ' player' : ''}${scent ? ' scent' : ''}${wilds ? ' wilds' : ''}`}>
       <div className="spot-card-head">
@@ -310,6 +332,12 @@ export function SpotCard({ s, at, onAct }: { s: Spot; at: Coords; onAct: (type: 
                 {c.protected && ' · protected'}
                 {c.inactive && ' · inactive'}
               </span>
+              {(c.supercolony || pactLabel) && (
+                <span className="small pact-line">
+                  {c.supercolony && <span className="sc-tag">{c.supercolony}</span>}
+                  {pactLabel && !c.mine && <span className={`pact-tag ${c.relation}`}>{pactLabel}</span>}
+                </span>
+              )}
             </>
           ) : (
             <>
@@ -329,8 +357,13 @@ export function SpotCard({ s, at, onAct }: { s: Spot; at: Coords; onAct: (type: 
             <>
               <button className={`btn small${scent ? ' primary' : ''}`} onClick={() => go('scout')}>{scent ? 'Scout' : 'Scout again'}</button>
               {can('raid') && (
-                <button className="btn small" disabled={scent} title={scent ? DISCOVERY_MESSAGES.raid_needs_scout : undefined} onClick={() => go('raid')}>
+                <button className="btn small" disabled={scent || !!pact} title={scent ? DISCOVERY_MESSAGES.raid_needs_scout : pact ?? undefined} onClick={() => go('raid')}>
                   Raid
+                </button>
+              )}
+              {c.relation === 'ally' && can('hold') && (
+                <button className="btn small primary" onClick={() => go('hold')}>
+                  Hold position
                 </button>
               )}
               {!wildKind && (
@@ -345,6 +378,7 @@ export function SpotCard({ s, at, onAct }: { s: Spot; at: Coords; onAct: (type: 
         </div>
       </div>
       {c && scent && <p className="why small">{DISCOVERY_MESSAGES.raid_needs_scout}</p>}
+      {pact && <p className="muted small">{pact}</p>}
       {s.corpses > 0 && <span className="corpses">{fmtNum(s.corpses)} protein in corpses</span>}
       {c && !c.mine && !scent && <ScoutView at={at} />}
       <Movements at={at} home={colony.coords} />

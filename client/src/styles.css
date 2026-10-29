@@ -673,3 +673,19 @@ pre.report-body { white-space: pre-wrap; overflow-x: auto; }
   .tt-backdrop { display: block; position: fixed; inset: 0; z-index: 40; background: rgba(10, 6, 3, 0.55); }
   .tt-close { display: inline-block; }
 }
+
+/* ---------- allies: truces and supercolonies (client/src/screens/Allies.tsx; docs/23-supercolonies.md) ---------- */
+.sc-tag { font: 700 0.7rem var(--font-body); padding: 0.1rem 0.45rem; margin-left: 0.4rem; border-radius: 999px; background: var(--scent-soft); color: var(--scent); white-space: nowrap; vertical-align: middle; }
+.pact-tag { font: 700 0.7rem var(--font-body); padding: 0.1rem 0.45rem; margin-left: 0.4rem; border-radius: 999px; background: var(--raised); color: var(--leaf-ink); white-space: nowrap; vertical-align: middle; }
+.pact-tag.fading, .pact-tag.truce_ending { color: var(--honey-ink); }
+.pact-line { display: flex; flex-wrap: wrap; gap: 0.25rem; align-items: center; }
+.pact-line .sc-tag:first-child, .pact-line .pact-tag:first-child { margin-left: 0; }
+.ladder { margin: 0; padding-left: 1.2rem; display: grid; gap: 0.35rem; }
+.members { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+.members li { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.4rem 1rem; padding: 0.55rem 0.7rem; background: var(--soil); border-radius: var(--r-sm); }
+.members li.fading { opacity: 0.75; }
+.member-colonies { display: flex; flex-wrap: wrap; gap: 0.2rem 0.8rem; margin-top: 0.2rem; }
+.linkish { background: none; border: 0; padding: 0; color: var(--honey-ink); text-decoration: underline; cursor: pointer; font: inherit; }
+.found-row { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+.found-row input { flex: 1 1 12rem; min-width: 0; }
+.ally-group { margin-top: 0.5rem; padding-top: 0.4rem; border-top: 1px dashed var(--seam); }

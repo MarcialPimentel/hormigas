@@ -42,3 +42,12 @@ export function fmtClock(epochMs: number): string {
 export const fmtCoords = (c: { region: number; patch: number; spot: number }) => `${c.region}:${c.patch}:${c.spot}`;
 
 export const plural = (n: number, one: string, many = `${one}s`) => `${fmtFull(n)} ${n === 1 ? one : many}`;
+
+/** A rule's length in words: "3 days", "24 hours", "about 5 hours" (world speed makes odd fractions). */
+export function fmtSpan(ms: number): string {
+  const h = ms / 3600_000;
+  if (h >= 48 && Number.isInteger(h / 24)) return `${h / 24} days`;
+  if (Number.isInteger(h)) return `${h} ${h === 1 ? 'hour' : 'hours'}`;
+  const r = Math.max(1, Math.round(h));
+  return `about ${r} ${r === 1 ? 'hour' : 'hours'}`;
+}

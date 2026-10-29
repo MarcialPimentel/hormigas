@@ -39,6 +39,10 @@ export interface ServerState {
     isAdmin: boolean;
     /** The next forage party is sure to find food. */
     firstForage: boolean;
+    /** The supercolony you belong to (docs/23-supercolonies.md). */
+    supercolony: null | { supercolonyId: number; name: string; founderId: number };
+    /** Truce offers and supercolony invitations waiting for your answer. */
+    pendingDiplomacy: number;
   };
   colonies: { id: number; name: string; coords: { region: number; patch: number; spot: number } }[];
   colony: ServerColony | null;
@@ -88,7 +92,7 @@ function upcomingTimers(s: ServerState): number[] {
   const qe = s.colony ? queueEndsAt(s.colony.unitQueue) : null;
   if (qe) out.push(qe);
   if (s.colony?.digestJob) out.push(s.colony.digestJob.endAt);
-  for (const m of s.missions ?? []) out.push(m.status === 'outbound' ? m.arriveAt : m.returnAt);
+  for (const m of s.missions ?? []) if (m.status !== 'holding') out.push(m.status === 'outbound' ? m.arriveAt : m.returnAt);
   for (const m of s.incoming ?? []) out.push(m.arriveAt);
   return out;
 }

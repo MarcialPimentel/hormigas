@@ -12,7 +12,7 @@ export type Knowledge = 'mine' | 'known' | 'familiar' | 'scent';
 export type ScentKind = 'player' | 'wild';
 
 /** How a colony became known or familiar (known_colonies.via). Later builds add their own values. */
-export type DiscoveryVia = 'scouted' | 'raided' | 'earlier' | 'scouted_you' | 'raided_you';
+export type DiscoveryVia = 'scouted' | 'raided' | 'earlier' | 'scouted_you' | 'raided_you' | 'ally';
 
 export interface KnownRow {
   /** set once you have scouted it: then it's 'known' */

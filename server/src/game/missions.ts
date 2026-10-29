@@ -35,7 +35,7 @@ import { getWorld } from '../world';
 import { refreshPointsAfterCommit } from './points';
 import { notify } from '../realtime';
 
-export type MissionType = 'transport' | 'relocate' | 'scout' | 'raid' | 'haul' | 'forage' | 'colonize' | 'swarm';
+export type MissionType = 'transport' | 'relocate' | 'scout' | 'raid' | 'haul' | 'forage' | 'colonize' | 'swarm' | 'hold';
 
 export interface Mission {
   id: number;
@@ -53,7 +53,8 @@ export interface Mission {
   departAt: number;
   arriveAt: number;
   returnAt: number | null;
-  status: 'outbound' | 'returning' | 'done';
+  /** holding: soldiers stationed at an ally's colony until recalled (docs/23-supercolonies.md) */
+  status: 'outbound' | 'returning' | 'holding' | 'done';
   arriveEventId: number | null;
   returnEventId: number | null;
   result: any;
@@ -119,6 +120,8 @@ export interface ArrivalOutcome {
   home: boolean;
   /** multiplier on the return trip (forage events) */
   returnFactor?: number;
+  /** the units stay at the target as a garrison until recalled (Hold Position) */
+  stay?: boolean;
 }
 
 interface TypeRules {
@@ -257,6 +260,7 @@ export async function recallMission(q: Tx, playerId: number, missionId: number):
   const m = await lockMission(q, missionId);
   if (m.playerId !== playerId) throw forbidden();
   const t = now();
+  if (m.status === 'holding') return comeHome(q, m, t, { recalled: true });
   if (m.status !== 'outbound' || t >= m.arriveAt) throw new GameError('too_late', 'This mission can no longer be recalled.');
   if (m.arriveEventId) await cancelEvent(q, m.arriveEventId);
   m.arriveEventId = null;
@@ -268,6 +272,64 @@ export async function recallMission(q: Tx, playerId: number, missionId: number):
   return m;
 }
 
+/** Soldiers holding position walk home: the trip back takes as long as the trip out did. */
+async function comeHome(q: Q, m: Mission, t: number, result: object): Promise<Mission> {
+  m.status = 'returning';
+  m.returnAt = t + (m.arriveAt - m.departAt);
+  m.result = { ...(m.result ?? {}), ...result };
+  m.returnEventId = await schedule(q, m.worldId, 'mission_return', m.returnAt, { missionId: m.id });
+  await saveMission(q, m);
+  return m;
+}
+
+/** Garrisons (holding or on their way) at a colony, locked: they fight in its battles. */
+export async function lockGarrisons(q: Q, colonyId: number): Promise<Mission[]> {
+  const r = await q.query("SELECT * FROM missions WHERE target_colony_id = $1 AND type = 'hold' AND status = 'holding' ORDER BY id FOR UPDATE", [colonyId]);
+  return r.rows.map(fromRow);
+}
+
+/** All allied units holding position at a colony, summed (for scout reports). */
+export async function garrisonUnits(q: Q, colonyId: number): Promise<UnitCounts> {
+  const r = await q.query("SELECT units FROM missions WHERE target_colony_id = $1 AND type = 'hold' AND status = 'holding'", [colonyId]);
+  return r.rows.reduce((sum: UnitCounts, row: any) => addCounts(sum, row.units), {} as UnitCounts);
+}
+
+/** Write back a garrison after a battle: survivors stay; if none are left, the mission is over. */
+export async function saveGarrison(q: Q, m: Mission) {
+  if (presentUnits(m.units).length === 0) m.status = 'done';
+  await saveMission(q, m);
+}
+
+/**
+ * A player's scent left a supercolony: every Hold Position mission between them and `others`
+ * (theirs at the others' colonies, and the others' at theirs) turns for home, held or still on the way.
+ */
+export async function sendGarrisonsHome(q: Q, playerId: number, others: number[], t: number) {
+  if (others.length === 0) return;
+  const r = await q.query(
+    `SELECT m.id FROM missions m JOIN colonies c ON c.id = m.target_colony_id
+      WHERE m.type = 'hold' AND m.status IN ('outbound', 'holding')
+        AND ((m.player_id = $1 AND c.player_id = ANY($2::int[])) OR (m.player_id = ANY($2::int[]) AND c.player_id = $1))
+      ORDER BY m.id`,
+    [playerId, others],
+  );
+  for (const row of r.rows) {
+    const m = await lockMission(q, row.id);
+    if (m.status === 'holding') await comeHome(q, m, t, { sentHome: true });
+    else if (m.status === 'outbound') {
+      // still on the way: turn around like a recall
+      if (m.arriveEventId) await cancelEvent(q, m.arriveEventId);
+      m.arriveEventId = null;
+      m.status = 'returning';
+      m.returnAt = t + (t - m.departAt);
+      m.result = { sentHome: true };
+      m.returnEventId = await schedule(q, m.worldId, 'mission_return', m.returnAt, { missionId: m.id });
+      await saveMission(q, m);
+    }
+    notify(m.playerId, { type: 'returned', missionType: m.type });
+  }
+}
+
 // ---------- events ----------
 
 onEvent('mission_arrive', async (q, ev) => {
@@ -277,7 +339,9 @@ onEvent('mission_arrive', async (q, ev) => {
   if (!rules) throw new Error(`No rules for mission type ${m.type}`);
   const out = await rules.arrive(q, m, ev.due_at);
   const anyone = presentUnits(m.units).length > 0;
-  if (out.home && anyone) {
+  if (out.stay && anyone) {
+    m.status = 'holding';
+  } else if (out.home && anyone) {
     m.status = 'returning';
     m.returnAt = ev.due_at + Math.round((m.arriveAt - m.departAt) * (out.returnFactor ?? 1));
     m.returnEventId = await schedule(q, m.worldId, 'mission_return', m.returnAt, { missionId: m.id });

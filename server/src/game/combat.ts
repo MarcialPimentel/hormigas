@@ -28,7 +28,8 @@ import type { Q, Tx } from '../db';
 import { GameError } from '../errors';
 import { advance, getColony, getPlayer, lockColony, saveColony, type Player } from '../colony';
 import { syncNest } from './nests';
-import { defineMission, type Mission } from './missions';
+import { defineMission, lockGarrisons, saveGarrison, type Mission } from './missions';
+import { raidBlock } from './diplomacy';
 import { addReport } from './reports';
 import { refreshPointsAfterCommit } from './points';
 import { requireKnown, smelledBy } from './discovery';
@@ -85,6 +86,9 @@ defineMission('raid', {
       if (recentWins >= BASH_LIMIT_PER_24H) throw new GameError('bash_limit', BLOCK_MESSAGES.bash_limit);
       return;
     }
+    // Truces and supercolonies: no raids, including while a truce's notice or a shared scent runs out (docs/23-supercolonies.md).
+    const pact = await raidBlock(q, player.id, targetColony.playerId, t);
+    if (pact) throw new GameError(pact.code, pact.message);
     const target = await getPlayer(q, targetColony.playerId);
     const block = canRaid(pvpState(player), pvpState(target), t, recentWins);
     if (block) throw new GameError(block, BLOCK_MESSAGES[block]);
@@ -94,6 +98,15 @@ defineMission('raid', {
   },
   async arrive(q, m, at) {
     if (!m.targetColonyId) return { home: true };
+    // A pact agreed while the raid was on its way: the soldiers smell it and turn back without a fight.
+    const owner = (await q.query('SELECT player_id FROM colonies WHERE id = $1', [m.targetColonyId])).rows[0]?.player_id;
+    const pact = owner != null ? await raidBlock(q, m.playerId, owner, at) : null;
+    if (pact) {
+      const c = await getColony(q, m.targetColonyId);
+      m.result = { turnedBack: true, pact: pact.code };
+      await addReport(q, m.worldId, m.playerId, 'battle', `Your raid on ${c.name} turned back: ${pact.message}`, { turnedBack: true, target: m.target, colony: c.name, why: pact.message }, at);
+      return { home: true };
+    }
     await resolveRaid(q, m, at);
     return { home: presentUnits(m.units).length > 0 };
   },
@@ -117,9 +130,13 @@ export async function resolveRaid(q: Tx, m: Mission, at: number, opts: { attacke
   const startAttacker = nonZero(m.units);
   const startDefender = nonZero(target.units);
   const startDefenses = nonZero(target.defenses);
+  // Allied soldiers holding position at the colony fight beside its own (docs/23-supercolonies.md).
+  const garrisons = target.npc ? [] : await lockGarrisons(q, target.id);
+  const allyPlayers = await Promise.all(garrisons.map((g) => getPlayer(q, g.playerId)));
+  const allyStart = garrisons.map((g) => nonZero(g.units));
   const result = simulateBattle(
     { units: startAttacker, research: attacker.research },
-    { units: startDefender, defenses: target.defenses, research: defender.research },
+    { units: startDefender, defenses: target.defenses, research: defender.research, allies: garrisons.map((g, i) => ({ units: allyStart[i], research: allyPlayers[i].research })) },
     rng,
   );
   const rebuilt = rebuildDefenses(result.defensesDestroyed, rng);
@@ -136,7 +153,13 @@ export async function resolveRaid(q: Tx, m: Mission, at: number, opts: { attacke
   }
   await saveColony(q, target);
 
-  const corpses = corpseProtein(result.attackerLost, result.defenderLost);
+  for (const [i, g] of garrisons.entries()) {
+    g.units = nonZero(result.alliesSurvivors[i]);
+    await saveGarrison(q, g);
+  }
+  const allies = garrisons.map((g, i) => ({ name: allyPlayers[i].username, units: allyStart[i], lost: nonZero(result.alliesLost[i]) }));
+
+  const corpses = corpseProtein(result.attackerLost, result.defenderLost, ...result.alliesLost);
   await addCorpses(q, m.worldId, m.target, corpses, at);
   await q.query('INSERT INTO raid_log (world_id, attacker_id, colony_id, winner, at) VALUES ($1,$2,$3,$4,$5)', [
     m.worldId, attacker.id, target.id, result.winner, at,
@@ -165,6 +188,7 @@ export async function resolveRaid(q: Tx, m: Mission, at: number, opts: { attacke
       defensesDestroyed: nonZero(result.defensesDestroyed),
       defensesRebuilt: nonZero(rebuilt),
       bonuses: { mandibles: defender.research.mandibles ?? 0, chitin: defender.research.chitin ?? 0, guard_formation: defender.research.guard_formation ?? 0 },
+      ...(allies.length ? { allies } : {}),
     },
     rounds: result.rounds,
     loot,
@@ -179,6 +203,12 @@ export async function resolveRaid(q: Tx, m: Mission, at: number, opts: { attacke
   if (!defender.isNpc && m.type === 'raid') await smelledBy(q, defender.id, m.originColonyId, 'raided_you', at);
   if (!defender.isNpc)
     await addReport(q, m.worldId, defender.id, 'battle', `${target.name} ${dverb} — attack by ${attackerName}`, { ...data, perspective: 'defender' }, at);
+  for (const [i, ally] of allyPlayers.entries()) {
+    const lostAny = presentUnits(allies[i].lost).length > 0;
+    const verbA = result.winner === 'defender' ? 'helped hold' : result.winner === 'attacker' ? 'could not save' : 'held (draw)';
+    await addReport(q, m.worldId, ally.id, 'battle', `Your soldiers ${verbA} ${target.name} against ${attackerName}${lostAny ? '' : ', with no losses'}`, { ...data, perspective: 'ally', allyIndex: i }, at);
+    await refreshPointsAfterCommit(q, ally.id);
+  }
   if (!defender.isNpc) await refreshPointsAfterCommit(q, defender.id);
   if (!attacker.isNpc) await refreshPointsAfterCommit(q, attacker.id);
 }

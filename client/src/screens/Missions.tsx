@@ -5,6 +5,8 @@ import {
   RESOURCE_IDS,
   WILDS_SPOT,
   DISCOVERY_MESSAGES,
+  DIPLOMACY_MESSAGES,
+  raidBlockMessage,
   distance,
   forageSlots,
   forageFindCap,
@@ -120,6 +122,9 @@ export function Missions({ draft }: { draft?: MissionDraft }) {
   const unscouted = isScent(targetSpot?.colony);
   if (unscouted && type === 'raid') problems.push(DISCOVERY_MESSAGES.raid_needs_scout);
   if (unscouted && type === 'transport') problems.push(DISCOVERY_MESSAGES.send_needs_scout);
+  const rel = targetSpot?.colony?.relation;
+  if (type === 'raid' && rel) problems.push(raidBlockMessage({ relation: rel, until: targetSpot?.colony?.relationUntil ?? undefined }));
+  if (type === 'hold' && targetSpot !== undefined && rel !== 'ally') problems.push(DIPLOMACY_MESSAGES.hold_needs_ally);
   if (presentUnits(chosen).length === 0) problems.push('Choose units to send.');
   for (const [k, n] of Object.entries(chosen)) if (n! > lvl(colony.units, k as CasteId)) problems.push(`Only ${lvl(colony.units, k as CasteId)} ${CASTES[k as CasteId].name} at home.`);
   if (cargoTotal > capacity) problems.push(`Cargo is over capacity (${fmtFull(capacity)}).`);
@@ -134,7 +139,7 @@ export function Missions({ draft }: { draft?: MissionDraft }) {
     if (state.colonies.length + flying >= cap) problems.push(`You can rule ${cap} ${cap === 1 ? 'colony' : 'colonies'} now. Research Nuptial Flight for more.`);
   }
 
-  const returnTrip = type === 'relocate' || type === 'colonize' ? 0 : oneWay;
+  const returnTrip = type === 'relocate' || type === 'colonize' || type === 'hold' ? 0 : oneWay;
 
   function applyReturnBy(value: string) {
     setReturnBy(value);
@@ -188,7 +193,7 @@ export function Missions({ draft }: { draft?: MissionDraft }) {
       <div ref={formRef} className="scroll-anchor" />
       <Panel title="Send a mission" actions={<span className="muted">{used}/{max} {pool === 'forage' ? 'forage parties' : 'slots'} in use</span>}>
         <div className="seg" role="radiogroup" aria-label="Mission type">
-          {ENABLED_MISSIONS.map((t) => (
+          {ENABLED_MISSIONS.filter((t) => t !== 'hold' || state.player.supercolony || type === 'hold').map((t) => (
             <button
               key={t}
               role="radio"
@@ -299,7 +304,7 @@ export function Missions({ draft }: { draft?: MissionDraft }) {
           <legend>Speed {speedPct}%</legend>
           <div className="speed">
             <input type="range" min={10} max={100} step={10} value={speedPct} onChange={(e) => { setSpeedPct(Number(e.target.value)); setReturnBy(''); }} aria-label="Speed" />
-            {type !== 'relocate' && (
+            {type !== 'relocate' && type !== 'hold' && (
               <label className="return-by">
                 Back no earlier than
                 <input type="time" value={returnBy} onChange={(e) => applyReturnBy(e.target.value)} disabled={speed <= 0 || !valid} />
@@ -315,7 +320,7 @@ export function Missions({ draft }: { draft?: MissionDraft }) {
           <div><dt>Distance</dt><dd>{valid ? fmtNum(dist) : '—'}</dd></div>
           <div><dt>One way</dt><dd>{oneWay ? fmtDuration(oneWay * 1000) : '—'}</dd></div>
           <div><dt>Arrives</dt><dd>{oneWay ? fmtClock(now + oneWay * 1000) : '—'}</dd></div>
-          <div><dt>Back home</dt><dd>{returnTrip ? fmtClock(now + 2 * oneWay * 1000) : type === 'relocate' ? 'stays' : '—'}</dd></div>
+          <div><dt>Back home</dt><dd>{returnTrip ? fmtClock(now + 2 * oneWay * 1000) : type === 'relocate' ? 'stays' : type === 'hold' ? 'when recalled' : '—'}</dd></div>
           <div><dt>Nectar fuel (paid once)</dt><dd className={fuel > colony.resources.nectar ? 'warn' : ''}>{fuel ? fmtFull(fuel) : '—'}</dd></div>
           {type !== 'scout' && <div><dt>{type === 'haul' ? 'Corpse capacity' : 'Capacity'}</dt><dd>{fmtFull(capacity)}</dd></div>}
         </dl>
@@ -350,12 +355,28 @@ export function MissionList() {
       {missions.map((m) => {
         const out = m.status === 'outbound';
         const count = Object.values(m.units as Record<string, number>).reduce((a, b) => a + b, 0);
+        if (m.status === 'holding')
+          return (
+            <li key={m.id}>
+              <div>
+                <strong>Holding position</strong> at {fmtCoords(m.target)}
+                <span className="muted small"> · {fmtFull(count)} units, fighting in every battle there</span>
+              </div>
+              <div className="mission-time">
+                <Trip departAt={m.departAt} arriveAt={m.arriveAt} returnAt={m.returnAt} status="holding" />
+                <span className="muted small">Back {fmtDuration(m.arriveAt - m.departAt)} after recall</span>
+                <button className="btn ghost small" onClick={() => act(() => api.post(`/api/missions/${m.id}/recall`), 'Soldiers called home.')}>
+                  Recall
+                </button>
+              </div>
+            </li>
+          );
         return (
           <li key={m.id}>
             <div>
               <strong>{MISSION_LABEL[m.type as MissionType] ?? m.type}</strong> {out ? '→' : '←'} {fmtCoords(m.target)}
               <span className="muted small">
-                {' '}· {fmtFull(count)} units{m.result?.recalled ? ' · recalled' : ''}
+                {' '}· {fmtFull(count)} units{m.result?.recalled ? ' · recalled' : m.result?.sentHome ? ' · sent home: the shared scent is fading' : m.result?.turnedBack ? ' · turned back' : ''}
               </span>
             </div>
             <div className="mission-time">

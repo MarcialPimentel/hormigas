@@ -16,6 +16,7 @@
 | **Brood Hall** | Raise castes and defenses |
 | **Research** | Instinct tree |
 | **Missions** | Your patch drawn at the top (colonies as mounds, unscouted ones as scents); tap a spot to scout, raid, send or forage; **World** opens the region grid. Below: send missions, "return at" picker, battle preview, missions under way. The Map tab folded in here in Build 7 ([22-discovery](22-discovery.md)) |
+| **Allies** | Truces and your supercolony: found or join one, invite and answer, players you've met ([23-supercolonies](23-supercolonies.md)) |
 | **Reports** | Battle, scout, forage reports |
 | **Rankings** | Leaderboards |
 | **Feedback** | Admins only: player feedback, newest first, mark as handled |

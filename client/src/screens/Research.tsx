@@ -51,7 +51,7 @@ export const RESEARCH_BLURB: Record<string, string> = {
   deep_digging: '+5 space in every colony, per level.',
   tunnel_engineering: 'Shore up tunnels with packed soil. Chambers are dug 5% faster per level (up to 30%).',
   nuptial_flight: 'Unlocks the Winged Queen (Brood Hall 4). Rule one more colony at levels 1, 3, 5…',
-  supercolony: 'Colonies that share one scent and never fight. Coming in a later build.',
+  supercolony: 'Lets you found or join a supercolony: up to 6 players who share one scent, never raid each other and can hold position at each other\'s nests.',
   // Scent
   pheromone_trails: 'Clearer trails. +10% travel speed per level.',
   colony_mind: '+1 mission that can be out at the same time, per level.',

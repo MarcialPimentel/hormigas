@@ -19,7 +19,7 @@ Every research is real ant behaviour (pillar 4).
 |---|---|---|---|
 | **Jaws** | Fighting | Mandibles, Chitin, Guard Formation | Formic Acid, Raiding Columns, Nest Plugging |
 | **Harvest** | Food | Foraging Instinct, Aphid Husbandry | Group Hunting, Fungus Farming, Repletes (Symbiosis later) |
-| **Nest** | The colony itself | Brood Science, Deep Digging, Nuptial Flight | Nurse Workers, Tunnel Engineering (Supercolony later) |
+| **Nest** | The colony itself | Brood Science, Deep Digging, Nuptial Flight | Nurse Workers, Tunnel Engineering, Supercolony |
 | **Scent** | Pheromones and information | Pheromone Trails, Colony Mind, Scent Reading | Tandem Running, Chemical Mimicry |
 
 ## The new research
@@ -42,7 +42,7 @@ Pher = Pheromone Chamber level in the colony doing the research. Costs are level
 Changed existing research:
 - **Brood Science** is capped at 2 (levels above 2 did nothing).
 - **Symbiosis** (later) now needs Aphid Husbandry 3 and Chemical Mimicry 1: ant guests (beetles, crickets) live in nests by mimicking the colony's smell.
-- **Supercolony** (later) now needs Pher 6, Nuptial Flight 5, Colony Mind 4 and Chemical Mimicry 2: supercolonies exist because their nests share one smell. It is the tree's final goal.
+- **Supercolony** needs Pher 3, Nuptial Flight 1 and Colony Mind 1, one level only, and is playable since the alliances build ([23-supercolonies](23-supercolonies.md)). It was first planned as the tree's final goal (Pher 6, Nuptial Flight 5, Colony Mind 4, Chemical Mimicry 2); Marz moved it next to colonization on 29 Oct 2026 so alliances are reachable in the first week.
 
 The existing research keep their old requirements, so **no player loses access to anything they already have**.
 
@@ -62,7 +62,8 @@ At ×1 speed, roughly:
 - **Week 1–2:** the first crossings: Group Hunting, Aphid Husbandry, Fungus Farming, Nurse Workers, Tandem Running.
 - **Weeks 2–4:** Formic Acid, Tunnel Engineering, Chemical Mimicry. Picking a branch to rush starts to matter.
 - **Month 1+:** the capstones: Raiding Columns (raiders), Nest Plugging (turtles), Repletes (builders). Then endless percentage levels.
-- **Later builds:** Symbiosis and Supercolony, shown on the tree as "coming later" so players can already plan toward them.
+- **Week 1:** Supercolony, next to the second colony (since the alliances build).
+- **Later builds:** Symbiosis, shown on the tree as "coming later" so players can already plan toward it.
 
 The two Jaws capstones are deliberately balanced: Raiding Columns adds at most 15 points of loot share; Nest Plugging grows protected storage without a cap. A turtle can always out-protect a raider (pillar 2).
 

@@ -96,6 +96,13 @@ function ReportBody({ r }: { r: Report }) {
           {d.protectedEach > 0 && <p className="muted small">About {fmtFull(d.protectedEach)} of each is protected in a Honeypot Gallery.</p>}
           <h4>Units at home</h4>
           {d.units ? <Counts counts={d.units} /> : <p className="muted small">Not seen. Send more Scouts or research Scent Reading.</p>}
+          {d.garrison && (
+            <>
+              <h4>Allied soldiers holding position</h4>
+              <Counts counts={d.garrison} />
+              <p className="muted small">They belong to a supercolony mate and fight beside the colony's own.</p>
+            </>
+          )}
           <h4>Defenses</h4>
           {d.defenses ? <Counts counts={d.defenses} /> : <p className="muted small">Not seen.</p>}
           {d.chambers && (
@@ -147,6 +154,21 @@ function ReportBody({ r }: { r: Report }) {
       );
     case 'battle':
       return <BattleReport data={d} />;
+    case 'hold':
+      return (
+        <div className="report-body">
+          {d.turnedBack ? (
+            <p>You no longer share a scent with {d.colony}, so your soldiers are coming home.</p>
+          ) : d.from ? (
+            <p>{d.from}'s soldiers will fight beside yours at {d.colony} until they are called home.</p>
+          ) : (
+            <p>Your soldiers will fight in every battle at {d.colony} until you recall them from Missions.</p>
+          )}
+          {d.units && <Counts counts={d.units} />}
+        </div>
+      );
+    case 'diplomacy':
+      return <p className="report-body">{diplomacyText(d)}</p>;
     case 'milestone':
       return <p className="report-body milestone-text">{d.text}</p>;
     case 'haul':
@@ -257,6 +279,25 @@ export function Reports() {
       )}
     </Panel>
   );
+}
+
+/** One line explaining a truce or supercolony report (docs/23-supercolonies.md). */
+function diplomacyText(d: any): string {
+  const until = (t?: number) => (t ? fmtClock(t) : 'then');
+  switch (d.event) {
+    case 'truce_offered': return `${d.with} offers a truce: neither of you raids the other. Answer it on the Allies screen.`;
+    case 'truce_active': return `You and ${d.with} have a truce. Neither of you can raid the other until one side gives notice and it runs out.`;
+    case 'truce_declined': return `${d.with} turned down your truce.`;
+    case 'truce_ending': return `Notice has been given. Raids between you and ${d.with} stay off until ${until(d.endsAt)}.`;
+    case 'truce_ended': return `The truce with ${d.with} is over. You can raid each other again.`;
+    case 'founded': return `Your colonies now carry the scent of ${d.supercolony}. Invite players you've met from the Allies screen.`;
+    case 'invited': return `${d.with} invites you to share the scent of ${d.supercolony}. Answer it on the Allies screen.`;
+    case 'joined': return d.with ? `${d.with} now shares the scent of ${d.supercolony}.` : `Your colonies now carry the scent of ${d.supercolony}. Members never raid each other and can send soldiers to hold position at each other's nests.`;
+    case 'left':
+    case 'removed': return `The ${d.supercolony} scent is fading from ${d.with}'s colonies. Raids between them and the supercolony stay off until ${until(d.fadeUntil)}. Soldiers holding position on either side are walking home.`;
+    case 'faded': return `${d.with} and ${d.supercolony} no longer share a scent. They can raid each other again.`;
+    default: return '';
+  }
 }
 
 /** "a day", "2 days" or "5 hours": how long a wild nest takes to regrow. */
