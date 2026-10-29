@@ -7,7 +7,13 @@ hormigas.marz.gg {
 	reverse_proxy hormigas:3000
 }
 
-# Next project, for example:
-# guildie.marz.gg {
-# 	reverse_proxy guildie:3000
-# }
+# Guildie realtime rooms (the living city). Repo: guildie realtime/deploy/Caddyfile-block
+guildie.marz.gg {
+	@rooms path /q/* /health
+	handle @rooms {
+		reverse_proxy guildie-realtime:8788
+	}
+	handle {
+		redir https://marz.gg/games/guildie/ 302
+	}
+}

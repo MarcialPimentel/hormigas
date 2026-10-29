@@ -13,19 +13,30 @@ Browser ── https://hormigas.marz.gg ──▶ DNS A record (SiteGround zone 
                                           │
                                           ▼
                           Droplet (Ubuntu 24.04, Docker) — /opt/hub
-                          ├─ caddy     HTTPS (automatic Let's Encrypt) → hormigas:3000
-                          ├─ hormigas  ghcr.io/marcialpimentel/hormigas:latest
-                          └─ db        postgres:16 (not exposed; one database + user per project)
+                          ├─ caddy             HTTPS (automatic Let's Encrypt) → hormigas:3000,
+                          │                    and guildie.marz.gg → guildie-realtime:8788
+                          ├─ hormigas          ghcr.io/marcialpimentel/hormigas:latest
+                          ├─ db                postgres:16 (not exposed; one database + user per project)
+                          └─ guildie-realtime  ghcr.io/marcialpimentel/guildie-realtime:latest (Guildie's live rooms)
 ```
+
+### Guildie's live rooms share the hub
+
+Since 2026-10-29 the droplet also runs **Guildie's live rooms** (the `guildie-realtime` container behind `guildie.marz.gg`): positions, waves and slaps in Guildie's living city. The rest of Guildie stays on SiteGround.
+
+- **Guildie updates it, not this repo.** Every merge to `main` in the `guildie` repo rebuilds the image and runs `docker compose pull guildie-realtime && docker compose up -d guildie-realtime` on the droplet (the `realtime` job in Guildie's `.github/workflows/deploy.yml`). Guildie's `docs/realtime-setup.md` covers its setup and troubleshooting.
+- **Hormigas deploys leave it alone.** They only run `docker compose up -d hormigas`. If the rooms stop, Hormigas is unaffected, and Guildie just shows "Quiet day".
+- It needs `GUILDIE_REALTIME_SECRET` in `/opt/hub/.env`, the same phrase as `realtime_secret` in Guildie's `config.php` on SiteGround.
+- If you change its block in `docker-compose.yml` or the `Caddyfile` on the droplet, copy the change into `deploy/hub/` here too.
 
 The files that define the hub are in [`deploy/`](../deploy/). The copy on the server, at `/opt/hub`, is the one that runs. It also has a `.env` with the real passwords, which never leaves the server.
 
 | File | What it does |
 |---|---|
 | `deploy/setup-droplet.sh` | One-time server prep: Docker, 2 GB swap, firewall (SSH/HTTP/HTTPS only), automatic security updates, `deploy` user, `/opt/hub` |
-| `deploy/hub/docker-compose.yml` | The containers: `caddy`, `db`, `hormigas` |
-| `deploy/hub/Caddyfile` | Which domain goes to which container |
-| `deploy/hub/.env.example` | Variable names for `.env` (`POSTGRES_PASSWORD`, `HORMIGAS_DB_PASSWORD`, `HORMIGAS_WORLD_NAME`, optional `HORMIGAS_FEEDBACK_KEY`) |
+| `deploy/hub/docker-compose.yml` | The containers: `caddy`, `db`, `hormigas`, `guildie-realtime` |
+| `deploy/hub/Caddyfile` | Which domain goes to which container (`hormigas.marz.gg`, `guildie.marz.gg`) |
+| `deploy/hub/.env.example` | Variable names for `.env` (`POSTGRES_PASSWORD`, `HORMIGAS_DB_PASSWORD`, `HORMIGAS_WORLD_NAME`, optional `HORMIGAS_FEEDBACK_KEY`, `GUILDIE_REALTIME_SECRET`) |
 | `deploy/hub/postgres-init/01-hormigas.sh` | Creates the `hormigas` database and user on the database's very first start |
 | `deploy/hub/add-database.sh` | Creates a database and user for another project |
 | `deploy/hub/backup.sh` | Dumps every database to `/opt/hub/backups`, keeps 7 days (cron, nightly 03:30 UTC) |
@@ -71,7 +82,7 @@ Deploy needs two repository secrets: `DROPLET_HOST` (the droplet's IP) and `DROP
 | Status of every container | `docker compose ps` |
 | Live server logs | `docker compose logs -f hormigas` |
 | Restart the game | `docker compose restart hormigas` |
-| Start or update everything | `docker compose up -d` |
+| Start everything | `docker compose up -d` (this also starts or recreates Guildie's rooms if their settings changed) |
 | Back up now | `./backup.sh` |
 | Open a database shell | `docker compose exec db psql -U postgres -d hormigas` |
 | Restore a pre-deploy backup (replaces all game data!) | `docker compose stop hormigas`, then `zcat backups/predeploy-....sql.gz \| docker compose exec -T db psql -U postgres -d postgres`, then `docker compose up -d hormigas`. The dump drops and recreates the `hormigas` database, which is why the game must be stopped first. |
@@ -112,10 +123,10 @@ Copy the changes back into `deploy/hub/` in the project's repo so the reference 
 ## Rebuilding the hub from scratch
 
 1. Create an Ubuntu 24.04 droplet with an SSH key (2 GB RAM is enough).
-2. Point the A record for `hormigas.marz.gg` at it.
+2. Point the A records for `hormigas.marz.gg` and `guildie.marz.gg` at it.
 3. From the `deploy/` folder: `scp setup-droplet.sh root@IP:` then `ssh root@IP bash setup-droplet.sh`.
 4. `scp -r hub/. deploy@IP:/opt/hub/`, then on the droplet: `chmod 755 postgres-init *.sh postgres-init/*.sh`. Copying from Windows can leave `postgres-init` unreadable to Postgres, and its first start then crash-loops.
-5. `cp .env.example .env`, fill in passwords with `openssl rand -hex 24` (hex keeps them safe inside a database URL), and run `chmod 600 .env`.
+5. `cp .env.example .env`, fill in passwords with `openssl rand -hex 24` (hex keeps them safe inside a database URL), and run `chmod 600 .env`. `GUILDIE_REALTIME_SECRET` is not generated here: copy the phrase from Guildie's `config.php` (`realtime_secret`).
 6. Add the GitHub deploy key's public half to `/home/deploy/.ssh/authorized_keys`, and update the `DROPLET_HOST` secret.
 7. `docker compose up -d`, then restore the latest backup if you're moving an existing world.
 8. Add the backup cron job: `crontab -e` → `30 3 * * * /opt/hub/backup.sh`.
