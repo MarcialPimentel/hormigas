@@ -1,6 +1,9 @@
 // Map, missions and reports routes.
 import type { FastifyInstance } from 'fastify';
-import { WORLD, SPECIES, SCENT_NAME, isInactive, isNewPlayerProtected, corpseFieldAmount, nestLevelFor } from '@hormigas/shared';
+import {
+  WORLD, SPECIES, SCENT_NAME, WILD_SCENTS, HERDS, MAX_SPOT, isInactive, isNewPlayerProtected, corpseFieldAmount, nestLevelFor, isHerdState,
+  herdNectarPerHour, herdStoreCap, herdHoneydewAt, speciesKind, type ScentHint,
+} from '@hormigas/shared';
 import { leaderOf } from '../game/nests';
 import { knowledgeOf, type KnownEntry } from '../game/discovery';
 import { getPool, tx } from '../db';
@@ -10,30 +13,63 @@ import { GameError } from '../errors';
 import { processDueEvents } from '../events';
 import { getWorld } from '../world';
 import { missionView, recallMission, sendMission } from '../game/missions';
+import { recallTenders } from '../game/herds';
+import { cachedWorldSpeed } from '../world';
+
+/** What a wild scent smells of (docs/23-npcs.md): sharp = ant nest, sweet = aphids, woody = termites, danger = spider. */
+function scentHint(npc: any): ScentHint {
+  if (isHerdState(npc)) return 'herd';
+  const kind = speciesKind(npc.species);
+  return kind === 'nest' ? 'nest' : kind;
+}
 
 /**
  * One colony on the map, as this player knows it (docs/22-discovery.md).
- * A scent shows only whose ants it smells of; a familiar scent adds its name; a known colony shows everything.
+ * A scent shows only whose ants it smells of (and, for wild things, a hint of what they are); a familiar scent adds
+ * its name; a known colony shows everything.
  */
-function colonyView(c: any, k: KnownEntry, leader: number, t: number) {
+function colonyView(c: any, k: KnownEntry, leader: number, t: number, me: number) {
   const kind = c.npc ? 'wild' : 'player';
-  const base = { known: k.knowledge, kind, smelledAt: k.smelledAt, discoveredAt: k.discoveredAt };
-  const species = c.npc ? SPECIES[c.npc.species as keyof typeof SPECIES] : null;
-  const owner = species ? species.name : c.username;
-  if (k.knowledge === 'scent') return { ...base, id: null, name: SCENT_NAME[kind as 'player' | 'wild'], owner: null };
+  const hint = c.npc ? scentHint(c.npc) : undefined;
+  const base = { known: k.knowledge, kind, hint, smelledAt: k.smelledAt, discoveredAt: k.discoveredAt };
+  const herd = isHerdState(c.npc) ? c.npc : null;
+  const species = c.npc && !herd ? SPECIES[c.npc.species as keyof typeof SPECIES] : null;
+  const owner = herd ? 'Aphids' : species ? species.name : c.username;
+  if (k.knowledge === 'scent') return { ...base, id: null, name: hint ? WILD_SCENTS[hint].name : SCENT_NAME[kind as 'player' | 'wild'], owner: null };
   if (k.knowledge === 'familiar') return { ...base, id: null, name: c.name, owner };
   const pvp = { points: c.points_total, protectedUntil: c.protected_until, lastActive: c.last_active };
+  const wild = c.npc && !herd;
   return {
     ...base,
     id: c.id,
     name: c.name,
     playerId: c.player_id,
     owner,
-    points: species ? 0 : c.points_total,
+    points: c.npc ? 0 : c.points_total,
     mine: k.knowledge === 'mine',
-    inactive: !species && isInactive(pvp, t),
-    protected: !species && isNewPlayerProtected(pvp, t),
-    ...(species ? { wild: { species: c.npc.species, level: nestLevelFor(leader, c.npc.level), style: species.style } } : {}),
+    inactive: !c.npc && isInactive(pvp, t),
+    protected: !c.npc && isNewPlayerProtected(pvp, t),
+    ...(wild
+      ? { wild: { species: c.npc.species, kind: speciesKind(c.npc.species), level: speciesKind(c.npc.species) === 'nest' ? nestLevelFor(leader, c.npc.level) : c.npc.level, style: species!.style } }
+      : {}),
+    ...(herd ? { herd: herdView(c, herd, t, me) } : {}),
+  };
+}
+
+/** A known aphid herd: its yield, and who tends it. Its tenders and honeydew are shown only to the player who tends it. */
+function herdView(c: any, herd: any, t: number, me: number) {
+  const yours = herd.tender?.playerId === me;
+  return {
+    level: herd.level,
+    nectarPerHour: herdNectarPerHour(herd.level),
+    storeCap: herdStoreCap(herd.level),
+    style: HERDS.style,
+    tended: !!herd.tender,
+    tenderName: herd.tender ? c.tender_name : null,
+    yours,
+    ...(yours
+      ? { tenders: c.units, honeydew: Math.floor(herdHoneydewAt(herd, Number(c.nectar), t, cachedWorldSpeed())), tenderColonyId: herd.tender.colonyId, since: herd.tender.since, deliverEveryHours: HERDS.deliverEveryHours }
+      : {}),
   };
 }
 
@@ -53,7 +89,8 @@ export async function worldRoutes(app: FastifyInstance) {
     const world = await getWorld(q);
     const t = now();
     const r = await q.query(
-      `SELECT c.id, c.name, c.spot, c.player_id, c.npc, p.username, p.points_total, p.protected_until, p.last_active
+      `SELECT c.id, c.name, c.spot, c.player_id, c.npc, c.units, c.nectar, p.username, p.points_total, p.protected_until, p.last_active,
+              (SELECT tp.username FROM players tp WHERE tp.id = (c.npc->'tender'->>'playerId')::int) AS tender_name
          FROM colonies c JOIN players p ON p.id = c.player_id
         WHERE c.world_id = $1 AND c.region = $2 AND c.patch = $3 ORDER BY c.spot`,
       [world.id, region, patch],
@@ -66,12 +103,14 @@ export async function worldRoutes(app: FastifyInstance) {
     const leader = leaderOf(r.rows.filter((x: any) => !x.npc), t);
     const known = await knowledgeOf(q, req.playerId, r.rows.map((x: any) => x.id));
     const spots = [];
-    for (let spot = 1; spot <= WORLD.spotsPerPatch + 1; spot++) {
+    // colony spots, the wilds, then any wild sites that hold something (herds, mounds, dens: docs/23-npcs.md)
+    for (let spot = 1; spot <= MAX_SPOT; spot++) {
       const c = r.rows.find((x: any) => x.spot === spot);
+      if (spot > WORLD.spotsPerPatch + 1 && !c) continue;
       const corpse = corpses.find((x: any) => x.spot === spot);
       spots.push({
         spot,
-        colony: c ? colonyView(c, known.get(c.id)!, leader, t) : null,
+        colony: c ? colonyView(c, known.get(c.id)!, leader, t, req.playerId) : null,
         corpses: corpse ? corpseFieldAmount(corpse.protein, corpse.created_at, t) : 0,
       });
     }
@@ -125,6 +164,12 @@ export async function worldRoutes(app: FastifyInstance) {
 
   app.post('/api/missions', async (req) => {
     const m = await tx((q) => sendMission(q, req.playerId, (req.body ?? {}) as any));
+    return { ok: true, mission: missionView(m) };
+  });
+
+  /** Call your tenders home from an aphid herd (docs/23-npcs.md). */
+  app.post('/api/herds/:id/recall', async (req) => {
+    const m = await tx((q) => recallTenders(q, req.playerId, Number((req.params as any).id)));
     return { ok: true, mission: missionView(m) };
   });
 

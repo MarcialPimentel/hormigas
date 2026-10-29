@@ -1,7 +1,19 @@
-// Wild nests: NPC colonies, one per patch with players (docs/17-wild-nests.md).
-// A nest is an ordinary colony row with an `npc` state, owned by one hidden wild player per world.
-// Its soldiers and food regrow over time (see advance() in colony.ts); its level follows the patch's leader.
+// Wild things: NPC colonies near players (docs/17-wild-nests.md, docs/23-npcs.md).
+// Each is an ordinary colony row with an `npc` state, owned by one hidden wild player per world: wild nests on colony
+// spots, and aphid herds, termite mounds and spider dens on wild sites in the patch's wilds.
+// Nests regrow over time (see advance() in colony.ts); levels follow the strongest player nearby.
 import {
+  AREA_RANGE,
+  HERDS,
+  SITE_SPOTS,
+  herdLevelFor,
+  isHerdState,
+  nestRaidsBack,
+  res,
+  speciesOfKind,
+  wildThingsAround,
+  type HerdState,
+  type NpcState,
   TERRAIN,
   STARTING_TERRAIN,
   WORLD,
@@ -53,6 +65,22 @@ export async function patchLeaderPoints(q: Q, worldId: number, region: number, p
   return leaderOf(r.rows, t);
 }
 
+/**
+ * Points that set a wild thing's level (docs/23-npcs.md): the strongest active player in its own patch, or, in a
+ * patch with no active players, the strongest within AREA_RANGE patches. A patch's own wild nest keeps following its
+ * own players, as before.
+ */
+export async function areaLeaderPoints(q: Q, worldId: number, region: number, patch: number, t: number): Promise<number> {
+  const r = await q.query(
+    `SELECT c.patch, p.points_total, p.protected_until, p.last_active
+       FROM colonies c JOIN players p ON p.id = c.player_id
+      WHERE c.world_id = $1 AND c.region = $2 AND c.patch BETWEEN $3::int - $4::int AND $3::int + $4::int AND NOT p.is_npc`,
+    [worldId, region, patch, AREA_RANGE],
+  );
+  const own = leaderOf(r.rows.filter((x: any) => x.patch === patch), t);
+  return own > 0 ? own : leaderOf(r.rows, t);
+}
+
 /** Highest points among active players in a list of player rows. */
 export function leaderOf(rows: { points_total: number; protected_until: number; last_active: number }[], t: number): number {
   let best = 0;
@@ -63,10 +91,27 @@ export function leaderOf(rows: { points_total: number; protected_until: number; 
   return best;
 }
 
+async function insertWild(
+  q: Tx, worldId: number, at: { region: number; patch: number; spot: number }, name: string, terrain: string,
+  full: { units: object; defenses: object; resources: { foliage: number; protein: number; nectar: number } }, npc: NpcState, t: number,
+): Promise<number> {
+  const owner = await wildPlayerId(q, worldId, t);
+  const r = await q.query(
+    `INSERT INTO colonies (world_id, player_id, name, region, patch, spot, terrain, base_space, foliage, protein, nectar, last_updated,
+       chambers, units, defenses, npc, created_at)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,0,$8,$9,$10,$11,'{}',$12,$13,$14,$11)
+     ON CONFLICT (world_id, region, patch, spot) DO NOTHING RETURNING id`,
+    [worldId, owner, name, at.region, at.patch, at.spot, terrain, full.resources.foliage, full.resources.protein, full.resources.nectar, t,
+      JSON.stringify(full.units), JSON.stringify(full.defenses), JSON.stringify(npc)],
+  );
+  return r.rows[0]?.id ?? 0;
+}
+
 /** Spawn the patch's wild nest if it has none and there is a free spot. Returns the nest's colony id, or null. */
 export async function ensureNest(q: Tx, worldId: number, region: number, patch: number, t: number): Promise<number | null> {
   const taken = await q.query('SELECT id, spot, npc FROM colonies WHERE world_id = $1 AND region = $2 AND patch = $3', [worldId, region, patch]);
-  const existing = taken.rows.find((r: any) => r.npc);
+  // the wild nest lives on a colony spot; herds, mounds and dens live on wild sites (docs/23-npcs.md)
+  const existing = taken.rows.find((r: any) => r.npc && r.spot <= WORLD.spotsPerPatch);
   if (existing) return existing.id;
   const used = new Set(taken.rows.map((r: any) => r.spot));
   const startSpots = new Set(TERRAIN[STARTING_TERRAIN].spots);
@@ -77,51 +122,98 @@ export async function ensureNest(q: Tx, worldId: number, region: number, patch: 
   const rng = createRng(randomSeed());
   const spot = free[Math.floor(rng() * free.length)];
   const terrain = terrainForSpot(spot);
-  const species = speciesForTerrain(terrain);
-  const level = nestLevelFor(await patchLeaderPoints(q, worldId, region, patch, t));
-  const full = nestTargets(species, level);
+  const species = speciesForTerrain(terrain, rng);
+  const level = nestLevelFor(await areaLeaderPoints(q, worldId, region, patch, t));
   const npc: NestState = { species, level, at: t };
-  const owner = await wildPlayerId(q, worldId, t);
-  const r = await q.query(
-    `INSERT INTO colonies (world_id, player_id, name, region, patch, spot, terrain, base_space, foliage, protein, nectar, last_updated,
-       chambers, units, defenses, npc, created_at)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,0,$8,$9,$10,$11,'{}',$12,$13,$14,$11) RETURNING id`,
-    [worldId, owner, nestName(species), region, patch, spot, terrain, full.resources.foliage, full.resources.protein, full.resources.nectar, t,
-      JSON.stringify(full.units), JSON.stringify(full.defenses), JSON.stringify(npc)],
-  );
-  const id = r.rows[0].id as number;
+  const id = await insertWild(q, worldId, { region, patch, spot }, nestName(species), terrain, nestTargets(species, level), npc, t);
+  if (!id) return null;
   const world = await getWorld(q);
   await schedule(q, worldId, 'nest_raid', t + (nextNestRaidHours(rng) * HOUR) / world.speed, { colonyId: id });
   return id;
 }
 
-/** Give every patch that has players a nest (run at startup, so patches settled before nests existed get one). */
+/** Spawn a termite mound or spider den on its wild site, if the site is empty. They never raid, so no events. */
+export async function ensureBigNest(q: Tx, worldId: number, region: number, patch: number, kind: 'mound' | 'den', t: number): Promise<number | null> {
+  const spot = SITE_SPOTS[kind];
+  const here = await q.query('SELECT id FROM colonies WHERE world_id = $1 AND region = $2 AND patch = $3 AND spot = $4', [worldId, region, patch, spot]);
+  if (here.rows[0]) return null;
+  const species = speciesOfKind(kind);
+  const level = nestLevelFor(await areaLeaderPoints(q, worldId, region, patch, t), 1, species);
+  const npc: NestState = { species, level, at: t };
+  return (await insertWild(q, worldId, { region, patch, spot }, nestName(species), 'wilds', nestTargets(species, level), npc, t)) || null;
+}
+
+/** Spawn an aphid herd on the patch's herd site, if the site is empty. It starts untended and waits there. */
+export async function ensureHerd(q: Tx, worldId: number, region: number, patch: number, t: number): Promise<number | null> {
+  const spot = SITE_SPOTS.herd;
+  const here = await q.query('SELECT id FROM colonies WHERE world_id = $1 AND region = $2 AND patch = $3 AND spot = $4', [worldId, region, patch, spot]);
+  if (here.rows[0]) return null;
+  const level = herdLevelFor(await areaLeaderPoints(q, worldId, region, patch, t));
+  // An untended herd that nobody has found yet stays put: it only wanders once someone has tended it and left.
+  const npc: HerdState = { kind: 'herd', level, at: t, tender: null, untendedSince: null };
+  return (await insertWild(q, worldId, { region, patch, spot }, HERDS.name, 'wilds', { units: {}, defenses: {}, resources: res() }, npc, t)) || null;
+}
+
+/**
+ * Fill the area around a patch where a player lives (docs/23-npcs.md): a wild nest and an aphid herd in every patch
+ * within range, plus the termite mounds and spider dens in reach. Returns how many wild things were spawned.
+ */
+export async function ensureArea(q: Tx, worldId: number, region: number, patch: number, t: number): Promise<number> {
+  let n = 0;
+  for (const w of wildThingsAround(region, patch)) {
+    let id: number | null = null;
+    if (w.thing === 'nest') {
+      const before = await q.query('SELECT 1 FROM colonies WHERE world_id = $1 AND region = $2 AND patch = $3 AND npc IS NOT NULL AND spot <= $4', [worldId, w.region, w.patch, WORLD.spotsPerPatch]);
+      if (before.rows[0]) continue;
+      id = await ensureNest(q, worldId, w.region, w.patch, t);
+    } else if (w.thing === 'herd') id = await ensureHerd(q, worldId, w.region, w.patch, t);
+    else id = await ensureBigNest(q, worldId, w.region, w.patch, w.thing, t);
+    if (id) n++;
+  }
+  return n;
+}
+
+/** Fill the area around every patch that has players (run at startup, so areas settled before this build fill in). */
 export async function ensureWildNests(q: Tx, worldId: number, t: number): Promise<number> {
   const r = await q.query(
-    `SELECT DISTINCT c.region, c.patch FROM colonies c
-      WHERE c.world_id = $1 AND c.npc IS NULL
-        AND NOT EXISTS (SELECT 1 FROM colonies n WHERE n.world_id = c.world_id AND n.region = c.region AND n.patch = c.patch AND n.npc IS NOT NULL)`,
+    `SELECT DISTINCT c.region, c.patch FROM colonies c JOIN players p ON p.id = c.player_id
+      WHERE c.world_id = $1 AND NOT p.is_npc ORDER BY c.region, c.patch`,
     [worldId],
   );
   let spawned = 0;
-  for (const row of r.rows) if (await ensureNest(q, worldId, row.region, row.patch, t)) spawned++;
-  // safety net: a nest whose raid event was lost (or failed) gets a fresh one
+  for (const row of r.rows) spawned += await ensureArea(q, worldId, row.region, row.patch, t);
+  // safety net: a nest whose raid event was lost (or failed) gets a fresh one. Mounds, dens and herds never raid.
   const idle = await q.query(
-    `SELECT c.id FROM colonies c WHERE c.world_id = $1 AND c.npc IS NOT NULL
+    `SELECT c.id, c.npc FROM colonies c WHERE c.world_id = $1 AND c.npc IS NOT NULL AND c.spot <= $2
         AND NOT EXISTS (SELECT 1 FROM events e WHERE NOT e.done AND e.type = 'nest_raid' AND (e.payload->>'colonyId')::int = c.id)`,
-    [worldId],
+    [worldId, WORLD.spotsPerPatch],
   );
   const speed = (await getWorld(q)).speed;
   const rng = createRng(randomSeed());
-  for (const row of idle.rows) await schedule(q, worldId, 'nest_raid', t + (nextNestRaidHours(rng) * HOUR) / speed, { colonyId: row.id });
+  for (const row of idle.rows) {
+    if (isHerdState(row.npc) || !nestRaidsBack(row.npc.species)) continue;
+    await schedule(q, worldId, 'nest_raid', t + (nextNestRaidHours(rng) * HOUR) / speed, { colonyId: row.id });
+  }
   return spawned;
 }
 
-/** Bring a nest up to time t and raise its level if the patch's leader has grown. Saves on a level-up. */
+/**
+ * Bring a wild thing up to time t and raise its level if its area's leader has grown. Saves on a level-up.
+ * Works for wild nests, mounds, dens and aphid herds.
+ */
 export async function syncNest(q: Q, nest: Colony, t: number): Promise<Colony> {
   const c = advance(nest, t);
   if (!c.npc) return c;
-  const level = nestLevelFor(await patchLeaderPoints(q, c.worldId, c.region, c.patch, t), c.npc.level);
+  const leader = await areaLeaderPoints(q, c.worldId, c.region, c.patch, t);
+  if (isHerdState(c.npc)) {
+    const level = herdLevelFor(leader, c.npc.level);
+    if (level > c.npc.level) {
+      c.npc = { ...c.npc, level };
+      await saveColony(q, c);
+    }
+    return c;
+  }
+  const level = nestLevelFor(leader, c.npc.level, c.npc.species);
   if (level > c.npc.level) {
     // values so far were regrowing toward the old level; from now on they grow toward the new one
     c.npc = { ...c.npc, level };
@@ -133,14 +225,18 @@ export async function syncNest(q: Q, nest: Colony, t: number): Promise<Colony> {
 /** Display name for whoever owns a colony: the nest's name for wild nests. */
 export const ownerName = (c: Colony, username: string) => (c.npc ? c.name : username);
 
+/** The wild nest-like state of a colony (nest, mound or den), or null for players' colonies and aphid herds. */
+export const nestStateOf = (c: Colony): NestState | null => (c.npc && !isHerdState(c.npc) ? c.npc : null);
+
 // ---------- nests raid back (gently) ----------
 
 onEvent('nest_raid', async (q, ev) => {
   const t = ev.due_at;
   const world = await getWorld(q);
   const rearm = () => schedule(q, ev.world_id, 'nest_raid', t + (nextNestRaidHours(createRng(randomSeed())) * HOUR) / world.speed, { colonyId: ev.payload.colonyId });
-  const found = await q.query('SELECT id FROM colonies WHERE id = $1 AND npc IS NOT NULL', [ev.payload.colonyId]);
+  const found = await q.query('SELECT id, npc FROM colonies WHERE id = $1 AND npc IS NOT NULL', [ev.payload.colonyId]);
   if (!found.rows[0]) return; // the nest is gone: stop raiding
+  if (isHerdState(found.rows[0].npc) || !nestRaidsBack(found.rows[0].npc.species)) return; // herds, mounds and dens never raid
   let nest = await syncNest(q, await lockColony(q, ev.payload.colonyId), t);
 
   const target = await pickNestTarget(q, nest, t);

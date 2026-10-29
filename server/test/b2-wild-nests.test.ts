@@ -16,7 +16,9 @@ let nestSpot: any;
 const H = 3600_000;
 
 const mapOf = async (client: Client, coords: any) => (await client.get(`/api/map?region=${coords.region}&patch=${coords.patch}`)).spots;
-const nestRow = async () => (await getPool().query('SELECT * FROM colonies WHERE npc IS NOT NULL AND region = $1 AND patch = $2', [c.coords.region, c.coords.patch])).rows[0];
+// the patch's wild nest lives on a colony spot (1-12); herds, mounds and dens sit on wild sites (docs/23-npcs.md)
+const nestRow = async () => (await getPool().query('SELECT * FROM colonies WHERE npc IS NOT NULL AND spot <= 12 AND region = $1 AND patch = $2', [c.coords.region, c.coords.patch])).rows[0];
+const isNest = (s: any) => s.colony?.kind === 'wild' && s.spot <= 12;
 const latest = async (client: Client, type: string) => (await client.get('/api/reports?limit=100')).reports.find((r: any) => r.type === type);
 
 beforeAll(async () => {
@@ -32,7 +34,7 @@ afterAll(async () => teardownTest(app));
 describe('spawning', () => {
   it('signing up spawns one wild nest in the patch, off the starting spots', async () => {
     const spots = await mapOf(p, c.coords);
-    const wild = spots.filter((s: any) => s.colony?.kind === 'wild');
+    const wild = spots.filter(isNest);
     expect(wild).toHaveLength(1);
     nestSpot = wild[0];
     expect(TERRAIN[STARTING_TERRAIN].spots).not.toContain(nestSpot.spot);
@@ -40,7 +42,7 @@ describe('spawning', () => {
     expect(nestSpot.colony).toMatchObject({ known: 'scent', name: 'Wild scent', owner: null, id: null });
     expect(nestSpot.colony.wild).toBeUndefined();
     const row = await nestRow();
-    expect(['pavement', 'fire', 'carpenter']).toContain(row.npc.species);
+    expect(['pavement', 'fire', 'carpenter', 'honeypot', 'trapjaw']).toContain(row.npc.species);
     expect(row.units).toEqual(nestTargets(row.npc.species, 1).units);
   });
 
@@ -51,7 +53,7 @@ describe('spawning', () => {
     await getPool().query('DELETE FROM colonies WHERE id = $1', [row.id]);
     const spawned = await tx((q) => ensureWildNests(q, row.world_id, clock.t));
     expect(spawned).toBe(1);
-    nestSpot = (await mapOf(p, c.coords)).find((s: any) => s.colony?.kind === 'wild');
+    nestSpot = (await mapOf(p, c.coords)).find(isNest);
     expect(nestSpot).toBeTruthy();
   });
 
@@ -76,7 +78,7 @@ describe('scouting and raiding a nest', () => {
     await clock.advance(6 * H);
     const rep = await latest(p, 'scout');
     expect(rep.data.wild.level).toBe(1);
-    expect(['Pavement Ants', 'Fire Ants', 'Carpenter Ants']).toContain(rep.data.owner);
+    expect(['Pavement Ants', 'Fire Ants', 'Carpenter Ants', 'Honeypot Ants', 'Trap-jaw Ants']).toContain(rep.data.owner);
     // scouted: the map now names it
     nestSpot = (await mapOf(p, c.coords)).find((s: any) => s.spot === nestSpot.spot);
     expect(nestSpot.colony).toMatchObject({ known: 'known', owner: rep.data.owner, mine: false });
@@ -141,13 +143,13 @@ describe('scouting and raiding a nest', () => {
 
   it('levels up with the patch leader and never drops', async () => {
     await setPlayer(me.id, { points_total: 250 });
-    let spot = (await mapOf(p, c.coords)).find((s: any) => s.colony?.kind === 'wild');
+    let spot = (await mapOf(p, c.coords)).find(isNest);
     expect(spot.colony.wild.level).toBe(4);
     await p.post('/api/missions', { colonyId: c.id, type: 'scout', target: target(), units: { scout: 1 } });
     await clock.advance(6 * H);
     expect((await nestRow()).npc.level).toBe(4);
     await setPlayer(me.id, { points_total: 0 });
-    spot = (await mapOf(p, c.coords)).find((s: any) => s.colony?.kind === 'wild');
+    spot = (await mapOf(p, c.coords)).find(isNest);
     expect(spot.colony.wild.level).toBe(4);
   });
 });

@@ -1,3 +1,5 @@
+import { NPC_DATA } from './data';
+
 // Discovery: which colonies a player knows. Spec: docs/22-discovery.md
 //
 // Every colony you don't own is, to you, one of:
@@ -33,7 +35,12 @@ export const canActOn = (k: Knowledge) => k === 'known';
 
 export const SCENT_NAME: Record<ScentKind, string> = { player: 'Ant scent', wild: 'Wild scent' };
 
+/** What an unscouted wild scent hints at (docs/23-npcs.md): sharp = ant nest, sweet = aphids, woody = termites, danger = spider. */
+export type ScentHint = 'nest' | 'herd' | 'mound' | 'den';
+export const WILD_SCENTS = NPC_DATA.scents as unknown as Record<ScentHint, { name: string; text: string }>;
+
 export const DISCOVERY_MESSAGES = {
   raid_needs_scout: "Scout this scent first. Your soldiers need to know what they're walking into.",
   send_needs_scout: 'Scout this scent first, so your workers know whose door they are knocking on.',
+  tend_needs_scout: "Scout this scent first. Your ants won't wander off toward a smell they can't place.",
 } as const;

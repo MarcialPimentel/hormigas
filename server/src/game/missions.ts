@@ -21,6 +21,7 @@ import {
   validCoords,
   WILDS_SPOT,
   SWARM,
+  isHerdState,
   type CasteId,
   type Coords,
   type Resources,
@@ -35,7 +36,7 @@ import { getWorld } from '../world';
 import { refreshPointsAfterCommit } from './points';
 import { notify } from '../realtime';
 
-export type MissionType = 'transport' | 'relocate' | 'scout' | 'raid' | 'haul' | 'forage' | 'colonize' | 'swarm';
+export type MissionType = 'transport' | 'relocate' | 'scout' | 'raid' | 'haul' | 'forage' | 'colonize' | 'swarm' | 'tend';
 
 export interface Mission {
   id: number;
@@ -183,7 +184,8 @@ export async function sendMission(q: Tx, playerId: number, input: SendInput): Pr
   colony = advance(colony, t);
 
   const target = { region: Number(input.target?.region), patch: Number(input.target?.patch), spot: Number(input.target?.spot) };
-  if (!validCoords(target, !!rules.allowsWilds)) throw new GameError('bad_target', 'That place does not exist.');
+  // wild sites (aphid herds, termite mounds, spider dens) are real places too (docs/23-npcs.md)
+  if (!validCoords(target, !!rules.allowsWilds, true)) throw new GameError('bad_target', 'That place does not exist.');
   if (!rules.allowsWilds && target.spot === WILDS_SPOT) throw new GameError('bad_target', 'Nothing lives out in the wilds.');
 
   const units = parseUnits(input.units, colony.units);
@@ -246,8 +248,31 @@ export async function launchMission(
   const m = fromRow(r.rows[0]);
   m.arriveEventId = await schedule(q, o.worldId, 'mission_arrive', o.arriveAt, { missionId: m.id });
   await saveMission(q, m);
-  if (o.targetColony && o.targetColony.playerId !== o.playerId)
-    notify(o.targetColony.playerId, { type: 'incoming', missionType: o.type, from: o.senderName, arriveAt: o.arriveAt, colony: o.targetColony.name });
+  // warn whoever is on the receiving end: the colony's owner, or the ants tending a herd (docs/23-npcs.md)
+  const warned = isHerdState(o.targetColony?.npc) ? o.targetColony!.npc.tender?.playerId : o.targetColony?.playerId;
+  if (o.targetColony && warned && warned !== o.playerId)
+    notify(warned, { type: 'incoming', missionType: o.type, from: o.senderName, arriveAt: o.arriveAt, colony: o.targetColony.name });
+  return m;
+}
+
+/**
+ * Ants already out at `from` (a herd's tenders called home) walking back to their colony, carrying `cargo`.
+ * Written as a mission that is already returning, so the usual return event brings them home.
+ */
+export async function launchReturn(
+  q: Tx,
+  o: { worldId: number; playerId: number; type: MissionType; home: Colony; from: Coords; fromColonyId: number; units: UnitCounts; cargo: Resources; at: number; returnAt: number; result?: any },
+): Promise<Mission> {
+  const r = await q.query(
+    `INSERT INTO missions (world_id, player_id, type, origin_colony_id, origin_region, origin_patch, origin_spot,
+       target_region, target_patch, target_spot, target_colony_id, units, cargo, speed_pct, fuel, depart_at, arrive_at, return_at, status, result, created_at)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,100,0,$14,$14,$15,'returning',$16,$14) RETURNING *`,
+    [o.worldId, o.playerId, o.type, o.home.id, o.home.region, o.home.patch, o.home.spot, o.from.region, o.from.patch, o.from.spot,
+      o.fromColonyId, JSON.stringify(o.units), JSON.stringify(o.cargo), o.at, o.returnAt, o.result ? JSON.stringify(o.result) : null],
+  );
+  const m = fromRow(r.rows[0]);
+  m.returnEventId = await schedule(q, o.worldId, 'mission_return', o.returnAt, { missionId: m.id });
+  await saveMission(q, m);
   return m;
 }
 
@@ -331,7 +356,7 @@ export async function incomingMissions(q: Q, playerId: number) {
             CASE WHEN m.type = 'swarm' THEN $2 WHEN p.is_npc THEN o.name ELSE p.username END AS username, p.is_npc
        FROM missions m JOIN colonies c ON c.id = m.target_colony_id JOIN players p ON p.id = m.player_id
        JOIN colonies o ON o.id = m.origin_colony_id
-      WHERE c.player_id = $1 AND m.player_id <> $1 AND m.status = 'outbound' ORDER BY m.arrive_at`,
+      WHERE (c.player_id = $1 OR (c.npc->'tender'->>'playerId')::int = $1) AND m.player_id <> $1 AND m.status = 'outbound' ORDER BY m.arrive_at`,
     [playerId, SWARM.name],
   );
   return r.rows.map((row: any) => ({

@@ -25,7 +25,9 @@ afterAll(async () => teardownTest(app));
 describe('map', () => {
   it('shows the patch with colonies and flags', async () => {
     const m = await a.get(`/api/map?region=${ca.coords.region}&patch=${ca.coords.patch}`);
-    expect(m.spots).toHaveLength(13);
+    // 12 colony spots and the wilds, then wild sites that hold herds, mounds or dens (docs/23-npcs.md)
+    expect(m.spots.filter((s: any) => s.spot <= 13)).toHaveLength(13);
+    expect(m.spots.slice(13).every((s: any) => s.colony?.kind === 'wild')).toBe(true);
     const mine = m.spots.find((s: any) => s.spot === ca.coords.spot);
     expect(mine.colony.mine).toBe(true);
     expect(mine.colony.protected).toBe(true);

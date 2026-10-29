@@ -20,6 +20,7 @@ import './game/forage';
 import './game/nests';
 import './game/nestEvents';
 import './game/colonies';
+import './game/herds';
 import './game/swarms';
 import { worldRoutes } from './routes/world';
 import { feedbackRoutes } from './routes/feedback';

@@ -32,6 +32,7 @@ import { defineMission, type Mission } from './missions';
 import { addReport } from './reports';
 import { refreshPointsAfterCommit } from './points';
 import { requireKnown, smelledBy } from './discovery';
+import { herdOf, leaveHerd } from './herds';
 
 const nonZero = <T extends Record<string, number | undefined>>(u: T): T => Object.fromEntries(Object.entries(u).filter(([, n]) => (n ?? 0) > 0)) as T;
 
@@ -79,6 +80,17 @@ defineMission('raid', {
     // Scout before raiding: nobody raids a scent (docs/22-discovery.md).
     await requireKnown(q, player.id, targetColony.id, 'raid');
     const recentWins = await raidsInLast24h(q, player.id, targetColony.id, t);
+    const herd = herdOf(targetColony);
+    if (herd) {
+      // Aphid herds (docs/23-npcs.md): raiding one is a fight with the player whose ants tend it, under the usual PvP rules.
+      if (!herd.tender) throw new GameError('herd_untended', 'Nobody tends this herd, so there is no one to fight. Send ants to tend it instead.');
+      if (herd.tender.playerId === player.id) throw new GameError('bad_target', 'Your own ants tend this herd.');
+      const tenderOwner = await getPlayer(q, herd.tender.playerId);
+      const block = canRaid(pvpState(player), pvpState(tenderOwner), t, recentWins);
+      if (block) throw new GameError(block, BLOCK_MESSAGES[block]);
+      if (player.protectedUntil > t) await q.query('UPDATE players SET protected_until = $2 WHERE id = $1', [player.id, t]);
+      return;
+    }
     if (targetColony.npc) {
       // Wild nests: no protection of any kind, but the bash limit still applies.
       // Raiding one is PvE practice, so it doesn't end your own new-colony protection (docs/17-wild-nests.md).
@@ -107,7 +119,9 @@ export async function resolveRaid(q: Tx, m: Mission, at: number, opts: { attacke
   let target = await lockColony(q, m.targetColonyId!);
   target = target.npc ? await syncNest(q, target, at) : advance(target, at);
   const attacker = await getPlayer(q, m.playerId);
-  const defender = await getPlayer(q, target.playerId);
+  // A herd's tenders fight for the player who sent them (docs/23-npcs.md); an untended herd has nobody to fight.
+  const herd = herdOf(target);
+  const defender = await getPlayer(q, herd?.tender ? herd.tender.playerId : target.playerId);
   // Wild nests fight under their nest's name and get no reports or points.
   const attackerName = opts.attackerName ?? (attacker.isNpc ? (await getColony(q, m.originColonyId)).name : attacker.username);
   const defenderName = defender.isNpc ? target.name : defender.username;
@@ -134,7 +148,8 @@ export async function resolveRaid(q: Tx, m: Mission, at: number, opts: { attacke
     target.resources = sub(target.resources, loot);
     m.cargo = loot;
   }
-  await saveColony(q, target);
+  if (herd?.tender && presentUnits(target.units).length === 0) await leaveHerd(q, target, at); // the tenders are gone: the herd is free
+  else await saveColony(q, target);
 
   const corpses = corpseProtein(result.attackerLost, result.defenderLost);
   await addCorpses(q, m.worldId, m.target, corpses, at);
@@ -174,7 +189,9 @@ export async function resolveRaid(q: Tx, m: Mission, at: number, opts: { attacke
   const verb = result.winner === 'attacker' ? 'won' : result.winner === 'defender' ? 'lost' : 'drew';
   if (!attacker.isNpc)
     await addReport(q, m.worldId, attacker.id, 'battle', `Raid on ${target.name} (${coordsKey(m.target)}): you ${verb}`, { ...data, perspective: 'attacker' }, at);
-  const dverb = result.winner === 'defender' ? 'held' : result.winner === 'attacker' ? 'was raided' : 'held (draw)';
+  const dverb = herd
+    ? result.winner === 'defender' ? 'held: your tenders drove off the raiders' : result.winner === 'attacker' ? 'lost: your tenders were driven off' : 'held (draw)'
+    : result.winner === 'defender' ? 'held' : result.winner === 'attacker' ? 'was raided' : 'held (draw)';
   // The defender now recognizes the raiders' scent (one way: they still scout before striking back). Swarms have no home.
   if (!defender.isNpc && m.type === 'raid') await smelledBy(q, defender.id, m.originColonyId, 'raided_you', at);
   if (!defender.isNpc)

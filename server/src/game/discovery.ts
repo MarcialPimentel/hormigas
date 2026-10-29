@@ -61,8 +61,8 @@ export async function smelledBy(q: Q, playerId: number, colonyId: number, via: D
 }
 
 /** Raids and deliveries need a colony you have scouted. Throws the reason the player sees. */
-export async function requireKnown(q: Q, playerId: number, colonyId: number, action: 'raid' | 'send') {
+export async function requireKnown(q: Q, playerId: number, colonyId: number, action: 'raid' | 'send' | 'tend') {
   const k = await knowledgeOne(q, playerId, colonyId);
   if (k.knowledge === 'known' || k.knowledge === 'mine') return;
-  throw new GameError('not_scouted', action === 'raid' ? DISCOVERY_MESSAGES.raid_needs_scout : DISCOVERY_MESSAGES.send_needs_scout);
+  throw new GameError('not_scouted', DISCOVERY_MESSAGES[`${action}_needs_scout`]);
 }

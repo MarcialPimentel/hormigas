@@ -2,6 +2,7 @@
 import {
   RESOURCES_DATA,
   TERRAIN,
+  WORLD,
   add,
   coordsKey,
   createRng,
@@ -22,7 +23,7 @@ import { GameError } from '../errors';
 import { colonyAt, getPlayer } from '../colony';
 import { defineMission } from './missions';
 import { addReport } from './reports';
-import { ensureNest } from './nests';
+import { ensureArea } from './nests';
 import { scheduleNestEvent } from './nestEvents';
 import { scheduleSwarm } from './swarms';
 import { refreshPointsAfterCommit } from './points';
@@ -45,8 +46,8 @@ export async function createColony(
   const id = r.rows[0].id as number;
   await scheduleNestEvent(q, o.worldId, id, o.t);
   await scheduleSwarm(q, o.worldId, id, o.t);
-  // every patch with players has a wild nest (docs/17-wild-nests.md)
-  await ensureNest(q, o.worldId, o.at.region, o.at.patch, o.t);
+  // the area around players fills with wild things: nests, aphid herds, termite mounds, spider dens (docs/23-npcs.md)
+  await ensureArea(q, o.worldId, o.at.region, o.at.patch, o.t);
   return id;
 }
 
@@ -69,6 +70,7 @@ defineMission('colonize', {
   async validate({ q, player, units, target, targetColony }) {
     if (lvl(units, 'winged_queen') !== 1) throw new GameError('one_queen', 'Send exactly one Winged Queen to found a colony.');
     if (targetColony) throw new GameError('bad_target', 'That spot is taken. Pick an empty one.');
+    if (target.spot > WORLD.spotsPerPatch) throw new GameError('bad_target', 'A colony needs a real spot (1–12).');
     if (!TERRAIN[terrainForSpot(target.spot)]) throw new GameError('bad_target', 'A colony needs a real spot (1–12).');
     const max = maxColonies(player.research);
     if ((await coloniesClaimed(q, player.id)) >= max) throw new GameError('colony_cap', CAP_MESSAGE(max));
