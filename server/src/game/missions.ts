@@ -414,7 +414,7 @@ async function sendHomeUnresolved(q: Q, m: Mission, at: number, result: object) 
     return;
   }
   m.status = 'returning';
-  m.returnAt = Math.max(at, m.arriveAt) + (m.arriveAt - m.departAt);
+  m.returnAt = Math.max(at, m.arriveAt) + returnLegMs(m.departAt, m.arriveAt);
   m.returnEventId = await schedule(q, m.worldId, 'mission_return', m.returnAt, { missionId: m.id });
   await saveMission(q, m);
 }
