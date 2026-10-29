@@ -6,6 +6,7 @@ import {
   WILDS_SPOT,
   distance,
   forageSlots,
+  forageFindCap,
   maxColonies,
   groupCargo,
   groupSpeed,
@@ -183,6 +184,7 @@ export function Missions({ draft }: { draft?: MissionDraft }) {
               <p className="first-forage small">Your first forage party is sure to come back with food.</p>
             )}
             <ForageOdds luck={lvl(research, 'foraging_instinct')} />
+            <ForageCap capacity={capacity} findCap={forageFindCap(state.player.points.total, lvl(research, 'foraging_instinct'))} />
           </fieldset>
         )}
 
@@ -305,5 +307,22 @@ export function MissionList() {
         );
       })}
     </ul>
+  );
+}
+
+/** The most one forage party can bring home, and how many Workers it takes to carry that. */
+function ForageCap({ capacity, findCap }: { capacity: number; findCap: number }) {
+  const per = CASTES.worker.cargo;
+  const workers = Math.ceil(findCap / per);
+  return (
+    <p className="small">
+      A forage party brings home at most <strong>{fmtFull(findCap)}</strong> food (grows with your points), about{' '}
+      {fmtFull(workers)} {workers === 1 ? 'Worker' : 'Workers'} of carrying at {fmtFull(per)} each.{' '}
+      {capacity === 0 ? null : capacity < findCap ? (
+        <span className="muted">This party carries {fmtFull(capacity)}, so a big find would be cut to that.</span>
+      ) : (
+        <span className="muted">This party carries {fmtFull(capacity)}: enough for the biggest find.</span>
+      )}
+    </p>
   );
 }
