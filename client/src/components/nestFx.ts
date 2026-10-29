@@ -258,7 +258,7 @@ export function createFx(w: number, h: number, geo: Geo, chambers: ChamberLevels
     const t = clock;
 
     // storage chambers fill up with what they hold, and glow when full
-    const cap = storageCapacity(c.chambers);
+    const cap = storageCapacity(c.chambers, c.research);
     for (const r of Object.keys(STORE_FOR) as ResourceId[]) {
       const id = STORE_FOR[r];
       if (!built(id)) continue;

@@ -251,7 +251,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
     }
   }, [state, toast]);
 
-  const colony = useMemo(() => (state?.colony ? syncColony(state.colony, now, state.world.speed) : null), [state, now]);
+  const colony = useMemo(() => (state?.colony ? syncColony({ ...state.colony, research: state.player.research }, now, state.world.speed) : null), [state, now]);
 
   // units hatching in the Brood Hall (the queue advances locally every second)
   const queued = useRef<{ id: number; left: number; len: number } | null>(null);
@@ -270,7 +270,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
     if (!colony) return;
     const first = fullInit.current !== colony.id; // don't notify for storage that was already full on load
     fullInit.current = colony.id;
-    const caps = storageCapacity(colony.chambers);
+    const caps = storageCapacity(colony.chambers, colony.research);
     for (const r of RESOURCE_IDS) {
       const full = colony.resources[r] >= caps[r];
       const key = `${colony.id}:${r}`;

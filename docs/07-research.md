@@ -1,31 +1,43 @@
 # 07 — Research (Instinct Tree)
 
-**Version:** 0.1
+**Version:** 0.2
 **Data:** [`data/research.json`](data/research.json)
 
 ## Concept
 Research represents the colony evolving new instincts. It happens in the **Pheromone Chamber** and is **account-wide** (all colonies benefit). One research at a time per account.
 
-## MVP research
-| Research | Effect | Category |
-|---|---|---|
-| **Mandibles** | +10% Attack per level, all units & defenses | Combat |
-| **Chitin** | +10% Health per level | Combat |
-| **Guard Formation** | +10% Guard per level | Combat |
-| **Pheromone Trails** | +10% unit speed per level | Movement |
-| **Scent Reading** | Better scouting reports; harder to scout | Intel |
-| **Colony Mind** | +1 mission slot per level | Utility |
-| **Foraging Instinct** | +1 forage expedition slot every 2 levels; better forage outcomes | Utility |
-| **Brood Science** | Unlocks advanced castes (Major Soldier, Hauler) | Unlock |
-| **Deep Digging** | +5 space per level in all colonies | Utility |
-| **Nuptial Flight** | Unlocks the Winged Queen; +1 colony at levels 1, 3, 5… ([19-colonies](19-colonies.md)) | Expansion |
+## The tech tree
+Since Build 6 research is a **tree**: research can need other research (not only a Pheromone Chamber level), it is grouped into four branches (Jaws, Harvest, Nest, Scent), and some research has a highest level. Full design, the new research and the reasoning: [21-tech-tree.md](21-tech-tree.md).
 
-## v1 research
-| Research | Effect |
-|---|---|
-| **Aphid Husbandry** | +Nectar production; unlocks aphid herding |
-| **Symbiosis** | Unlocks ally species (beetles, bullet ants) |
-| **Supercolony** | Unlocks supercolonies (alliances) and joint raids |
+| Research | Branch | Needs | Effect |
+|---|---|---|---|
+| **Mandibles** | Jaws | Pher 2 | +10% attack per level, all units & defenses |
+| **Chitin** | Jaws | Pher 2 | +10% health per level |
+| **Guard Formation** | Jaws | Pher 3 | +10% guard per level |
+| **Formic Acid** | Jaws | Pher 4, Mandibles 3, Chitin 2 | Defenses +10% attack, guard, health per level |
+| **Raiding Columns** | Jaws | Pher 5, Mandibles 5, Guard Formation 3, Pheromone Trails 4 | Winning raids take +5% of unprotected stores per level (max 3) |
+| **Nest Plugging** | Jaws | Pher 5, Chitin 4, Guard Formation 4 | +25% protected storage per level |
+| **Foraging Instinct** | Harvest | Pher 3 | +1 forage slot every 2 levels; better forage outcomes |
+| **Group Hunting** | Harvest | Pher 3, Mandibles 1, Pheromone Trails 2 | +5% Protein from Hunting Grounds per level |
+| **Aphid Husbandry** | Harvest | Pher 3 | +5% Nectar from Aphid Pastures per level |
+| **Fungus Farming** | Harvest | Pher 3, Aphid Husbandry 2 | +5% Foliage from Leaf Gardens per level |
+| **Repletes** | Harvest | Pher 5, Aphid Husbandry 4, Fungus Farming 2 | +10% storage per level |
+| **Brood Science** | Nest | Pher 1 | Major Soldier (1), Hauler (2); max 2 |
+| **Nurse Workers** | Nest | Pher 3, Brood Science 1 | Units raised 5% faster per level (max 6) |
+| **Deep Digging** | Nest | Pher 4 | +5 space per level in all colonies |
+| **Tunnel Engineering** | Nest | Pher 4, Deep Digging 2 | Chambers dug 5% faster per level (max 6) |
+| **Nuptial Flight** | Nest | Pher 3 | Unlocks the Winged Queen; +1 colony at levels 1, 3, 5… ([19-colonies](19-colonies.md)) |
+| **Pheromone Trails** | Scent | Pher 1 | +10% unit speed per level |
+| **Colony Mind** | Scent | Pher 1 | +1 mission slot per level |
+| **Scent Reading** | Scent | Pher 2 | Better scouting reports; harder to scout |
+| **Tandem Running** | Scent | Pher 4, Colony Mind 2, Pheromone Trails 2 | Research 5% faster per level (max 6) |
+| **Chemical Mimicry** | Scent | Pher 4, Scent Reading 3 | Each level halves the chance your scouts are spotted (max 3) |
+
+## Later research
+| Research | Branch | Needs | Effect |
+|---|---|---|---|
+| **Symbiosis** | Harvest | Pher 5, Aphid Husbandry 3, Chemical Mimicry 1 | Unlocks ally species (beetles, bullet ants) |
+| **Supercolony** | Nest | Pher 6, Nuptial Flight 5, Colony Mind 4, Chemical Mimicry 2 | Unlocks supercolonies (alliances) and joint raids |
 
 ## Scouting detail by Scent Reading difference
 `diff = yourScentReading − theirScentReading + (scouts sent − 1) / 2` (rounded down)
@@ -37,5 +49,6 @@ Research represents the colony evolving new instincts. It happens in the **Phero
 | 4+ | + Chambers & research |
 
 ## Open Questions
-- Should research have branch choices (pick A or B), or stay a flat tree in MVP?
-- Account-wide research with one queue — or per-colony research? Proposal: account-wide.
+- ~~Should research have branch choices (pick A or B), or stay a flat tree in MVP?~~ Decided 2026-10-29: four branches, no exclusive choices; everyone can learn everything, the choice is the order ([21-tech-tree.md](21-tech-tree.md)).
+- ~~Account-wide research with one queue — or per-colony research?~~ Decided: account-wide, one at a time.
+- Open tech-tree questions live in [21-tech-tree.md](21-tech-tree.md#open-questions).

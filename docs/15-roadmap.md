@@ -11,12 +11,13 @@ Keep the MVP **brutally small**. Its only job is to answer: *is the core loop fu
 - Chambers: Queen's Chamber, Leaf Garden, Hunting Grounds, Nursery, Granary, Larder, Brood Hall, Pheromone Chamber, Aphid Pasture, Nectar Cellar, Excavation Works, Honeypot Gallery.
 - Castes: Worker, Minor Soldier, Major Soldier, Scout, Hauler, Winged Queen.
 - Defenses: Soil Wall, Pit Trap, Acid Sentry.
-- Research: Mandibles, Chitin, Guard Formation, Pheromone Trails, Scent Reading, Colony Mind, Foraging Instinct, Brood Science, Deep Digging, Nuptial Flight.
+- Research: Mandibles, Chitin, Guard Formation, Pheromone Trails, Scent Reading, Colony Mind, Foraging Instinct, Brood Science, Deep Digging, Nuptial Flight; from Build 6 also Formic Acid, Raiding Columns, Nest Plugging, Group Hunting, Aphid Husbandry, Fungus Farming, Repletes, Nurse Workers, Tunnel Engineering, Tandem Running, Chemical Mimicry.
 - Missions: Raid, Scout, Transport, Relocate, Haul Corpses, Forage, Found Colony.
 - PvP rules: new-colony protection, strength protection, bash limit, Honeypot protection, Late Founding Boost (catch-up).
 - More colonies (Build 4): Nuptial Flight research, Winged Queen, Found Colony mission ([19-colonies](19-colonies.md)). Moved up from v1.
 - Wild nests: one NPC colony per patch with players, raidable, raiding back gently ([17-wild-nests](17-wild-nests.md)).
 - Army-ant swarms (Build 5): every colony is visited about every 4 days, 4 h warning, beatable ([20-swarms](20-swarms.md)).
+- The tech tree (Build 6): research that needs other research, four branches (Jaws, Harvest, Nest, Scent), ten new research and Aphid Husbandry made playable ([21-tech-tree](21-tech-tree.md)).
 - The colony comes alive (Build 3): the Nest View shows parties, raids, storage, brood, digging and research; while-you-were-away card; small nest events ([12-ui-nest-view](12-ui-nest-view.md), [04-colony](04-colony.md)).
 
 **Systems**

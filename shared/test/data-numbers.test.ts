@@ -15,13 +15,13 @@ function numbers(v: unknown, path: string, out: [string, number][] = []): [strin
 }
 
 describe('data numbers', () => {
-  it('every number in the data files is a real, non-negative number', () => {
+  it('every number in the data files is a real, non-negative number (research *Pct effects may be negative)', () => {
     const all = [
       ...numbers(FORMULAS, 'formulas'), ...numbers(RESOURCES_DATA, 'resources'), ...numbers(CHAMBERS, 'chambers'),
       ...numbers(CASTES, 'castes'), ...numbers(DEFENSES, 'defenses'), ...numbers(RESEARCH, 'research'),
     ];
     expect(all.length).toBeGreaterThan(100);
-    const bad = all.filter(([, n]) => !Number.isFinite(n) || n < 0).map(([p]) => p);
+    const bad = all.filter(([p, n]) => !Number.isFinite(n) || (n < 0 && !/^research\.\w+\.effect\.\w+Pct$/.test(p))).map(([p]) => p);
     expect(bad).toEqual([]);
   });
 

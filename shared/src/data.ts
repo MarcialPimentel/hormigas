@@ -46,21 +46,43 @@ export const DEFENSE_IDS = ['soil_wall', 'pit_trap', 'acid_sentry'] as const;
 export type DefenseId = (typeof DEFENSE_IDS)[number];
 
 export const RESEARCH_IDS = [
+  // Jaws
   'mandibles',
   'chitin',
   'guard_formation',
-  'pheromone_trails',
-  'scent_reading',
-  'colony_mind',
+  'formic_acid',
+  'raiding_columns',
+  'nest_plugging',
+  // Harvest
   'foraging_instinct',
-  'brood_science',
-  'deep_digging',
-  'nuptial_flight',
+  'group_hunting',
   'aphid_husbandry',
+  'fungus_farming',
+  'repletes',
   'symbiosis',
+  // Nest
+  'brood_science',
+  'nurse_workers',
+  'deep_digging',
+  'tunnel_engineering',
+  'nuptial_flight',
   'supercolony',
+  // Scent
+  'pheromone_trails',
+  'colony_mind',
+  'scent_reading',
+  'tandem_running',
+  'chemical_mimicry',
 ] as const;
 export type ResearchId = (typeof RESEARCH_IDS)[number];
+
+/** The four branches of the tech tree (docs/21-tech-tree.md). */
+export const RESEARCH_BRANCH_IDS = ['jaws', 'harvest', 'nest', 'scent'] as const;
+export type ResearchBranchId = (typeof RESEARCH_BRANCH_IDS)[number];
+export interface ResearchBranchDef {
+  name: string;
+  blurb: string;
+}
 
 export const TERRAIN_IDS = ['sunny_meadow', 'sandy_soil', 'grassland', 'rotting_log', 'creek_bank'] as const;
 export type TerrainId = (typeof TERRAIN_IDS)[number];
@@ -108,7 +130,10 @@ export interface DefenseDef extends CombatStats {
 }
 export interface ResearchDef {
   name: string;
+  branch: ResearchBranchId;
   mvp: boolean;
+  /** Highest level that can be researched. Missing = no cap. */
+  maxLevel?: number;
   baseCost: Resources;
   unlock: Requirements;
   effect: Record<string, number | boolean>;
@@ -130,6 +155,7 @@ export const CHAMBERS = chambersJson.chambers as unknown as Record<ChamberId, Ch
 export const CASTES = castesJson.castes as unknown as Record<CasteId, CasteDef>;
 export const DEFENSES = defensesJson.defenses as unknown as Record<DefenseId, DefenseDef>;
 export const RESEARCH = researchJson.research as unknown as Record<ResearchId, ResearchDef>;
+export const RESEARCH_BRANCHES = researchJson.branches as Record<ResearchBranchId, ResearchBranchDef>;
 export const TERRAIN = terrainJson.terrain as unknown as Record<TerrainId, TerrainDef>;
 export const STARTING_TERRAIN = terrainJson.startingTerrain as TerrainId;
 export const WILDS_SPOT = terrainJson.wildsSpot;

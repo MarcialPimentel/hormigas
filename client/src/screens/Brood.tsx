@@ -120,7 +120,7 @@ export function Brood() {
             const maxN = Math.min(maxAfford, cap, 100000);
             const raw = counts[id] ?? '';
             const n = Math.max(0, Math.floor(Number(raw) || 0));
-            const per = unitSeconds(def.cost, { worldSpeed: state.world.speed, broodHall: Math.max(1, brood), timeMultiplier: state.player.timeMultiplier });
+            const per = unitSeconds(def.cost, { worldSpeed: state.world.speed, broodHall: Math.max(1, brood), timeMultiplier: state.player.timeMultiplier, research: state.player.research });
             let blocked = '';
             if (brood === 0) blocked = 'Build a Brood Hall first';
             else if (missing.length) blocked = `Needs ${missing.map((m) => `${m.name} ${m.need}`).join(', ')}`;

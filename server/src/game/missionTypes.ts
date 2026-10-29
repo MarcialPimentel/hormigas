@@ -12,6 +12,7 @@ import {
   res,
   scoutDetail,
   scoutDetectionChance,
+  researchSum,
   WILDS_SPOT,
   corpseFieldAmount,
   forageFindCap,
@@ -101,7 +102,7 @@ defineMission('scout', {
     const theirs = lvl(defender.research, 'scent_reading');
     const detail = scoutDetail(yours, theirs, scouts);
     const homeUnits = Object.values(target.units).reduce((a, b) => a + (b ?? 0), 0);
-    const chance = scoutDetectionChance(homeUnits, scouts, yours, theirs);
+    const chance = scoutDetectionChance(homeUnits, scouts, yours, theirs, researchSum(attacker.research, 'scoutStealth'));
     const caught = createRng(randomSeed())() < chance;
 
     const data: any = {
@@ -113,7 +114,7 @@ defineMission('scout', {
       detectionChance: chance,
       caught,
       resources: target.resources,
-      protectedEach: protectedAmount(target.chambers),
+      protectedEach: protectedAmount(target.chambers, defender.research),
     };
     // Scouts outrun soldiers: if our own raid on this colony hasn't landed yet, say so, or the report reads as "the raid did nothing"
     const raid = await q.query(

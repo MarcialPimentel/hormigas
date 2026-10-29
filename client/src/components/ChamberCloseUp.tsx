@@ -92,7 +92,7 @@ export function ChamberCloseUp({ id, onClose, onOpenChambers }: { id: ChamberId;
   if (!colony) return null;
   const level = lvl(colony.chambers, id);
   const store = STORES[id];
-  const cap = storageCapacity(colony.chambers);
+  const cap = storageCapacity(colony.chambers, colony.research);
   const fill = store ? Math.max(0, Math.min(1, colony.resources[store] / cap[store])) : 0;
   const rnd = seeded(id.length * 31 + level);
   const { cx, cy, rx, ry } = HOLLOW;

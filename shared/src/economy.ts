@@ -41,6 +41,27 @@ export const researchBonus = (research: ResearchLevels, id: ResearchId, key: str
 export const researchPerLevel = (research: ResearchLevels, id: ResearchId, key: string): number =>
   Number(RESEARCH[id].effect[key] ?? 0) * lvl(research, id);
 
+/**
+ * One effect key summed over every research that has it (e.g. "foliagePct" from Fungus Farming).
+ * Tech-tree effects use this so a key can come from more than one research. docs/21-tech-tree.md
+ */
+export function researchSum(research: ResearchLevels | undefined, key: string): number {
+  if (!research) return 0;
+  let sum = 0;
+  for (const [id, level] of Object.entries(research)) {
+    const v = RESEARCH[id as ResearchId]?.effect[key];
+    if (typeof v === 'number' && level) sum += v * level;
+  }
+  return sum;
+}
+
+/** A percentage research effect as a multiplier: researchSum 15 → 1.15, -30 → 0.7. Never below 0.1. */
+export const researchFactor = (research: ResearchLevels | undefined, key: string): number =>
+  Math.max(0.1, 1 + researchSum(research, key) / 100);
+
+/** Highest level a research can reach (Infinity when it has no cap). */
+export const researchMaxLevel = (id: ResearchId): number => RESEARCH[id].maxLevel ?? Infinity;
+
 // ---------- costs & times ----------
 
 /** Cost to upgrade a chamber TO `level` (level >= 1). */
@@ -55,6 +76,8 @@ export function researchCost(id: ResearchId, level: number): Resources {
 
 export interface TimeContext {
   worldSpeed: number;
+  /** The owner's research, for tech-tree time bonuses (Tunnel Engineering, Nurse Workers, Tandem Running). */
+  research?: ResearchLevels;
   /** Extra multiplier, e.g. late founding boost (0.5..1). */
   timeMultiplier?: number;
 }
@@ -69,6 +92,7 @@ export function chamberBuildSeconds(
   const c = chamberCost(id, level);
   let t = (c.foliage + c.protein) / (FORMULAS.buildTime.chamberDivisor * (1 + ctx.excavation)) / ctx.worldSpeed;
   t *= 1 + (TERRAIN[ctx.terrain].mods.buildTimePct ?? 0) / 100;
+  t *= researchFactor(ctx.research, 'buildTimePct');
   if (FB.levels.includes(level)) t *= FB.multiplier;
   t *= ctx.timeMultiplier ?? 1;
   return Math.max(FORMULAS.buildTime.minimumSeconds, Math.round(t));
@@ -76,13 +100,13 @@ export function chamberBuildSeconds(
 
 export function researchSeconds(id: ResearchId, level: number, ctx: TimeContext & { pheromone: number }): number {
   const c = researchCost(id, level);
-  const t = ((c.foliage + c.protein) / (FORMULAS.buildTime.researchDivisor * (1 + ctx.pheromone)) / ctx.worldSpeed) * (ctx.timeMultiplier ?? 1);
+  const t = ((c.foliage + c.protein) / (FORMULAS.buildTime.researchDivisor * (1 + ctx.pheromone)) / ctx.worldSpeed) * (ctx.timeMultiplier ?? 1) * researchFactor(ctx.research, 'researchTimePct');
   return Math.max(FORMULAS.buildTime.minimumSeconds, Math.round(t));
 }
 
 /** Seconds to raise ONE unit/defense of the given cost. */
 export function unitSeconds(cost: Resources, ctx: TimeContext & { broodHall: number }): number {
-  const t = ((cost.foliage + cost.protein) / (FORMULAS.buildTime.unitDivisor * (1 + ctx.broodHall)) / ctx.worldSpeed) * (ctx.timeMultiplier ?? 1);
+  const t = ((cost.foliage + cost.protein) / (FORMULAS.buildTime.unitDivisor * (1 + ctx.broodHall)) / ctx.worldSpeed) * (ctx.timeMultiplier ?? 1) * researchFactor(ctx.research, 'unitTimePct');
   return Math.max(1, t);
 }
 
@@ -107,8 +131,11 @@ export function workforce(chambers: ChamberLevels): Workforce {
   return { supply: Math.round(supply), demand: Math.round(demand), ratio };
 }
 
-/** Resources produced per hour by a colony (base income + chambers × terrain × workforce ratio) × world speed. */
-export function productionPerHour(chambers: ChamberLevels, terrain: TerrainId, worldSpeed = 1): Resources {
+/**
+ * Resources produced per hour by a colony (base income + chambers × terrain × research × workforce ratio) × world speed.
+ * Research: Group Hunting, Aphid Husbandry and Fungus Farming add a percentage to chamber output.
+ */
+export function productionPerHour(chambers: ChamberLevels, terrain: TerrainId, worldSpeed = 1, research?: ResearchLevels): Resources {
   const out = res(
     RESOURCES_DATA.baseIncomePerHour.foliage,
     RESOURCES_DATA.baseIncomePerHour.protein,
@@ -121,7 +148,7 @@ export function productionPerHour(chambers: ChamberLevels, terrain: TerrainId, w
     if (def.effect.type !== 'produce' || !def.effect.resource) continue;
     const r = def.effect.resource;
     const terrainPct = (mods[`${r}Pct` as 'foliagePct'] ?? 0) / 100;
-    out[r] += (def.effect.base ?? 0) * growth(lvl(chambers, id)) * (1 + terrainPct) * ratio;
+    out[r] += (def.effect.base ?? 0) * growth(lvl(chambers, id)) * (1 + terrainPct) * researchFactor(research, `${r}Pct`) * ratio;
   }
   return scale(out, worldSpeed);
 }
@@ -137,8 +164,10 @@ const STORAGE_FOR = Object.fromEntries(
 export const storageForLevel = (level: number): number =>
   RESOURCES_DATA.baseStorage * Math.pow(FORMULAS.storage.capacityGrowth, level);
 
-export function storageCapacity(chambers: ChamberLevels): Resources {
-  const cap = (r: ResourceId) => storageForLevel(lvl(chambers, STORAGE_FOR[r]));
+/** Storage per resource. Repletes research adds a percentage. */
+export function storageCapacity(chambers: ChamberLevels, research?: ResearchLevels): Resources {
+  const k = researchFactor(research, 'storagePct');
+  const cap = (r: ResourceId) => storageForLevel(lvl(chambers, STORAGE_FOR[r])) * k;
   return res(cap('foliage'), cap('protein'), cap('nectar'));
 }
 
@@ -146,9 +175,9 @@ export function storageCapacity(chambers: ChamberLevels): Resources {
 export const protectedForLevel = (level: number): number =>
   level > 0 ? FORMULAS.storage.protectedBase * Math.pow(FORMULAS.storage.protectedGrowth, level) : 0;
 
-/** Amount of EACH resource protected from raids by the Honeypot Gallery. */
-export function protectedAmount(chambers: ChamberLevels): number {
-  return protectedForLevel(lvl(chambers, 'honeypot_gallery'));
+/** Amount of EACH resource protected from raids by the Honeypot Gallery. Nest Plugging research adds a percentage. */
+export function protectedAmount(chambers: ChamberLevels, research?: ResearchLevels): number {
+  return protectedForLevel(lvl(chambers, 'honeypot_gallery')) * researchFactor(research, 'protectedPct');
 }
 
 /**

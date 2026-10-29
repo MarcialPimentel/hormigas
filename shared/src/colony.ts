@@ -1,6 +1,6 @@
 // Pure colony state advance (compute-don't-tick). Used by the server for truth and the client for live display.
 import type { Resources, TerrainId } from './data';
-import { accrue, productionPerHour, storageCapacity, type ChamberLevels, type DefenseCounts, type UnitCounts } from './economy';
+import { accrue, productionPerHour, storageCapacity, type ChamberLevels, type DefenseCounts, type ResearchLevels, type UnitCounts } from './economy';
 import { advanceUnitQueue, type QueueItem } from './queue';
 
 export interface ColonyState {
@@ -11,6 +11,8 @@ export interface ColonyState {
   resources: Resources;
   lastUpdated: number;
   unitQueue: QueueItem[];
+  /** The owner's research (production and storage bonuses). Missing for wild nests. */
+  research?: ResearchLevels;
 }
 
 export function addCounts<T extends Record<string, number | undefined>>(a: T, b: T): T {
@@ -29,7 +31,7 @@ export function subCounts<T extends Record<string, number | undefined>>(a: T, b:
 export function syncColony<S extends ColonyState>(state: S, to: number, worldSpeed = 1): S {
   if (to <= state.lastUpdated) return state;
   const seconds = (to - state.lastUpdated) / 1000;
-  const resources = accrue(state.resources, productionPerHour(state.chambers, state.terrain, worldSpeed), storageCapacity(state.chambers), seconds);
+  const resources = accrue(state.resources, productionPerHour(state.chambers, state.terrain, worldSpeed, state.research), storageCapacity(state.chambers, state.research), seconds);
   const adv = advanceUnitQueue(state.unitQueue, to);
   return {
     ...state,

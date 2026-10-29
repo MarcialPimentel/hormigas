@@ -52,6 +52,7 @@ export async function startBuild(q: Tx, playerId: number, colonyId: number, cham
     excavation: lvl(c.chambers, 'excavation_works'),
     terrain: c.terrain,
     timeMultiplier: mult,
+    research: player.research,
   });
   const endAt = t + secs * 1000;
   const eventId = await schedule(q, world.id, 'build_complete', endAt, { colonyId });

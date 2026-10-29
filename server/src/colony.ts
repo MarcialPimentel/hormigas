@@ -43,7 +43,9 @@ export interface Colony extends ColonyState {
   npc: NestState | null;
 }
 
-const COLS = 'id, world_id, player_id, name, region, patch, spot, terrain, base_space, foliage, protein, nectar, last_updated, chambers, units, defenses, build_job, unit_queue, created_at, npc';
+// owner_research: the owner's research, read along with the colony because production and storage depend on it.
+// Read-only here: saveColony never writes it (research is saved on the player row).
+const COLS = 'id, world_id, player_id, name, region, patch, spot, terrain, base_space, foliage, protein, nectar, last_updated, chambers, units, defenses, build_job, unit_queue, created_at, npc, (SELECT p.research FROM players p WHERE p.id = colonies.player_id) AS owner_research';
 
 function fromRow(r: any): Colony {
   return {
@@ -65,6 +67,7 @@ function fromRow(r: any): Colony {
     unitQueue: r.unit_queue,
     createdAt: r.created_at,
     npc: r.npc ?? null,
+    research: r.owner_research ?? {},
   };
 }
 
@@ -90,6 +93,12 @@ export async function getColony(q: Q, id: number): Promise<Colony> {
 export async function playerColonies(q: Q, playerId: number): Promise<Colony[]> {
   const r = await q.query(`SELECT ${COLS} FROM colonies WHERE player_id = $1 ORDER BY id`, [playerId]);
   return r.rows.map(fromRow);
+}
+
+/** Ids of a player's colonies, in a stable order (for locking them one by one). */
+export async function playerColonyIds(q: Q, playerId: number): Promise<number[]> {
+  const r = await q.query('SELECT id FROM colonies WHERE player_id = $1 ORDER BY id', [playerId]);
+  return r.rows.map((x: any) => x.id);
 }
 
 export async function colonyAt(q: Q, worldId: number, region: number, patch: number, spot: number): Promise<Colony | null> {
@@ -121,7 +130,7 @@ export const advance = (c: Colony, to: number): Colony => {
 /** Throw a plain-language error if the colony can't pay `cost`. */
 export function requireAffordable(c: Colony, cost: Resources) {
   if (canAfford(c.resources, cost)) return;
-  const why = explainShortfall(shortfalls(cost, c.resources, storageCapacity(c.chambers), productionPerHour(c.chambers, c.terrain, cachedWorldSpeed())));
+  const why = explainShortfall(shortfalls(cost, c.resources, storageCapacity(c.chambers, c.research), productionPerHour(c.chambers, c.terrain, cachedWorldSpeed(), c.research)));
   throw new GameError('cant_afford', why || 'Not enough resources.');
 }
 

@@ -1,19 +1,38 @@
 {
-  "_version": "0.1",
-  "_note": "Cost and time formulas (and their numbers) are in formulas.json: cost.research*, buildTime.research*. Percentage effects (attackPct, healthPct, guardPct, speedPct) add that many percent per level; other effects add that much per level.",
+  "_version": "0.2",
+  "_note": "Cost and time formulas (and their numbers) are in formulas.json: cost.research*, buildTime.research*. 'unlock' keys are chamber ids (checked in the colony doing the research) or 'research.<id>' (another research at that level or higher). 'maxLevel' caps a research; no maxLevel means no cap. 'branch' is one of the branches below. Percentage effects add that many percent per level (negative = less time); other effects add that much per level. Effects with the same key from different research add up. Design: docs/07-research.md and docs/21-tech-tree.md.",
+  "branches": {
+    "jaws":    { "name": "Jaws",    "blurb": "Fighting: stronger ants, tougher defenses, bigger raids, safer stores." },
+    "harvest": { "name": "Harvest", "blurb": "Food: foraging, herding aphids, farming fungus, storing more." },
+    "nest":    { "name": "Nest",    "blurb": "The colony itself: digging, building, raising brood, founding new colonies." },
+    "scent":   { "name": "Scent",   "blurb": "Pheromones: faster trails, better scouting, more missions, faster learning." }
+  },
   "research": {
-    "mandibles":         { "name": "Mandibles",         "mvp": true,  "baseCost": { "foliage": 800,  "protein": 200,  "nectar": 0 },   "unlock": { "pheromone_chamber": 2 }, "effect": { "attackPct": 10 } },
-    "chitin":            { "name": "Chitin",            "mvp": true,  "baseCost": { "foliage": 1000, "protein": 0,    "nectar": 0 },   "unlock": { "pheromone_chamber": 2 }, "effect": { "healthPct": 10 } },
-    "guard_formation":   { "name": "Guard Formation",   "mvp": true,  "baseCost": { "foliage": 200,  "protein": 600,  "nectar": 0 },   "unlock": { "pheromone_chamber": 3 }, "effect": { "guardPct": 10 } },
-    "pheromone_trails":  { "name": "Pheromone Trails",  "mvp": true,  "baseCost": { "foliage": 400,  "protein": 0,    "nectar": 600 }, "unlock": { "pheromone_chamber": 1 }, "effect": { "speedPct": 10 } },
-    "scent_reading":     { "name": "Scent Reading",     "mvp": true,  "baseCost": { "foliage": 200,  "protein": 1000, "nectar": 200 }, "unlock": { "pheromone_chamber": 2 }, "effect": { "scoutLevel": 1 } },
-    "colony_mind":       { "name": "Colony Mind",       "mvp": true,  "baseCost": { "foliage": 0,    "protein": 400,  "nectar": 600 }, "unlock": { "pheromone_chamber": 1 }, "effect": { "missionSlots": 1 } },
-    "foraging_instinct": { "name": "Foraging Instinct", "mvp": true,  "baseCost": { "foliage": 4000, "protein": 8000, "nectar": 4000 },"unlock": { "pheromone_chamber": 3 }, "effect": { "forageSlotsPer2Levels": 1, "forageLuck": 1 } },
-    "brood_science":     { "name": "Brood Science",     "mvp": true,  "baseCost": { "foliage": 400,  "protein": 800,  "nectar": 200 }, "unlock": { "pheromone_chamber": 1 }, "effect": { "unlocksCastes": true } },
-    "deep_digging":      { "name": "Deep Digging",      "mvp": true,  "baseCost": { "foliage": 2000, "protein": 1000, "nectar": 500 }, "unlock": { "pheromone_chamber": 4 }, "effect": { "space": 5 } },
-    "nuptial_flight":    { "name": "Nuptial Flight",    "mvp": true,  "baseCost": { "foliage": 4000, "protein": 8000, "nectar": 4000 },"unlock": { "pheromone_chamber": 3 }, "effect": { "coloniesPer2Levels": 1 } },
-    "aphid_husbandry":   { "name": "Aphid Husbandry",   "mvp": false, "baseCost": { "foliage": 1000, "protein": 1000, "nectar": 1000 },"unlock": { "pheromone_chamber": 3 }, "effect": { "nectarPct": 5 } },
-    "symbiosis":         { "name": "Symbiosis",         "mvp": false, "baseCost": { "foliage": 5000, "protein": 5000, "nectar": 3000 },"unlock": { "pheromone_chamber": 5 }, "effect": { "unlocksAllies": true } },
-    "supercolony":       { "name": "Supercolony",       "mvp": false, "baseCost": { "foliage": 10000,"protein": 10000,"nectar": 5000 },"unlock": { "pheromone_chamber": 5 }, "effect": { "unlocksAlliances": true } }
+    "mandibles":          { "name": "Mandibles",          "branch": "jaws",    "mvp": true,  "baseCost": { "foliage": 800,  "protein": 200,   "nectar": 0 },    "unlock": { "pheromone_chamber": 2 }, "effect": { "attackPct": 10 } },
+    "chitin":             { "name": "Chitin",             "branch": "jaws",    "mvp": true,  "baseCost": { "foliage": 1000, "protein": 0,     "nectar": 0 },    "unlock": { "pheromone_chamber": 2 }, "effect": { "healthPct": 10 } },
+    "guard_formation":    { "name": "Guard Formation",    "branch": "jaws",    "mvp": true,  "baseCost": { "foliage": 200,  "protein": 600,   "nectar": 0 },    "unlock": { "pheromone_chamber": 3 }, "effect": { "guardPct": 10 } },
+    "formic_acid":        { "name": "Formic Acid",        "branch": "jaws",    "mvp": true,  "baseCost": { "foliage": 2000, "protein": 3000,  "nectar": 1000 }, "unlock": { "pheromone_chamber": 4, "research.mandibles": 3, "research.chitin": 2 }, "effect": { "defensePct": 10 } },
+    "raiding_columns":    { "name": "Raiding Columns",    "branch": "jaws",    "mvp": true,  "baseCost": { "foliage": 6000, "protein": 10000, "nectar": 4000 }, "unlock": { "pheromone_chamber": 5, "research.mandibles": 5, "research.guard_formation": 3, "research.pheromone_trails": 4 }, "maxLevel": 3, "effect": { "lootPct": 5 } },
+    "nest_plugging":      { "name": "Nest Plugging",      "branch": "jaws",    "mvp": true,  "baseCost": { "foliage": 4000, "protein": 4000,  "nectar": 4000 }, "unlock": { "pheromone_chamber": 5, "research.chitin": 4, "research.guard_formation": 4 }, "effect": { "protectedPct": 25 } },
+
+    "foraging_instinct":  { "name": "Foraging Instinct",  "branch": "harvest", "mvp": true,  "baseCost": { "foliage": 4000, "protein": 8000,  "nectar": 4000 }, "unlock": { "pheromone_chamber": 3 }, "effect": { "forageSlotsPer2Levels": 1, "forageLuck": 1 } },
+    "group_hunting":      { "name": "Group Hunting",      "branch": "harvest", "mvp": true,  "baseCost": { "foliage": 500,  "protein": 1500,  "nectar": 500 },  "unlock": { "pheromone_chamber": 3, "research.mandibles": 1, "research.pheromone_trails": 2 }, "effect": { "proteinPct": 5 } },
+    "aphid_husbandry":    { "name": "Aphid Husbandry",    "branch": "harvest", "mvp": true,  "baseCost": { "foliage": 1000, "protein": 1000,  "nectar": 1000 }, "unlock": { "pheromone_chamber": 3 }, "effect": { "nectarPct": 5 } },
+    "fungus_farming":     { "name": "Fungus Farming",     "branch": "harvest", "mvp": true,  "baseCost": { "foliage": 1500, "protein": 500,   "nectar": 500 },  "unlock": { "pheromone_chamber": 3, "research.aphid_husbandry": 2 }, "effect": { "foliagePct": 5 } },
+    "repletes":           { "name": "Repletes",           "branch": "harvest", "mvp": true,  "baseCost": { "foliage": 3000, "protein": 3000,  "nectar": 4000 }, "unlock": { "pheromone_chamber": 5, "research.aphid_husbandry": 4, "research.fungus_farming": 2 }, "effect": { "storagePct": 10 } },
+    "symbiosis":          { "name": "Symbiosis",          "branch": "harvest", "mvp": false, "baseCost": { "foliage": 5000, "protein": 5000,  "nectar": 3000 }, "unlock": { "pheromone_chamber": 5, "research.aphid_husbandry": 3, "research.chemical_mimicry": 1 }, "effect": { "unlocksAllies": true } },
+
+    "brood_science":      { "name": "Brood Science",      "branch": "nest",    "mvp": true,  "baseCost": { "foliage": 400,  "protein": 800,   "nectar": 200 },  "unlock": { "pheromone_chamber": 1 }, "maxLevel": 2, "effect": { "unlocksCastes": true } },
+    "nurse_workers":      { "name": "Nurse Workers",      "branch": "nest",    "mvp": true,  "baseCost": { "foliage": 800,  "protein": 1600,  "nectar": 400 },  "unlock": { "pheromone_chamber": 3, "research.brood_science": 1 }, "maxLevel": 6, "effect": { "unitTimePct": -5 } },
+    "deep_digging":       { "name": "Deep Digging",       "branch": "nest",    "mvp": true,  "baseCost": { "foliage": 2000, "protein": 1000,  "nectar": 500 },  "unlock": { "pheromone_chamber": 4 }, "effect": { "space": 5 } },
+    "tunnel_engineering": { "name": "Tunnel Engineering", "branch": "nest",    "mvp": true,  "baseCost": { "foliage": 3000, "protein": 1000,  "nectar": 500 },  "unlock": { "pheromone_chamber": 4, "research.deep_digging": 2 }, "maxLevel": 6, "effect": { "buildTimePct": -5 } },
+    "nuptial_flight":     { "name": "Nuptial Flight",     "branch": "nest",    "mvp": true,  "baseCost": { "foliage": 4000, "protein": 8000,  "nectar": 4000 }, "unlock": { "pheromone_chamber": 3 }, "effect": { "coloniesPer2Levels": 1 } },
+    "supercolony":        { "name": "Supercolony",        "branch": "nest",    "mvp": false, "baseCost": { "foliage": 10000,"protein": 10000, "nectar": 5000 }, "unlock": { "pheromone_chamber": 6, "research.nuptial_flight": 5, "research.colony_mind": 4, "research.chemical_mimicry": 2 }, "effect": { "unlocksAlliances": true } },
+
+    "pheromone_trails":   { "name": "Pheromone Trails",   "branch": "scent",   "mvp": true,  "baseCost": { "foliage": 400,  "protein": 0,     "nectar": 600 },  "unlock": { "pheromone_chamber": 1 }, "effect": { "speedPct": 10 } },
+    "colony_mind":        { "name": "Colony Mind",        "branch": "scent",   "mvp": true,  "baseCost": { "foliage": 0,    "protein": 400,   "nectar": 600 },  "unlock": { "pheromone_chamber": 1 }, "effect": { "missionSlots": 1 } },
+    "scent_reading":      { "name": "Scent Reading",      "branch": "scent",   "mvp": true,  "baseCost": { "foliage": 200,  "protein": 1000,  "nectar": 200 },  "unlock": { "pheromone_chamber": 2 }, "effect": { "scoutLevel": 1 } },
+    "tandem_running":     { "name": "Tandem Running",     "branch": "scent",   "mvp": true,  "baseCost": { "foliage": 1000, "protein": 1000,  "nectar": 2000 }, "unlock": { "pheromone_chamber": 4, "research.colony_mind": 2, "research.pheromone_trails": 2 }, "maxLevel": 6, "effect": { "researchTimePct": -5 } },
+    "chemical_mimicry":   { "name": "Chemical Mimicry",   "branch": "scent",   "mvp": true,  "baseCost": { "foliage": 500,  "protein": 2500,  "nectar": 1500 }, "unlock": { "pheromone_chamber": 4, "research.scent_reading": 3 }, "maxLevel": 3, "effect": { "scoutStealth": 1 } }
   }
 }

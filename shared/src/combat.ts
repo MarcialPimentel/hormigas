@@ -10,7 +10,7 @@ import {
   type DefenseId,
   type Resources,
 } from './data';
-import { lvl, researchBonus, type DefenseCounts, type ResearchLevels, type UnitCounts } from './economy';
+import { lvl, researchBonus, researchSum, type DefenseCounts, type ResearchLevels, type UnitCounts } from './economy';
 import { res, add, scale } from './resources';
 import { createRng, type Rng } from './rng';
 
@@ -59,11 +59,13 @@ interface Army {
 function statsFor(key: EntityKey, research: ResearchLevels) {
   const id = key.slice(2);
   const base: CombatStats = key[0] === 'c' ? CASTES[id as CasteId] : DEFENSES[id as DefenseId];
+  // Formic Acid: defenses get an extra percentage on all three stats.
+  const def = key[0] === 'd' ? researchSum(research, 'defensePct') / 100 : 0;
   return {
     id,
-    attack: base.attack * (1 + researchBonus(research, 'mandibles', 'attackPct')),
-    guard: base.guard * (1 + researchBonus(research, 'guard_formation', 'guardPct')),
-    health: base.health * (1 + researchBonus(research, 'chitin', 'healthPct')),
+    attack: base.attack * (1 + researchBonus(research, 'mandibles', 'attackPct') + def),
+    guard: base.guard * (1 + researchBonus(research, 'guard_formation', 'guardPct') + def),
+    health: base.health * (1 + researchBonus(research, 'chitin', 'healthPct') + def),
     frenzy: base.frenzy ?? {},
   };
 }
@@ -220,10 +222,13 @@ export function corpseProtein(...lost: UnitCounts[]): number {
   return Math.floor((v * C.corpsePctOfDestroyedValue) / 100);
 }
 
+/** Share of unprotected stores a winning raid can take, in percent: 50, plus Raiding Columns. */
+export const lootPct = (attackerResearch?: ResearchLevels): number => C.lootPctOfUnprotected + researchSum(attackerResearch, 'lootPct');
+
 /** Amount of each resource raiders could take: lootPct of what's above the protected amount. */
-export function lootable(resources: Resources, protectedEach: number): Resources {
+export function lootable(resources: Resources, protectedEach: number, pct: number = C.lootPctOfUnprotected): Resources {
   const out = res();
-  for (const r of RESOURCE_IDS) out[r] = Math.floor((Math.max(0, resources[r] - protectedEach) * C.lootPctOfUnprotected) / 100);
+  for (const r of RESOURCE_IDS) out[r] = Math.floor((Math.max(0, resources[r] - protectedEach) * pct) / 100);
   return out;
 }
 
@@ -284,7 +289,7 @@ export function previewBattle(
     lossA += la.foliage + la.protein + la.nectar;
     lossD += ld.foliage + ld.protein + ld.nectar;
     if (r.winner === 'attacker' && opts.defenderResources && opts.cargoOf) {
-      const l = fillCargo(lootable(opts.defenderResources, opts.protectedEach ?? 0), opts.cargoOf(r.attackerSurvivors));
+      const l = fillCargo(lootable(opts.defenderResources, opts.protectedEach ?? 0, lootPct(attacker.research)), opts.cargoOf(r.attackerSurvivors));
       loot += l.foliage + l.protein + l.nectar;
     }
   }

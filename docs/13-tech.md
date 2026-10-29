@@ -25,7 +25,7 @@ elapsed   = now − last_updated
 resources = min(resources + rate × elapsed, storage_cap)
 last_updated = now
 ```
-Rates are recalculated whenever a chamber, workforce or research changes.
+Rates are recalculated whenever a chamber, workforce or research changes. When a research that changes production or storage finishes, the `research_complete` event first brings every colony of that player up to the finishing moment, then saves the new level ([21-tech-tree](21-tech-tree.md)).
 
 ## Event queue
 - Table `events(id, world_id, type, due_at, payload, status)`.

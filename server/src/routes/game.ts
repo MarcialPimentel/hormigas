@@ -29,6 +29,7 @@ export function colonyView(c: Colony) {
     defenses: c.defenses,
     buildJob: c.buildJob,
     unitQueue: c.unitQueue,
+    research: c.research,
   };
 }
 

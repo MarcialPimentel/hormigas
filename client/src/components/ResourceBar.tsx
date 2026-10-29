@@ -21,7 +21,7 @@ function usePops() {
     const p = prev.current;
     prev.current = { id: colony.id, res: { ...colony.resources } };
     if (!p || p.id !== colony.id) return;
-    const rate = productionPerHour(colony.chambers, colony.terrain, state.world.speed);
+    const rate = productionPerHour(colony.chambers, colony.terrain, state.world.speed, colony.research);
     const fresh: Pop[] = [];
     for (const r of RESOURCE_IDS) {
       const jump = colony.resources[r] - p.res[r];
@@ -40,10 +40,10 @@ export function ResourceBar() {
   const { colony, state } = useGame();
   const pops = usePops();
   if (!colony || !state) return null;
-  const rate = productionPerHour(colony.chambers, colony.terrain, state.world.speed);
-  const cap = storageCapacity(colony.chambers);
+  const rate = productionPerHour(colony.chambers, colony.terrain, state.world.speed, colony.research);
+  const cap = storageCapacity(colony.chambers, colony.research);
   const wf = workforce(colony.chambers);
-  const safe = protectedAmount(colony.chambers);
+  const safe = protectedAmount(colony.chambers, colony.research);
   return (
     <div className="resbar" role="region" aria-label="Resources">
       {RESOURCE_IDS.map((r) => {

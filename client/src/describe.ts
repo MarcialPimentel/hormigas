@@ -1,6 +1,7 @@
 // Human-readable descriptions of what chambers do at a given level.
 import {
   CHAMBERS,
+  type ResearchLevels,
   explainShortfall,
   levelGrowth as growth,
   productionPerHour,
@@ -62,6 +63,6 @@ export function chamberEffect(id: ChamberId, level: number, terrain: TerrainId, 
 }
 
 /** Plain-language reason a colony can't pay `cost`, or '' if it can. */
-export function whyShort(colony: { chambers: any; terrain: TerrainId; resources: Resources }, cost: Resources, worldSpeed: number): string {
-  return explainShortfall(shortfalls(cost, colony.resources, storageCapacity(colony.chambers), productionPerHour(colony.chambers, colony.terrain, worldSpeed)));
+export function whyShort(colony: { chambers: any; terrain: TerrainId; resources: Resources; research?: ResearchLevels }, cost: Resources, worldSpeed: number): string {
+  return explainShortfall(shortfalls(cost, colony.resources, storageCapacity(colony.chambers, colony.research), productionPerHour(colony.chambers, colony.terrain, worldSpeed, colony.research)));
 }
