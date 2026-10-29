@@ -78,7 +78,7 @@ They follow every wild-nest rule (levels 1–6, 24 h regrowth, gentle raids back
 - **Can't be worn down.** She recovers fully between fights, so only one big enough army wins. A small raid draws and loses ants for nothing.
 - **Regrows over a week** (168 h). Rich in Protein: tier 1 holds 10k Foliage, 40k Protein and 8k Nectar.
 - **Never raids.**
-- **For the Alliances build:** tier 2 is out of reach for one day-30 army. It's meant for joint raids once supercolonies exist. A joint raid can target the same colony row; nothing here needs to change.
+- **For the Alliances build:** tier 2 is out of reach for one day-30 army. It's meant for joint raids, which come in alliances stage B ([23-supercolonies](23-supercolonies.md)). A joint raid can target the same colony row; nothing here needs to change.
 
 ### Aphid herds
 - **Scout it first.** Then send a **Tend aphids** mission with any ants. When they arrive they **stay with the herd** (the mission ends there, like Relocate), and the herd is yours while they're there.
@@ -88,6 +88,7 @@ They follow every wild-nest rule (levels 1–6, 24 h regrowth, gentle raids back
 - **Send more tenders** any time from the same colony. **Call tenders home** from the herd's card: they walk home carrying what honeydew they can, and the herd is left untended.
 - **Taking a herd:** you can't tend a herd someone else holds. **Raid** it instead.
   - It's a fight with the tenders, under the normal PvP rules: new-colony and strength protection, and the bash limit. Raiding someone's tenders ends your own new-colony protection.
+  - A truce or a shared supercolony scent with the tending player covers their tenders too ([23-supercolonies](23-supercolonies.md)). A raid already on its way turns back if a pact is agreed first.
   - The tenders fight with their owner's research. They're warned like any raid ("Raid incoming on your aphid herd").
   - Win, and you take the waiting honeydew. If no tenders survive, the herd is free, and the first to tend it holds it.
 - **Nobody to fight at an untended herd:** you can't raid it, you tend it.
