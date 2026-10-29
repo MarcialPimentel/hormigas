@@ -1,4 +1,4 @@
-import type { Q } from '../db';
+import { afterCommit, type Q } from '../db';
 
 export type ReportType = 'transport' | 'relocate' | 'scout' | 'scouted' | 'battle' | 'haul' | 'forage' | 'return' | 'milestone' | 'nest_event' | 'colonize';
 
@@ -9,7 +9,9 @@ export async function addReport(q: Q, worldId: number, playerId: number, type: R
   );
   // `kind` lets open tabs animate what happened (e.g. which nest event or forage outcome)
   const d = data as { event?: string; outcome?: string };
-  onReport?.(playerId, { id: r.rows[0].id, type, title, kind: d.event ?? d.outcome });
+  // tell open tabs only once the report is saved: a rolled-back report must not pop up
+  const push = { id: r.rows[0].id, type, title, kind: d.event ?? d.outcome };
+  await afterCommit(q, async () => onReport?.(playerId, push));
   return r.rows[0].id as number;
 }
 
