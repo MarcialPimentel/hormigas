@@ -285,7 +285,7 @@ export function SpotCard({ s, at, onAct }: { s: Spot; at: Coords; onAct: (type: 
           ) : c && scent ? (
             <>
               <strong>
-                {c.known === 'familiar' ? `${c.name}` : c.name} <span className="scent-tag">Not scouted</span>
+                {c.name} <span className="scent-tag">Not scouted</span>
               </strong>
               <span className="muted small">
                 {c.known === 'familiar'
