@@ -19,8 +19,8 @@
 | **Haul Corpses** | ✅ | Collect a corpse field (Workers / Carrion Beetles) |
 | **Forage** | ✅ | Expedition into the wilds (below) |
 | **Found Colony** | ✅ | A Winged Queen (plus escorts and cargo) founds a new colony at an empty spot ([19-colonies](19-colonies.md)) |
-| **Joint Raid** | v1 | Several supercolony members raid together |
-| **Hold Position** | v1 | Station units at an ally's colony to defend it |
+| **Hold Position** | ✅ | Station soldiers at a supercolony mate's colony; they fight in its battles until recalled ([23-supercolonies](23-supercolonies.md)) |
+| **Joint Raid** | v1 | Several supercolony members raid together (alliances stage B) |
 
 ## Scout before you raid
 Raids and transports need a target you have scouted. A colony you haven't is a **scent** on the map, and the game refuses with "Scout this scent first" ([22-discovery](22-discovery.md)). Scouting is always allowed. Targets are picked by tapping them on the patch at the top of the Missions tab; typing coordinates is still possible behind **Enter coordinates**.

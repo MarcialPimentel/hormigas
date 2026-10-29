@@ -1,4 +1,4 @@
-// Build 9: contact, truces, supercolonies, Hold Position and the slow break-up (docs/23-supercolonies.md).
+// Alliances stage A: contact, truces, supercolonies, Hold Position and the slow break-up (docs/23-supercolonies.md).
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';

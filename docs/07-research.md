@@ -32,12 +32,12 @@ Since Build 6 research is a **tree**: research can need other research (not only
 | **Scent Reading** | Scent | Pher 2 | Better scouting reports; harder to scout |
 | **Tandem Running** | Scent | Pher 4, Colony Mind 2, Pheromone Trails 2 | Research 5% faster per level (max 6) |
 | **Chemical Mimicry** | Scent | Pher 4, Scent Reading 3 | Each level halves the chance your scouts are spotted (max 3) |
+| **Supercolony** | Nest | Pher 3, Nuptial Flight 1, Colony Mind 1 | Found or join a supercolony (max 1; [23-supercolonies](23-supercolonies.md)) |
 
 ## Later research
 | Research | Branch | Needs | Effect |
 |---|---|---|---|
 | **Symbiosis** | Harvest | Pher 5, Aphid Husbandry 3, Chemical Mimicry 1 | Unlocks ally species (beetles, bullet ants) |
-| **Supercolony** | Nest | Pher 6, Nuptial Flight 5, Colony Mind 4, Chemical Mimicry 2 | Unlocks supercolonies (alliances) and joint raids |
 
 ## Scouting detail by Scent Reading difference
 `diff = yourScentReading − theirScentReading + (scouts sent − 1) / 2` (rounded down)
