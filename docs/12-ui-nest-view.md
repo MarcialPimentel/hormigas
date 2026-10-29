@@ -15,8 +15,7 @@
 | **Chambers** | List view of all chambers, costs, upgrade buttons |
 | **Brood Hall** | Raise castes and defenses |
 | **Research** | Instinct tree |
-| **Map** | Regions as a grid of patches; each patch drawn with its colonies as mounds |
-| **Missions** | Send missions; "return at" picker; preview battles |
+| **Missions** | Your patch drawn at the top (colonies as mounds, unscouted ones as scents); tap a spot to scout, raid, send or forage; **World** opens the region grid. Below: send missions, "return at" picker, battle preview, missions under way. The Map tab folded in here in Build 7 ([22-discovery](22-discovery.md)) |
 | **Reports** | Battle, scout, forage reports |
 | **Rankings** | Leaderboards |
 | **Feedback** | Admins only: player feedback, newest first, mark as handled |
@@ -92,7 +91,7 @@ The game should *show* the colony at work, not only list timers. (Build 3 used d
 - **While you were away:** after 20+ minutes away, the Colony screen opens with a card listing chambers that grew, research learned, the change in stores and the reports filed meanwhile. Built from a snapshot the browser keeps; nothing new on the server.
 - **Pop-ups in view:** finished builds, research and brood, and new reports, show as in-game pop-ups when the tab is open (browser notifications when it's in the background).
 - **+N pops:** food arriving all at once (cargo, loot, a gift) floats up as "+N" over the resource bar.
-- **Parties on the move:** mission rows, "Happening now" and the Map's spot card show a small track with walking ants: ours outbound and home (with cargo), raids and scouts heading for us (red).
+- **Parties on the move:** mission rows, "Happening now" and the patch's spot card (Missions) show a small track with walking ants: ours outbound and home (with cargo), raids and scouts heading for us (red).
 
 ## Notifications
 - **Browser notifications** (opt-in through a one-time card after the tutorial, not on first load; there's no permanent settings panel, per playtest feedback, and players turn them off in the browser's site settings):

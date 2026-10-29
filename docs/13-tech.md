@@ -48,6 +48,7 @@ reports(id, world_id, player_id, type, data, created_at, read)
 corpse_fields(world_id, region, patch, spot, protein, created_at)
 -- wild nests: colonies.npc (species, level, at) on colonies owned by the world's players.is_npc player
 -- nest events (Build 3): one pending events row per player colony, type nest_event, payload {colonyId}; startup re-arms any colony without one
+known_colonies(player_id, colony_id, via, first_at, discovered_at, smelled_at)  -- discovery (Build 7): no row = a scent; read through server/src/game/discovery.ts (docs/22-discovery.md)
 -- swarms (Build 5): same pattern, type swarm_spotted; the swarm itself is a mission of type 'swarm' owned by the wild player, anchored on the patch's wild nest, starting from spot 13
 ```
 

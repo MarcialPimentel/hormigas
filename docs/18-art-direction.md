@@ -102,6 +102,9 @@ The Research screen has a **Tree / List** switch. Computers open on the tree, ph
 - **Phones:** the same tree, panning sideways; a tap opens the card as a bottom sheet.
 - **Colours:** `--scent` (violet, darker on paper) and `--trail-off` are theme tokens in `client/src/styles.css`; picture tiles stay on their light paper in both themes.
 
+## Scents on the patch
+A colony you haven't scouted is drawn as a **scent**: three wavy strokes rising from a faint stain on the ground, with no mound, flag or name ([22-discovery](22-discovery.md)). They use the flag colours, so players learn one code: **amber = players' ants, red = wild ants** (honey stays yours). Strokes sway slowly; reduced motion holds them still. The label reads "Ant scent" or "Wild scent", or the colony's name once it has scouted or raided you. Mock-up: [art/scents-mockup.html](art/scents-mockup.html) (made before the build; the real screen is `client/src/components/Patch.tsx`).
+
 ## In 3D: 2D art in a 3D block
 The computer nest is a 3D block of earth ([12-ui-nest-view.md](12-ui-nest-view.md), "The 3D slab"), but its life is this 2D art: chamber pictures on the hollows' back walls and ant sprites on flat cards. The look is a paper diorama; the soil strata (`#6B4F37` → `#4A3726` → `#33261A`), hollow (`#1C140E`) and grass (`#6F9A3E`) come from [art/3d-exploration.md](art/3d-exploration.md). Hero models can replace cards one at a time later.
 

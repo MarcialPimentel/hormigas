@@ -1,0 +1,203 @@
+<title>Hormigas Scents Mock-up</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&display=swap">
+<style>
+/* Layout: the game's own field-guide paper theme; phone frames side by side, notes underneath. */
+:root {
+  --soil: #e9ece0; --wall: #f6f7f0; --raised: #dfe3d3; --seam: #c9cbb8;
+  --ink: #2b1d13; --muted: #5a4f3c; --honey: #e8b23a; --honey-ink: #7e520a;
+  --danger: #a3301f; --scent: #7a45c9;
+  --font-display: 'Bricolage Grotesque', system-ui, sans-serif;
+  --font-body: 'Atkinson Hyperlegible', system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --soil: #231a14; --wall: #30241b; --raised: #3d2e22; --seam: #4c3a2b; --ink: #efe4d2; --muted: #a8957e;
+  --honey-ink: #e8b23a; --danger: #e2685a; --scent: #c59bff; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --soil: #231a14; --wall: #30241b; --raised: #3d2e22; --seam: #4c3a2b; --ink: #efe4d2; --muted: #a8957e;
+  --honey-ink: #e8b23a; --danger: #e2685a; --scent: #c59bff; color-scheme: dark }
+body { background: var(--soil); color: var(--ink); font: 15px/1.5 var(--font-body);
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 24px 48px; }
+main { max-width: 1060px; margin: 0 auto; display: grid; gap: 28px; }
+h1, h2, h3 { font-family: var(--font-display); text-wrap: balance; margin: 0; }
+h1 { font-size: 1.9rem; font-weight: 800; }
+h2 { font-size: 1.3rem; }
+h3 { font-size: 1.02rem; }
+p { margin: 0; max-width: 68ch; }
+.muted { color: var(--muted); }
+.small { font-size: .86rem; }
+.frames { display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start; }
+.phone { width: 370px; max-width: 100%; background: var(--soil); border: 1px solid var(--seam); border-radius: 26px; padding: 14px; display: grid; gap: 12px; box-shadow: 0 6px 24px rgba(43,29,19,.12); }
+.cap { font-size: .8rem; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); font-weight: 700; }
+.panel { background: var(--wall); border: 1px solid var(--seam); border-radius: 12px; padding: 12px; display: grid; gap: 10px; min-width: 0; }
+.row { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
+.scene { width: 100%; height: auto; display: block; border-radius: 8px; }
+.card { border-left: 4px solid var(--seam); background: var(--soil); border-radius: 8px; padding: 10px 12px; display: grid; gap: 6px; }
+.card.npc { border-left-color: #C4473A; }
+.card.player { border-left-color: #C98B52; }
+.card.known { border-left-color: #C98B52; }
+.btns { display: flex; gap: 8px; flex-wrap: wrap; }
+.btn { font: 700 .85rem var(--font-body); padding: 7px 14px; border-radius: 999px; border: 1px solid var(--seam); background: var(--raised); color: var(--ink); }
+.btn.primary { background: var(--honey); border-color: var(--honey); color: #2b1d13; }
+.btn[disabled] { opacity: .45; }
+.why { font-size: .84rem; color: var(--danger); }
+.tag { font-size: .72rem; font-weight: 700; padding: 2px 8px; border-radius: 999px; background: var(--raised); color: var(--muted); }
+.tag.scent { color: var(--scent); }
+.mission { display: flex; justify-content: space-between; font-size: .86rem; gap: 8px; }
+.tabs { display: flex; gap: 6px; flex-wrap: wrap; }
+.tabs span { font-size: .8rem; padding: 4px 10px; border-radius: 999px; background: var(--raised); }
+.tabs span.on { background: var(--honey); color: #2b1d13; font-weight: 700; }
+.legend { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; }
+.legend div { display: flex; gap: 10px; align-items: center; min-width: 0; }
+.legend svg { flex: none; }
+.notes { display: grid; gap: 14px; }
+.grids { display: flex; flex-wrap: wrap; gap: 28px; }
+.grids figure { margin: 0; display: grid; gap: 6px; }
+.g { display: grid; grid-template-columns: repeat(10, 14px); gap: 3px; }
+.g i { width: 14px; height: 14px; border-radius: 3px; background: #b5c99a; display: block; }
+.g i.p1 { background: #e3b66f; } .g i.p3 { background: #C98B52; } .g i.p4 { background: #8a5a2e; }
+.scroll { overflow-x: auto; }
+table { border-collapse: collapse; font-size: .86rem; min-width: 520px; }
+th, td { text-align: left; padding: 6px 10px; border-bottom: 1px solid var(--seam); vertical-align: top; }
+th { font-family: var(--font-display); }
+code { font-size: .84em; background: var(--raised); padding: 1px 5px; border-radius: 4px; }
+</style>
+
+<main>
+  <header style="display:grid;gap:6px">
+    <span class="cap">Hormigas · issue #66 · proposal mock-up</span>
+    <h1>Your patch, with scents</h1>
+    <p class="muted">The Missions tab opens on your patch. Colonies you haven't scouted show as a scent: amber for players, red for wild ants. Tap one, scout it, and it turns into a named colony you can raid. Static mock-up, not the game.</p>
+  </header>
+
+  <section class="frames">
+    <!-- Frame 1: a scent is selected -->
+    <div class="phone">
+      <span class="cap">1 · Tap a scent</span>
+      <div class="panel">
+        <div class="row"><h3>The Backyard · Patch 44</h3><span class="tag">Your patch</span></div>
+        <svg class="scene" viewBox="0 0 600 240" role="img" aria-label="Patch 44 drawn with your colony, two scents and one known neighbor">
+          <rect width="600" height="64" fill="#A9CFE0"/>
+          <rect x="0" y="64" width="90" height="176" fill="#B9C95A"/>
+          <rect x="90" y="64" width="90" height="176" fill="#D9C08A"/>
+          <rect x="180" y="64" width="180" height="176" fill="#6F9A3E"/>
+          <rect x="360" y="64" width="90" height="176" fill="#5E4630"/>
+          <rect x="450" y="64" width="90" height="176" fill="#8FB3A6"/>
+          <rect x="540" y="64" width="60" height="176" fill="#4E6B34"/>
+          <rect x="366" y="90" width="78" height="20" rx="10" fill="#8A6440"/>
+          <path d="M450 104 q22 -10 45 0 t45 0 v14 q-22 8 -45 0 t-45 0z" fill="#5E8FA8"/>
+          <!-- spot 5: my colony -->
+          <g><ellipse cx="202" cy="172" rx="16" ry="8" fill="#4A3726"/><ellipse cx="202" cy="169" rx="5" ry="2.6" fill="#1C140E"/>
+            <line x1="202" y1="165" x2="202" y2="134" stroke="#2B1D13" stroke-width="1.5"/><path d="M202 134 h13 l-3 5 l3 5 h-13z" fill="#E8B23A" stroke="#2B1D13" stroke-width=".8"/>
+            <text x="202" y="126" text-anchor="middle" font-size="11" font-weight="700" fill="#F6F7F0" stroke="#2B1D13" stroke-width="2.5" paint-order="stroke">marz's Nest</text></g>
+          <!-- spot 4: NPC scent, selected -->
+          <g><ellipse cx="157" cy="172" rx="22" ry="12" fill="none" stroke="#F6F7F0" stroke-width="2.5"/>
+            <ellipse cx="157" cy="174" rx="14" ry="5" fill="#C4473A" opacity=".25"/>
+            <path d="M151 168 q-6 -9 0 -18 t0 -18" stroke="#C4473A" stroke-width="2.6" fill="none" stroke-linecap="round"/>
+            <path d="M158 168 q-6 -9 0 -18 t0 -18 t0 -14" stroke="#C4473A" stroke-width="2.6" fill="none" stroke-linecap="round"/>
+            <path d="M165 168 q-6 -9 0 -18 t0 -14" stroke="#C4473A" stroke-width="2.6" fill="none" stroke-linecap="round"/>
+            <text x="157" y="206" text-anchor="middle" font-size="11" font-weight="700" fill="#2B1D13">Wild scent</text></g>
+          <!-- spot 7: player scent -->
+          <g><ellipse cx="292" cy="174" rx="14" ry="5" fill="#E8B23A" opacity=".3"/>
+            <path d="M286 168 q-6 -9 0 -18 t0 -18" stroke="#E8B23A" stroke-width="2.6" fill="none" stroke-linecap="round"/>
+            <path d="M293 168 q-6 -9 0 -18 t0 -18 t0 -14" stroke="#E8B23A" stroke-width="2.6" fill="none" stroke-linecap="round"/>
+            <path d="M300 168 q-6 -9 0 -18 t0 -14" stroke="#E8B23A" stroke-width="2.6" fill="none" stroke-linecap="round"/>
+            <text x="292" y="126" text-anchor="middle" font-size="11" font-weight="700" fill="#F6F7F0" stroke="#2B1D13" stroke-width="2.5" paint-order="stroke">Ant scent</text></g>
+          <!-- spot 8: known player -->
+          <g><ellipse cx="337" cy="172" rx="16" ry="8" fill="#4A3726"/><ellipse cx="337" cy="169" rx="5" ry="2.6" fill="#1C140E"/>
+            <line x1="337" y1="165" x2="337" y2="134" stroke="#2B1D13" stroke-width="1.5"/><path d="M337 134 h13 l-3 5 l3 5 h-13z" fill="#C98B52" stroke="#2B1D13" stroke-width=".8"/>
+            <text x="337" y="206" text-anchor="middle" font-size="11" font-weight="700" fill="#F6F7F0" stroke="#2B1D13" stroke-width="2.5" paint-order="stroke">ana's Nest</text></g>
+          <!-- corpses at spot 8 -->
+          <circle cx="325" cy="184" r="2" fill="#D06A6A"/><circle cx="329" cy="182" r="2" fill="#D06A6A"/><circle cx="333" cy="184" r="2" fill="#D06A6A"/>
+          <!-- wilds -->
+          <circle cx="570" cy="172" r="6" fill="none" stroke="#F6F7F0" stroke-dasharray="2 2"/>
+          <text x="546" y="78" font-size="10" font-weight="700" fill="#F6F7F0">The wilds</text>
+          <g font-size="10" fill="#2B1D13" text-anchor="middle"><text x="22" y="234">1</text><text x="67" y="234">2</text><text x="112" y="234">3</text><text x="157" y="234">4</text><text x="202" y="234" fill="#F6F7F0">5</text><text x="247" y="234" fill="#F6F7F0">6</text><text x="292" y="234" fill="#F6F7F0">7</text><text x="337" y="234" fill="#F6F7F0">8</text><text x="382" y="234" fill="#F6F7F0">9</text><text x="427" y="234" fill="#F6F7F0">10</text><text x="472" y="234">11</text><text x="517" y="234">12</text></g>
+        </svg>
+        <div class="card npc">
+          <div class="row"><strong>Wild scent</strong><span class="tag scent">Not scouted</span></div>
+          <span class="small muted">Spot 4 · Sandy Soil. It smells of wild ants. You can't tell which kind, how many, or what they store.</span>
+          <div class="btns"><button class="btn primary">Scout</button><button class="btn" disabled>Raid</button></div>
+          <span class="why">Scout this scent first. Your soldiers need to know what they're walking into.</span>
+        </div>
+      </div>
+      <div class="panel">
+        <h3>Missions under way</h3>
+        <div class="mission"><span>Scout → spot 7</span><span class="muted">arrives 0:04</span></div>
+      </div>
+      <span class="small muted">Other patches: a "World" button above the scene opens the region grid in place (the Map tab folds into this one).</span>
+    </div>
+
+    <!-- Frame 2: after scouting -->
+    <div class="phone">
+      <span class="cap">2 · Scouted: now it's a colony</span>
+      <div class="panel">
+        <div class="card npc">
+          <div class="row"><strong>Fire Ant Mound</strong><span class="tag">Wild nest · Level 1</span></div>
+          <span class="small muted">Spot 4 · Sandy Soil. Few, strong soldiers. Scouted 3 min ago: 1.6k foliage, 1k protein, 400 nectar · Minor Soldier ×6.</span>
+          <div class="btns"><button class="btn">Scout again</button><button class="btn primary">Raid</button></div>
+        </div>
+        <div class="card known">
+          <div class="row"><strong>ana's Nest</strong><span class="tag">ana · 41 pts</span></div>
+          <span class="small muted">Spot 8 · Grassland. Known since ana raided you yesterday. No scout report yet.</span>
+          <div class="btns"><button class="btn">Scout</button><button class="btn primary">Raid</button><button class="btn">Send</button></div>
+        </div>
+        <div class="card player">
+          <div class="row"><strong>Ant scent</strong><span class="tag scent">Not scouted</span></div>
+          <span class="small muted">Spot 7 · Grassland. Another player's colony, by the smell. Scout it to learn who.</span>
+          <div class="btns"><button class="btn primary">Scout</button><button class="btn" disabled>Raid</button><button class="btn" disabled>Send</button></div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="row"><h3>Send a raid</h3><span class="muted small">0/2 slots</span></div>
+        <span class="small">Target: <strong>Fire Ant Mound</strong> · 1:44:4 <span class="muted">(change on the patch above)</span></span>
+        <span class="small muted">Units, speed, battle preview and fuel as today. No coordinate boxes to fill in.</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>Markers on the ground</h2>
+    <div class="legend">
+      <div><svg width="34" height="40" viewBox="0 0 34 40"><path d="M11 36 q-5 -8 0 -16 t0 -14" stroke="#C4473A" stroke-width="2.6" fill="none" stroke-linecap="round"/><path d="M17 36 q-5 -8 0 -16 t0 -16" stroke="#C4473A" stroke-width="2.6" fill="none" stroke-linecap="round"/><path d="M23 36 q-5 -8 0 -16 t0 -12" stroke="#C4473A" stroke-width="2.6" fill="none" stroke-linecap="round"/></svg><span><strong>Wild scent</strong><br><span class="small muted">An NPC you haven't scouted</span></span></div>
+      <div><svg width="34" height="40" viewBox="0 0 34 40"><path d="M11 36 q-5 -8 0 -16 t0 -14" stroke="#E8B23A" stroke-width="2.6" fill="none" stroke-linecap="round"/><path d="M17 36 q-5 -8 0 -16 t0 -16" stroke="#E8B23A" stroke-width="2.6" fill="none" stroke-linecap="round"/><path d="M23 36 q-5 -8 0 -16 t0 -12" stroke="#E8B23A" stroke-width="2.6" fill="none" stroke-linecap="round"/></svg><span><strong>Ant scent</strong><br><span class="small muted">A player you haven't scouted</span></span></div>
+      <div><svg width="34" height="40" viewBox="0 0 34 40"><ellipse cx="14" cy="34" rx="12" ry="5" fill="#4A3726"/><line x1="14" y1="31" x2="14" y2="6" stroke="#2B1D13" stroke-width="1.5"/><path d="M14 6 h12 l-3 5 l3 5 h-12z" fill="#C4473A"/></svg><span><strong>Red flag</strong><br><span class="small muted">A wild nest you know</span></span></div>
+      <div><svg width="34" height="40" viewBox="0 0 34 40"><ellipse cx="14" cy="34" rx="12" ry="5" fill="#4A3726"/><line x1="14" y1="31" x2="14" y2="6" stroke="#2B1D13" stroke-width="1.5"/><path d="M14 6 h12 l-3 5 l3 5 h-12z" fill="#C98B52"/></svg><span><strong>Amber flag</strong><br><span class="small muted">A player you know (yours stays honey)</span></span></div>
+    </div>
+  </section>
+
+  <section class="panel notes">
+    <h2>Where new players land</h2>
+    <p>Today each sign-up goes to the emptiest region, so the first players end up in different regions. In a local test, four sign-ups landed in four regions. The proposal fills one patch at a time. Lone active players get neighbours first, then a fresh patch opens beside the last one.</p>
+    <div class="grids">
+      <figure><div class="g" aria-label="Today: four players in four regions">
+        <i class="p1"></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+        <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i class="p1"></i><i></i><i></i>
+        <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+        <i></i><i></i><i></i><i class="p1"></i><i></i><i></i><i></i><i></i><i></i><i></i>
+        <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i class="p1"></i>
+      </div><figcaption class="small muted">Today: 1 player per patch, spread out</figcaption></figure>
+      <figure><div class="g" aria-label="Proposed: patches filled to four, side by side">
+        <i class="p4"></i><i class="p4"></i><i class="p3"></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+        <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+        <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+        <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+        <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+      </div><figcaption class="small muted">Proposed: 4 per patch (the 4 Grassland spots), patches side by side</figcaption></figure>
+    </div>
+  </section>
+
+  <section class="panel notes">
+    <h2>The shared record for the NPC and Alliances builds</h2>
+    <p>One table says which colonies each player knows. Everything else (map, raid and send checks, NPC discovery, first contact) reads it through one server helper, so the next builds plug in without new rules.</p>
+    <div class="scroll"><table>
+      <thead><tr><th>known_colonies</th><th>What it holds</th></tr></thead>
+      <tbody>
+        <tr><td><code>player_id</code>, <code>colony_id</code></td><td>Who knows which colony (one row each, never deleted)</td></tr>
+        <tr><td><code>discovered_at</code></td><td>When it stopped being a scent</td></tr>
+        <tr><td><code>via</code></td><td>How: <code>scouted</code>, <code>raided_you</code>, <code>scouted_you</code>, <code>earlier</code> (seeded at launch). Later builds add their own, such as <code>contact</code> or <code>ally</code></td></tr>
+      </tbody>
+    </table></div>
+    <p class="small muted">No row means a scent. Your own colonies are always known. The NPC build makes new NPCs ordinary colony rows (like wild nests today), so they show up as wild scents with no extra work.</p>
+  </section>
+</main>

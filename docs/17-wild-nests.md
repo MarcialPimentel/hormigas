@@ -62,7 +62,7 @@ Different species make scouting matter: the right army depends on what lives nex
 The founding tasks gain a 12th step, **"Raid the wild nest"**: win one raid against a wild nest. It follows "Send out a Scout" (the nest is the natural thing to scout) and gives the stretch after Nectar a concrete goal. A level-1 nest falls to about 6–8 Minor Soldiers.
 
 ## How players see them
-- **Map:** the nest's spot shows its name, species, level and a "Wild nest" tag, with Scout and Raid buttons (no Send). Its owner is never shown as a player.
+- **Map (Missions tab):** until you scout it, the nest is a red **wild scent**: no name, species or level, and Raid is greyed out ([22-discovery](22-discovery.md)). Once scouted, its spot shows its name, species, level and a "Wild nest" tag, with Scout and Raid buttons (no Send). Its owner is never shown as a player. A nest that raided you becomes a familiar scent: you see its name, but still scout before raiding it.
 - **Scout reports** name the species and include a one-line hint on how it fights.
 - **Battle reports** and **incoming raids** name the nest ("Fire Ant Mound"), never a player.
 - Nests never appear in **rankings** and don't count toward the **world median** that drives the Late Founding Boost.

@@ -5,6 +5,9 @@
 ## Stance
 PvP is **open early**. The rules below exist so that open PvP doesn't turn new players into permanent food. One world + open PvP is the highest-churn combination, so these rules are MVP scope, not polish.
 
+## Scout first
+You can't raid (or send to) a colony you haven't scouted: until then it's a scent ([22-discovery](22-discovery.md)). Being scouted or raided shows you who it was, but you still scout before striking back.
+
 ## New colony protection
 - A brand-new account is protected for **72 hours** or until it sends its first Raid, whichever comes first.
 - Protected colonies can still be scouted (they learn the game's threats safely).
