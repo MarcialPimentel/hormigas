@@ -1,0 +1,18 @@
+{
+  "_version": "0.1",
+  "_note": "Founding tasks, in order (docs/02-progression.md). Players see one at a time and claim the reward (added to the colony they pick) once its goal is met. goal is one of: { chamber, level } (that chamber at that level in any colony), { units, count } (that many of a caste, home or away), { missionSent } (a mission of that type ever sent), { wildRaidsWon } (that many raids won against wild ant nests). milestone: the big-moment text shown for this task. screen: where the Show me button goes.",
+  "quests": [
+    {"id":"leaf","title":"Build a Leaf Garden","hint":"Foliage is the colony’s building material.","screen":"chambers","reward":{"foliage":150,"protein":50,"nectar":0},"goal":{"chamber":"leaf_garden","level":1}},
+    {"id":"nursery","title":"Build a Nursery","hint":"Production chambers need workers to run them. The Nursery raises them.","screen":"chambers","reward":{"foliage":150,"protein":75,"nectar":0},"goal":{"chamber":"nursery","level":1}},
+    {"id":"hunt","title":"Build Hunting Grounds","hint":"Protein feeds castes and research.","screen":"chambers","reward":{"foliage":200,"protein":100,"nectar":0},"goal":{"chamber":"hunting_grounds","level":1}},
+    {"id":"queen2","title":"Enlarge the Queen's Chamber to level 2","hint":"Each level of the Queen’s Chamber unlocks new chambers.","screen":"chambers","reward":{"foliage":300,"protein":150,"nectar":0},"goal":{"chamber":"queen_chamber","level":2}},
+    {"id":"grow","title":"Grow your Leaf Garden to level 3","hint":"A bigger economy makes everything after this faster.","screen":"chambers","reward":{"foliage":300,"protein":200,"nectar":0},"goal":{"chamber":"leaf_garden","level":3}},
+    {"id":"queen3","title":"Enlarge the Queen's Chamber to level 3","hint":"Level 3 lets the colony herd aphids.","screen":"chambers","reward":{"foliage":400,"protein":300,"nectar":0},"goal":{"chamber":"queen_chamber","level":3}},
+    {"id":"nectar","title":"Discover Nectar","hint":"Build an Aphid Pasture. Aphids give honeydew — Nectar — which castes, research and every journey need.","screen":"chambers","reward":{"foliage":300,"protein":200,"nectar":150},"milestone":"Your colony has discovered Nectar.","goal":{"chamber":"aphid_pasture","level":1}},
+    {"id":"brood","title":"Build a Brood Hall","hint":"Castes and defenses are raised in the Brood Hall.","screen":"chambers","reward":{"foliage":600,"protein":300,"nectar":100},"goal":{"chamber":"brood_hall","level":1}},
+    {"id":"workers","title":"Raise 3 Workers","hint":"Workers carry food home and haul corpses.","screen":"brood","reward":{"foliage":400,"protein":200,"nectar":150},"goal":{"units":"worker","count":3}},
+    {"id":"forage","title":"Send a forage party","hint":"Missions → Forage. Send a few Workers into the wilds and see what they find.","screen":"missions","reward":{"foliage":500,"protein":500,"nectar":200},"goal":{"missionSent":"forage"}},
+    {"id":"scout","title":"Send out a Scout","hint":"Raise a Scout, then open Missions and tap a scent in your patch: the wild nest, a neighbor, or the wilds at the edge.","screen":"missions","reward":{"foliage":1000,"protein":1000,"nectar":500},"goal":{"missionSent":"scout"}},
+    {"id":"wild_raid","title":"Raid the wild nest","hint":"Every patch has a nest of wild ants: the red scent. Scout it first, check the battle preview, then send Minor Soldiers. Bring a few Workers to carry the loot home.","screen":"missions","reward":{"foliage":1500,"protein":1000,"nectar":500},"goal":{"wildRaidsWon":1}}
+  ]
+}
