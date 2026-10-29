@@ -1,11 +1,11 @@
 // Schematic cross-section of the nest (docs/12-ui-nest-view.md), drawn with PixiJS.
 // Chambers grow with level, tunnels link them to the entrance, and ants (docs/18-art-direction.md) go about
 // their work. Tapping a chamber opens a close-up of it.
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { setMotionPref, useMotion, type MotionPref } from '../motion';
 import { Application, Graphics } from 'pixi.js';
 import { C, LAYOUT, SURFACE, dottedEllipse, drawPolyline, geometry, lerpColor, seeded, skyAt, surfaceParties, type Pt, type SurfaceParty } from './nestScene';
-import { ChamberSheet } from './ChamberSheet';
+import { ChamberPopover, ChamberSheet } from './ChamberSheet';
 import { chamberTag, partyLabel } from './nestInfo';
 import { fmtDuration } from '../format';
 import { createFx } from './nestFx';
@@ -63,7 +63,8 @@ function destroyApp(app: Application) {
   }
 }
 
-export function NestView({ nav, onSwitch3d }: { nav: Nav; onSwitch3d?: () => void }) {
+/** `fill`: the nest fills its box (the Colony screen on a computer), and a chamber's card pops up beside it. */
+export function NestView({ nav, onSwitch3d, fill }: { nav: Nav; onSwitch3d?: () => void; fill?: boolean }) {
   const { colony, state, now } = useGame();
   const host = useRef<HTMLDivElement>(null);
   const appRef = useRef<Application | null>(null);
@@ -90,12 +91,12 @@ export function NestView({ nav, onSwitch3d }: { nav: Nav; onSwitch3d?: () => voi
     if (!el) return;
     const ro = new ResizeObserver(() => {
       const w = el.clientWidth;
-      // the nest is the home screen: tall enough to see the colony at work
-      setSize({ w, h: w < 520 ? 380 : Math.max(440, Math.min(540, Math.round(w * 0.5))) });
+      // the nest is the home screen: tall enough to see the colony at work (or as tall as its box, when it fills one)
+      setSize({ w, h: fill ? Math.max(360, el.clientHeight) : w < 520 ? 380 : Math.max(440, Math.min(540, Math.round(w * 0.5))) });
     });
     ro.observe(el);
     return () => ro.disconnect();
-  }, []);
+  }, [fill]);
 
   const research = state?.player.research ?? {};
   const chambersKey = JSON.stringify(colony?.chambers ?? {});
@@ -273,6 +274,11 @@ export function NestView({ nav, onSwitch3d }: { nav: Nav; onSwitch3d?: () => voi
   if (!colony) return null;
   const { w, h } = size;
   const geo = w ? geometry(w, h) : null;
+  const where = useCallback(() => {
+    if (!selected || !colony || !w) return null;
+    const { rx } = geometry(w, h).size(selected, lvl(colony.chambers, selected));
+    return { x: LAYOUT[selected].x * w, y: LAYOUT[selected].y * h, rx };
+  }, [selected, colony, w, h]);
   const visible = CHAMBER_IDS.filter((id) => lvl(colony.chambers, id) > 0 || isUnlocked(CHAMBERS[id].unlock, colony.chambers, research));
   const entranceX = geo ? geo.shaftX(SURFACE * h) : 0;
   const chamberTagFor = (id: ChamberId, level: number) => chamberTag(colony, state, now, id, level);
@@ -292,7 +298,7 @@ export function NestView({ nav, onSwitch3d }: { nav: Nav; onSwitch3d?: () => voi
   }
   return (
     <>
-    <div className="nest" ref={host} style={{ height: h || 380 }}>
+    <div className={`nest${fill ? ' fill' : ''}`} ref={host} style={{ height: fill ? '100%' : h || 380 }}>
       {geo &&
         visible.map((id) => {
           const level = lvl(colony.chambers, id);
@@ -343,9 +349,12 @@ export function NestView({ nav, onSwitch3d }: { nav: Nav; onSwitch3d?: () => voi
           {partyLabel(p)} · {fmtDuration(p.endAt - now)}
         </span>
       ))}
+      {fill && selected && !closeUp && (
+        <ChamberPopover at={where} id={selected} onClose={() => setSelected(null)} onLookInside={() => setCloseUp(selected)} onAllChambers={() => nav('chambers')} />
+      )}
       {closeUp && <ChamberCloseUp id={closeUp} onClose={() => setCloseUp(null)} onOpenChambers={() => setCloseUp(null)} />}
     </div>
-    {selected && !closeUp && (
+    {!fill && selected && !closeUp && (
       <ChamberSheet id={selected} onClose={() => setSelected(null)} onLookInside={() => setCloseUp(selected)} onAllChambers={() => nav('chambers')} />
     )}
     </>

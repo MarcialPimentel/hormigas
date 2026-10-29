@@ -57,6 +57,10 @@ export function ResourceBar() {
             <ResDot r={r} />
             <span className="res-amount">{fmtNum(colony.resources[r])}</span>
             <span className="res-rate">{full ? 'full' : `+${fmtNum(rate[r])}/h`}</span>
+            {/* how full the store is: what the Production table used to say */}
+            <span className="res-cap" aria-hidden="true">
+              <span style={{ width: `${Math.min(100, cap[r] ? (colony.resources[r] / cap[r]) * 100 : 0)}%` }} />
+            </span>
             {pops
               .filter((p) => p.r === r)
               .map((p) => (
@@ -67,12 +71,12 @@ export function ResourceBar() {
           </div>
         );
       })}
-      <div className={`res res-workforce${wf.ratio < 1 ? ' short' : ''}`} title={`Workforce: ${wf.demand} needed, ${wf.supply} available${wf.ratio < 1 ? `\nProduction at ${Math.round(wf.ratio * 100)}%` : ''}`}>
+      <div className={`res res-workforce${wf.ratio < 1 ? ' short' : ''}`} title={`Workforce: ${wf.demand} needed, ${wf.supply} available${wf.ratio < 1 ? `\nProduction at ${Math.floor(wf.ratio * 100)}%` : ''}`}>
         <ResDot r="workforce" />
         <span className="res-amount">
           {fmtNum(wf.demand)}/{fmtNum(wf.supply)}
         </span>
-        <span className="res-rate">{wf.ratio < 1 ? `${Math.round(wf.ratio * 100)}% output` : 'workforce'}</span>
+        <span className="res-rate">{wf.ratio < 1 ? `${Math.floor(wf.ratio * 100)}% output` : 'workforce'}</span>
       </div>
     </div>
   );

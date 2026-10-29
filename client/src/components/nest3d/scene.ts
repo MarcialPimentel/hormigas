@@ -28,9 +28,19 @@ export interface Layout {
   workers: number;
   soldiers: number;
 }
+/** Room at the edges of the view that floating cards cover, in CSS pixels: the block is framed in what's left. */
+export interface Inset {
+  left: number;
+  right: number;
+  top: number;
+  bottom: number;
+}
 export interface NestScene {
   setLayout(l: Layout): void;
   setReduced(r: boolean): void;
+  setInset(i: Inset): void;
+  /** Where a chamber is on screen (CSS pixels in the host), and about how wide its hollow is; null if it isn't drawn. */
+  where(id: ChamberId): { x: number; y: number; rx: number } | null;
   dispose(): void;
 }
 
@@ -545,10 +555,15 @@ export async function createNestScene(
   const target = new THREE.Vector3(0, -13.5, -3);
   const view = { yaw: 0.3, pitch: 0.16 }, goal = { ...view };
   let dist = 80;
+  let inset: Inset = { left: 0, right: 0, top: 0, bottom: 0 };
   function fit() {
     const w = host.clientWidth, h = host.clientHeight;
     renderer.setSize(w, h, false);
-    camera.aspect = w / h;
+    // frame the block in the part of the view the cards leave free, then widen the picture back out to the whole canvas
+    const fw = Math.max(200, w - inset.left - inset.right), fh = Math.max(200, h - inset.top - inset.bottom);
+    camera.aspect = fw / fh;
+    if (inset.left || inset.right || inset.top || inset.bottom) camera.setViewOffset(fw, fh, -inset.left, -inset.top, w, h);
+    else camera.clearViewOffset();
     camera.updateProjectionMatrix();
     const halfH = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
     // whole block in view: its width (plus a margin) or its height, whichever needs more room
@@ -667,10 +682,27 @@ export async function createNestScene(
   }
   raf = requestAnimationFrame(frame);
 
+  const pv = new THREE.Vector3();
+  const toScreen = (x: number, y: number) => {
+    pv.set(x, y, 0.05).project(camera);
+    return { x: ((pv.x + 1) / 2) * host.clientWidth, y: ((1 - pv.y) / 2) * host.clientHeight };
+  };
+
   return {
     setLayout,
     setReduced(r: boolean) {
       reduced = r;
+    },
+    setInset(i: Inset) {
+      inset = i;
+      fit();
+      if (reduced) step(0);
+    },
+    where(id: ChamberId) {
+      const r = rooms.find((x) => x.id === id) ?? ghosts.find((x) => x.id === id);
+      if (!r) return null;
+      const c = toScreen(r.x, r.y);
+      return { ...c, rx: Math.abs(toScreen(r.x + r.rx, r.y).x - c.x) };
     },
     dispose() {
       cancelAnimationFrame(raf);
