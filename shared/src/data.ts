@@ -136,6 +136,28 @@ export interface DefenseDef extends CombatStats {
   max?: number;
   unlock: Requirements;
 }
+/**
+ * Research effect keys that hold a number. Code reads them only through researchSum / researchFactor
+ * (economy.ts), so a key works whichever research gives it, and levels from several research add up.
+ */
+export const RESEARCH_NUMBER_EFFECTS = [
+  // combat (combat.ts)
+  'attackPct', 'guardPct', 'healthPct', 'defensePct', 'lootPct',
+  // economy (economy.ts)
+  'foliagePct', 'proteinPct', 'nectarPct', 'storagePct', 'protectedPct', 'buildTimePct', 'unitTimePct', 'researchTimePct', 'space',
+  // missions and the map (world.ts, forage.ts)
+  'speedPct', 'missionSlots', 'forageSlotsPer2Levels', 'forageLuck', 'scoutLevel', 'scoutStealth', 'coloniesPer2Levels',
+] as const;
+export type ResearchNumberEffect = (typeof RESEARCH_NUMBER_EFFECTS)[number];
+
+/**
+ * Research effect keys that are only labels (`true`): what the research opens up is set by other data
+ * naming the research as a requirement (e.g. a caste's unlock "research.brood_science").
+ */
+export const RESEARCH_UNLOCK_FLAGS = ['unlocksCastes', 'unlocksAllies', 'unlocksAlliances'] as const;
+export type ResearchUnlockFlag = (typeof RESEARCH_UNLOCK_FLAGS)[number];
+export type ResearchEffectKey = ResearchNumberEffect | ResearchUnlockFlag;
+
 export interface ResearchDef {
   name: string;
   branch: ResearchBranchId;
@@ -144,7 +166,7 @@ export interface ResearchDef {
   maxLevel?: number;
   baseCost: Resources;
   unlock: Requirements;
-  effect: Record<string, number | boolean>;
+  effect: Partial<Record<ResearchNumberEffect, number> & Record<ResearchUnlockFlag, boolean>>;
 }
 export interface TerrainDef {
   name: string;
@@ -154,6 +176,8 @@ export interface TerrainDef {
 }
 
 export const RESOURCES_DATA = resourcesJson as {
+  /** Display names and tiers. Also lists workforce, which is not a stored resource. */
+  resources: Record<ResourceId | 'workforce', { name: string; tier: string; stored: boolean; missionFuel?: boolean }>;
   startingResources: Resources;
   baseIncomePerHour: Resources;
   baseWorkforce: number;

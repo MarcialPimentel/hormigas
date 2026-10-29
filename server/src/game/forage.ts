@@ -1,5 +1,5 @@
 // Forage expeditions into the wilds (spot 13 of any patch).
-import { WILDS_SPOT, coordsKey, createRng, groupCargo, lvl, randomSeed, resolveForage, type CasteId, type UnitCounts } from '@hormigas/shared';
+import { WILDS_SPOT, coordsKey, createRng, forageLuck, groupCargo, randomSeed, resolveForage, type CasteId, type UnitCounts } from '@hormigas/shared';
 import type { Q } from '../db';
 import { GameError } from '../errors';
 import { getPlayer } from '../colony';
@@ -27,7 +27,7 @@ defineMission('forage', {
   },
   async arrive(q, m, at) {
     const player = await getPlayer(q, m.playerId);
-    const luck = lvl(player.research, 'foraging_instinct');
+    const luck = forageLuck(player.research);
     const firstTrip = !(await hasForagedBefore(q, m.playerId, m.id));
     const r = resolveForage(createRng(randomSeed()), { cargo: groupCargo(m.units), playerPoints: player.points.total, luck, firstTrip });
 

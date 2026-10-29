@@ -1,6 +1,6 @@
 // Map, distance, travel and mission rules. Spec: docs/09-missions.md, docs/11-world.md
 import { CASTES, FORMULAS, NPC_DATA, TERRAIN, TERRAIN_IDS, type CasteId, type TerrainId } from './data';
-import { researchBonus, researchPerLevel, type ResearchLevels, type UnitCounts } from './economy';
+import { researchFraction, researchSum, type ResearchLevels, type UnitCounts } from './economy';
 
 const D = FORMULAS.distance;
 const T = FORMULAS.travel;
@@ -47,7 +47,7 @@ export const presentUnits = (units: UnitCounts): CasteId[] =>
   (Object.keys(units) as CasteId[]).filter((id) => (units[id] ?? 0) > 0);
 
 export function unitSpeed(id: CasteId, research: ResearchLevels): number {
-  return CASTES[id].speed * (1 + researchBonus(research, 'pheromone_trails', 'speedPct'));
+  return CASTES[id].speed * (1 + researchFraction(research, 'speedPct'));
 }
 
 /** Speed of the slowest unit in the group. */
@@ -83,14 +83,14 @@ export function missionFuel(units: UnitCounts, dist: number, speedPct: number): 
 }
 
 export const missionSlots = (research: ResearchLevels): number =>
-  FORMULAS.missions.baseSlots + researchPerLevel(research, 'colony_mind', 'missionSlots');
+  FORMULAS.missions.baseSlots + researchSum(research, 'missionSlots');
 
 /** Most colonies a player may hold (docs/19-colonies.md): 1, plus one at Nuptial Flight levels 1, 3, 5… */
 export const maxColonies = (research: ResearchLevels): number =>
-  FORMULAS.colonies.base + Math.ceil(researchPerLevel(research, 'nuptial_flight', 'coloniesPer2Levels') / 2);
+  FORMULAS.colonies.base + Math.ceil(researchSum(research, 'coloniesPer2Levels') / 2);
 
 export const forageSlots = (research: ResearchLevels): number =>
-  FORMULAS.missions.baseForageSlots + Math.floor(researchPerLevel(research, 'foraging_instinct', 'forageSlotsPer2Levels') / 2);
+  FORMULAS.missions.baseForageSlots + Math.floor(researchSum(research, 'forageSlotsPer2Levels') / 2);
 
 /** Find the speedPct (10..100, step 10) whose round trip returns closest to (but not before) `returnInSeconds`. */
 export function speedForReturnIn(returnInSeconds: number, dist: number, slowestSpeed: number, worldSpeed: number): number {
@@ -105,13 +105,20 @@ export function speedForReturnIn(returnInSeconds: number, dist: number, slowestS
 
 export type ScoutDetail = 'resources' | 'units' | 'defenses' | 'full';
 
-/** How much a scout report reveals (docs/07-research.md). */
+/** A player's scouting level: Scent Reading's scoutLevel effect. Used for report detail and detection. */
+export const scoutLevel = (research: ResearchLevels | undefined): number => researchSum(research, 'scoutLevel');
+
+/**
+ * How much a scout report reveals (docs/07-research.md). diff = yours − theirs + (scouts − 1) / extraScoutsPerStep,
+ * rounded down; each detail level needs diff at or above its threshold in formulas.json scouting.detail.
+ */
 export function scoutDetail(yourScent: number, theirScent: number, scouts: number): ScoutDetail {
-  const diff = Math.floor(yourScent - theirScent + (scouts - 1) / 2);
-  if (diff < 0) return 'resources';
-  if (diff <= 1) return 'units';
-  if (diff <= 3) return 'defenses';
-  return 'full';
+  const d = SC.detail;
+  const diff = Math.floor(yourScent - theirScent + (scouts - 1) / d.extraScoutsPerStep);
+  if (diff >= d.fullFrom) return 'full';
+  if (diff >= d.defensesFrom) return 'defenses';
+  if (diff >= d.unitsFrom) return 'units';
+  return 'resources';
 }
 
 /** Chance (0..1) that the defender's units detect and kill the scouts. */
