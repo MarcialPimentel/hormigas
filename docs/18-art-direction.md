@@ -87,8 +87,20 @@ Every chamber, unit, defense and research has a small picture (`client/src/art/i
 - **Chambers:** a small window into the hollow showing the chamber's signature detail (the same pieces as the chamber art).
 - **Units:** the caste's field-guide portrait. The Major Soldier is a bigger, darker soldier; the Bullet Ant is black; the Carrion Beetle is drawn on its own.
 - **Defenses and research:** a simple symbol for what each does (pellet wall, pit trap, acid spray; jaws, shell plates, scent trail, antenna, linked minds, lucky leaf, egg→larva→cocoon, shaft, flight, aphid, ant and beetle, linked mounds).
+- **Build 6 research:** acid drop over a pellet wall (Formic Acid), soldiers marching in a column (Raiding Columns), a flat soldier head plugging the tunnel mouth (Nest Plugging), two hunters and a beetle (Group Hunting), a fungus mound with a cut leaf (Fungus Farming), a hanging replete (Repletes), a nurse feeding a larva (Nurse Workers), a pellet-lined tunnel arch (Tunnel Engineering), leader and follower (Tandem Running), a half-hidden ant in a scent cloud (Chemical Mimicry).
 
 `npx tsx art/pictures/build.ts` writes `art/pictures/preview.html` with all of them on their tiles.
+
+## The tech tree
+The Research screen has a **Tree / List** switch. Computers open on the tree, phones on the list; each device remembers the last choice. The tree is a map of scent trails (`client/src/components/ResearchTree.tsx`; rules in [21-tech-tree.md](21-tech-tree.md); first mock-up in [art/tech-tree-mockup.html](art/tech-tree-mockup.html), with sample links).
+
+- **Columns are depth.** Research sits under the Pheromone Chamber level it needs; one that builds on another at the same level sits a step to its right. A dashed honey line marks how far this colony's chamber reaches.
+- **Lanes are the four branches** (Jaws, Harvest, Nest, Scent), named on the left and sticky while you scroll.
+- **Trails are pheromone.** Every `research.<id>` prerequisite is a trail, read from `unlock` in `docs/data/research.json`, never drawn by hand. A trail you've laid is the violet scent-dot line from the Pheromone Chamber art; one still to lay is a dashed soil line. A small pill where it arrives says the level needed. Trails that skip columns run in the gap under the rows, so they never pass behind a research.
+- **Research are the same picture tiles** as the list. Level badge in honey (leaf green at the cap). Greyed with a lock: not reachable yet, or "coming later" (Symbiosis, Supercolony). Honey ring: you can afford it now. Violet glow: being learned.
+- **Hover or focus** a research: the card on the right shows what it does, the next level's cost and time, the Research button (with the same "why not" as the list), what it needs (ticks, or your level against the one needed) and what it leads to. Everything it needs and opens stays lit; the rest fades. **Click** pins the card; names in Needs and Leads to jump there. Esc unpins.
+- **Phones:** the same tree, panning sideways; a tap opens the card as a bottom sheet.
+- **Colours:** `--scent` (violet, darker on paper) and `--trail-off` are theme tokens in `client/src/styles.css`; picture tiles stay on their light paper in both themes.
 
 ## In 3D: 2D art in a 3D block
 The computer nest is a 3D block of earth ([12-ui-nest-view.md](12-ui-nest-view.md), "The 3D slab"), but its life is this 2D art: chamber pictures on the hollows' back walls and ant sprites on flat cards. The look is a paper diorama; the soil strata (`#6B4F37` → `#4A3726` → `#33261A`), hollow (`#1C140E`) and grass (`#6F9A3E`) come from [art/3d-exploration.md](art/3d-exploration.md). Hero models can replace cards one at a time later.

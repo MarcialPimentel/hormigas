@@ -10,7 +10,6 @@
 import type { CasteId, ChamberId, DefenseId, ResearchId } from '@hormigas/shared';
 import { CASTES, FOOT_Y, antBody, type AntOptions, type Caste } from './ants';
 import { aphid, beetle, drop, egg, larva, leafBit, meat, preyLeg, pupa, replete } from './chambers';
-
 const INK = '#2b1d13';
 const SCENT = '#9b6be0';
 const f = (n: number) => +n.toFixed(2);
@@ -161,7 +160,75 @@ const RESEARCH: Record<ResearchId, () => string> = {
     const mound = (x: number, y: number) => `<path d="M${x - 9},${y} Q${x},${y - 12} ${x + 9},${y}Z" fill="#8f6d4c" stroke="${INK}" stroke-width="1.8"/><ellipse cx="${x}" cy="${y - 4}" rx="2.4" ry="1.6" fill="#1c140e"/>`;
     return `<path d="M20,46 L32,24 L46,46 Z" fill="none" stroke="#8a6a4a" stroke-width="2" stroke-dasharray="0.1 4" stroke-linecap="round"/>` + mound(32, 26) + mound(18, 50) + mound(46, 50);
   },
+
+  // Build 6 (docs/21-tech-tree.md)
+  /** A pellet wall with a fat drop of acid over it: defenses that sting. */
+  formic_acid: () =>
+    pellets(54, 3, 4) +
+    `<path d="M30,6 C36,16 44,22 44,31 A12,12 0 0 1 20,31 C20,22 26,16 30,6Z" fill="#c8d44a" stroke="${INK}" stroke-width="2.2"/><path d="M24,30 Q24,22 29,16" stroke="#eef39a" stroke-width="3" fill="none" stroke-linecap="round"/>` +
+    `<g fill="#c8d44a" stroke="#6f7a1a" stroke-width="0.8"><circle cx="50" cy="20" r="2.4"/><circle cx="54" cy="12" r="1.7"/><circle cx="12" cy="18" r="1.8"/></g>`,
+  /** Soldiers marching in a column along a trail. */
+  raiding_columns: () =>
+    `<g transform="rotate(-14 32 44)">${ground(50)}<path d="M2,42 L62,42" stroke="#8a6a4a" stroke-width="2" stroke-dasharray="0.1 4" stroke-linecap="round"/>` +
+    ant('soldier', 9, 49, 29) + ant('soldier', 32, 49, 29) + ant('soldier', 55, 49, 29) + '</g>',
+  /** The tunnel mouth plugged by a soldier's flat, armoured head. */
+  nest_plugging: () =>
+    `<rect x="6" y="8" width="52" height="50" rx="6" fill="#6b4f37" stroke="${INK}" stroke-width="2"/><rect x="6" y="8" width="52" height="6" rx="3" fill="#6f9a3e"/>` +
+    `<circle cx="32" cy="36" r="15" fill="#1c140e"/><circle cx="32" cy="36" r="12" fill="#713c1c" stroke="${INK}" stroke-width="2"/>` +
+    `<path d="M23,32 Q32,26 41,32 M22,38 Q32,33 42,38" stroke="#a95f2f" stroke-width="2.4" fill="none" stroke-linecap="round"/><path d="M26,29 Q30,26 35,26" stroke="#e0a46e" stroke-width="2" fill="none" stroke-linecap="round"/>` +
+    `<path d="M27,46 q-3,4 1,6 M37,46 q3,4 -1,6" stroke="#c98b52" stroke-width="2.2" fill="none" stroke-linecap="round"/>` +
+    `<circle cx="13" cy="24" r="1.8" fill="#4a3727"/><circle cx="50" cy="50" r="2.2" fill="#4a3727"/>`,
+  /** Two hunters bringing down a beetle far bigger than either. */
+  group_hunting: () =>
+    ground() + beetle(32, 50, 1.6) + ant('worker', 12, 49, 26) + ant('worker', 53, 49, 26, {}, true),
+  /** A pale fungus garden with a cut leaf worked in. */
+  fungus_farming: () =>
+    ground(54) + fungusMound(32, 52, 20, 18, 4) +
+    `<g transform="rotate(-30 46 18)"><path d="M34,18 Q46,8 58,18 Q46,25 34,18Z" fill="#8db255" stroke="${INK}" stroke-width="1.8"/><path d="M36,18 L56,18" stroke="#5f7d36" stroke-width="1.2"/></g>`,
+  /** A honeypot ant hanging from the ceiling: living storage. */
+  repletes: () =>
+    `<path d="M4,8 Q32,13 60,8" stroke="#8a6a4a" stroke-width="3" fill="none" stroke-linecap="round"/>` + replete(32, 9, 1.6),
+  /** A nurse feeding a larva. */
+  nurse_workers: () =>
+    ground() + ant('worker', 22, 49, 38) + larva(50, 49, 1.6, true).replace('stroke="#efe6d2" stroke-width="4.2"', `stroke="${INK}" stroke-width="5.8"`) + larva(50, 49, 1.6, true) + drop(41.5, 41, 0.6),
+  /** A tunnel arch lined with packed pellets, and a quick-dig arrow. */
+  tunnel_engineering: () =>
+    `<rect x="6" y="8" width="52" height="50" rx="6" fill="#6b4f37" stroke="${INK}" stroke-width="2"/>` +
+    `<path d="M14,58 L14,36 A18,18 0 0 1 50,36 L50,58Z" fill="#1c140e"/>` +
+    [...Array(9)].map((_, i) => { const a = Math.PI * (i / 8); return `<ellipse cx="${f(32 - Math.cos(a) * 20)}" cy="${f(36 - Math.sin(a) * 20)}" rx="3.6" ry="3" fill="${i % 2 ? '#7a5c40' : '#8f6d4c'}" stroke="${INK}" stroke-width="1.2"/>`; }).join('') +
+    `<path d="M22,48 L40,48 M34,42 L40,48 L34,54" fill="none" stroke="#e8b23a" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>`,
+  /** A leader and a follower, antenna to gaster: tandem running. */
+  tandem_running: () =>
+    ground() + `<path d="M6,40 C14,36 20,44 28,40" stroke="${SCENT}" stroke-width="2" fill="none" stroke-dasharray="0.1 3.5" stroke-linecap="round"/>` +
+    ant('worker', 20, 49, 30) + ant('worker', 45, 49, 30) +
+    `<path d="M54,14 l1.6,4 l4,1.6 l-4,1.6 l-1.6,4 l-1.6,-4 l-4,-1.6 l4,-1.6Z" fill="#e8b23a" stroke="${INK}" stroke-width="1"/>`,
+  /** A scout wrapped in a borrowed smell, half hidden. */
+  chemical_mimicry: () =>
+    ground() + `<ellipse cx="32" cy="38" rx="27" ry="17" fill="${SCENT}" opacity="0.14"/>` +
+    `<g opacity="0.55">${ant('worker', 32, 49, 50)}</g>` +
+    `<ellipse cx="32" cy="38" rx="27" ry="17" fill="none" stroke="${SCENT}" stroke-width="2.2" stroke-dasharray="0.1 4.5" stroke-linecap="round"/>`,
 };
+
+/** A short wall of soil pellets, `rows` high, sitting on y. */
+function pellets(y: number, rows: number, per: number) {
+  const out: string[] = [];
+  for (let row = 0; row < rows; row++)
+    for (let i = 0; i < per - (row % 2); i++) {
+      const x = 32 - ((per - 1) * 10) / 2 + i * 10 + (row % 2) * 5;
+      out.push(`<ellipse cx="${x}" cy="${y - row * 8}" rx="5.4" ry="4.4" fill="${(i + row) % 2 ? '#7a5c40' : '#8f6d4c'}" stroke="${INK}" stroke-width="1.6"/>`);
+    }
+  return out.join('');
+}
+
+/** A spongy fungus mound outside the hollow, for research pictures. */
+function fungusMound(cx: number, y: number, w: number, h: number, seed: number) {
+  const r = seeded(seed), out: string[] = [`<path d="M${cx - w},${y} C${cx - w * 0.7},${y - h * 1.3} ${cx + w * 0.7},${y - h * 1.3} ${cx + w},${y}Z" fill="#cbbfa6" stroke="${INK}" stroke-width="2"/>`];
+  for (let i = 0; i < 30; i++) {
+    const x = cx - w * 0.8 + r() * w * 1.6, top = y - h * Math.sqrt(Math.max(0, 1 - ((x - cx) / w) ** 2));
+    out.push(`<circle cx="${f(x)}" cy="${f(top + 3 + r() * (y - top - 4))}" r="${f(1.6 + r() * 1.8)}" fill="${r() < 0.35 ? '#d9cfb8' : '#efe7d6'}"/>`);
+  }
+  return out.join('');
+}
 
 export type PicKind = 'chamber' | 'unit' | 'defense' | 'research';
 const TABLES: Record<PicKind, Record<string, () => string>> = { chamber: CHAMBER, unit: UNIT, defense: DEFENSE, research: RESEARCH };

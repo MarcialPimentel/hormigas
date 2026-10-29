@@ -14,6 +14,21 @@ import { useGame } from '../game';
 import { fmtDuration } from '../format';
 import { Cost, Countdown, Panel, Pic } from '../components/ui';
 import { whyShort } from '../describe';
+import { useState } from 'react';
+import { ResearchTree } from '../components/ResearchTree';
+
+// Tree or list: computers open on the tree, phones on the list; each device remembers the last choice.
+const VIEW_KEY = 'hormigas.researchView';
+type View = 'tree' | 'list';
+function savedView(): View {
+  try {
+    const v = localStorage.getItem(VIEW_KEY);
+    if (v === 'tree' || v === 'list') return v;
+  } catch {
+    /* no storage: use the default */
+  }
+  return typeof matchMedia !== 'undefined' && matchMedia('(pointer: fine)').matches && window.innerWidth >= 760 ? 'tree' : 'list';
+}
 
 export const RESEARCH_BLURB: Record<string, string> = {
   // Jaws
@@ -47,7 +62,16 @@ export const RESEARCH_BLURB: Record<string, string> = {
 
 export function Research() {
   const { colony, state, act } = useGame();
+  const [view, setView] = useState<View>(savedView);
   if (!colony || !state) return null;
+  const choose = (v: View) => {
+    setView(v);
+    try {
+      localStorage.setItem(VIEW_KEY, v);
+    } catch {
+      /* no storage: just this visit */
+    }
+  };
   const job = state.player.researchJob;
   const pher = lvl(colony.chambers, 'pheromone_chamber');
   const research = state.player.research;
@@ -74,6 +98,14 @@ export function Research() {
       </Panel>
 
       <Panel>
+        <div className="panel-head">
+          <span className="muted small">{view === 'tree' ? 'Hover or tap a research to see what it needs and what it leads to.' : 'Every research, one row each.'}</span>
+          <div className="seg" role="group" aria-label="Research view">
+            <button type="button" className={view === 'tree' ? 'on' : ''} aria-pressed={view === 'tree'} onClick={() => choose('tree')}>Tree</button>
+            <button type="button" className={view === 'list' ? 'on' : ''} aria-pressed={view === 'list'} onClick={() => choose('list')}>List</button>
+          </div>
+        </div>
+        {view === 'tree' ? <ResearchTree blurbs={RESEARCH_BLURB} /> : (
         <ul className="rows">
           {MVP_RESEARCH.map((id) => {
             const level = lvl(research, id);
@@ -120,6 +152,7 @@ export function Research() {
             );
           })}
         </ul>
+        )}
       </Panel>
     </div>
   );
