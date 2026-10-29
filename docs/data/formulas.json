@@ -1,41 +1,62 @@
 {
-  "_version": "0.1",
-  "_note": "Human-readable formulas. The /shared package implements these exactly; this file is the spec.",
+  "_version": "0.2",
+  "_note": "The game reads every number in this file: change one here and the game changes. Text fields ('formula', '*Formula') are the readable spec and name the numbers next to them. Research bonuses (e.g. Mandibles +10% attack) live in research.json 'effect'. World speed is set when a world is created (server config), not here.",
   "world": {
-    "speed": 1,
     "regions": 5,
     "patchesPerRegion": 100,
     "spotsPerPatch": 12,
     "regionNames": ["The Backyard", "The Old Garden", "Creekside", "The Woodpile", "The Long Grass"]
   },
-  "cost": "baseCost * costFactor^(level - 1)",
+  "cost": {
+    "chamberFormula": "baseCost * costFactor^(level - 1)   (costFactor per chamber in chambers.json)",
+    "researchFormula": "baseCost * researchCostFactor^(level - 1)",
+    "researchCostFactor": 2
+  },
   "production": {
-    "perHour": "(baseIncome + base * level * 1.1^level * (1 + terrainPct/100) * workforceRatio) * worldSpeed",
+    "perHour": "(baseIncome + base * level * levelGrowth^level * (1 + terrainPct/100) * workforceRatio) * worldSpeed",
     "workforceRatio": "min(1, workforceSupply / workforceDemand)",
-    "workforceUse": "workforceUse * level * 1.1^level",
-    "workforceSupply": "baseWorkforce + nursery.base * level * 1.1^level"
+    "workforceUse": "workforceUse * level * levelGrowth^level",
+    "workforceSupply": "baseWorkforce + nursery.base * level * levelGrowth^level",
+    "levelGrowth": 1.1
   },
   "storage": {
-    "capacity": "baseStorage * 1.8^level",
-    "protectedPerResource": "1000 * 1.6^honeypotLevel (0 if not built)"
+    "capacityFormula": "baseStorage * capacityGrowth^level",
+    "capacityGrowth": 1.8,
+    "protectedFormula": "protectedBase * protectedGrowth^honeypotLevel (0 if not built)",
+    "protectedBase": 1000,
+    "protectedGrowth": 1.6
   },
   "buildTime": {
-    "chamberSeconds": "(foliage + protein) / (2.5 * (1 + excavationLevel)) / worldSpeed * (1 + terrainBuildTimePct/100)",
+    "chamberSeconds": "(foliage + protein) / (chamberDivisor * (1 + excavationLevel)) / worldSpeed * (1 + terrainBuildTimePct/100)",
+    "chamberDivisor": 2.5,
     "foundingBoost": { "levels": [1, 2, 3], "multiplier": 0.25 },
     "minimumSeconds": 5,
-    "unitSeconds": "(foliage + protein) / (2.5 * (1 + broodHallLevel)) / worldSpeed",
-    "researchSeconds": "(foliage + protein) / (1.0 * (1 + pheromoneChamberLevel)) / worldSpeed"
+    "unitSeconds": "(foliage + protein) / (unitDivisor * (1 + broodHallLevel)) / worldSpeed",
+    "unitDivisor": 2.5,
+    "researchSeconds": "(foliage + protein) / (researchDivisor * (1 + pheromoneChamberLevel)) / worldSpeed",
+    "researchDivisor": 1.0
   },
   "distance": {
+    "formula": "same spot: sameSpot; same patch: samePatchBase + samePatchPerSpot * |spotA - spotB|; same region: sameRegionBase + sameRegionPerPatch * |patchA - patchB|; otherwise otherRegionPerRegion * |regionA - regionB|",
     "sameSpot": 5,
-    "samePatch": "1000 + 5 * |spotA - spotB|",
-    "sameRegion": "2700 + 95 * |patchA - patchB|",
-    "otherRegion": "20000 * |regionA - regionB|"
+    "samePatchBase": 1000,
+    "samePatchPerSpot": 5,
+    "sameRegionBase": 2700,
+    "sameRegionPerPatch": 95,
+    "otherRegionPerRegion": 20000
   },
   "travel": {
-    "seconds": "(10 + (3500 / (speedPct / 10)) * sqrt(distance * 10 / slowestUnitSpeed)) / worldSpeed",
+    "seconds": "(baseSeconds + (timeScale / (speedPct / 10)) * sqrt(distance * 10 / slowestUnitSpeed)) / worldSpeed",
+    "baseSeconds": 10,
+    "timeScale": 3500,
     "speedPct": "10..100",
-    "nectarFuel": "sum(unitCount * nectarUse) * distance / 35000 * (speedPct/100 + 1)^2"
+    "nectarFuel": "sum(unitCount * nectarUse) * distance / fuelDivisor * (speedPct/100 + 1)^2",
+    "fuelDivisor": 35000
+  },
+  "scouting": {
+    "detectionFormula": "min(1, detectionPerUnitPerScout * defenderUnits * scouts * detectionScentBase^(theirScentReading - yourScentReading))",
+    "detectionPerUnitPerScout": 0.0025,
+    "detectionScentBase": 2
   },
   "combat": {
     "maxRounds": 6,
@@ -54,10 +75,15 @@
     "strengthProtectionPct": 20,
     "inactiveAfterDays": 7,
     "bashLimitPer24h": 4,
-    "lateFoundingBoost": "timeMultiplier = 0.5 + 0.5 * min(1, playerPoints / worldMedianPoints)"
+    "lateFoundingBoost": "timeMultiplier = lateFoundingMinMultiplier + (1 - lateFoundingMinMultiplier) * min(1, playerPoints / worldMedianPoints)",
+    "lateFoundingMinMultiplier": 0.5
   },
-  "points": "totalResourcesSpent / 1000",
-  "missions": { "baseSlots": 2 },
+  "points": {
+    "formula": "totalResourcesSpent / resourcesPerPoint",
+    "resourcesPerPoint": 1000
+  },
+  "missions": { "baseSlots": 2, "baseForageSlots": 1 },
+  "colonies": { "base": 1 },
   "forage": {
     "outcomes": {
       "food_cache": 35, "dead_beetle": 15, "nothing": 20, "lost_trail": 10,

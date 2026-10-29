@@ -1,6 +1,10 @@
 // Map, distance, travel and mission rules. Spec: docs/09-missions.md, docs/11-world.md
-import { CASTES, FORMULAS, RESEARCH, TERRAIN, TERRAIN_IDS, type CasteId, type TerrainId } from './data';
-import { lvl, type ResearchLevels, type UnitCounts } from './economy';
+import { CASTES, FORMULAS, TERRAIN, TERRAIN_IDS, type CasteId, type TerrainId } from './data';
+import { researchBonus, researchPerLevel, type ResearchLevels, type UnitCounts } from './economy';
+
+const D = FORMULAS.distance;
+const T = FORMULAS.travel;
+const SC = FORMULAS.scouting;
 
 export interface Coords {
   region: number;
@@ -28,10 +32,10 @@ export function terrainForSpot(spot: number): TerrainId {
 }
 
 export function distance(a: Coords, b: Coords): number {
-  if (a.region !== b.region) return 20000 * Math.abs(a.region - b.region);
-  if (a.patch !== b.patch) return 2700 + 95 * Math.abs(a.patch - b.patch);
-  if (a.spot !== b.spot) return 1000 + 5 * Math.abs(a.spot - b.spot);
-  return 5;
+  if (a.region !== b.region) return D.otherRegionPerRegion * Math.abs(a.region - b.region);
+  if (a.patch !== b.patch) return D.sameRegionBase + D.sameRegionPerPatch * Math.abs(a.patch - b.patch);
+  if (a.spot !== b.spot) return D.samePatchBase + D.samePatchPerSpot * Math.abs(a.spot - b.spot);
+  return D.sameSpot;
 }
 
 /** Units that actually move on missions (excludes nothing in MVP, but keeps zero counts out). */
@@ -39,7 +43,7 @@ export const presentUnits = (units: UnitCounts): CasteId[] =>
   (Object.keys(units) as CasteId[]).filter((id) => (units[id] ?? 0) > 0);
 
 export function unitSpeed(id: CasteId, research: ResearchLevels): number {
-  return CASTES[id].speed * (1 + 0.1 * lvl(research, 'pheromone_trails'));
+  return CASTES[id].speed * (1 + researchBonus(research, 'pheromone_trails', 'speedPct'));
 }
 
 /** Speed of the slowest unit in the group. */
@@ -62,7 +66,7 @@ export function groupCargo(units: UnitCounts, opts: { corpses?: boolean } = {}):
 /** One-way travel time in seconds. speedPct is 10..100. */
 export function travelSeconds(dist: number, slowestSpeed: number, speedPct: number, worldSpeed: number): number {
   const factor = speedPct / 10; // 1..10
-  const t = 10 + (3500 / factor) * Math.sqrt((dist * 10) / slowestSpeed);
+  const t = T.baseSeconds + (T.timeScale / factor) * Math.sqrt((dist * 10) / slowestSpeed);
   return Math.max(1, Math.round(t / worldSpeed));
 }
 
@@ -70,19 +74,19 @@ export function travelSeconds(dist: number, slowestSpeed: number, speedPct: numb
 export function missionFuel(units: UnitCounts, dist: number, speedPct: number): number {
   let use = 0;
   for (const id of presentUnits(units)) use += (units[id] ?? 0) * CASTES[id].nectarUse;
-  const fuel = ((use * dist) / 35000) * Math.pow(speedPct / 100 + 1, 2);
+  const fuel = ((use * dist) / T.fuelDivisor) * Math.pow(speedPct / 100 + 1, 2);
   return Math.max(1, Math.round(fuel));
 }
 
 export const missionSlots = (research: ResearchLevels): number =>
-  FORMULAS.missions.baseSlots + lvl(research, 'colony_mind');
+  FORMULAS.missions.baseSlots + researchPerLevel(research, 'colony_mind', 'missionSlots');
 
 /** Most colonies a player may hold (docs/19-colonies.md): 1, plus one at Nuptial Flight levels 1, 3, 5… */
 export const maxColonies = (research: ResearchLevels): number =>
-  1 + Math.ceil((lvl(research, 'nuptial_flight') * Number(RESEARCH.nuptial_flight.effect.coloniesPer2Levels ?? 1)) / 2);
+  FORMULAS.colonies.base + Math.ceil(researchPerLevel(research, 'nuptial_flight', 'coloniesPer2Levels') / 2);
 
 export const forageSlots = (research: ResearchLevels): number =>
-  1 + Math.floor(lvl(research, 'foraging_instinct') / 2);
+  FORMULAS.missions.baseForageSlots + Math.floor(researchPerLevel(research, 'foraging_instinct', 'forageSlotsPer2Levels') / 2);
 
 /** Find the speedPct (10..100, step 10) whose round trip returns closest to (but not before) `returnInSeconds`. */
 export function speedForReturnIn(returnInSeconds: number, dist: number, slowestSpeed: number, worldSpeed: number): number {
@@ -109,6 +113,6 @@ export function scoutDetail(yourScent: number, theirScent: number, scouts: numbe
 /** Chance (0..1) that the defender's units detect and kill the scouts. */
 export function scoutDetectionChance(defenderUnitCount: number, scouts: number, yourScent: number, theirScent: number): number {
   if (defenderUnitCount <= 0) return 0;
-  const base = 0.0025 * defenderUnitCount * scouts * Math.pow(2, theirScent - yourScent);
+  const base = SC.detectionPerUnitPerScout * defenderUnitCount * scouts * Math.pow(SC.detectionScentBase, theirScent - yourScent);
   return Math.min(1, base);
 }

@@ -1,6 +1,6 @@
 {
   "_version": "0.1",
-  "_note": "cost(L) = baseCost * 2^(L-1). time(s) = (foliage + protein) / (1.0 * (1 + pheromoneChamberLevel)) / worldSpeed.",
+  "_note": "Cost and time formulas (and their numbers) are in formulas.json: cost.research*, buildTime.research*. Percentage effects (attackPct, healthPct, guardPct, speedPct) add that many percent per level; other effects add that much per level.",
   "research": {
     "mandibles":         { "name": "Mandibles",         "mvp": true,  "baseCost": { "foliage": 800,  "protein": 200,  "nectar": 0 },   "unlock": { "pheromone_chamber": 2 }, "effect": { "attackPct": 10 } },
     "chitin":            { "name": "Chitin",            "mvp": true,  "baseCost": { "foliage": 1000, "protein": 0,    "nectar": 0 },   "unlock": { "pheromone_chamber": 2 }, "effect": { "healthPct": 10 } },

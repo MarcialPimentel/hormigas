@@ -26,7 +26,20 @@ export type DefenseCounts = Partial<Record<DefenseId, number>>;
 
 export const lvl = <K extends string>(levels: Partial<Record<K, number>> | undefined, id: K): number => levels?.[id] ?? 0;
 
-const growth = (level: number) => level * Math.pow(1.1, level);
+/** How production, workforce use and nursery supply scale with level: level * levelGrowth^level. */
+export const levelGrowth = (level: number) => level * Math.pow(FORMULAS.production.levelGrowth, level);
+const growth = levelGrowth;
+
+/**
+ * A research bonus as a fraction: the percentage in research.json's `effect` (e.g. Mandibles attackPct 10)
+ * times the research level. Mandibles 3 → 0.3, so attack × 1.3.
+ */
+export const researchBonus = (research: ResearchLevels, id: ResearchId, key: string): number =>
+  (Number(RESEARCH[id].effect[key] ?? 0) / 100) * lvl(research, id);
+
+/** A per-level research effect in research.json (e.g. Deep Digging space 5) times the research level. */
+export const researchPerLevel = (research: ResearchLevels, id: ResearchId, key: string): number =>
+  Number(RESEARCH[id].effect[key] ?? 0) * lvl(research, id);
 
 // ---------- costs & times ----------
 
@@ -37,7 +50,7 @@ export function chamberCost(id: ChamberId, level: number): Resources {
 }
 
 export function researchCost(id: ResearchId, level: number): Resources {
-  return scale(RESEARCH[id].baseCost, Math.pow(2, level - 1));
+  return scale(RESEARCH[id].baseCost, Math.pow(FORMULAS.cost.researchCostFactor, level - 1));
 }
 
 export interface TimeContext {
@@ -54,7 +67,7 @@ export function chamberBuildSeconds(
   ctx: TimeContext & { excavation: number; terrain: TerrainId },
 ): number {
   const c = chamberCost(id, level);
-  let t = (c.foliage + c.protein) / (2.5 * (1 + ctx.excavation)) / ctx.worldSpeed;
+  let t = (c.foliage + c.protein) / (FORMULAS.buildTime.chamberDivisor * (1 + ctx.excavation)) / ctx.worldSpeed;
   t *= 1 + (TERRAIN[ctx.terrain].mods.buildTimePct ?? 0) / 100;
   if (FB.levels.includes(level)) t *= FB.multiplier;
   t *= ctx.timeMultiplier ?? 1;
@@ -63,13 +76,13 @@ export function chamberBuildSeconds(
 
 export function researchSeconds(id: ResearchId, level: number, ctx: TimeContext & { pheromone: number }): number {
   const c = researchCost(id, level);
-  const t = ((c.foliage + c.protein) / (1.0 * (1 + ctx.pheromone)) / ctx.worldSpeed) * (ctx.timeMultiplier ?? 1);
+  const t = ((c.foliage + c.protein) / (FORMULAS.buildTime.researchDivisor * (1 + ctx.pheromone)) / ctx.worldSpeed) * (ctx.timeMultiplier ?? 1);
   return Math.max(FORMULAS.buildTime.minimumSeconds, Math.round(t));
 }
 
 /** Seconds to raise ONE unit/defense of the given cost. */
 export function unitSeconds(cost: Resources, ctx: TimeContext & { broodHall: number }): number {
-  const t = ((cost.foliage + cost.protein) / (2.5 * (1 + ctx.broodHall)) / ctx.worldSpeed) * (ctx.timeMultiplier ?? 1);
+  const t = ((cost.foliage + cost.protein) / (FORMULAS.buildTime.unitDivisor * (1 + ctx.broodHall)) / ctx.worldSpeed) * (ctx.timeMultiplier ?? 1);
   return Math.max(1, t);
 }
 
@@ -115,17 +128,27 @@ export function productionPerHour(chambers: ChamberLevels, terrain: TerrainId, w
 
 // ---------- storage ----------
 
-const STORAGE_FOR: Record<ResourceId, ChamberId> = { foliage: 'granary', protein: 'larder', nectar: 'nectar_cellar' };
+/** Which chamber stores each resource: the one whose effect in chambers.json is { type: "storage", resource }. */
+const STORAGE_FOR = Object.fromEntries(
+  CHAMBER_IDS.filter((id) => CHAMBERS[id].effect.type === 'storage').map((id) => [CHAMBERS[id].effect.resource, id]),
+) as Record<ResourceId, ChamberId>;
+
+/** How much of one resource a storage chamber at `level` holds. */
+export const storageForLevel = (level: number): number =>
+  RESOURCES_DATA.baseStorage * Math.pow(FORMULAS.storage.capacityGrowth, level);
 
 export function storageCapacity(chambers: ChamberLevels): Resources {
-  const cap = (r: ResourceId) => RESOURCES_DATA.baseStorage * Math.pow(1.8, lvl(chambers, STORAGE_FOR[r]));
+  const cap = (r: ResourceId) => storageForLevel(lvl(chambers, STORAGE_FOR[r]));
   return res(cap('foliage'), cap('protein'), cap('nectar'));
 }
 
+/** Amount of EACH resource a Honeypot Gallery at `level` protects from raids. */
+export const protectedForLevel = (level: number): number =>
+  level > 0 ? FORMULAS.storage.protectedBase * Math.pow(FORMULAS.storage.protectedGrowth, level) : 0;
+
 /** Amount of EACH resource protected from raids by the Honeypot Gallery. */
 export function protectedAmount(chambers: ChamberLevels): number {
-  const L = lvl(chambers, 'honeypot_gallery');
-  return L > 0 ? 1000 * Math.pow(1.6, L) : 0;
+  return protectedForLevel(lvl(chambers, 'honeypot_gallery'));
 }
 
 /**
@@ -148,7 +171,7 @@ export const spaceUsed = (chambers: ChamberLevels): number =>
   CHAMBER_IDS.reduce((sum, id) => sum + lvl(chambers, id), 0);
 
 export const spaceMax = (baseSpace: number, research: ResearchLevels): number =>
-  baseSpace + 5 * lvl(research, 'deep_digging');
+  baseSpace + researchPerLevel(research, 'deep_digging', 'space');
 
 // ---------- requirements ----------
 

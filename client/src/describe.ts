@@ -2,18 +2,18 @@
 import {
   CHAMBERS,
   explainShortfall,
+  levelGrowth as growth,
   productionPerHour,
+  protectedForLevel,
   shortfalls,
   storageCapacity,
+  storageForLevel,
   type Resources,
-  RESOURCES_DATA,
   TERRAIN,
   type ChamberId,
   type TerrainId,
 } from '@hormigas/shared';
 import { fmtNum } from './format';
-
-const growth = (l: number) => l * Math.pow(1.1, l);
 
 export const RESOURCE_LABEL = { foliage: 'Foliage', protein: 'Protein', nectar: 'Nectar' } as const;
 
@@ -45,9 +45,9 @@ export function chamberEffect(id: ChamberId, level: number, terrain: TerrainId, 
     case 'workforce':
       return `+${fmtNum((e.base ?? 0) * growth(level))} workforce`;
     case 'storage':
-      return `Holds ${fmtNum(RESOURCES_DATA.baseStorage * Math.pow(1.8, level))} ${RESOURCE_LABEL[e.resource!]}`;
+      return `Holds ${fmtNum(storageForLevel(level))} ${RESOURCE_LABEL[e.resource!]}`;
     case 'protectedStorage':
-      return level > 0 ? `Protects ${fmtNum(1000 * Math.pow(1.6, level))} of each resource` : 'Protects nothing yet';
+      return level > 0 ? `Protects ${fmtNum(protectedForLevel(level))} of each resource` : 'Protects nothing yet';
     case 'buildSpeed':
       return `Chambers build ${1 + level}× as fast`;
     case 'unitSpeed':
