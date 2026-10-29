@@ -61,10 +61,10 @@ export function Chambers() {
                     <p className="blurb">{CHAMBER_BLURB[id]}</p>
                     {!locked && (
                       <p className="effect">
-                        {level > 0 && CHAMBERS[id].effect.type !== 'gate' && <span>{chamberEffect(id, level, colony.terrain, state.world.speed)}</span>}
+                        {level > 0 && CHAMBERS[id].effect.type !== 'gate' && <span>{chamberEffect(id, level, colony, state.player.research, state.world.speed)}</span>}
                         <span className="next">
                           {level > 0 ? 'Next: ' : 'At level 1: '}
-                          {chamberEffect(id, next, colony.terrain, state.world.speed)}
+                          {chamberEffect(id, next, colony, state.player.research, state.world.speed)}
                         </span>
                       </p>
                     )}

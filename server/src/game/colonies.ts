@@ -4,6 +4,7 @@ import {
   TERRAIN,
   WORLD,
   add,
+  colonyCapMessage,
   coordsKey,
   createRng,
   lvl,
@@ -62,14 +63,11 @@ async function coloniesClaimed(q: Q, playerId: number, excludeMissionId?: number
   return r.rows[0].n;
 }
 
-const CAP_MESSAGE = (max: number) =>
-  `You can rule ${max} ${max === 1 ? 'colony' : 'colonies'} right now. Research more Nuptial Flight to found another.`;
+const CAP_MESSAGE = colonyCapMessage;
 
 defineMission('colonize', {
-  allowsCargo: true,
-  slot: 'mission',
-  async validate({ q, player, units, target, targetColony }) {
-    if (lvl(units, 'winged_queen') !== 1) throw new GameError('one_queen', 'Send exactly one Winged Queen to found a colony.');
+  async validate({ q, player, target, targetColony }) {
+    // exactly one Winged Queen: checked from MISSION_TYPES before this runs
     if (targetColony) throw new GameError('bad_target', 'That spot is taken. Pick an empty one.');
     if (target.spot > WORLD.spotsPerPatch) throw new GameError('bad_target', 'A colony needs a real spot (1–12).');
     if (!TERRAIN[terrainForSpot(target.spot)]) throw new GameError('bad_target', 'A colony needs a real spot (1–12).');

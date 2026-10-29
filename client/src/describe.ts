@@ -1,16 +1,18 @@
 // Human-readable descriptions of what chambers do at a given level.
 import {
   CHAMBERS,
+  type ChamberLevels,
   type ResearchLevels,
+  chamberOutputPerHour,
+  chamberStorage,
   explainShortfall,
   levelGrowth as growth,
   productionPerHour,
   protectedForLevel,
   shortfalls,
   storageCapacity,
-  storageForLevel,
+  workforce,
   type Resources,
-  TERRAIN,
   type ChamberId,
   type TerrainId,
 } from '@hormigas/shared';
@@ -33,20 +35,30 @@ export const CHAMBER_BLURB: Record<ChamberId, string> = {
   honeypot_gallery: 'Honeypot ants hold food in their bodies, safe from raiders.',
 };
 
-/** What a chamber provides at `level` (level 0 = nothing). */
-export function chamberEffect(id: ChamberId, level: number, terrain: TerrainId, worldSpeed = 1): string {
+/**
+ * What a chamber provides at `level` (level 0 = nothing), in this colony: with its terrain, the player's research
+ * and the workforce it would have with the chamber at that level. Same numbers as the resource bar.
+ */
+export function chamberEffect(
+  id: ChamberId,
+  level: number,
+  colony: { chambers: ChamberLevels; terrain: TerrainId },
+  research: ResearchLevels | undefined,
+  worldSpeed = 1,
+): string {
   const def = CHAMBERS[id];
   const e = def.effect;
   switch (e.type) {
     case 'produce': {
-      const r = e.resource!;
-      const pct = (TERRAIN[terrain].mods[`${r}Pct` as 'foliagePct'] ?? 0) / 100;
-      return `${fmtNum((e.base ?? 0) * growth(level) * (1 + pct) * worldSpeed)} ${RESOURCE_LABEL[r]}/h · uses ${fmtNum((def.workforceUse ?? 0) * growth(level))} workforce`;
+      const { ratio } = workforce({ ...colony.chambers, [id]: level });
+      const made = chamberOutputPerHour(id, level, colony.terrain, research, worldSpeed, ratio)!;
+      const short = ratio < 1 ? ` (${Math.round(ratio * 100)}% staffed)` : '';
+      return `${fmtNum(made.amount)} ${RESOURCE_LABEL[made.resource]}/h${short} · uses ${fmtNum((def.workforceUse ?? 0) * growth(level))} workforce`;
     }
     case 'workforce':
       return `+${fmtNum((e.base ?? 0) * growth(level))} workforce`;
     case 'storage':
-      return `Holds ${fmtNum(storageForLevel(level))} ${RESOURCE_LABEL[e.resource!]}`;
+      return `Holds ${fmtNum(chamberStorage(level, research))} ${RESOURCE_LABEL[e.resource!]}`;
     case 'protectedStorage':
       return level > 0 ? `Protects ${fmtNum(protectedForLevel(level))} of each resource` : 'Protects nothing yet';
     case 'buildSpeed':

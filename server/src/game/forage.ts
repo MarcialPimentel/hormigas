@@ -19,9 +19,6 @@ const TITLES: Record<string, string> = {
 };
 
 defineMission('forage', {
-  allowsCargo: false,
-  allowsWilds: true,
-  slot: 'forage',
   async validate({ target }) {
     if (target.spot !== WILDS_SPOT) throw new GameError('bad_target', `Foragers can only go to the wilds (spot ${WILDS_SPOT}).`);
   },

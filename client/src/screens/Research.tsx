@@ -4,6 +4,7 @@ import {
   canAfford,
   lvl,
   missingRequirements,
+  researchBlocker,
   researchCost,
   researchMaxLevel,
   researchSeconds,
@@ -114,12 +115,8 @@ export function Research() {
             const cost = researchCost(id, next);
             const secs = researchSeconds(id, next, { worldSpeed: state.world.speed, pheromone: pher, timeMultiplier: state.player.timeMultiplier, research });
             const maxed = level >= researchMaxLevel(id);
-            let blocked = '';
-            if (maxed) blocked = 'Highest level reached';
-            else if (missing.length) blocked = `Needs ${missing.map((m) => `${m.name} ${m.need}`).join(', ')}`;
-            else if (job) blocked = job.research === id ? 'Researching now' : 'Another research is running';
-            else if (colony.buildJob?.chamber === 'pheromone_chamber') blocked = 'Pheromone Chamber is being enlarged';
-            else if (!canAfford(colony.resources, cost)) blocked = whyShort(colony, cost, state.world.speed);
+            const blocker = researchBlocker(id, colony, state.player);
+            const blocked = blocker ? blocker.short : !canAfford(colony.resources, cost) ? whyShort(colony, cost, state.world.speed) : '';
             return (
               <li key={id} className={`row has-pic${missing.length ? ' locked' : ''}`}>
                 <Pic kind="research" id={id} />

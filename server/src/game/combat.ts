@@ -73,8 +73,6 @@ export async function addCorpses(q: Q, worldId: number, c: Coords, protein: numb
 }
 
 defineMission('raid', {
-  allowsCargo: false,
-  slot: 'mission',
   async validate({ q, player, colony, targetColony, units, t }) {
     if (!targetColony) throw new GameError('bad_target', 'There is no colony there to raid.');
     if (targetColony.playerId === player.id) throw new GameError('bad_target', "You can't raid your own colony.");
@@ -237,8 +235,6 @@ export async function resolveRaid(q: Tx, m: Mission, at: number, opts: { attacke
 }
 
 defineMission('haul', {
-  allowsCargo: false,
-  slot: 'mission',
   async validate({ targetColony, units }) {
     void targetColony;
     if (groupCargo(units, { corpses: true }) <= 0) throw new GameError('no_cargo', 'Send units that can carry, like Workers or Haulers.');

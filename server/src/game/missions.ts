@@ -9,8 +9,13 @@ import {
   groupCargo,
   groupSpeed,
   missionFuel,
-  missionSlots,
-  forageSlots,
+  missionSlotUsage,
+  missionUnitProblem,
+  noSlotsMessage,
+  isValidSpeedPct,
+  recallReturnAt,
+  returnLegMs,
+  MISSION_TYPES,
   presentUnits,
   res,
   sub,
@@ -23,6 +28,7 @@ import {
   SWARM,
   isHerdState,
   type CasteId,
+  type MissionType,
   type Coords,
   type Resources,
   type UnitCounts,
@@ -36,7 +42,7 @@ import { getWorld } from '../world';
 import { refreshPointsAfterCommit } from './points';
 import { notify } from '../realtime';
 
-export type MissionType = 'transport' | 'relocate' | 'scout' | 'raid' | 'haul' | 'forage' | 'colonize' | 'swarm' | 'hold' | 'tend';
+export type { MissionType };
 
 export interface Mission {
   id: number;
@@ -125,15 +131,15 @@ export interface ArrivalOutcome {
   stay?: boolean;
 }
 
+/**
+ * A mission type's own checks and arrival. Its fixed rules (cargo, wilds, slot pool, which units may go)
+ * live in MISSION_TYPES in shared/src/missions.ts, so the Missions screen previews the same rules.
+ */
 interface TypeRules {
   /** Validate the dispatch; throw GameError to refuse. */
   validate: (ctx: SendContext) => Promise<void>;
   /** Resolve arrival at the target. May mutate m.units / m.cargo / m.result. */
   arrive: (q: Tx, m: Mission, at: number) => Promise<ArrivalOutcome>;
-  allowsCargo: boolean;
-  allowsWilds?: boolean;
-  /** Which slot pool the mission uses. */
-  slot: 'mission' | 'forage';
 }
 
 const RULES = new Map<MissionType, TypeRules>();
@@ -181,6 +187,7 @@ export async function sendMission(q: Tx, playerId: number, input: SendInput): Pr
   const type = input.type as MissionType;
   const rules = RULES.get(type);
   if (!rules) throw new GameError('bad_type', 'Unknown mission type.');
+  const fixed = MISSION_TYPES[type];
   const t = now();
   const player = await getPlayer(q, playerId, true);
   let colony = await lockOwnColony(q, Number(input.colonyId), playerId);
@@ -188,14 +195,15 @@ export async function sendMission(q: Tx, playerId: number, input: SendInput): Pr
 
   const target = { region: Number(input.target?.region), patch: Number(input.target?.patch), spot: Number(input.target?.spot) };
   // wild sites (aphid herds, termite mounds, spider dens) are real places too (docs/24-npcs.md)
-  if (!validCoords(target, !!rules.allowsWilds, true)) throw new GameError('bad_target', 'That place does not exist.');
-  if (!rules.allowsWilds && target.spot === WILDS_SPOT) throw new GameError('bad_target', 'Nothing lives out in the wilds.');
+  if (!validCoords(target, fixed.allowsWilds, true)) throw new GameError('bad_target', 'That place does not exist.');
+  if (!fixed.allowsWilds && target.spot === WILDS_SPOT) throw new GameError('bad_target', 'Nothing lives out in the wilds.');
 
   const units = parseUnits(input.units, colony.units);
-  const cargo = rules.allowsCargo ? parseCargo(input.cargo) : res();
+  const unitProblem = missionUnitProblem(type, units);
+  if (unitProblem) throw new GameError(unitProblem.code, unitProblem.message);
+  const cargo = fixed.allowsCargo ? parseCargo(input.cargo) : res();
   const speedPct = Number(input.speedPct ?? 100);
-  if (!Number.isInteger(speedPct) || speedPct < 10 || speedPct > 100 || speedPct % 10 !== 0)
-    throw new GameError('bad_speed', 'Speed must be 10%–100% in steps of 10.');
+  if (!isValidSpeedPct(speedPct)) throw new GameError('bad_speed', 'Speed must be 10%–100% in steps of 10.');
 
   const world = await getWorld(q);
   const targetColony = target.spot === WILDS_SPOT ? null : await colonyAt(q, world.id, target.region, target.patch, target.spot);
@@ -203,11 +211,8 @@ export async function sendMission(q: Tx, playerId: number, input: SendInput): Pr
 
   // slots
   const active = await activeMissions(q, playerId);
-  const pool = rules.slot;
-  const used = active.filter((m) => (RULES.get(m.type)?.slot ?? 'mission') === pool).length;
-  const max = pool === 'forage' ? forageSlots(player.research) : missionSlots(player.research);
-  if (used >= max)
-    throw new GameError('no_slots', pool === 'forage' ? 'All forage parties are already out.' : `All ${max} mission slots are in use. Research Colony Mind for more.`);
+  const { used, max } = missionSlotUsage(active, fixed.slot, player.research);
+  if (used >= max) throw new GameError('no_slots', noSlotsMessage(fixed.slot, max));
 
   const origin = { region: colony.region, patch: colony.patch, spot: colony.spot };
   const dist = distance(origin, target);
@@ -289,7 +294,7 @@ export async function recallMission(q: Tx, playerId: number, missionId: number):
   if (m.status !== 'outbound' || t >= m.arriveAt) throw new GameError('too_late', 'This mission can no longer be recalled.');
   if (m.arriveEventId) await cancelEvent(q, m.arriveEventId);
   m.arriveEventId = null;
-  m.returnAt = t + (t - m.departAt);
+  m.returnAt = recallReturnAt(m.departAt, t);
   m.status = 'returning';
   m.result = { recalled: true };
   m.returnEventId = await schedule(q, m.worldId, 'mission_return', m.returnAt, { missionId: m.id });
@@ -300,7 +305,7 @@ export async function recallMission(q: Tx, playerId: number, missionId: number):
 /** Soldiers holding position walk home: the trip back takes as long as the trip out did. */
 async function comeHome(q: Q, m: Mission, t: number, result: object): Promise<Mission> {
   m.status = 'returning';
-  m.returnAt = t + (m.arriveAt - m.departAt);
+  m.returnAt = t + returnLegMs(m.departAt, m.arriveAt);
   m.result = { ...(m.result ?? {}), ...result };
   m.returnEventId = await schedule(q, m.worldId, 'mission_return', m.returnAt, { missionId: m.id });
   await saveMission(q, m);
@@ -346,7 +351,7 @@ export async function sendGarrisonsHome(q: Q, playerId: number, others: number[]
       if (m.arriveEventId) await cancelEvent(q, m.arriveEventId);
       m.arriveEventId = null;
       m.status = 'returning';
-      m.returnAt = t + (t - m.departAt);
+      m.returnAt = recallReturnAt(m.departAt, t);
       m.result = { sentHome: true };
       m.returnEventId = await schedule(q, m.worldId, 'mission_return', m.returnAt, { missionId: m.id });
       await saveMission(q, m);
@@ -368,7 +373,7 @@ onEvent('mission_arrive', async (q, ev) => {
     m.status = 'holding';
   } else if (out.home && anyone) {
     m.status = 'returning';
-    m.returnAt = ev.due_at + Math.round((m.arriveAt - m.departAt) * (out.returnFactor ?? 1));
+    m.returnAt = ev.due_at + returnLegMs(m.departAt, m.arriveAt, out.returnFactor ?? 1);
     m.returnEventId = await schedule(q, m.worldId, 'mission_return', m.returnAt, { missionId: m.id });
   } else {
     m.status = 'done';

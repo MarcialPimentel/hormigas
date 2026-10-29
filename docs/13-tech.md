@@ -14,7 +14,7 @@
 
 ## Core principles
 1. **Server is the authority.** The client never decides outcomes; it only displays and requests.
-2. **Shared rules package.** All formulas (costs, production, travel, combat) live in `/shared` and read `docs/data/*.json`. Client uses them for instant previews; server uses them for truth.
+2. **Shared rules package.** All formulas (costs, production, travel, combat) live in `/shared` and read `docs/data/*.json`. Client uses them for instant previews; server uses them for truth. That includes the rules for what is allowed: mission types and their fixed rules (`shared/src/missions.ts`: cargo, wilds, slot pool, which units may go, speed steps, return times) and why a chamber, research or brood order is blocked (`shared/src/blockers.ts`). The server refuses with a blocker's `message`; the client greys out the button with its `short` text, so the two can't drift apart.
 3. **Compute, don't tick.** No per-second simulation of colonies.
 4. **Event-driven.** Everything with a duration is a scheduled event.
 

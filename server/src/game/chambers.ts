@@ -1,14 +1,10 @@
 // Chamber construction.
 import {
-  CHAMBERS,
   CHAMBER_IDS,
-  canAfford,
+  chamberBlocker,
   chamberBuildSeconds,
   chamberCost,
   lvl,
-  missingRequirements,
-  spaceMax,
-  spaceUsed,
   sub,
   add,
   type ChamberId,
@@ -31,15 +27,9 @@ export async function startBuild(q: Tx, playerId: number, colonyId: number, cham
   let c = await lockOwnColony(q, colonyId, playerId);
   c = advance(c, t);
 
-  if (c.buildJob) throw new GameError('busy', 'Your workers are already digging a chamber.');
-  const missing = missingRequirements(CHAMBERS[id].unlock, c.chambers, player.research);
-  if (missing.length) throw new GameError('locked', `Requires ${missing.map((m) => `${m.name} ${m.need}`).join(', ')}.`);
-  if (spaceUsed(c.chambers) + 1 > spaceMax(c.baseSpace, player.research))
-    throw new GameError('no_space', 'No space left in this nest. Research Deep Digging to expand.');
-  if (id === 'brood_hall' && c.unitQueue.length > 0)
-    throw new GameError('busy', "The Brood Hall can't be enlarged while it is raising units.");
-  if (id === 'pheromone_chamber' && player.researchJob)
-    throw new GameError('busy', "The Pheromone Chamber can't be enlarged during research.");
+  // same checks the Chambers screen uses to grey out the button
+  const blocked = chamberBlocker(id, c, player);
+  if (blocked) throw new GameError(blocked.code, blocked.message);
 
   const level = lvl(c.chambers, id) + 1;
   const cost = chamberCost(id, level);

@@ -44,7 +44,7 @@ export function ChamberSheet({ id, onClose, onLookInside, onAllChambers }: { id:
           {safe > 0 ? ` Raids can only take what's above ${fmtFull(safe)}.` : ''}
         </p>
       )}
-      {level > 0 && !store && def.effect.type !== 'gate' && <p className="small">Now: {chamberEffect(id, level, colony.terrain, state.world.speed)}</p>}
+      {level > 0 && !store && def.effect.type !== 'gate' && <p className="small">Now: {chamberEffect(id, level, colony, state.player.research, state.world.speed)}</p>}
       {job ? (
         <p className="small sheet-next">
           <strong>Digging level {job.level}</strong> · {fmtDuration(job.endAt - now)} left
@@ -53,7 +53,7 @@ export function ChamberSheet({ id, onClose, onLookInside, onAllChambers }: { id:
         <p className="small sheet-next">{blocked}</p>
       ) : (
         <p className="small sheet-next">
-          <strong>{level > 0 ? `Level ${next}` : 'At level 1'}:</strong> {chamberEffect(id, next, colony.terrain, state.world.speed)}
+          <strong>{level > 0 ? `Level ${next}` : 'At level 1'}:</strong> {chamberEffect(id, next, colony, state.player.research, state.world.speed)}
           <br />
           <Cost cost={cost} have={colony.resources} /> · {fmtDuration(secs * 1000)} to dig
         </p>

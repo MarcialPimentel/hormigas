@@ -67,8 +67,6 @@ export async function launchSwarm(q: Tx, colony: Colony, units: Record<string, n
 }
 
 defineMission('swarm', {
-  allowsCargo: false,
-  slot: 'mission',
   async validate() {
     throw new GameError('bad_type', 'Only the wild sends swarms.');
   },

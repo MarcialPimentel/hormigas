@@ -3,11 +3,9 @@ import {
   RESEARCH,
   RESEARCH_IDS,
   add,
-  canAfford,
   lvl,
-  missingRequirements,
+  researchBlocker,
   researchCost,
-  researchMaxLevel,
   researchSeconds,
   sub,
   type ResearchId,
@@ -22,8 +20,7 @@ import { timeMultiplier } from './boost';
 import { refreshPoints } from './points';
 
 export async function startResearch(q: Tx, playerId: number, colonyId: number, research: string) {
-  if (!RESEARCH_IDS.includes(research as ResearchId) || !RESEARCH[research as ResearchId].mvp)
-    throw new GameError('bad_research', 'Unknown research.');
+  if (!RESEARCH_IDS.includes(research as ResearchId)) throw new GameError('bad_research', 'Unknown research.');
   const id = research as ResearchId;
   const t = now();
   // lock order everywhere: player, then colony
@@ -31,14 +28,11 @@ export async function startResearch(q: Tx, playerId: number, colonyId: number, r
   let c = await lockOwnColony(q, colonyId, playerId);
   c = advance(c, t);
 
-  if (player.researchJob) throw new GameError('busy', 'The colony is already researching something.');
-  if (lvl(c.chambers, 'pheromone_chamber') < 1) throw new GameError('locked', 'This colony needs a Pheromone Chamber.');
-  if (c.buildJob?.chamber === 'pheromone_chamber') throw new GameError('busy', 'The Pheromone Chamber is being enlarged.');
-  const missing = missingRequirements(RESEARCH[id].unlock, c.chambers, player.research);
-  if (missing.length) throw new GameError('locked', `Requires ${missing.map((m) => `${m.name} ${m.need}`).join(', ')}.`);
+  // same checks the Research screen and tree use to grey out the button
+  const blocked = researchBlocker(id, c, player);
+  if (blocked) throw new GameError(blocked.code, blocked.message);
 
   const level = lvl(player.research, id) + 1;
-  if (level > researchMaxLevel(id)) throw new GameError('max', `${RESEARCH[id].name} is already at its highest level.`);
   const cost = researchCost(id, level);
   requireAffordable(c, cost);
 
