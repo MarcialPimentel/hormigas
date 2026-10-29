@@ -21,6 +21,8 @@ Every now and then a column of army ants marches out of the wilds toward a colon
 - **Afterwards** the survivors and whatever they took march on. Nothing comes back, and there's no "attacker" to raid in revenge.
 - Players can't send swarms, and swarms don't count toward anyone's bash limit.
 
+- **First swarms on the live world** (Marz, 29 Oct 2026): brought forward once, by migration `007_first_swarms_soon.sql`, to be spotted 2–24 h after that deploy instead of 72–120 h, so players meet one within about a day. After that, the normal schedule.
+
 ## How players see it
 - A pop-up (or a browser notification in the background) the moment it's spotted, and "Raid incoming!" in the tab title.
 - **Happening now:** "Army ant swarm incoming out of the wilds — N ants", the countdown, and a line explaining the choice.
