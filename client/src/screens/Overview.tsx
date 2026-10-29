@@ -26,9 +26,9 @@ export function Overview({ go }: { go: (screen: string, params?: any) => void })
   const [name, setName] = useState('');
   if (!colony || !state) return null;
 
-  const rate = productionPerHour(colony.chambers, colony.terrain, state.world.speed);
-  const cap = storageCapacity(colony.chambers);
-  const safe = protectedAmount(colony.chambers);
+  const rate = productionPerHour(colony.chambers, colony.terrain, state.world.speed, colony.research);
+  const cap = storageCapacity(colony.chambers, colony.research);
+  const safe = protectedAmount(colony.chambers, colony.research);
   const wf = workforce(colony.chambers);
   const terrain = TERRAIN[colony.terrain];
   const protectedLeft = state.player.protectedUntil - now;

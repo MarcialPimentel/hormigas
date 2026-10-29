@@ -7,6 +7,7 @@ import {
   lvl,
   missingRequirements,
   researchCost,
+  researchMaxLevel,
   researchSeconds,
   sub,
   type ResearchId,
@@ -14,7 +15,7 @@ import {
 import type { Tx } from '../db';
 import { now } from '../clock';
 import { GameError } from '../errors';
-import { advance, requireAffordable, getPlayer, lockColony, lockOwnColony, saveColony, savePlayerResearch } from '../colony';
+import { advance, requireAffordable, getPlayer, lockColony, lockOwnColony, playerColonyIds, saveColony, savePlayerResearch } from '../colony';
 import { cancelEvent, onEvent, schedule } from '../events';
 import { getWorld } from '../world';
 import { timeMultiplier } from './boost';
@@ -37,6 +38,7 @@ export async function startResearch(q: Tx, playerId: number, colonyId: number, r
   if (missing.length) throw new GameError('locked', `Requires ${missing.map((m) => `${m.name} ${m.need}`).join(', ')}.`);
 
   const level = lvl(player.research, id) + 1;
+  if (level > researchMaxLevel(id)) throw new GameError('max', `${RESEARCH[id].name} is already at its highest level.`);
   const cost = researchCost(id, level);
   requireAffordable(c, cost);
 
@@ -44,6 +46,7 @@ export async function startResearch(q: Tx, playerId: number, colonyId: number, r
   const secs = researchSeconds(id, level, {
     worldSpeed: world.speed,
     pheromone: lvl(c.chambers, 'pheromone_chamber'),
+    research: player.research,
     timeMultiplier: await timeMultiplier(q, world.id, player.points.total, t),
   });
   const endAt = t + secs * 1000;
@@ -73,6 +76,12 @@ onEvent('research_complete', async (q, ev) => {
   const player = await getPlayer(q, ev.payload.playerId, true);
   const job = player.researchJob;
   if (!job || job.eventId !== ev.id) return;
+  // Some research changes production or storage (docs/21-tech-tree.md). Bring every colony up to the moment
+  // it finishes at the old rates first, so the new rates only count from then on. Lock order: player, then colonies.
+  for (const id of await playerColonyIds(q, player.id)) {
+    const c = await lockColony(q, id);
+    if (c.lastUpdated < job.endAt) await saveColony(q, advance(c, job.endAt));
+  }
   player.research = { ...player.research, [job.research]: job.level };
   player.researchJob = null;
   await savePlayerResearch(q, player);

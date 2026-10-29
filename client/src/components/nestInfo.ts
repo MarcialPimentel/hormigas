@@ -27,7 +27,7 @@ export function chamberTag(colony: ServerColony, state: ServerState | null, now:
   }
   const r = STORE_OF[id];
   if (r) {
-    const pct = Math.floor((colony.resources[r] / storageCapacity(colony.chambers)[r]) * 100);
+    const pct = Math.floor((colony.resources[r] / storageCapacity(colony.chambers, colony.research)[r]) * 100);
     return pct >= 100 ? { text: 'Full', tone: 'full' } : { text: `${pct}% full`, tone: 'store' };
   }
   return null;

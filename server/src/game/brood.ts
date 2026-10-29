@@ -54,7 +54,7 @@ export async function enqueueUnits(q: Tx, playerId: number, colonyId: number, ki
 
   const world = await getWorld(q);
   const perUnitMs = Math.round(
-    unitSeconds(def.cost, { worldSpeed: world.speed, broodHall, timeMultiplier: await timeMultiplier(q, world.id, player.points.total, t) }) * 1000,
+    unitSeconds(def.cost, { worldSpeed: world.speed, broodHall, research: player.research, timeMultiplier: await timeMultiplier(q, world.id, player.points.total, t) }) * 1000,
   );
   const item: QueueItem = { kind, id: id as CasteId | DefenseId, count, done: 0, perUnitMs, startAt: c.unitQueue.length === 0 ? t : null };
   c.resources = sub(c.resources, cost);

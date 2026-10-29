@@ -16,6 +16,7 @@ export function chamberPlan(colony: ServerColony, state: ServerState, id: Chambe
     excavation: lvl(colony.chambers, 'excavation_works'),
     terrain: colony.terrain,
     timeMultiplier: state.player.timeMultiplier ?? 1,
+    research,
   });
   const job = colony.buildJob;
   const affordable = canAfford(colony.resources, cost);

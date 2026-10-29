@@ -111,8 +111,9 @@ export function scoutDetail(yourScent: number, theirScent: number, scouts: numbe
 }
 
 /** Chance (0..1) that the defender's units detect and kill the scouts. */
-export function scoutDetectionChance(defenderUnitCount: number, scouts: number, yourScent: number, theirScent: number): number {
+export function scoutDetectionChance(defenderUnitCount: number, scouts: number, yourScent: number, theirScent: number, stealth = 0): number {
   if (defenderUnitCount <= 0) return 0;
-  const base = SC.detectionPerUnitPerScout * defenderUnitCount * scouts * Math.pow(SC.detectionScentBase, theirScent - yourScent);
+  // Chemical Mimicry (stealth) counts as extra Scent Reading for detection only, not for report detail.
+  const base = SC.detectionPerUnitPerScout * defenderUnitCount * scouts * Math.pow(SC.detectionScentBase, theirScent - yourScent - stealth);
   return Math.min(1, base);
 }

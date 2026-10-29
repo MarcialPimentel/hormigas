@@ -23,8 +23,8 @@ export function ChamberSheet({ id, onClose, onLookInside, onAllChambers }: { id:
   const { level, next, locked, cost, secs, blocked } = chamberPlan(colony, state, id);
   const def = CHAMBERS[id];
   const store = STORE_OF[id];
-  const cap = storageCapacity(colony.chambers);
-  const safe = protectedAmount(colony.chambers);
+  const cap = storageCapacity(colony.chambers, colony.research);
+  const safe = protectedAmount(colony.chambers, colony.research);
   const job = colony.buildJob?.chamber === id ? colony.buildJob : null;
 
   return (
