@@ -38,6 +38,9 @@ describe('forage finds', () => {
     expect(cargo.foliage + cargo.protein + cargo.nectar).toBeGreaterThan(0); // a first trip always finds food
     const afterArrive = await stores();
     for (const k of ['foliage', 'protein', 'nectar'] as const) expect(afterArrive[k] - beforeArrive[k]).toBeLessThanOrEqual(1);
+    // the report says when the party gets home (#65)
+    const rep = (await p.get('/api/reports')).reports.find((x: any) => x.type === 'forage');
+    expect(rep.data.returnsAt).toBe(atWilds.returnAt);
 
     // just before and just after it gets home: now the find lands
     await clock.advance(atWilds.returnAt - 1 - clock.t);
