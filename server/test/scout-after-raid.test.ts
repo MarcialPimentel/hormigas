@@ -3,7 +3,7 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { FastifyInstance } from 'fastify';
 import { getPool } from '../src/db';
-import { setupTest, teardownTest, newPlayer, setColony, type Client } from './helpers';
+import { setupTest, teardownTest, newPlayer, setColony, knowAll, type Client } from './helpers';
 
 let app: FastifyInstance;
 let clock: Awaited<ReturnType<typeof setupTest>>['clock'];
@@ -22,6 +22,7 @@ beforeAll(async () => {
   c = (await p.get('/api/state')).colony;
   await getPool().query("UPDATE events SET done = true WHERE type IN ('nest_raid', 'nest_event')");
   await setColony(c.id, { foliage: 1e5, protein: 1e5, nectar: 1e5, last_updated: clock.t, units: { scout: 5, minor_soldier: 400 } });
+  await knowAll();
   const row = await nestRow();
   nest = { region: row.region, patch: row.patch, spot: row.spot };
 });

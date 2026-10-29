@@ -31,14 +31,16 @@ import { syncNest } from './nests';
 import { defineMission } from './missions';
 import { addReport } from './reports';
 import { refreshPointsAfterCommit } from './points';
+import { discover, requireKnown, smelledBy } from './discovery';
 
 defineMission('transport', {
   allowsCargo: true,
   slot: 'mission',
-  async validate({ targetColony, colony }) {
+  async validate({ q, targetColony, colony, player }) {
     if (!targetColony) throw new GameError('bad_target', 'There is no colony there.');
     if (targetColony.id === colony.id) throw new GameError('bad_target', 'Pick a different colony.');
     if (targetColony.npc) throw new GameError('bad_target', "Wild ants don't accept deliveries.");
+    await requireKnown(q, player.id, targetColony.id, 'send');
   },
   async arrive(q, m, at) {
     if (!m.targetColonyId) return { home: true };
@@ -130,6 +132,9 @@ defineMission('scout', {
       data.research = defender.research;
     }
     m.result = { reportDetail: detail, caught };
+    // A scout report turns the scent into a known colony; the target now recognizes the scouts' scent (one way).
+    await discover(q, m.playerId, target.id, 'scouted', at);
+    await smelledBy(q, target.playerId, m.originColonyId, 'scouted_you', at);
     await addReport(q, m.worldId, m.playerId, 'scout', `Scout report: ${target.name} (${coordsKey(m.target)})`, data, at);
     if (!defender.isNpc) await addReport(
       q, m.worldId, target.playerId, 'scouted',

@@ -85,3 +85,15 @@ export async function setPlayer(playerId: number, fields: Record<string, unknown
 export async function calmWildNests() {
   await getPool().query("UPDATE events SET done = true WHERE type IN ('nest_raid', 'swarm_spotted')");
 }
+
+/**
+ * Every player has scouted every other colony (docs/22-discovery.md), for tests that aren't about discovery.
+ * Call again after new players or colonies appear.
+ */
+export async function knowAll() {
+  await getPool().query(
+    `INSERT INTO known_colonies (player_id, colony_id, via, first_at, discovered_at)
+     SELECT p.id, c.id, 'scouted', 0, 0 FROM players p JOIN colonies c ON c.player_id <> p.id WHERE NOT p.is_npc
+     ON CONFLICT (player_id, colony_id) DO UPDATE SET discovered_at = 0`,
+  );
+}

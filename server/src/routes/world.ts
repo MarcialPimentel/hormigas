@@ -1,7 +1,8 @@
 // Map, missions and reports routes.
 import type { FastifyInstance } from 'fastify';
-import { WORLD, SPECIES, isInactive, isNewPlayerProtected, corpseFieldAmount, nestLevelFor } from '@hormigas/shared';
+import { WORLD, SPECIES, SCENT_NAME, isInactive, isNewPlayerProtected, corpseFieldAmount, nestLevelFor } from '@hormigas/shared';
 import { leaderOf } from '../game/nests';
+import { knowledgeOf, type KnownEntry } from '../game/discovery';
 import { getPool, tx } from '../db';
 import { now } from '../clock';
 import { requireAuth } from '../auth';
@@ -9,6 +10,32 @@ import { GameError } from '../errors';
 import { processDueEvents } from '../events';
 import { getWorld } from '../world';
 import { missionView, recallMission, sendMission } from '../game/missions';
+
+/**
+ * One colony on the map, as this player knows it (docs/22-discovery.md).
+ * A scent shows only whose ants it smells of; a familiar scent adds its name; a known colony shows everything.
+ */
+function colonyView(c: any, k: KnownEntry, leader: number, t: number) {
+  const kind = c.npc ? 'wild' : 'player';
+  const base = { known: k.knowledge, kind, smelledAt: k.smelledAt, discoveredAt: k.discoveredAt };
+  const species = c.npc ? SPECIES[c.npc.species as keyof typeof SPECIES] : null;
+  const owner = species ? species.name : c.username;
+  if (k.knowledge === 'scent') return { ...base, id: null, name: SCENT_NAME[kind as 'player' | 'wild'], owner: null };
+  if (k.knowledge === 'familiar') return { ...base, id: null, name: c.name, owner };
+  const pvp = { points: c.points_total, protectedUntil: c.protected_until, lastActive: c.last_active };
+  return {
+    ...base,
+    id: c.id,
+    name: c.name,
+    playerId: c.player_id,
+    owner,
+    points: species ? 0 : c.points_total,
+    mine: k.knowledge === 'mine',
+    inactive: !species && isInactive(pvp, t),
+    protected: !species && isNewPlayerProtected(pvp, t),
+    ...(species ? { wild: { species: c.npc.species, level: nestLevelFor(leader, c.npc.level), style: species.style } } : {}),
+  };
+}
 
 export async function worldRoutes(app: FastifyInstance) {
   app.addHook('preHandler', async (req) => {
@@ -37,40 +64,14 @@ export async function worldRoutes(app: FastifyInstance) {
       : [];
     // a wild nest's level follows the strongest active player in its patch
     const leader = leaderOf(r.rows.filter((x: any) => !x.npc), t);
+    const known = await knowledgeOf(q, req.playerId, r.rows.map((x: any) => x.id));
     const spots = [];
     for (let spot = 1; spot <= WORLD.spotsPerPatch + 1; spot++) {
       const c = r.rows.find((x: any) => x.spot === spot);
       const corpse = corpses.find((x: any) => x.spot === spot);
       spots.push({
         spot,
-        colony: c?.npc
-          ? {
-              id: c.id,
-              name: c.name,
-              playerId: c.player_id,
-              owner: SPECIES[c.npc.species as keyof typeof SPECIES].name,
-              points: 0,
-              mine: false,
-              inactive: false,
-              protected: false,
-              wild: {
-                species: c.npc.species,
-                level: nestLevelFor(leader, c.npc.level),
-                style: SPECIES[c.npc.species as keyof typeof SPECIES].style,
-              },
-            }
-          : c
-          ? {
-              id: c.id,
-              name: c.name,
-              playerId: c.player_id,
-              owner: c.username,
-              points: c.points_total,
-              mine: c.player_id === req.playerId,
-              inactive: isInactive({ points: c.points_total, protectedUntil: c.protected_until, lastActive: c.last_active }, t),
-              protected: isNewPlayerProtected({ points: c.points_total, protectedUntil: c.protected_until, lastActive: c.last_active }, t),
-            }
-          : null,
+        colony: c ? colonyView(c, known.get(c.id)!, leader, t) : null,
         corpses: corpse ? corpseFieldAmount(corpse.protein, corpse.created_at, t) : 0,
       });
     }

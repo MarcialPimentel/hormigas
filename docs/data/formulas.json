@@ -5,6 +5,7 @@
     "regions": 5,
     "patchesPerRegion": 100,
     "spotsPerPatch": 12,
+    "playersPerPatch": 4,
     "regionNames": ["The Backyard", "The Old Garden", "Creekside", "The Woodpile", "The Long Grass"]
   },
   "cost": {
