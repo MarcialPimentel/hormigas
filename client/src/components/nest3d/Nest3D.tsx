@@ -7,7 +7,7 @@ import { useGame } from '../../game';
 import { setMotionPref, useMotion, type MotionPref } from '../../motion';
 import type { Nav } from '../../nav';
 import { ChamberPopover, ChamberSheet } from '../ChamberSheet';
-import { createNestScene, type Inset, type Layout, type NestScene } from './scene';
+import { MAX_ZOOM, createNestScene, type Inset, type Layout, type NestScene } from './scene';
 
 const NEXT_MOTION: Record<MotionPref, MotionPref> = { auto: 'on', on: 'off', off: 'auto' };
 
@@ -22,6 +22,7 @@ export function Nest3D({ nav, onFail, onSwitch, fill, inset }: { nav: Nav; onFai
   const { pref: motion, reduced } = useMotion();
   const [selected, setSelected] = useState<ChamberId | null>(null);
   const [height, setHeight] = useState(480);
+  const [zoom, setZoom] = useState(1);
 
   useEffect(() => {
     const el = host.current;
@@ -45,6 +46,7 @@ export function Nest3D({ nav, onFail, onSwitch, fill, inset }: { nav: Nav; onFai
         if (dead) return s.dispose();
         sceneRef.current = s;
         if (insetRef.current) s.setInset(insetRef.current);
+        s.setOnZoom(setZoom);
       })
       .catch(() => !dead && onFail());
     return () => {
@@ -107,7 +109,28 @@ export function Nest3D({ nav, onFail, onSwitch, fill, inset }: { nav: Nav; onFai
         <button type="button" className="nest-motion nest-switch" onClick={onSwitch} title="Show the flat 2D nest instead">
           2D view
         </button>
-        <p className="n3-hint">Drag to turn the nest · tap a chamber · tap the entrance to send a party</p>
+        <p className="n3-hint">
+          {!fill
+            ? 'Drag to turn the nest · tap a chamber · tap the entrance to send a party'
+            : zoom > 1.02
+              ? 'Drag to move around · double-click to see the whole nest'
+              : 'Scroll to zoom · drag to turn · tap a chamber · tap the entrance to send a party'}
+        </p>
+        {fill && (
+          <div className="n3-zoom" role="group" aria-label="Zoom">
+            <button type="button" onClick={() => sceneRef.current?.zoomBy(1.4)} disabled={zoom >= MAX_ZOOM} aria-label="Zoom in" title="Zoom in (or scroll)">
+              +
+            </button>
+            <button type="button" onClick={() => sceneRef.current?.zoomBy(1 / 1.4)} disabled={zoom <= 1} aria-label="Zoom out" title="Zoom out (or scroll)">
+              −
+            </button>
+            {zoom > 1.02 && (
+              <button type="button" className="n3-fit" onClick={() => sceneRef.current?.resetView()} title="Show the whole nest (or double-click)">
+                Whole nest
+              </button>
+            )}
+          </div>
+        )}
         {/* keyboard and screen readers: every chamber as a button */}
         <ul className="sr-only">
           {CHAMBER_IDS.filter((id) => lvl(colony.chambers, id) > 0 || isUnlocked(CHAMBERS[id].unlock, colony.chambers, research)).map((id) => (

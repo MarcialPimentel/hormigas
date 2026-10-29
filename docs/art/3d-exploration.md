@@ -2,7 +2,7 @@
 
 **Status:** approved on 2026-10-28, with these answers:
 1. Build it (the test slice); phones aren't a priority for 3D.
-2. Gentle orbit, no zoom and no inside views.
+2. Gentle orbit, no zoom and no inside views. (Zoom was added later, with the full-screen Colony screen: see [12-ui-nest-view.md](../12-ui-nest-view.md), "The 3D slab".)
 3. The 2D nest stays for phones (and as the fallback).
 4. Yes to the light "field-guide paper" theme for menus.
 5. No 3D models for now: use the existing 2D art inside the 3D block ("2D in 3D"); replace later.
