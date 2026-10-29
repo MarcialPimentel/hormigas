@@ -82,6 +82,20 @@
     "formula": "totalResourcesSpent / resourcesPerPoint",
     "resourcesPerPoint": 1000
   },
+  "brood": {
+    "feeding": {
+      "formula": "extra Protein per unit = extraProteinPct/100 * (unit foliage + protein); time per unit * (1 - timeCutPct/100). Castes only, chosen per batch.",
+      "well_fed": { "name": "Well fed", "extraProteinPct": 50, "timeCutPct": 25 },
+      "feast": { "name": "Feast", "extraProteinPct": 150, "timeCutPct": 40 }
+    },
+    "digestion": {
+      "formula": "nectar = floor(protein / proteinPerNectar); hours = protein / (proteinPerHourPerLevel * broodHallLevel) / worldSpeed. Nectar trickles in evenly; stopping refunds the undigested Protein.",
+      "proteinPerNectar": 3,
+      "proteinPerHourPerLevel": 200,
+      "unlockBroodHall": 2,
+      "minProtein": 30
+    }
+  },
   "missions": { "baseSlots": 2, "baseForageSlots": 1 },
   "colonies": { "base": 1 },
   "forage": {

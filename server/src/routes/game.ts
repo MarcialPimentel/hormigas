@@ -9,7 +9,7 @@ import { getWorld } from '../world';
 import { cancelBuild, startBuild } from '../game/chambers';
 import { timeMultiplier } from '../game/boost';
 import { cancelResearch, startResearch } from '../game/research';
-import { enqueueUnits } from '../game/brood';
+import { enqueueUnits, startDigestion, stopDigestion } from '../game/brood';
 import { activeMissions, incomingMissions, missionView } from '../game/missions';
 import { claimQuest, questStatus } from '../game/quests';
 import { hasForagedBefore } from '../game/forage';
@@ -29,6 +29,7 @@ export function colonyView(c: Colony) {
     defenses: c.defenses,
     buildJob: c.buildJob,
     unitQueue: c.unitQueue,
+    digestJob: c.digestJob ?? null,
     research: c.research,
   };
 }
@@ -103,7 +104,18 @@ export async function gameRoutes(app: FastifyInstance) {
 
   app.post('/api/colonies/:id/brood', async (req) => {
     const body = (req.body ?? {}) as any;
-    const c = await tx((q) => enqueueUnits(q, req.playerId, colonyIdParam(req.params), String(body.kind ?? ''), String(body.id ?? ''), Number(body.count)));
+    const c = await tx((q) => enqueueUnits(q, req.playerId, colonyIdParam(req.params), String(body.kind ?? ''), String(body.id ?? ''), Number(body.count), body.feed));
+    return { ok: true, colony: colonyView(c) };
+  });
+
+  app.post('/api/colonies/:id/digest', async (req) => {
+    const body = (req.body ?? {}) as any;
+    const c = await tx((q) => startDigestion(q, req.playerId, colonyIdParam(req.params), Number(body.protein)));
+    return { ok: true, colony: colonyView(c) };
+  });
+
+  app.post('/api/colonies/:id/digest/stop', async (req) => {
+    const c = await tx((q) => stopDigestion(q, req.playerId, colonyIdParam(req.params)));
     return { ok: true, colony: colonyView(c) };
   });
 

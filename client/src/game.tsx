@@ -87,6 +87,7 @@ function upcomingTimers(s: ServerState): number[] {
   if (s.player.researchJob) out.push(s.player.researchJob.endAt);
   const qe = s.colony ? queueEndsAt(s.colony.unitQueue) : null;
   if (qe) out.push(qe);
+  if (s.colony?.digestJob) out.push(s.colony.digestJob.endAt);
   for (const m of s.missions ?? []) out.push(m.status === 'outbound' ? m.arriveAt : m.returnAt);
   for (const m of s.incoming ?? []) out.push(m.arriveAt);
   return out;
@@ -238,6 +239,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
     if (p.player.researchJob && !state.player.researchJob && (state.player.research as any)[p.player.researchJob.research] === p.player.researchJob.level)
       say(`Research complete: ${RESEARCH[p.player.researchJob.research as ResearchId].name} ${p.player.researchJob.level}`, 'research');
     if (p.colony.unitQueue.length > 0 && state.colony.unitQueue.length === 0) say('The Brood Hall has finished raising units', 'brood');
+    if (p.colony.digestJob && !state.colony.digestJob && p.colony.digestJob.endAt <= state.serverNow) say('The larvae have finished digesting', 'digest');
 
     const count = (u: Record<string, number>) => Object.values(u).reduce((a, b) => a + (b ?? 0), 0);
     const before = new Map<number, any>((p.missions ?? []).map((m: any) => [m.id, m]));
