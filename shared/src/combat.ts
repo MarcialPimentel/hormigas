@@ -20,6 +20,11 @@ export interface CombatSide {
   units: UnitCounts;
   defenses?: DefenseCounts;
   research: ResearchLevels;
+  /**
+   * Defender only: allied soldiers holding position at the colony (docs/23-supercolonies.md).
+   * Each group fights with its own owner's research and is counted separately in the result.
+   */
+  allies?: { units: UnitCounts; research: ResearchLevels }[];
 }
 
 export interface RoundSummary {
@@ -43,9 +48,13 @@ export interface BattleResult {
   defenderSurvivors: UnitCounts;
   /** Defenses destroyed in battle (before free rebuild). */
   defensesDestroyed: DefenseCounts;
+  /** Per allied group (same order as defender.allies): losses and survivors. Empty without allies. */
+  alliesLost: UnitCounts[];
+  alliesSurvivors: UnitCounts[];
 }
 
-type EntityKey = `c:${CasteId}` | `d:${DefenseId}`;
+/** c: the side's own castes, d: defenses, a<i>: castes of allied group i. */
+type EntityKey = `c:${CasteId}` | `d:${DefenseId}` | `a${number}:${CasteId}`;
 
 interface Army {
   keys: EntityKey[]; // type table
@@ -57,8 +66,8 @@ interface Army {
 }
 
 function statsFor(key: EntityKey, research: ResearchLevels) {
-  const id = key.slice(2);
-  const base: CombatStats = key[0] === 'c' ? CASTES[id as CasteId] : DEFENSES[id as DefenseId];
+  const id = key.slice(key.indexOf(':') + 1);
+  const base: CombatStats = key[0] === 'd' ? DEFENSES[id as DefenseId] : CASTES[id as CasteId];
   // Formic Acid: defenses get an extra percentage on all three stats.
   const def = key[0] === 'd' ? researchSum(research, 'defensePct') / 100 : 0;
   return {
@@ -75,8 +84,13 @@ function buildArmy(side: CombatSide): Army {
   const counts: number[] = [];
   for (const [id, n] of Object.entries(side.units)) if ((n ?? 0) > 0) { keys.push(`c:${id as CasteId}`); counts.push(n!); }
   for (const [id, n] of Object.entries(side.defenses ?? {})) if ((n ?? 0) > 0) { keys.push(`d:${id as DefenseId}`); counts.push(n!); }
+  const research: ResearchLevels[] = keys.map(() => side.research);
+  // Allies come last, so a battle without allies runs exactly as before (same RNG draws).
+  (side.allies ?? []).forEach((g, i) => {
+    for (const [id, n] of Object.entries(g.units)) if ((n ?? 0) > 0) { keys.push(`a${i}:${id as CasteId}`); counts.push(n!); research.push(g.research); }
+  });
   const size = counts.reduce((a, b) => a + b, 0);
-  const stats = keys.map((k) => statsFor(k, side.research));
+  const stats = keys.map((k, t) => statsFor(k, research[t]));
   const type = new Uint16Array(size);
   const health = new Float64Array(size);
   const guard = new Float64Array(size);
@@ -186,7 +200,21 @@ export function simulateBattle(attacker: CombatSide, defender: CombatSide, rng: 
     const left = dLeft.get(`d:${id as DefenseId}`) ?? 0;
     if (n - left > 0) defensesDestroyed[id as DefenseId] = n - left;
   }
-  return { winner, rounds, attackerLost, attackerSurvivors, defenderLost, defenderSurvivors, defensesDestroyed };
+  const alliesLost: UnitCounts[] = [];
+  const alliesSurvivors: UnitCounts[] = [];
+  (defender.allies ?? []).forEach((g, i) => {
+    const lost: UnitCounts = {};
+    const left: UnitCounts = {};
+    for (const [id, n] of Object.entries(g.units)) {
+      if (!n) continue;
+      const k = dLeft.get(`a${i}:${id as CasteId}`) ?? 0;
+      left[id as CasteId] = k;
+      if (n - k > 0) lost[id as CasteId] = n - k;
+    }
+    alliesLost.push(lost);
+    alliesSurvivors.push(left);
+  });
+  return { winner, rounds, attackerLost, attackerSurvivors, defenderLost, defenderSurvivors, defensesDestroyed, alliesLost, alliesSurvivors };
 }
 
 /** Each destroyed defense independently rebuilds with probability defenseRebuildChance. */
@@ -275,7 +303,8 @@ export function previewBattle(
   const totalEntities =
     Object.values(attacker.units).reduce((a, b) => a + (b ?? 0), 0) +
     Object.values(defender.units).reduce((a, b) => a + (b ?? 0), 0) +
-    Object.values(defender.defenses ?? {}).reduce((a, b) => a + (b ?? 0), 0);
+    Object.values(defender.defenses ?? {}).reduce((a, b) => a + (b ?? 0), 0) +
+    (defender.allies ?? []).reduce((s, g) => s + Object.values(g.units).reduce((a, b) => a + (b ?? 0), 0), 0);
   // keep previews responsive for huge battles
   const runs = opts.runs ?? (totalEntities > 50000 ? 5 : totalEntities > 10000 ? 15 : 50);
   const rng = createRng(opts.seed ?? 12345);
@@ -285,7 +314,7 @@ export function previewBattle(
     if (r.winner === 'attacker') win++;
     else if (r.winner === 'draw') draw++;
     const la = unitsValue(r.attackerLost);
-    const ld = add(unitsValue(r.defenderLost), defensesValue(r.defensesDestroyed));
+    const ld = r.alliesLost.reduce((v, l) => add(v, unitsValue(l)), add(unitsValue(r.defenderLost), defensesValue(r.defensesDestroyed)));
     lossA += la.foliage + la.protein + la.nectar;
     lossD += ld.foliage + ld.protein + ld.nectar;
     if (r.winner === 'attacker' && opts.defenderResources && opts.cargoOf) {

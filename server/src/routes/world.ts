@@ -3,6 +3,8 @@ import type { FastifyInstance } from 'fastify';
 import { WORLD, SPECIES, SCENT_NAME, isInactive, isNewPlayerProtected, corpseFieldAmount, nestLevelFor } from '@hormigas/shared';
 import { leaderOf } from '../game/nests';
 import { knowledgeOf, type KnownEntry } from '../game/discovery';
+import { relationsOf, supercolonyTags } from '../game/diplomacy';
+import type { RelationInfo } from '@hormigas/shared';
 import { getPool, tx } from '../db';
 import { now } from '../clock';
 import { requireAuth } from '../auth';
@@ -15,7 +17,7 @@ import { missionView, recallMission, sendMission } from '../game/missions';
  * One colony on the map, as this player knows it (docs/22-discovery.md).
  * A scent shows only whose ants it smells of; a familiar scent adds its name; a known colony shows everything.
  */
-function colonyView(c: any, k: KnownEntry, leader: number, t: number) {
+function colonyView(c: any, k: KnownEntry, leader: number, t: number, rel?: RelationInfo, tag?: { id: number; name: string }) {
   const kind = c.npc ? 'wild' : 'player';
   const base = { known: k.knowledge, kind, smelledAt: k.smelledAt, discoveredAt: k.discoveredAt };
   const species = c.npc ? SPECIES[c.npc.species as keyof typeof SPECIES] : null;
@@ -33,6 +35,9 @@ function colonyView(c: any, k: KnownEntry, leader: number, t: number) {
     mine: k.knowledge === 'mine',
     inactive: !species && isInactive(pvp, t),
     protected: !species && isNewPlayerProtected(pvp, t),
+    // truces and supercolonies (docs/23-supercolonies.md)
+    ...(rel ? { relation: rel.relation, relationUntil: rel.until ?? null } : {}),
+    ...(tag ? { supercolony: tag.name } : {}),
     ...(species ? { wild: { species: c.npc.species, level: nestLevelFor(leader, c.npc.level), style: species.style } } : {}),
   };
 }
@@ -65,13 +70,16 @@ export async function worldRoutes(app: FastifyInstance) {
     // a wild nest's level follows the strongest active player in its patch
     const leader = leaderOf(r.rows.filter((x: any) => !x.npc), t);
     const known = await knowledgeOf(q, req.playerId, r.rows.map((x: any) => x.id));
+    const owners = [...new Set(r.rows.filter((x: any) => !x.npc).map((x: any) => x.player_id as number))];
+    const rels = await relationsOf(q, req.playerId, owners, t);
+    const tags = await supercolonyTags(q, owners);
     const spots = [];
     for (let spot = 1; spot <= WORLD.spotsPerPatch + 1; spot++) {
       const c = r.rows.find((x: any) => x.spot === spot);
       const corpse = corpses.find((x: any) => x.spot === spot);
       spots.push({
         spot,
-        colony: c ? colonyView(c, known.get(c.id)!, leader, t) : null,
+        colony: c ? colonyView(c, known.get(c.id)!, leader, t, rels.get(c.player_id), tags.get(c.player_id)) : null,
         corpses: corpse ? corpseFieldAmount(corpse.protein, corpse.created_at, t) : 0,
       });
     }

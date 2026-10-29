@@ -57,7 +57,7 @@ describe('research', () => {
   });
 
   it('rejects non-MVP research', async () => {
-    const r = await p.post('/api/research', { colonyId, research: 'supercolony' });
+    const r = await p.post('/api/research', { colonyId, research: 'symbiosis' });
     expect(r.error.code).toBe('bad_research');
   });
 });

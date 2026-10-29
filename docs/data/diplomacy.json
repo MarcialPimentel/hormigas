@@ -1,0 +1,9 @@
+{
+  "_version": "0.1",
+  "_note": "Truces and supercolonies, docs/23-supercolonies.md. Times are hours at world speed 1 (divide by world speed).",
+  "truceNoticeHours": 24,
+  "scentFadeHours": 72,
+  "supercolonyMaxMembers": 6,
+  "supercolonyNameLength": [3, 24],
+  "unlockResearch": "supercolony"
+}
