@@ -12,6 +12,8 @@ import {
   res,
   scoutDetail,
   scoutDetectionChance,
+  scoutLevel,
+  forageLuck,
   researchSum,
   WILDS_SPOT,
   corpseFieldAmount,
@@ -136,8 +138,8 @@ defineMission('scout', {
     const herd = herdOf(target);
     const defender = await getPlayer(q, herd?.tender ? herd.tender.playerId : target.playerId);
     const scouts = lvl(m.units, 'scout');
-    const yours = lvl(attacker.research, 'scent_reading');
-    const theirs = lvl(defender.research, 'scent_reading');
+    const yours = scoutLevel(attacker.research);
+    const theirs = scoutLevel(defender.research);
     const detail = scoutDetail(yours, theirs, scouts);
     const homeUnits = Object.values(target.units).reduce((a, b) => a + (b ?? 0), 0);
     const chance = scoutDetectionChance(homeUnits, scouts, yours, theirs, researchSum(attacker.research, 'scoutStealth'));
@@ -204,7 +206,7 @@ const WILDS_TEXT = [
 /** Scouts can survey the wilds of any patch: forage odds, what lives in the patch, corpses lying around. */
 async function surveyWilds(q: Tx, m: Mission, at: number): Promise<ArrivalOutcome> {
   const player = await getPlayer(q, m.playerId);
-  const luck = lvl(player.research, 'foraging_instinct');
+  const luck = forageLuck(player.research);
   const { region, patch } = m.target;
   const cols = await q.query(
     `SELECT p.id, p.points_total, p.protected_until, p.last_active

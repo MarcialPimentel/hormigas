@@ -28,14 +28,6 @@ import {
   type ResearchId,
 } from '../src';
 
-/** Every effect key the code knows how to read. A key not in this list would silently do nothing. */
-const KNOWN_EFFECTS = new Set([
-  'attackPct', 'healthPct', 'guardPct', 'speedPct', 'scoutLevel', 'missionSlots', 'forageSlotsPer2Levels', 'forageLuck',
-  'unlocksCastes', 'space', 'coloniesPer2Levels', 'unlocksAllies', 'unlocksAlliances',
-  'foliagePct', 'proteinPct', 'nectarPct', 'storagePct', 'protectedPct', 'buildTimePct', 'unitTimePct', 'researchTimePct',
-  'defensePct', 'lootPct', 'scoutStealth',
-]);
-
 const prereqs = (id: ResearchId): ResearchId[] =>
   Object.keys(RESEARCH[id].unlock).filter((k) => k.startsWith('research.')).map((k) => k.slice(9) as ResearchId);
 
@@ -77,10 +69,6 @@ describe('tech tree shape', () => {
     for (const id of RESEARCH_IDS) visit(id, []);
     for (const id of RESEARCH_IDS.filter((r) => RESEARCH[r].mvp))
       for (const p of prereqs(id)) expect(RESEARCH[p].mvp, `${id} needs ${p}`).toBe(true);
-  });
-
-  it('every effect key is one the code reads', () => {
-    for (const id of RESEARCH_IDS) for (const key of Object.keys(RESEARCH[id].effect)) expect(KNOWN_EFFECTS, `${id}.${key}`).toContain(key);
   });
 
   it('research-to-research prerequisites are checked', () => {

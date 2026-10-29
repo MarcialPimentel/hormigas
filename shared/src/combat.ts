@@ -10,7 +10,7 @@ import {
   type DefenseId,
   type Resources,
 } from './data';
-import { lvl, researchBonus, researchSum, type DefenseCounts, type ResearchLevels, type UnitCounts } from './economy';
+import { researchFraction, researchSum, type DefenseCounts, type ResearchLevels, type UnitCounts } from './economy';
 import { res, add, scale } from './resources';
 import { createRng, type Rng } from './rng';
 
@@ -72,9 +72,9 @@ function statsFor(key: EntityKey, research: ResearchLevels) {
   const def = key[0] === 'd' ? researchSum(research, 'defensePct') / 100 : 0;
   return {
     id,
-    attack: base.attack * (1 + researchBonus(research, 'mandibles', 'attackPct') + def),
-    guard: base.guard * (1 + researchBonus(research, 'guard_formation', 'guardPct') + def),
-    health: base.health * (1 + researchBonus(research, 'chitin', 'healthPct') + def),
+    attack: base.attack * (1 + researchFraction(research, 'attackPct') + def),
+    guard: base.guard * (1 + researchFraction(research, 'guardPct') + def),
+    health: base.health * (1 + researchFraction(research, 'healthPct') + def),
     frenzy: base.frenzy ?? {},
   };
 }
@@ -335,13 +335,10 @@ export function previewBattle(
 
 /** Current size of a corpse field: decays by decay.pctPerHour (of the original) per hour after startAfterHours. */
 export function corpseFieldAmount(protein: number, createdAt: number, t: number): number {
-  const d = C.corpseDecay;
-  const hours = (t - createdAt) / 3600_000;
-  const factor = Math.max(0, Math.min(1, 1 - (d.pctPerHour / 100) * Math.max(0, hours - d.startAfterHours)));
-  return Math.floor(protein * factor);
+  return Math.floor(protein * corpseDecayFactor(createdAt, t));
 }
 
-/** Inverse of corpseFieldAmount's decay factor, for storing a remaining amount without resetting the decay clock. */
+/** How much of a corpse field is left (1 = all, 0 = gone). Also used to store a remaining amount without resetting the decay clock. */
 export function corpseDecayFactor(createdAt: number, t: number): number {
   const d = C.corpseDecay;
   const hours = (t - createdAt) / 3600_000;

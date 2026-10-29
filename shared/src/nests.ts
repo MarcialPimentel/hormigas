@@ -1,7 +1,7 @@
 // Wild nests: NPC colonies, one per patch near players. Spec: docs/17-wild-nests.md
 // Termite mounds and spider dens (docs/24-npcs.md) are nests of special species: same regrowth, scouting and raids,
 // their own level table, store and regrow time, and they never raid back.
-import { NPC_DATA, CASTES, DEFENSES, type CasteId, type DefenseId, type Resources, type TerrainId } from './data';
+import { NPC_DATA, CASTES, DEFENSES, FORMULAS, type CasteId, type DefenseId, type Resources, type TerrainId } from './data';
 import type { DefenseCounts, UnitCounts } from './economy';
 import { res, total } from './resources';
 import { unitsValue } from './combat';
@@ -41,6 +41,8 @@ export const nestRaidsBack = (s: NestSpecies): boolean => SPECIES[s].raids !== f
 export const NEST_RAIDS = NPC_DATA.raids as unknown as {
   everyHours: [number, number];
   partyShare: number;
+  /** castes with at least this attack count as soldiers and join raids */
+  soldierMinAttack: number;
   minParty: UnitCounts;
   maxPartyValuePctOfTargetPoints: number;
   speedPct: number;
@@ -180,13 +182,13 @@ export function nextNestRaidHours(rng: () => number): number {
 export function nestRaidParty(home: UnitCounts, targetPoints: number): UnitCounts {
   const party: UnitCounts = {};
   for (const [k, n] of Object.entries(home) as [CasteId, number][]) {
-    if (!n || CASTES[k].attack < 25) continue; // soldiers only; Workers stay home
+    if (!n || CASTES[k].attack < NEST_RAIDS.soldierMinAttack) continue; // soldiers only; Workers stay home
     party[k] = Math.round(n * NEST_RAIDS.partyShare);
   }
   for (const [k, n] of Object.entries(NEST_RAIDS.minParty) as [CasteId, number][]) {
     if ((party[k] ?? 0) < n) party[k] = Math.min(n, home[k] ?? 0);
   }
-  const cap = (targetPoints * 1000 * NEST_RAIDS.maxPartyValuePctOfTargetPoints) / 100;
+  const cap = (targetPoints * FORMULAS.points.resourcesPerPoint * NEST_RAIDS.maxPartyValuePctOfTargetPoints) / 100;
   const value = total(unitsValue(party));
   if (value > cap && value > 0) {
     const k = cap / value;

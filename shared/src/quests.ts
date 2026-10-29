@@ -1,7 +1,7 @@
-// Founding tasks (docs/02-progression.md, docs/16-milestones.md).
+// Founding tasks (docs/02-progression.md, docs/16-milestones.md). The list lives in docs/data/quests.json.
 // The chain builds toward the first big milestone — discovering Nectar — then teaches castes and missions.
+import questsJson from '../../docs/data/quests.json';
 import type { CasteId, ChamberId, Resources } from './data';
-import { res } from './resources';
 
 export interface QuestProgressInput {
   /** highest level of each chamber across your colonies */
@@ -14,7 +14,14 @@ export interface QuestProgressInput {
   wildRaidsWon?: number;
 }
 
-export interface Quest {
+/** What finishes a task. Exactly one kind per task (see the note in quests.json). */
+export type QuestGoal =
+  | { chamber: ChamberId; level: number }
+  | { units: CasteId; count: number }
+  | { missionSent: string }
+  | { wildRaidsWon: number };
+
+export interface QuestDef {
   id: string;
   title: string;
   hint: string;
@@ -22,40 +29,22 @@ export interface Quest {
   reward: Resources;
   /** shown when this task is the big milestone of its phase */
   milestone?: string;
+  goal: QuestGoal;
+}
+
+export interface Quest extends QuestDef {
   done: (p: QuestProgressInput) => boolean;
 }
 
-const ch = (p: QuestProgressInput, id: ChamberId) => p.chambers[id] ?? 0;
+/** Is a task's goal met? */
+export function questGoalMet(goal: QuestGoal, p: QuestProgressInput): boolean {
+  if ('chamber' in goal) return (p.chambers[goal.chamber] ?? 0) >= goal.level;
+  if ('units' in goal) return (p.units[goal.units] ?? 0) >= goal.count;
+  if ('missionSent' in goal) return p.missionsSent.includes(goal.missionSent);
+  return (p.wildRaidsWon ?? 0) >= goal.wildRaidsWon;
+}
 
-export const QUESTS: Quest[] = [
-  { id: 'leaf', title: 'Build a Leaf Garden', hint: 'Foliage is the colony’s building material.', screen: 'chambers', reward: res(150, 50, 0), done: (p) => ch(p, 'leaf_garden') >= 1 },
-  { id: 'nursery', title: 'Build a Nursery', hint: 'Production chambers need workers to run them. The Nursery raises them.', screen: 'chambers', reward: res(150, 75, 0), done: (p) => ch(p, 'nursery') >= 1 },
-  { id: 'hunt', title: 'Build Hunting Grounds', hint: 'Protein feeds castes and research.', screen: 'chambers', reward: res(200, 100, 0), done: (p) => ch(p, 'hunting_grounds') >= 1 },
-  { id: 'queen2', title: "Enlarge the Queen's Chamber to level 2", hint: 'Each level of the Queen’s Chamber unlocks new chambers.', screen: 'chambers', reward: res(300, 150, 0), done: (p) => ch(p, 'queen_chamber') >= 2 },
-  { id: 'grow', title: 'Grow your Leaf Garden to level 3', hint: 'A bigger economy makes everything after this faster.', screen: 'chambers', reward: res(300, 200, 0), done: (p) => ch(p, 'leaf_garden') >= 3 },
-  { id: 'queen3', title: "Enlarge the Queen's Chamber to level 3", hint: 'Level 3 lets the colony herd aphids.', screen: 'chambers', reward: res(400, 300, 0), done: (p) => ch(p, 'queen_chamber') >= 3 },
-  {
-    id: 'nectar',
-    title: 'Discover Nectar',
-    hint: 'Build an Aphid Pasture. Aphids give honeydew — Nectar — which castes, research and every journey need.',
-    screen: 'chambers',
-    reward: res(300, 200, 150),
-    milestone: 'Your colony has discovered Nectar.',
-    done: (p) => ch(p, 'aphid_pasture') >= 1,
-  },
-  { id: 'brood', title: 'Build a Brood Hall', hint: 'Castes and defenses are raised in the Brood Hall.', screen: 'chambers', reward: res(600, 300, 100), done: (p) => ch(p, 'brood_hall') >= 1 },
-  { id: 'workers', title: 'Raise 3 Workers', hint: 'Workers carry food home and haul corpses.', screen: 'brood', reward: res(400, 200, 150), done: (p) => (p.units.worker ?? 0) >= 3 },
-  { id: 'forage', title: 'Send a forage party', hint: 'Missions → Forage. Send a few Workers into the wilds and see what they find.', screen: 'missions', reward: res(500, 500, 200), done: (p) => p.missionsSent.includes('forage') },
-  { id: 'scout', title: 'Send out a Scout', hint: 'Raise a Scout, then open Missions and tap a scent in your patch: the wild nest, a neighbor, or the wilds at the edge.', screen: 'missions', reward: res(1000, 1000, 500), done: (p) => p.missionsSent.includes('scout') },
-  {
-    id: 'wild_raid',
-    title: 'Raid the wild nest',
-    hint: 'Every patch has a nest of wild ants: the red scent. Scout it first, check the battle preview, then send Minor Soldiers. Bring a few Workers to carry the loot home.',
-    screen: 'missions',
-    reward: res(1500, 1000, 500),
-    done: (p) => (p.wildRaidsWon ?? 0) > 0,
-  },
-];
+export const QUESTS: Quest[] = (questsJson.quests as QuestDef[]).map((q) => ({ ...q, done: (p) => questGoalMet(q.goal, p) }));
 
 /** The next quest to work on (first not yet claimed), or null when the chain is finished. */
 export const nextQuest = (claimed: string[]): Quest | null => QUESTS.find((q) => !claimed.includes(q.id)) ?? null;

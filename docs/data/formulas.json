@@ -57,7 +57,14 @@
   "scouting": {
     "detectionFormula": "min(1, detectionPerUnitPerScout * defenderUnits * scouts * detectionScentBase^(theirScentReading - yourScentReading))",
     "detectionPerUnitPerScout": 0.0025,
-    "detectionScentBase": 2
+    "detectionScentBase": 2,
+    "detail": {
+      "formula": "diff = floor(yourScoutLevel - theirScoutLevel + (scouts - 1) / extraScoutsPerStep). The report shows units from unitsFrom, defenses from defensesFrom, everything from fullFrom; below unitsFrom, resources only.",
+      "extraScoutsPerStep": 2,
+      "unitsFrom": 0,
+      "defensesFrom": 2,
+      "fullFrom": 4
+    }
   },
   "combat": {
     "maxRounds": 6,
@@ -103,6 +110,30 @@
     "outcomes": {
       "food_cache": 35, "dead_beetle": 15, "nothing": 20, "lost_trail": 10,
       "shortcut": 5, "spider_ambush": 10, "rainstorm": 4, "the_boot": 1
+    },
+    "luck": {
+      "formula": "Each forageLuck level (Foraging Instinct) moves shiftPerLevel points of weight from the takeFrom outcomes, in order, never taking more than (100 - keepPct)% of any one; the moved weight goes to giveToPct (percent shares).",
+      "shiftPerLevel": 2,
+      "takeFrom": ["nothing", "lost_trail", "spider_ambush", "rainstorm", "the_boot"],
+      "keepPct": 25,
+      "giveToPct": { "food_cache": 70, "dead_beetle": 30 }
+    },
+    "findCap": {
+      "formula": "round((base + perPoint * playerPoints) * (1 + luckPctPerLevel/100 * forageLuck)), and never more than the party can carry",
+      "base": 3000,
+      "perPoint": 25,
+      "luckPctPerLevel": 10
+    },
+    "firstTripOutcome": "food_cache",
+    "results": {
+      "_note": "What each outcome does. cargoPct: [min, max] percent of the find cap, rolled evenly; firstTripCargoPct is used instead on a player's first trip. mixPct: how the find splits across resources. lossPct: [min, max] percent of the party lost, a whole number rolled evenly. returnFactor: multiplier on the trip home. Outcomes not listed do nothing.",
+      "food_cache": { "cargoPct": [40, 100], "firstTripCargoPct": [70, 100], "mixPct": { "foliage": 55, "protein": 30, "nectar": 15 } },
+      "dead_beetle": { "cargoPct": [60, 100], "mixPct": { "foliage": 0, "protein": 100, "nectar": 0 } },
+      "lost_trail": { "returnFactor": 1.5 },
+      "shortcut": { "returnFactor": 0.5 },
+      "spider_ambush": { "lossPct": [10, 30] },
+      "rainstorm": { "lossPct": [20, 50] },
+      "the_boot": { "lossPct": [100, 100] }
     }
   }
 }
