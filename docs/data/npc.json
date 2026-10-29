@@ -57,5 +57,16 @@
     "speedPct": 10,
     "perPlayerCooldownHours": 24,
     "revengeWeight": 2
+  },
+  "swarm": {
+    "_note": "Army-ant swarms (docs/20-swarms.md): each player colony is visited about every 4 days, with warningHours of notice. The swarm is sized by simulating the battle against what the colony has at home when the swarm is spotted, so the colony wins about defenderWinRate of the time if it keeps its army home. Hours are at world speed 1.",
+    "name": "Army ant swarm",
+    "everyHours": [72, 120],
+    "warningHours": 4,
+    "pack": {"minor_soldier": 4, "major_soldier": 1},
+    "minPacks": 1,
+    "maxPacks": 400,
+    "defenderWinRate": 0.7,
+    "trials": 12
   }
 }

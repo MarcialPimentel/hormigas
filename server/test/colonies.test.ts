@@ -1,5 +1,5 @@
 // Build 4: more colonies — Nuptial Flight, the Winged Queen and the Found Colony mission (docs/19-colonies.md).
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import type { FastifyInstance } from 'fastify';
 import { RESOURCES_DATA, TERRAIN, maxColonies, terrainForSpot } from '@hormigas/shared';
 import { getPool } from '../src/db';
@@ -31,6 +31,8 @@ beforeAll(async () => {
   await calmWildNests();
 });
 afterAll(async () => teardownTest(app));
+// swarms are tested in swarms.test.ts; keep them away from these colonies
+beforeEach(calmWildNests);
 
 describe('the cap', () => {
   it('is 1 colony, plus one at Nuptial Flight levels 1, 3, 5', () => {
@@ -91,6 +93,10 @@ describe('founding', () => {
     const again = await p.post('/api/missions', { colonyId: c.id, type: 'colonize', target: await emptySpot([target.spot]), units: { winged_queen: 1 } });
     expect(again.error.code).toBe('colony_cap');
 
+    // land, then keep the new colony's first swarm away (swarms.test.ts covers them)
+    const flight = (await p.get('/api/state')).missions[0];
+    await clock.advance(flight.arriveAt - clock.t + 1);
+    await calmWildNests();
     await clock.advance(48 * H);
     const cols = await colonies();
     expect(cols).toHaveLength(2);
@@ -140,6 +146,7 @@ describe('founding', () => {
     const rival = await newPlayer(app, 'squatter');
     const rs = await rival.get('/api/state');
     await setColony(rs.colony.id, { spot: target.spot, region: target.region, patch: target.patch });
+    await calmWildNests();
     await clock.advance(96 * H);
     expect(await colonies()).toHaveLength(2);
     const rep = (await reports('colonize')).at(-1);

@@ -12,3 +12,4 @@ export * from './colony';
 export * from './quests';
 export * from './nests';
 export * from './nestEvents';
+export * from './swarms';
