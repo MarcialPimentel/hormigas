@@ -25,6 +25,10 @@ gaster · petiole · mesosoma · head · mandibles · elbowed antenna · six leg
 | Soldier | Oversized head, heavy jaws | Redder, darker |
 | Queen | Long, heavy gaster; thick thorax with wing scars | Deep rust |
 | Alate (winged queen) | Queen + translucent wings over the back | Deep rust |
+| Army ant (swarms) | Slim and leggy, two waist nodes, no eyes | Raider red |
+| Army ant major | Army ant with a big head and long sickle jaws that hook back | Raider red |
+
+**Army ants** are the enemy from the wilds ([20-swarms.md](20-swarms.md)), loosely after *Eciton*. They are the only ants with a two-node waist and no eyes (army ants are blind), and the major's sickle jaws name the swarm at a glance. They wear the same blood red as other colonies' raiders, so red still means "hostile" (Marz picked this over a field-guide chestnut with cream-headed majors and a near-black look, 29 Oct 2026).
 
 - **Walking** uses a tripod gait: near front, near hind and far middle legs swing together, against the other three. Legs pivot at the hip in code; no hand-drawn frames.
 

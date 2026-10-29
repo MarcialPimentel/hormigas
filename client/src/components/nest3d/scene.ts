@@ -10,7 +10,7 @@ import { CASTES, FOOT_Y, WALK_SWINGS, type Caste } from '../../art/ants';
 import { HOLLOW, VIEW } from '../../art/chambers';
 import { loadCanvases as antCanvases, walkFrame } from '../antSprites';
 import { loadCanvases as roomCanvases } from '../chamberSprites';
-import { surfaceParties, type SurfaceParty } from '../nestScene';
+import { partyCaste, surfaceParties, type SurfaceParty } from '../nestScene';
 import { chamberTag, partyLabel } from '../nestInfo';
 import { fmtDuration } from '../../format';
 import { BACK, D, H, SHAFT_HW, W, ZS, carve, floorAt, pathTo, room, shaftX, type P3, type Room } from './slab';
@@ -36,7 +36,7 @@ export interface NestScene {
 
 const SURF = 0.32;
 const SX0 = shaftX(0);
-const ANT_LEN: Record<Caste, number> = { worker: 1, soldier: 1.15, queen: 1.6, alate: 1.4 };
+const ANT_LEN: Record<Caste, number> = { worker: 1, soldier: 1.15, queen: 1.6, alate: 1.4, army: 1, army_major: 1.3 };
 const CARGO: Record<ResourceId, string> = { foliage: '#8DB255', protein: '#D06A6A', nectar: '#E8B23A' };
 const SHORT: Partial<Record<ChamberId, string>> = { queen_chamber: 'Queen' };
 
@@ -500,12 +500,12 @@ export async function createNestScene(
     if (c && st) {
       for (const p of surfaceParties(W, SX0 + W / 2, c, st, d.now) as SurfaceParty[]) {
         live.add(p.key);
-        const caste: Caste = p.kind === 'raid' ? 'soldier' : 'worker';
-        const tint = p.kind === 'raid' ? '#FF7A68' : p.kind === 'scout' ? '#FFB7AA' : '#FFFFFF';
+        // army ants are drawn red already; other colonies' soldiers and scouts are tinted
+        const tint = p.type === 'swarm' ? '#FFFFFF' : p.kind === 'raid' ? '#FF7A68' : p.kind === 'scout' ? '#FFB7AA' : '#FFFFFF';
         let cards = partyCards.get(p.key);
         if (!cards || cards.length !== p.n || cards[0].tint !== tint) {
           cards?.forEach(dropCard);
-          cards = Array.from({ length: p.n }, () => makeCard(caste, tint));
+          cards = Array.from({ length: p.n }, (_, i) => makeCard(partyCaste(p, i), tint));
           partyCards.set(p.key, cards);
         }
         // the 2D nest starts parties just off its edges; here they enter and leave at the block's edges
@@ -513,7 +513,7 @@ export async function createNestScene(
         const loads = p.cargo ? (Object.keys(CARGO) as ResourceId[]).filter((r) => (p.cargo![r] ?? 0) > 0).map((r) => CARGO[r]) : [];
         const z = -D / 2 - 0.4 - (p.lane % 3) * 0.7;
         cards.forEach((card, i) => {
-          const x = x0 - p.heading * i * 1.15;
+          const x = x0 - p.heading * i * (p.type === 'swarm' ? 0.95 : 1.15);
           const frame = reduced ? 1 : Math.floor(clock * 9) + i * 2;
           placeCard(card, { x, y: SURF, z }, p.heading, 0, frame);
           card.mesh.visible = Math.abs(x) < W / 2 - 0.2;

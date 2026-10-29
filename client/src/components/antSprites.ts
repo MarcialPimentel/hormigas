@@ -51,7 +51,7 @@ export async function antTextures(): Promise<{ frames: AntFrames; destroy: () =>
 }
 
 /** Body length on screen, in px, for each caste in the whole-nest view. */
-export const NEST_LEN: Record<Caste, number> = { worker: 11, soldier: 13, queen: 15, alate: 15 };
+export const NEST_LEN: Record<Caste, number> = { worker: 11, soldier: 13, queen: 15, alate: 15, army: 11, army_major: 14 };
 
 /**
  * Draw one ant centred on (x, y) (or standing on it, with `feet`), heading at `angle` (radians, 0 = right).
