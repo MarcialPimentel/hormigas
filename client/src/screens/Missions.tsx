@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   CASTES,
   MVP_CASTES,
   RESOURCE_IDS,
   WILDS_SPOT,
+  DISCOVERY_MESSAGES,
   distance,
   forageSlots,
   maxColonies,
@@ -28,10 +29,39 @@ import { Countdown, Empty, Panel, ResDot, Trip } from '../components/ui';
 import { ENABLED_MISSIONS, MISSION_HELP, MISSION_LABEL, type MissionType } from '../nav';
 import { BattlePreview } from '../components/BattlePreview';
 import { ForageOdds } from '../components/ForageOdds';
+import { PatchView, isScent, type Spot } from '../components/Patch';
 
 export interface MissionDraft {
   type?: MissionType;
   target?: Coords;
+  /** a patch to show (defaults to the target's patch, then your own) */
+  view?: { region: number; patch: number };
+}
+
+/** What's at the target spot, as this player knows it (scent or known colony), for the form's summary and checks. */
+function useTargetSpot(target: Coords, valid: boolean): Spot | null | undefined {
+  const { state } = useGame();
+  const [spot, setSpot] = useState<Spot | null | undefined>(undefined);
+  useEffect(() => {
+    if (!valid) return setSpot(null);
+    let live = true;
+    api
+      .get(`/api/map?region=${target.region}&patch=${target.patch}`)
+      .then((r) => live && setSpot(r.spots.find((x: Spot) => x.spot === target.spot) ?? null))
+      .catch(() => live && setSpot(null));
+    return () => {
+      live = false;
+    };
+  }, [target.region, target.patch, target.spot, valid, state?.serverNow]);
+  return spot;
+}
+
+/** "Fire Ant Mound", "Ant scent", "The wilds", "Spot 6 (empty)" */
+function targetName(spot: Spot | null | undefined, at: Coords, home: Coords): string {
+  if (at.spot === WILDS_SPOT) return at.region === home.region && at.patch === home.patch ? 'The wilds of your patch' : 'The wilds';
+  if (spot === undefined) return '…';
+  if (!spot?.colony) return `Spot ${at.spot} (empty)`;
+  return spot.colony.name;
 }
 
 const UNITS_FOR: Partial<Record<MissionType, CasteId[]>> = {
@@ -46,6 +76,8 @@ export function Missions({ draft }: { draft?: MissionDraft }) {
   const [cargo, setCargo] = useState<Record<string, string>>({});
   const [speedPct, setSpeedPct] = useState(100);
   const [returnBy, setReturnBy] = useState('');
+  const [manual, setManual] = useState(false);
+  const formRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (draft?.type && ENABLED_MISSIONS.includes(draft.type)) setType(draft.type);
@@ -60,6 +92,8 @@ export function Missions({ draft }: { draft?: MissionDraft }) {
     }
     return u;
   }, [units]);
+
+  const targetSpot = useTargetSpot(target, validCoords(target, true));
 
   if (!colony || !state) return null;
   const research = state.player.research;
@@ -82,6 +116,9 @@ export function Missions({ draft }: { draft?: MissionDraft }) {
   const problems: string[] = [];
   if (!valid) problems.push(wildsOk ? 'Pick a real patch.' : 'Pick a real colony spot (spots 1–12).');
   if (type === 'forage' && valid && target.spot !== WILDS_SPOT) problems.push(`Foragers go to the wilds (spot ${WILDS_SPOT}).`);
+  const unscouted = isScent(targetSpot?.colony);
+  if (unscouted && type === 'raid') problems.push(DISCOVERY_MESSAGES.raid_needs_scout);
+  if (unscouted && type === 'transport') problems.push(DISCOVERY_MESSAGES.send_needs_scout);
   if (presentUnits(chosen).length === 0) problems.push('Choose units to send.');
   for (const [k, n] of Object.entries(chosen)) if (n! > lvl(colony.units, k as CasteId)) problems.push(`Only ${lvl(colony.units, k as CasteId)} ${CASTES[k as CasteId].name} at home.`);
   if (cargoTotal > capacity) problems.push(`Cargo is over capacity (${fmtFull(capacity)}).`);
@@ -134,8 +171,20 @@ export function Missions({ draft }: { draft?: MissionDraft }) {
     }
   }
 
+  function pick(t: MissionType, at: Coords) {
+    setType(t);
+    setTarget(at);
+    setManual(false);
+    formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
   return (
     <div className="stack">
+      <Panel title="Missions">
+        <PatchView start={draft?.view ?? (draft?.target ? { region: draft.target.region, patch: draft.target.patch } : undefined)} selected={target} onAct={pick} />
+      </Panel>
+
+      <div ref={formRef} className="scroll-anchor" />
       <Panel title="Send a mission" actions={<span className="muted">{used}/{max} {pool === 'forage' ? 'forage parties' : 'slots'} in use</span>}>
         <div className="seg" role="radiogroup" aria-label="Mission type">
           {ENABLED_MISSIONS.map((t) => (
@@ -158,21 +207,37 @@ export function Missions({ draft }: { draft?: MissionDraft }) {
 
         <fieldset className="field">
           <legend>Target</legend>
-          <div className="coords-input">
-            {(['region', 'patch', 'spot'] as const).map((k) => (
-              <label key={k}>
-                {k[0].toUpperCase() + k.slice(1)}
-                <input type="number" min={1} value={target[k]} onChange={(e) => setTarget({ ...target, [k]: Math.floor(Number(e.target.value)) || 1 })} />
-              </label>
-            ))}
-            {wildsOk && target.spot !== WILDS_SPOT && (
-              <button className="btn ghost small" onClick={() => setTarget({ ...colony.coords, spot: WILDS_SPOT })}>
-                My patch's wilds
-              </button>
-            )}
+          <div className="target-line">
+            <span>
+              <strong>{targetName(targetSpot, target, colony.coords)}</strong>{' '}
+              <span className="muted small">{valid ? fmtCoords(target) : 'not a place'}</span>
+              {unscouted && <span className="scent-tag">Not scouted</span>}
+            </span>
+            <button className="btn ghost small" aria-expanded={manual} onClick={() => setManual(!manual)}>
+              {manual ? 'Done' : 'Enter coordinates'}
+            </button>
           </div>
+          <p className="muted small">Pick a target by tapping it on the patch above.</p>
+          {manual && (
+            <div className="coords-input">
+              {(['region', 'patch', 'spot'] as const).map((k) => (
+                <label key={k}>
+                  {k[0].toUpperCase() + k.slice(1)}
+                  <input type="number" min={1} value={target[k]} onChange={(e) => setTarget({ ...target, [k]: Math.floor(Number(e.target.value)) || 1 })} />
+                </label>
+              ))}
+              {wildsOk && target.spot !== WILDS_SPOT && (
+                <button className="btn ghost small" onClick={() => setTarget({ ...colony.coords, spot: WILDS_SPOT })}>
+                  My patch's wilds
+                </button>
+              )}
+            </div>
+          )}
           {type === 'scout' && target.spot === WILDS_SPOT && (
             <p className="muted small">Scouts will survey the wilds: what foragers can expect there, who lives in the patch, and any corpses lying around.</p>
+          )}
+          {type === 'scout' && unscouted && (
+            <p className="muted small">Scouting turns this scent into a colony you know: its name, owner and what's inside. Then you can raid it.</p>
           )}
         </fieldset>
 
@@ -242,7 +307,7 @@ export function Missions({ draft }: { draft?: MissionDraft }) {
           <p className="muted small">Slower missions use less Nectar. Use "back no earlier than" to keep your army safely away while you're offline.</p>
         </fieldset>
 
-        {type === 'raid' && <BattlePreview target={target} units={chosen} />}
+        {type === 'raid' && !unscouted && <BattlePreview target={target} units={chosen} />}
 
         <dl className="summary">
           <div><dt>Distance</dt><dd>{valid ? fmtNum(dist) : '—'}</dd></div>

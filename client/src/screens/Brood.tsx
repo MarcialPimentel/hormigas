@@ -27,7 +27,7 @@ export const CASTE_BLURB: Record<string, string> = {
   scout: 'Spies on other colonies. Nearly useless in a fight.',
   major_soldier: 'The colony’s main fighters. Tear through minor soldiers.',
   hauler: 'Big carriers for loot, transports and corpses.',
-  winged_queen: 'Flies off to found a new colony. Send her from Missions or the Map with a Found colony mission.',
+  winged_queen: 'Flies off to found a new colony. Tap an empty spot in Missions and send her with a Found colony mission.',
   soil_wall: 'One per colony. Huge guard that soaks up blows for the whole defense.',
   pit_trap: 'Cheap, Foliage-only trap. Good at absorbing an attack.',
   acid_sentry: 'Formic acid emplacement. Strong, and dangerous to major soldiers.',

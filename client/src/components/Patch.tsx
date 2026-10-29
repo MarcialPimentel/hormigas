@@ -1,30 +1,46 @@
-// The map: regions as a grid of patches, each patch drawn with its colonies as mounds (docs/11-world.md, "Map screen").
+// A patch drawn as ground with its colonies, scents and the wilds, plus the world picker (docs/11-world.md, docs/22-discovery.md).
+// Used by the Missions screen: tap a spot, then scout, raid, send or forage from its card.
 import { useEffect, useState, type ReactNode } from 'react';
-import { WORLD, WILDS_SPOT, TERRAIN, CHAMBERS, CASTES, DEFENSES, terrainForSpot, type TerrainId } from '@hormigas/shared';
+import { WORLD, WILDS_SPOT, TERRAIN, CHAMBERS, CASTES, DEFENSES, DISCOVERY_MESSAGES, terrainForSpot, type Knowledge, type ScentKind, type TerrainId } from '@hormigas/shared';
 import { api } from '../api';
 import { useGame } from '../game';
 import { fmtAgo, fmtCoords, fmtDuration, fmtNum } from '../format';
-import { Panel, Trip } from '../components/ui';
-import { ENABLED_MISSIONS, MISSION_LABEL, type MissionType, type Nav } from '../nav';
+import { Trip } from './ui';
+import { ENABLED_MISSIONS, MISSION_LABEL, type MissionType } from '../nav';
 
 const can = (t: MissionType) => ENABLED_MISSIONS.includes(t);
 
-interface Spot {
+/** A colony as this player knows it. Scents carry only `known`, `kind` and a generic name; familiar scents add the name. */
+export interface SpotColony {
+  known: Knowledge;
+  kind: ScentKind;
+  name: string;
+  owner: string | null;
+  smelledAt: number | null;
+  discoveredAt: number | null;
+  id: number | null;
+  points?: number;
+  mine?: boolean;
+  inactive?: boolean;
+  protected?: boolean;
+  /** set for known wild nests (docs/17-wild-nests.md) */
+  wild?: { species: string; level: number; style: string };
+}
+
+export interface Spot {
   spot: number;
-  colony: null | {
-    id: number; name: string; owner: string; points: number; mine: boolean; inactive: boolean; protected: boolean;
-    /** set for wild nests (docs/17-wild-nests.md) */
-    wild?: { species: string; level: number; style: string };
-  };
+  colony: SpotColony | null;
   corpses: number;
 }
 
+export const isScent = (c: SpotColony | null | undefined) => !!c && (c.known === 'scent' || c.known === 'familiar');
+
 interface RegionPatch { patch: number; colonies: number; wild: boolean; mine: boolean }
 
-type Coords = { region: number; patch: number; spot: number };
+export type Coords = { region: number; patch: number; spot: number };
 const same = (a: Coords, b: Coords) => a.region === b.region && a.patch === b.patch && a.spot === b.spot;
 
-const regionName = (r: number) => WORLD.regionNames[r - 1] ?? `Region ${r}`;
+export const regionName = (r: number) => WORLD.regionNames[r - 1] ?? `Region ${r}`;
 
 /** Parties moving to or from one spot: ours heading there or back, and anyone heading from there to us. */
 function useMovements(at: Coords, home: Coords) {
@@ -67,8 +83,8 @@ function Movements({ at, home }: { at: Coords; home: Coords }) {
 /* ---------- the patch, drawn ---------- */
 
 // In-world colours: literal, the same in both themes (like the nest).
-const W = 600;
-const H = 240;
+export const W = 600;
+export const H = 240;
 const GROUND = 64;
 const SPOT_W = 45; // spots 1..12 share 0..540, the wilds take the rest
 const spotX = (n: number) => (n === WILDS_SPOT ? 570 : (n - 0.5) * SPOT_W);
@@ -87,7 +103,7 @@ function rng(seed: number) {
   return () => ((s = (s * 1664525 + 1013904223) >>> 0) / 4294967296);
 }
 
-function Ground({ seed }: { seed: number }) {
+export function Ground({ seed }: { seed: number }) {
   const bands: ReactNode[] = [];
   const bits: ReactNode[] = [];
   const r = rng(seed);
@@ -132,19 +148,22 @@ function Ground({ seed }: { seed: number }) {
   );
 }
 
-function SpotMark({ s, at, home, selected, onPick }: { s: Spot; at: Coords; home: Coords; selected: boolean; onPick: () => void }) {
+export function SpotMark({ s, at, home, selected, onPick }: { s: Spot; at: Coords; home: Coords; selected: boolean; onPick: () => void }) {
   const x = spotX(s.spot);
   const y = 172;
   const c = s.colony;
   const wilds = s.spot === WILDS_SPOT;
   const { ours, theirs } = useMovements(at, home);
   const hostile = theirs.some((i: any) => i.hostile);
+  const scent = isScent(c);
   const label = wilds
     ? 'The wilds'
+    : c && scent
+    ? `Spot ${s.spot}: ${c.known === 'familiar' ? `${c.name}, a scent you've smelled before` : c.name}, not scouted`
     : c
     ? `Spot ${s.spot}: ${c.name}, ${c.mine ? 'your colony' : c.wild ? `wild nest level ${c.wild.level}` : c.owner}`
     : `Spot ${s.spot}: empty ${TERRAIN[terrainForSpot(s.spot)].name.toLowerCase()}`;
-  const flag = c ? (c.mine ? FLAG.mine : c.wild ? FLAG.wild : c.inactive ? FLAG.inactive : FLAG.other) : '';
+  const flag = c ? (c.mine ? FLAG.mine : c.kind === 'wild' ? FLAG.wild : c.inactive ? FLAG.inactive : FLAG.other) : '';
   const labelY = s.spot % 2 ? 126 : 206;
   return (
     <g
@@ -159,7 +178,15 @@ function SpotMark({ s, at, home, selected, onPick }: { s: Spot; at: Coords; home
       <title>{label}</title>
       <rect x={x - SPOT_W / 2} y={GROUND + 20} width={wilds ? 60 : SPOT_W} height={H - GROUND - 20} fill="transparent" />
       {selected && <ellipse cx={x} cy={y} rx={22} ry={12} fill="none" stroke="#F6F7F0" strokeWidth={2.5} />}
-      {c ? (
+      {c && scent ? (
+        <>
+          <ellipse cx={x} cy={y + 2} rx={14} ry={5} fill={flag} opacity={0.3} />
+          {[-7, 0, 7].map((dx, i) => (
+            <path key={dx} d={`M${x + dx} ${y - 4} q-6 -9 0 -18 t0 -18${i === 1 ? ' t0 -12' : ''}`} stroke={flag} strokeWidth={2.6} fill="none" strokeLinecap="round" className="ps-scent" />
+          ))}
+          <text x={x} y={labelY} textAnchor="middle" className="ps-name">{short(c.known === 'familiar' ? c.name : c.kind === 'wild' ? 'Wild scent' : 'Ant scent')}</text>
+        </>
+      ) : c ? (
         <>
           <ellipse cx={x} cy={y} rx={16} ry={8} fill="#4A3726" />
           <ellipse cx={x} cy={y - 3} rx={5} ry={2.6} fill="#1C140E" />
@@ -236,22 +263,37 @@ function terrainSummary(t: (typeof TERRAIN)[keyof typeof TERRAIN]) {
   return `${parts.length ? parts.join(', ') : 'No bonuses'} · space ${t.space[0]}–${t.space[1]}`;
 }
 
-function SpotCard({ s, at, nav }: { s: Spot; at: Coords; nav: Nav }) {
-  const { colony, state } = useGame();
+export function SpotCard({ s, at, onAct }: { s: Spot; at: Coords; onAct: (type: MissionType, at: Coords) => void }) {
+  const { colony, state, now } = useGame();
   if (!colony || !state) return null;
   const canFound = (state.player.research.nuptial_flight ?? 0) > 0;
   const c = s.colony;
   const wilds = s.spot === WILDS_SPOT;
   const terrain = wilds ? null : TERRAIN[terrainForSpot(s.spot)];
-  const go = (type: MissionType) => nav('missions', { type, target: at });
+  const go = (type: MissionType) => onAct(type, at);
+  const scent = isScent(c);
+  const wildKind = c?.kind === 'wild';
   return (
-    <div className={`spot-card${c?.mine ? ' mine' : ''}${c?.wild ? ' wild-nest' : ''}${wilds ? ' wilds' : ''}`}>
+    <div className={`spot-card${c?.mine ? ' mine' : ''}${wildKind ? ' wild-nest' : c && !c.mine ? ' player' : ''}${scent ? ' scent' : ''}${wilds ? ' wilds' : ''}`}>
       <div className="spot-card-head">
         <div>
           {wilds ? (
             <>
               <strong>The wilds</strong>
               <span className="muted small">Unclaimed ground at the edge of the patch. Send foragers here, or Scouts to see what's out there.</span>
+            </>
+          ) : c && scent ? (
+            <>
+              <strong>
+                {c.known === 'familiar' ? `${c.name}` : c.name} <span className="scent-tag">Not scouted</span>
+              </strong>
+              <span className="muted small">
+                {c.known === 'familiar'
+                  ? `You've smelled this scent before: ${c.kind === 'wild' ? 'its ants' : `${c.owner}'s ants`} ${c.smelledAt ? `came at you ${fmtAgo(now - c.smelledAt)} ago` : 'came at you'}. Scout it to see inside.`
+                  : c.kind === 'wild'
+                  ? "It smells of wild ants. You can't tell which kind, how many, or what they store."
+                  : "Another player's colony, by the smell. Scout it to learn whose."}
+              </span>
             </>
           ) : c?.wild ? (
             <>
@@ -264,7 +306,7 @@ function SpotCard({ s, at, nav }: { s: Spot; at: Coords; nav: Nav }) {
             <>
               <strong>{c.name}</strong>
               <span className="muted small">
-                {c.mine ? 'Your colony' : c.owner} · {fmtNum(c.points)} pts
+                {c.mine ? 'Your colony' : c.owner} · {fmtNum(c.points ?? 0)} pts
                 {c.protected && ' · protected'}
                 {c.inactive && ' · inactive'}
               </span>
@@ -285,33 +327,110 @@ function SpotCard({ s, at, nav }: { s: Spot; at: Coords; nav: Nav }) {
           {s.corpses > 0 && can('haul') && <button className="btn small" onClick={() => go('haul')}>Haul</button>}
           {c && !c.mine && (
             <>
-              <button className="btn small" onClick={() => go('scout')}>Scout</button>
-              {can('raid') && <button className="btn small" onClick={() => go('raid')}>Raid</button>}
-              {!c.wild && <button className="btn ghost small" onClick={() => go('transport')}>Send</button>}
+              <button className={`btn small${scent ? ' primary' : ''}`} onClick={() => go('scout')}>{scent ? 'Scout' : 'Scout again'}</button>
+              {can('raid') && (
+                <button className="btn small" disabled={scent} title={scent ? DISCOVERY_MESSAGES.raid_needs_scout : undefined} onClick={() => go('raid')}>
+                  Raid
+                </button>
+              )}
+              {!wildKind && (
+                <button className="btn ghost small" disabled={scent} title={scent ? DISCOVERY_MESSAGES.send_needs_scout : undefined} onClick={() => go('transport')}>
+                  Send
+                </button>
+              )}
             </>
           )}
           {c?.mine && c.id !== colony.id && <button className="btn small" onClick={() => go('relocate')}>Relocate</button>}
           {!c && !wilds && canFound && can('colonize') && <button className="btn small" onClick={() => go('colonize')}>Found colony</button>}
         </div>
       </div>
+      {c && scent && <p className="why small">{DISCOVERY_MESSAGES.raid_needs_scout}</p>}
       {s.corpses > 0 && <span className="corpses">{fmtNum(s.corpses)} protein in corpses</span>}
-      {c && !c.mine && <ScoutView at={at} />}
+      {c && !c.mine && !scent && <ScoutView at={at} />}
       <Movements at={at} home={colony.coords} />
     </div>
   );
 }
 
-/* ---------- the screen ---------- */
+/* ---------- the patch view ---------- */
 
-export function MapScreen({ nav, start }: { nav: Nav; start?: { region: number; patch: number } }) {
+/** The 5 regions as tabs, each a 10×10 grid of patches. Shows where colonies live, never who or how strong. */
+function WorldPicker({ region, patch, onGo }: { region: number; patch: number; onGo: (r: number, p: number) => void }) {
+  const { colony } = useGame();
+  const [shown, setShown] = useState(region);
+  const [overview, setOverview] = useState<RegionPatch[] | null>(null);
+  useEffect(() => setShown(region), [region]);
+  useEffect(() => {
+    let live = true;
+    setOverview(null);
+    api
+      .get(`/api/map/region?region=${shown}`)
+      .then((r) => live && setOverview(r.patches))
+      .catch(() => live && setOverview([]));
+    return () => {
+      live = false;
+    };
+  }, [shown]);
+  if (!colony) return null;
+  const byPatch = new Map((overview ?? []).map((p) => [p.patch, p]));
+  return (
+    <div className="world-picker">
+      <div className="region-tabs" role="tablist" aria-label="Regions">
+        {Array.from({ length: WORLD.regions }, (_, i) => i + 1).map((r) => (
+          <button key={r} role="tab" aria-selected={r === shown} className={`region-tab${r === shown ? ' on' : ''}`} onClick={() => setShown(r)}>
+            <span className="region-num">{r}</span> {regionName(r)}
+            {r === colony.coords.region && <span className="region-home" title="Your colony is here"> ●</span>}
+          </button>
+        ))}
+      </div>
+      <div className="region-view">
+        <div className="region-grid" aria-label={`Patches of ${regionName(shown)}`}>
+          {Array.from({ length: WORLD.patchesPerRegion }, (_, i) => i + 1).map((p) => {
+            const o = byPatch.get(p);
+            const mine = !!o?.mine;
+            const lived = (o?.colonies ?? 0) > 0;
+            const desc = mine ? 'your colony' : lived ? `${o!.colonies} ${o!.colonies === 1 ? 'colony' : 'colonies'}` : 'empty';
+            return (
+              <button
+                key={p}
+                className={`rg-cell${lived ? ' lived' : ''}${mine ? ' mine' : ''}${shown === region && p === patch ? ' on' : ''}`}
+                onClick={() => onGo(shown, p)}
+                aria-label={`Patch ${p}: ${desc}`}
+                title={`Patch ${p}: ${desc}`}
+              />
+            );
+          })}
+        </div>
+        <div className="region-legend muted small">
+          <span><i className="rg-cell" /> empty</span>
+          <span><i className="rg-cell lived" /> colonies live here</span>
+          <span><i className="rg-cell mine" /> your colony</span>
+          <span><i className="rg-cell on" /> shown</span>
+          <p>Tap a patch to see it. Colonies there show as scents until you scout them.</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * A patch you can look around and act from. Opens on your own patch; "World" opens the region grid to look further.
+ * `selected` highlights the current mission target when it's in view.
+ */
+export function PatchView({ start, selected, onAct }: { start?: { region: number; patch: number }; selected?: Coords; onAct: (type: MissionType, at: Coords) => void }) {
   const { colony, state } = useGame();
   const [region, setRegion] = useState(start?.region ?? colony?.coords.region ?? 1);
   const [patch, setPatch] = useState(start?.patch ?? colony?.coords.patch ?? 1);
   const [spots, setSpots] = useState<Spot[] | null>(null);
-  const [overview, setOverview] = useState<RegionPatch[] | null>(null);
   const [sel, setSel] = useState<number | null>(null);
+  const [world, setWorld] = useState(false);
   const [error, setError] = useState('');
   const [jumping, setJumping] = useState(false);
+
+  useEffect(() => {
+    if (start && (start.region !== region || start.patch !== patch)) go(start.region, start.patch);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [start?.region, start?.patch]);
 
   useEffect(() => {
     let live = true;
@@ -324,26 +443,14 @@ export function MapScreen({ nav, start }: { nav: Nav; start?: { region: number; 
     };
   }, [region, patch, state?.serverNow]);
 
-  useEffect(() => {
-    let live = true;
-    setOverview(null);
-    api
-      .get(`/api/map/region?region=${region}`)
-      .then((r) => live && setOverview(r.patches))
-      .catch(() => live && setOverview([]));
-    return () => {
-      live = false;
-    };
-  }, [region]);
-
   if (!colony) return null;
-  const go = (r: number, p: number) => {
+  function go(r: number, p: number) {
     if (r === region && p === patch) return;
     setSpots(null);
     setSel(null);
     setRegion(r);
     setPatch(p);
-  };
+  }
   const nearest = (dir: 1 | -1) => {
     setJumping(true);
     api
@@ -353,89 +460,60 @@ export function MapScreen({ nav, start }: { nav: Nav; start?: { region: number; 
       .finally(() => setJumping(false));
   };
   const here = colony.coords.region === region && colony.coords.patch === patch;
-  const byPatch = new Map((overview ?? []).map((p) => [p.patch, p]));
-  const fallback = spots?.find((s) => s.colony?.mine) ?? spots?.find((s) => s.colony && !s.colony.wild) ?? spots?.find((s) => s.colony);
-  const picked = spots?.find((s) => s.spot === sel) ?? fallback ?? spots?.find((s) => s.spot === WILDS_SPOT);
-  const others = (spots ?? []).filter((s) => s.colony && !s.colony.wild && !s.colony.mine).length;
+  const inView = selected && selected.region === region && selected.patch === patch ? selected.spot : null;
+  const fallback = spots?.find((s) => s.colony?.mine) ?? spots?.find((s) => s.colony && s.colony.kind === 'player') ?? spots?.find((s) => s.colony);
+  const picked = spots?.find((s) => s.spot === (sel ?? inView)) ?? fallback ?? spots?.find((s) => s.spot === WILDS_SPOT);
+  const others = (spots ?? []).filter((s) => s.colony && s.colony.kind === 'player' && !s.colony.mine).length;
+  const scents = (spots ?? []).filter((s) => isScent(s.colony)).length;
 
   return (
-    <div className="stack">
-      <Panel title="Map">
-        <div className="region-tabs" role="tablist" aria-label="Regions">
-          {Array.from({ length: WORLD.regions }, (_, i) => i + 1).map((r) => (
-            <button key={r} role="tab" aria-selected={r === region} className={`region-tab${r === region ? ' on' : ''}`} onClick={() => go(r, r === colony.coords.region ? colony.coords.patch : 1)}>
-              <span className="region-num">{r}</span> {regionName(r)}
-              {r === colony.coords.region && <span className="region-home" title="Your colony is here"> ●</span>}
-            </button>
-          ))}
-        </div>
-        <div className="region-view">
-          <div className="region-grid" aria-label={`Patches of ${regionName(region)}`}>
-            {Array.from({ length: WORLD.patchesPerRegion }, (_, i) => i + 1).map((p) => {
-              const o = byPatch.get(p);
-              const mine = !!o?.mine;
-              const lived = (o?.colonies ?? 0) > 0;
-              const desc = mine ? 'your colony' : lived ? `${o!.colonies} ${o!.colonies === 1 ? 'colony' : 'colonies'}` : 'empty';
-              return (
-                <button
-                  key={p}
-                  className={`rg-cell${lived ? ' lived' : ''}${mine ? ' mine' : ''}${p === patch ? ' on' : ''}`}
-                  onClick={() => go(region, p)}
-                  aria-label={`Patch ${p}: ${desc}`}
-                  title={`Patch ${p}: ${desc}`}
-                />
-              );
-            })}
-          </div>
-          <div className="region-legend muted small">
-            <span><i className="rg-cell" /> empty</span>
-            <span><i className="rg-cell lived" /> colonies live here</span>
-            <span><i className="rg-cell mine" /> your colony</span>
-            <span><i className="rg-cell on" /> shown below</span>
-            <p>Tap a patch to go there. The grid shows where colonies are, not who or how strong.</p>
-          </div>
-        </div>
-        {error && <p className="form-error">{error}</p>}
-      </Panel>
-
-      <Panel
-        title={`${regionName(region)} · Patch ${patch}`}
-        actions={
-          !here && (
+    <div className="patch-view">
+      <div className="patch-head">
+        <h3>
+          {regionName(region)} · Patch {patch}
+          {here && <span className="muted small"> · your patch</span>}
+        </h3>
+        <div className="patch-head-actions">
+          {!here && (
             <button className="btn ghost small" onClick={() => go(colony.coords.region, colony.coords.patch)}>
               Back to my patch
             </button>
-          )
-        }
-      >
-        <div className="patch-row">
-          <button className="btn ghost nearest" onClick={() => nearest(-1)} disabled={jumping} aria-label="Jump to the nearest colony before this patch">
-            <span aria-hidden="true">‹</span>
-            <small>Nearest colony</small>
-          </button>
-          <div className="patch-scroll">
-            <svg className="patch-scene" viewBox={`0 0 ${W} ${H}`} role="group" aria-label={`Patch ${patch}, ${regionName(region)}`}>
-              <Ground seed={region * 1000 + patch} />
-              {spots?.map((s) => {
-                const at = { region, patch, spot: s.spot };
-                return <SpotMark key={s.spot} s={s} at={at} home={colony.coords} selected={picked?.spot === s.spot} onPick={() => setSel(s.spot)} />;
-              })}
-              {!spots && (
-                <text x={W / 2} y={150} textAnchor="middle" className="ps-name">Sniffing out the patch…</text>
-              )}
-            </svg>
-          </div>
-          <button className="btn ghost nearest" onClick={() => nearest(1)} disabled={jumping} aria-label="Jump to the nearest colony after this patch">
-            <span aria-hidden="true">›</span>
-            <small>Nearest colony</small>
+          )}
+          <button className={`btn small${world ? ' on' : ' ghost'}`} aria-expanded={world} onClick={() => setWorld(!world)}>
+            World
           </button>
         </div>
-        {spots && picked && <SpotCard s={picked} at={{ region, patch, spot: picked.spot }} nav={nav} />}
-        <p className="muted small">
-          {spots && (others === 0 ? 'No other players in this patch. ' : `${others} other ${others === 1 ? 'player' : 'players'} in this patch. `)}
-          You are at {fmtCoords(colony.coords)} in {regionName(colony.coords.region)}. Neighbors in your patch are the closest friends, and threats. Every patch with colonies also has a wild nest.
-        </p>
-      </Panel>
+      </div>
+      {world && <WorldPicker region={region} patch={patch} onGo={(r, p) => go(r, p)} />}
+      {error && <p className="form-error">{error}</p>}
+      <div className="patch-row">
+        <button className="btn ghost nearest" onClick={() => nearest(-1)} disabled={jumping} aria-label="Jump to the nearest colony before this patch">
+          <span aria-hidden="true">‹</span>
+          <small>Nearest colony</small>
+        </button>
+        <div className="patch-scroll">
+          <svg className="patch-scene" viewBox={`0 0 ${W} ${H}`} role="group" aria-label={`Patch ${patch}, ${regionName(region)}`}>
+            <Ground seed={region * 1000 + patch} />
+            {spots?.map((s) => {
+              const at = { region, patch, spot: s.spot };
+              return <SpotMark key={s.spot} s={s} at={at} home={colony.coords} selected={picked?.spot === s.spot} onPick={() => setSel(s.spot)} />;
+            })}
+            {!spots && (
+              <text x={W / 2} y={150} textAnchor="middle" className="ps-name">Sniffing out the patch…</text>
+            )}
+          </svg>
+        </div>
+        <button className="btn ghost nearest" onClick={() => nearest(1)} disabled={jumping} aria-label="Jump to the nearest colony after this patch">
+          <span aria-hidden="true">›</span>
+          <small>Nearest colony</small>
+        </button>
+      </div>
+      {spots && picked && <SpotCard s={picked} at={{ region, patch, spot: picked.spot }} onAct={onAct} />}
+      <p className="muted small">
+        {spots && (others === 0 ? 'No other players in this patch. ' : `${others} other ${others === 1 ? 'player' : 'players'} in this patch. `)}
+        {spots && scents > 0 && `${scents} ${scents === 1 ? 'scent' : 'scents'} not scouted yet: scout one to see who lives there before you raid it. `}
+        Tap a spot to act on it.
+      </p>
     </div>
   );
 }
