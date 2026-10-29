@@ -4,6 +4,7 @@
 import { lazy, Suspense, useState } from 'react';
 import { NestView } from './NestView';
 import type { Nav } from '../nav';
+import type { Inset } from './nest3d/scene';
 
 const Nest3D = lazy(() => import('./nest3d/Nest3D').then((m) => ({ default: m.Nest3D })));
 const KEY = 'hormigas.nest';
@@ -21,7 +22,8 @@ function savedView(): View {
   return finePointer() && window.innerWidth >= 760 ? '3d' : '2d';
 }
 
-export function NestHome({ nav }: { nav: Nav }) {
+/** `fill`: the nest fills its box, with `inset` left free for the cards floating over it (the Colony screen on a computer). */
+export function NestHome({ nav, fill, inset }: { nav: Nav; fill?: boolean; inset?: Inset }) {
   const [view, setView] = useState<View>(savedView);
   const [failed, setFailed] = useState(false);
   const choose = (v: View) => {
@@ -32,11 +34,11 @@ export function NestHome({ nav }: { nav: Nav }) {
     }
     setView(v);
   };
-  const flat = <NestView nav={nav} onSwitch3d={!failed && finePointer() ? () => choose('3d') : undefined} />;
+  const flat = <NestView nav={nav} fill={fill} onSwitch3d={!failed && finePointer() ? () => choose('3d') : undefined} />;
   if (view === '2d' || failed) return flat;
   return (
-    <Suspense fallback={<NestView nav={nav} />}>
-      <Nest3D nav={nav} onFail={() => setFailed(true)} onSwitch={() => choose('2d')} />
+    <Suspense fallback={<NestView nav={nav} fill={fill} />}>
+      <Nest3D nav={nav} fill={fill} inset={inset} onFail={() => setFailed(true)} onSwitch={() => choose('2d')} />
     </Suspense>
   );
 }

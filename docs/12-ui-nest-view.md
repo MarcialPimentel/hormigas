@@ -21,7 +21,7 @@
 | **Rankings** | Leaderboards |
 | **Feedback** | Admins only: player feedback, newest first, mark as handled |
 
-A persistent **resource bar** (Foliage, Protein, Nectar, Workforce) sits at the top of every screen. Each resource has a small picture rather than a dot: a cut leaf, prey, a drop of honeydew, a worker.
+A persistent **resource bar** (Foliage, Protein, Nectar, Workforce) sits at the top of every screen. Each resource has a small picture rather than a dot: a cut leaf, prey, a drop of honeydew, a worker. A thin bar under each food shows how full its store is (hover for the exact amount and capacity), so the Production table isn't needed on computers.
 
 ## Light and dark
 The menus follow the device's setting: dark is the soil theme, light is "field-guide paper" (lichen paper, ant-ink text; palette in [art/3d-exploration.md](art/3d-exploration.md)). Accents that carry text (honey, leaf, protein) have darker `*-ink` shades in light mode; the bright accents stay as fills. Anything drawn on the soil (both nests, the close-up, the login art) keeps its in-world colours in both themes.
@@ -52,15 +52,25 @@ On computers the nest is a block of earth cut open at the front, like an ant far
 - Ants are drawn from the art set in `client/src/art/ants.ts`. Each built chamber shows its own art (`client/src/art/chambers.ts`, without the soil wall) fitted to its hollow; unbuilt chambers are dotted outlines. Tunnels are still plain shapes.
 
 ## The colony is the home screen
-The Colony screen opens on the nest, drawn tall (380px on phones, up to 540px on desktop), and the important information sits in the world rather than in tables:
+The Colony screen opens on the nest, and the important information sits in the world rather than in tables.
+
+**On a computer (900px and wider), the nest is the whole screen.** It fills everything right of the left nav and below the resource bar, edge to edge, and the rest floats over it as small paper cards:
+- **Top left, in the sky:** the colony's name (with Rename), its coordinates, terrain, space and points, and how long raid protection lasts.
+- **Down the right:** "While you were away" (when there is one), **Happening now**, and the next founding task at the bottom. The column scrolls if it gets long.
+- The 3D slab is framed in the space the cards leave free, so they sit over sky rather than over chambers. The flat 2D nest can't be framed like that, so it stops short of the card column.
+- The nest's own buttons (2D/3D view, Motion) sit bottom left; the "drag to turn" hint shows when there's room.
+- The Production table is gone here: the resource bar carries it.
+
+**On phones** the nest is drawn tall (380px) with the cards stacked under it, Production table included.
+
+In both:
 - **Sky:** the strip above the grass follows the player's own clock: dawn, day, dusk, and night with stars and the moon.
 - **Sign:** the colony's name on a little stake by the entrance.
 - **Parties carry their timers.** Every party on the surface has a floating tag: "Forage · 17s", "Forage home · 2m", "Raid · 4m 12s" (red), "Scouts", "Delivery". Tags close together alternate between two rows so they don't overlap.
 - **Chambers say what they're busy with,** under their names: "Digging · 6m" (honey), the research being learned in the Pheromone Chamber (violet), "Raising 4 · 3m" in the Brood Hall, and "41% full" or "Full" on stores.
-- The "Happening now" list and the production table stay below the nest for now.
 
 ## Chamber sheet
-Tapping a chamber (built or not yet dug) opens a sheet right under the nest, and rings the chamber in honey:
+Tapping a chamber (built or not yet dug) opens its sheet: on a computer as a card beside the chamber (to its right, or its left when there's no room, with a small pointer; it follows the chamber as the 3D nest turns), on phones right under the nest. The chamber is ringed in honey:
 - What it does, what it holds (stores: amount, capacity, and how much raids can't take), and what it does now.
 - The next level: what it gives, its cost and dig time, and **Dig it / Dig deeper**. When something is in the way the button is disabled and the reason shows beside it (diggers busy, not enough food, no space). Same rules as the Chambers screen; both use `client/src/chamberPlan.ts`.
 - **Look inside** (the close-up), **All chambers** (the Chambers screen), **Close** (or Esc, or tap the chamber again).

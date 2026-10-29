@@ -1,17 +1,18 @@
 // The 3D nest on the Colony screen (docs/12-ui-nest-view.md, "The 3D slab"). Loaded only when it's shown, so
 // Three.js never reaches players on the 2D nest. Tapping a chamber opens the same sheet as the 2D nest;
 // tapping the entrance opens Missions. If WebGL can't start, the parent falls back to the 2D nest.
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { CHAMBERS, CHAMBER_IDS, isUnlocked, lvl, type ChamberId } from '@hormigas/shared';
 import { useGame } from '../../game';
 import { setMotionPref, useMotion, type MotionPref } from '../../motion';
 import type { Nav } from '../../nav';
-import { ChamberSheet } from '../ChamberSheet';
-import { createNestScene, type Layout, type NestScene } from './scene';
+import { ChamberPopover, ChamberSheet } from '../ChamberSheet';
+import { createNestScene, type Inset, type Layout, type NestScene } from './scene';
 
 const NEXT_MOTION: Record<MotionPref, MotionPref> = { auto: 'on', on: 'off', off: 'auto' };
 
-export function Nest3D({ nav, onFail, onSwitch }: { nav: Nav; onFail: () => void; onSwitch: () => void }) {
+/** `fill`: the nest fills its box (the Colony screen on a computer) and `inset` is the room its floating cards cover. */
+export function Nest3D({ nav, onFail, onSwitch, fill, inset }: { nav: Nav; onFail: () => void; onSwitch: () => void; fill?: boolean; inset?: Inset }) {
   const { colony, state, now } = useGame();
   const host = useRef<HTMLDivElement>(null);
   const labels = useRef<HTMLDivElement>(null);
@@ -41,8 +42,9 @@ export function Nest3D({ nav, onFail, onSwitch }: { nav: Nav; onFail: () => void
       reduced,
     )
       .then((s) => {
-        if (dead) s.dispose();
-        else sceneRef.current = s;
+        if (dead) return s.dispose();
+        sceneRef.current = s;
+        if (insetRef.current) s.setInset(insetRef.current);
       })
       .catch(() => !dead && onFail());
     return () => {
@@ -54,6 +56,12 @@ export function Nest3D({ nav, onFail, onSwitch }: { nav: Nav; onFail: () => void
   }, []);
 
   useEffect(() => sceneRef.current?.setReduced(reduced), [reduced]);
+
+  const insetRef = useRef(inset);
+  insetRef.current = inset;
+  const insetKey = JSON.stringify(inset ?? null);
+  useEffect(() => sceneRef.current?.setInset(inset ?? { left: 0, right: 0, top: 0, bottom: 0 }), [insetKey]); // eslint-disable-line react-hooks/exhaustive-deps
+  const where = useCallback(() => (selected && sceneRef.current ? sceneRef.current.where(selected) : null), [selected]);
 
   // what the slab is carved from: built chambers, ones you could dig next, how many ants there are
   const research = state?.player.research ?? {};
@@ -85,7 +93,7 @@ export function Nest3D({ nav, onFail, onSwitch }: { nav: Nav; onFail: () => void
   if (!colony) return null;
   return (
     <>
-      <div className="nest n3" ref={host} style={{ height }}>
+      <div className={`nest n3${fill ? ' fill' : ''}`} ref={host} style={{ height: fill ? '100%' : height }}>
         <div className="n3-labels" ref={labels} aria-hidden="true" />
         <button
           type="button"
@@ -111,8 +119,9 @@ export function Nest3D({ nav, onFail, onSwitch }: { nav: Nav; onFail: () => void
             </li>
           ))}
         </ul>
+        {fill && selected && <ChamberPopover at={where} id={selected} onClose={() => setSelected(null)} onAllChambers={() => nav('chambers')} />}
       </div>
-      {selected && <ChamberSheet id={selected} onClose={() => setSelected(null)} onAllChambers={() => nav('chambers')} />}
+      {!fill && selected && <ChamberSheet id={selected} onClose={() => setSelected(null)} onAllChambers={() => nav('chambers')} />}
     </>
   );
 }
