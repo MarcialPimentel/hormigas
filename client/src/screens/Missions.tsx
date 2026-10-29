@@ -249,9 +249,13 @@ export function Missions({ draft }: { draft?: MissionDraft }) {
           <div><dt>One way</dt><dd>{oneWay ? fmtDuration(oneWay * 1000) : '—'}</dd></div>
           <div><dt>Arrives</dt><dd>{oneWay ? fmtClock(now + oneWay * 1000) : '—'}</dd></div>
           <div><dt>Back home</dt><dd>{returnTrip ? fmtClock(now + 2 * oneWay * 1000) : type === 'relocate' ? 'stays' : '—'}</dd></div>
-          <div><dt>Nectar fuel</dt><dd className={fuel > colony.resources.nectar ? 'warn' : ''}>{fuel ? fmtFull(fuel) : '—'}</dd></div>
+          <div><dt>Nectar fuel (paid once)</dt><dd className={fuel > colony.resources.nectar ? 'warn' : ''}>{fuel ? fmtFull(fuel) : '—'}</dd></div>
           {type !== 'scout' && <div><dt>{type === 'haul' ? 'Corpse capacity' : 'Capacity'}</dt><dd>{fmtFull(capacity)}</dd></div>}
         </dl>
+        <p className="muted small">
+          Fuel is taken from your Nectar once, when the party leaves, and covers the whole trip; your Nectar per hour doesn't change. It grows with how many
+          ants you send (soldiers drink more than workers, scouts hardly any), how far they go, and how fast.
+        </p>
 
         {problems.length > 0 && presentUnits(chosen).length > 0 && (
           <ul className="problems">

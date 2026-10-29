@@ -87,6 +87,10 @@ function ReportBody({ r }: { r: Report }) {
             )}
             {d.caught ? <strong className="warn">Your scouts were caught after reporting back what they saw.</strong> : null}
           </p>
+          {d.raidArrivesAt ? (
+            <p className="warn small">Your raid hadn't arrived yet when your scouts looked (it lands at {fmtClock(d.raidArrivesAt)}). Scouts are faster than soldiers, so this is the colony before the fight.</p>
+          ) : null}
+          {d.wild && d.regrowMs ? <p className="muted small">Wild nests regrow their soldiers and food to full within {regrowText(d.regrowMs)} of a raid.</p> : null}
           <h4>Resources</h4>
           <ResLine r={d.resources} />
           {d.protectedEach > 0 && <p className="muted small">About {fmtFull(d.protectedEach)} of each is protected in a Honeypot Gallery.</p>}
@@ -246,4 +250,11 @@ export function Reports() {
       )}
     </Panel>
   );
+}
+
+/** "a day", "2 days" or "5 hours": how long a wild nest takes to regrow. */
+function regrowText(ms: number) {
+  const h = Math.round(ms / 3600_000);
+  if (h >= 24 && h % 24 === 0) return h === 24 ? 'a day' : `${h / 24} days`;
+  return h <= 1 ? 'an hour' : `${h} hours`;
 }

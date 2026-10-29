@@ -95,7 +95,7 @@ The game should *show* the colony at work, not only list timers. (Build 3 used d
 - **Parties on the move:** mission rows, "Happening now" and the Map's spot card show a small track with walking ants: ours outbound and home (with cargo), raids and scouts heading for us (red).
 
 ## Notifications
-- **Browser notifications** (opt-in, prompted after the tutorial, not on first load):
+- **Browser notifications** (opt-in through a one-time card after the tutorial, not on first load; there's no permanent settings panel, per playtest feedback, and players turn them off in the browser's site settings):
   - Raid incoming (highest priority)
   - Mission returned
   - Construction / research complete
