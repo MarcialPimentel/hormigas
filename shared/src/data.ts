@@ -40,6 +40,11 @@ export const CASTE_IDS = [
   'winged_queen',
   'carrion_beetle',
   'bullet_ant',
+  // NPC-only (docs/24-npcs.md)
+  'termite_worker',
+  'termite_soldier',
+  'spiderling',
+  'trapdoor_spider',
 ] as const;
 export type CasteId = (typeof CASTE_IDS)[number];
 
@@ -121,6 +126,8 @@ export interface CasteDef extends CombatStats {
   unlock: Requirements;
   canHaulCorpses?: boolean;
   corpsesOnly?: boolean;
+  /** Lives only in NPC colonies (termites, spiders): never raised by players. */
+  npcOnly?: boolean;
 }
 export interface DefenseDef extends CombatStats {
   name: string;

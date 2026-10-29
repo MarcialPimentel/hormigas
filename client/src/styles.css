@@ -353,7 +353,7 @@ input:focus, textarea:focus { border-color: var(--honey-ink); outline: none; }
 @media (max-width: 639px) {
   .patch-row { grid-template-columns: 1fr 1fr; }
   .patch-scroll { grid-column: 1 / -1; grid-row: 1; }
-  .patch-scene { min-width: 540px; }
+  .patch-scene { min-width: 620px; }
   .nearest { width: auto; flex-direction: row; }
   .region-legend { display: flex; flex-wrap: wrap; gap: 0.25rem 0.75rem; max-width: none; }
   .region-legend p { display: none; }

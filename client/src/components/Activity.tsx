@@ -93,7 +93,8 @@ export function ActivityList({ go }: { go: (screen: string) => void }) {
             </>
           ) : (
             <>
-              <strong>{i.type === 'raid' ? 'Raid incoming' : 'Enemy scouts incoming'}</strong> from {i.from} ({fmtCoords(i.origin)}){i.type === 'raid' ? ` — ${i.unitCount.toLocaleString()} units` : ''}
+              <strong>{i.type === 'raid' ? 'Raid incoming' : 'Enemy scouts incoming'}</strong>{i.herd ? ` on your aphid herd (${fmtCoords(i.herd)})` : ''} from {i.from} ({fmtCoords(i.origin)}){i.type === 'raid' ? ` — ${i.unitCount.toLocaleString()} units` : ''}
+              {i.herd && i.type === 'raid' && <span className="muted small"> They're after your tenders and the honeydew. Send more soldiers to tend it, or call your tenders home before they land.</span>}
             </>
           )}
           {i.wild && i.type === 'raid' && (

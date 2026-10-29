@@ -48,7 +48,7 @@ No row means a scent. Rows are never deleted. Colonies are never destroyed (pill
 The map API (`/api/map`) sends each colony with `known` and `kind` (`'player' | 'wild'`). For a scent it sends only those plus a generic name ("Ant scent", "Wild scent"). The client draws a scent for `known` = `scent` or `familiar`.
 
 ### Notes for the next builds
-- **NPCs (#67):** make new NPCs ordinary colony rows owned by the hidden wild player, like wild nests ([17-wild-nests](17-wild-nests.md)). They then appear as red scents everywhere, and scouting, raiding and discovery work with no new rules. Something that isn't a colony (an aphid herd on the ground?) would need its own spot type; decide that in #67.
+- **NPCs (#67, done in Build 9):** new NPCs are ordinary colony rows owned by the hidden wild player, so scouting, raiding and discovery work with no new rules. Aphid herds, termite mounds and spider dens sit on new **wild sites** (spots 14–16), and wild scents carry a hint: sharp, sweet, woody or danger ([24-npcs](24-npcs.md)). Tending a herd needs a scouted herd, like a raid.
 - **Alliances (#68), built:** contact = *either* side has scouted the other ([23-supercolonies](23-supercolonies.md)). Sharing a supercolony's scent records each other's colonies with `via = 'ally'`. Truces and supercolonies live in their own tables.
 
 ## Where it shows

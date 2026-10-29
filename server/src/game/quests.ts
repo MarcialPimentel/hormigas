@@ -18,7 +18,7 @@ export async function questInput(q: Q, playerId: number): Promise<QuestProgressI
   const sent = await q.query('SELECT DISTINCT type FROM missions WHERE player_id = $1', [playerId]);
   const wild = await q.query(
     `SELECT count(*)::int AS n FROM raid_log r JOIN colonies c ON c.id = r.colony_id
-      WHERE r.attacker_id = $1 AND r.winner = 'attacker' AND c.npc IS NOT NULL`,
+      WHERE r.attacker_id = $1 AND r.winner = 'attacker' AND c.npc IS NOT NULL AND c.npc->>'kind' IS NULL`,
     [playerId],
   );
   return { chambers, units, missionsSent: sent.rows.map((r: any) => r.type), wildRaidsWon: wild.rows[0].n };

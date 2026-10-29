@@ -78,7 +78,21 @@ function ReportBody({ r }: { r: Report }) {
       return (
         <div className="report-body">
           <p>
-            {d.wild ? (
+            {d.herd ? (
+              <>
+                {d.colony} ({fmtCoords(d.coords)}): aphids that make {fmtFull(d.herd.nectarPerHour)} Nectar an hour while tended.{' '}
+                {d.herd.tended ? `${d.herd.tenderName}'s ants tend it: raid them to take it over.` : 'Nobody tends it: send ants to tend it.'}{' '}
+                <span className="muted">{d.herd.style}</span>{' '}
+              </>
+            ) : d.wild?.kind === 'mound' ? (
+              <>
+                {d.colony} ({fmtCoords(d.coords)}), a tier {d.wild.level} termite mound. <span className="muted">{d.wild.style}</span>{' '}
+              </>
+            ) : d.wild?.kind === 'den' ? (
+              <>
+                {d.colony} ({fmtCoords(d.coords)}), the lair of a {d.owner} (tier {d.wild.level}). <span className="muted">{d.wild.style}</span>{' '}
+              </>
+            ) : d.wild ? (
               <>
                 {d.colony} ({fmtCoords(d.coords)}), a level {d.wild.level} nest of wild {d.owner}. <span className="muted">{d.wild.style}</span>{' '}
               </>
@@ -90,11 +104,15 @@ function ReportBody({ r }: { r: Report }) {
           {d.raidArrivesAt ? (
             <p className="warn small">Your raid hadn't arrived yet when your scouts looked (it lands at {fmtClock(d.raidArrivesAt)}). Scouts are faster than soldiers, so this is the colony before the fight.</p>
           ) : null}
-          {d.wild && d.regrowMs ? <p className="muted small">Wild nests regrow their soldiers and food to full within {regrowText(d.regrowMs)} of a raid.</p> : null}
+          {d.wild && d.regrowMs ? (
+            <p className="muted small">
+              {d.wild.kind === 'mound' ? 'Termite mounds regrow' : d.wild.kind === 'den' ? 'The spider and her young recover' : 'Wild nests regrow their soldiers and food'} to full within {regrowText(d.regrowMs)} of a raid.
+            </p>
+          ) : null}
           <h4>Resources</h4>
           <ResLine r={d.resources} />
           {d.protectedEach > 0 && <p className="muted small">About {fmtFull(d.protectedEach)} of each is protected in a Honeypot Gallery.</p>}
-          <h4>Units at home</h4>
+          <h4>{d.herd ? 'Tenders' : 'Units at home'}</h4>
           {d.units ? <Counts counts={d.units} /> : <p className="muted small">Not seen. Send more Scouts or research Scent Reading.</p>}
           {d.garrison && (
             <>
@@ -154,6 +172,20 @@ function ReportBody({ r }: { r: Report }) {
       );
     case 'battle':
       return <BattleReport data={d} />;
+    case 'herd':
+      return d.turnedBack ? (
+        <p className="report-body">Your tenders turned back from {d.herd} ({fmtCoords(d.coords)}): {d.why} They are walking home.</p>
+      ) : (
+        <div className="report-body">
+          <p>
+            {d.claimed ? `Your ants from ${d.colony} now tend ${d.herd} (${fmtCoords(d.coords)}).` : `More of your ants joined the tenders at ${d.herd}.`} It makes{' '}
+            {fmtFull(d.nectarPerHour)} Nectar an hour, carried home every {d.deliverEveryHours} hours. Anyone can raid the tenders to take it; call them home
+            from the herd's card on the Missions tab.
+          </p>
+          <h4>Tenders now</h4>
+          <Counts counts={d.tenders} />
+        </div>
+      );
     case 'hold':
       return (
         <div className="report-body">

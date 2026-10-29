@@ -11,7 +11,9 @@ import {
   type ChamberId,
   type ColonyState,
   type ResearchId,
-  type NestState,
+  type NpcState,
+  herdHoneydewAt,
+  isHerdState,
   type ResearchLevels,
   type Resources,
 } from '@hormigas/shared';
@@ -39,8 +41,8 @@ export interface Colony extends ColonyState {
   baseSpace: number;
   buildJob: BuildJob | null;
   createdAt: number;
-  /** Set for wild nests (NPC colonies), null for player colonies. */
-  npc: NestState | null;
+  /** Set for wild things (NPC colonies: nests, mounds, dens, aphid herds), null for player colonies. */
+  npc: NpcState | null;
 }
 
 // owner_research: the owner's research, read along with the colony because production and storage depend on it.
@@ -120,8 +122,13 @@ export async function saveColony(q: Q, c: Colony) {
   );
 }
 
-/** Bring a colony up to time `to`. Wild nests regrow instead of producing (docs/17-wild-nests.md). */
+/** Bring a colony up to time `to`. Wild nests regrow instead of producing (docs/17-wild-nests.md); herds make honeydew. */
 export const advance = (c: Colony, to: number): Colony => {
+  if (isHerdState(c.npc)) {
+    // aphid herds make honeydew while tended (docs/24-npcs.md); the tenders are the herd's units
+    const nectar = herdHoneydewAt(c.npc, c.resources.nectar, to, cachedWorldSpeed());
+    return { ...c, resources: { ...c.resources, nectar }, lastUpdated: to, npc: { ...c.npc, at: to } };
+  }
   if (c.npc) {
     const live = nestAt(c.npc, c, to, cachedWorldSpeed());
     return { ...c, ...live, lastUpdated: to, npc: { ...c.npc, at: to, unitsAt: nestUnitsAt(c.npc, c, to, cachedWorldSpeed()) } };

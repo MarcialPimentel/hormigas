@@ -10,7 +10,7 @@ Real ants fight neighboring colonies constantly over food and territory (pillar 
 
 ## Rules
 ### Where they live
-- **One wild nest per patch that has players.** A nest spawns when the first player is placed in a patch. Patches that already had players before nests existed get theirs when the server starts.
+- **One wild nest per patch near players.** Every patch with players, and every patch within 2 of one (same region), has a wild nest. It spawns when a player first arrives nearby. Patches settled before then get theirs when the server starts. In a patch with no players, the nest's level follows the strongest player within 2 patches ([24-npcs](24-npcs.md)).
 - Nests take a free **non-Grassland** spot, so the Grassland spots new players start on stay free.
 - **The terrain picks the species**, as in real life:
 
@@ -19,6 +19,10 @@ Real ants fight neighboring colonies constantly over food and territory (pillar 
 | Sunny Meadow, Creek Bank | Pavement Ants | Pavement Ant Nest | Swarm of Workers and Minor Soldiers | Major Soldiers (Frenzy vs Minor Soldiers) |
 | Sandy Soil | Fire Ants | Fire Ant Mound | Few, strong soldiers; Acid Sentries from level 4 | Cheap Minor Soldiers; keep Majors away from acid |
 | Rotting Log | Carpenter Ants | Carpenter Ant Gallery | Pit traps and walls, few soldiers | Numbers; expect defenses to rebuild |
+| Sandy Soil, Sunny Meadow | Honeypot Ants | Honeypot Ant Nest | Workers and Minor Soldiers guarding a Nectar-rich store | Easy; bring carriers (Build 9, [24-npcs](24-npcs.md)) |
+| Creek Bank, Rotting Log | Trap-jaw Ants | Trap-jaw Ant Nest | No Workers, a few Major Soldiers behind pit traps | Numbers (Build 9) |
+
+Where two species share a terrain, a new nest picks one at random. Existing nests keep theirs.
 
 Different species make scouting matter: the right army depends on what lives next door.
 
@@ -89,5 +93,5 @@ An army half that size usually still wins but loses 50–80% of itself, so it pa
 ## Open Questions
 - Should a nest's level ever drop if its patch's leader goes inactive or leaves? Proposal: no, a dormant nest stays a target for the next arrival.
 - A late joiner in an old patch meets a high-level nest. Is scouting plus the Late Founding Boost enough, or should big patches get a second, level-1 nest?
-- More species (e.g. army ants that move between patches, slave-maker ants that steal brood) once the basics prove fun?
+- More species? Decided (Marz, 29 Oct 2026): yes. Honeypot and Trap-jaw Ants joined in Build 9, alongside aphid herds, termite mounds and spider dens ([24-npcs](24-npcs.md)). Army ants became swarms ([20-swarms](20-swarms.md)); slave-maker ants (stealing brood) remain an idea.
 - Random raids from the wild became army-ant swarms in Build 5 ([20-swarms](20-swarms.md)); wild nests keep their own gentle raids. Decided (28 Oct 2026): nothing, colony or wild nest, is ever destroyed for good (pillar 2).

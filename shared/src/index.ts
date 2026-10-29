@@ -12,6 +12,7 @@ export * from './brood';
 export * from './colony';
 export * from './quests';
 export * from './nests';
+export * from './herds';
 export * from './nestEvents';
 export * from './swarms';
 export * from './discovery';

@@ -1,7 +1,11 @@
 // A patch drawn as ground with its colonies, scents and the wilds, plus the world picker (docs/11-world.md, docs/22-discovery.md).
+// The wilds also hold wild sites: aphid herds, termite mounds and spider dens (docs/24-npcs.md).
 // Used by the Missions screen: tap a spot, then scout, raid, send or forage from its card.
 import { useEffect, useState, type ReactNode } from 'react';
-import { WORLD, WILDS_SPOT, TERRAIN, CHAMBERS, CASTES, DEFENSES, DISCOVERY_MESSAGES, raidBlockMessage, terrainForSpot, type Knowledge, type Relation, type ScentKind, type TerrainId } from '@hormigas/shared';
+import {
+  WORLD, WILDS_SPOT, TERRAIN, CHAMBERS, CASTES, DEFENSES, DISCOVERY_MESSAGES, WILD_SCENTS, HERDS, isSiteSpot, raidBlockMessage, terrainForSpot,
+  type Knowledge, type Relation, type ScentHint, type ScentKind, type TerrainId,
+} from '@hormigas/shared';
 import { api } from '../api';
 import { useGame } from '../game';
 import { fmtAgo, fmtCoords, fmtDuration, fmtNum } from '../format';
@@ -23,14 +27,30 @@ export interface SpotColony {
   mine?: boolean;
   inactive?: boolean;
   protected?: boolean;
-  /** set for known wild nests (docs/17-wild-nests.md) */
-  wild?: { species: string; level: number; style: string };
+  /** for wild things, what the scent hints at: an ant nest, aphids, termites or a spider (docs/24-npcs.md) */
+  hint?: ScentHint;
+  /** set for known wild nests, termite mounds and spider dens (docs/17-wild-nests.md, docs/24-npcs.md) */
+  wild?: { species: string; kind?: 'nest' | 'mound' | 'den'; level: number; style: string };
+  /** set for known aphid herds (docs/24-npcs.md); tenders and honeydew only when they're yours */
+  herd?: {
+    level: number; nectarPerHour: number; storeCap: number; style: string; tended: boolean; tenderName: string | null; yours: boolean;
+    tenders?: Record<string, number>; honeydew?: number; tenderColonyId?: number; since?: number;
+  };
   /** a truce or shared supercolony scent with its owner (docs/23-supercolonies.md) */
   relation?: Relation;
   /** when a fading scent or an ending truce runs out */
   relationUntil?: number | null;
   /** the owner's supercolony */
   supercolony?: string;
+}
+
+/** "Wild nest · Level 3", "Termite mound · Tier 2", "Boss · Tier 1" */
+export function wildTag(c: SpotColony): string {
+  if (c.herd) return `Aphid herd · ${c.herd.tended ? (c.herd.yours ? 'yours' : 'tended') : 'untended'}`;
+  if (!c.wild) return '';
+  if (c.wild.kind === 'mound') return `Termite mound · Tier ${c.wild.level}`;
+  if (c.wild.kind === 'den') return `Boss · Tier ${c.wild.level}`;
+  return `Wild nest · Level ${c.wild.level}`;
 }
 
 /** "Truce", "Ally", "Scent fading (2 h)": the pact with a colony's owner, for its card. */
@@ -103,11 +123,11 @@ function Movements({ at, home }: { at: Coords; home: Coords }) {
 /* ---------- the patch, drawn ---------- */
 
 // In-world colours: literal, the same in both themes (like the nest).
-export const W = 600;
+export const W = 690;
 export const H = 240;
 const GROUND = 64;
-const SPOT_W = 45; // spots 1..12 share 0..540, the wilds take the rest
-const spotX = (n: number) => (n === WILDS_SPOT ? 570 : (n - 0.5) * SPOT_W);
+const SPOT_W = 45; // spots 1..12 share 0..540, the wilds take the rest: the wilds (13) and its wild sites (14+)
+const spotX = (n: number) => (n === WILDS_SPOT ? 562 : n > WILDS_SPOT ? 562 + (n - WILDS_SPOT) * 38 : (n - 0.5) * SPOT_W);
 const BAND: Record<TerrainId, { fill: string; ink: string }> = {
   sunny_meadow: { fill: '#B9C95A', ink: '#2B1D13' },
   sandy_soil: { fill: '#D9C08A', ink: '#2B1D13' },
@@ -116,6 +136,8 @@ const BAND: Record<TerrainId, { fill: string; ink: string }> = {
   creek_bank: { fill: '#8FB3A6', ink: '#2B1D13' },
 };
 const FLAG = { mine: '#E8B23A', wild: '#C4473A', other: '#C98B52', inactive: '#9A9184' };
+/** Scent plume colours for wild things: sharp ants red, sweet aphids green-gold, woody termites brown, a spider's danger violet. */
+const HINT_COLOR: Record<ScentHint, string> = { nest: '#C4473A', herd: '#B9D25A', mound: '#B07A44', den: '#9B5BD0' };
 const short = (s: string, n = 14) => (s.length > n ? `${s.slice(0, n - 1)}…` : s);
 
 function rng(seed: number) {
@@ -176,14 +198,15 @@ export function SpotMark({ s, at, home, selected, onPick }: { s: Spot; at: Coord
   const { ours, theirs } = useMovements(at, home);
   const hostile = theirs.some((i: any) => i.hostile);
   const scent = isScent(c);
+  const site = isSiteSpot(s.spot);
   const label = wilds
     ? 'The wilds'
     : c && scent
-    ? `Spot ${s.spot}: ${c.known === 'familiar' ? `${c.name}, a scent you've smelled before` : c.name}, not scouted`
+    ? `${site ? 'In the wilds' : `Spot ${s.spot}`}: ${c.known === 'familiar' ? `${c.name}, a scent you've smelled before` : c.name}, not scouted`
     : c
-    ? `Spot ${s.spot}: ${c.name}, ${c.mine ? 'your colony' : c.wild ? `wild nest level ${c.wild.level}` : c.owner}`
+    ? `${site ? 'In the wilds' : `Spot ${s.spot}`}: ${c.name}, ${c.mine ? 'your colony' : c.wild || c.herd ? wildTag(c).toLowerCase() : c.owner}`
     : `Spot ${s.spot}: empty ${TERRAIN[terrainForSpot(s.spot)].name.toLowerCase()}`;
-  const flag = c ? (c.mine ? FLAG.mine : c.kind === 'wild' ? FLAG.wild : c.inactive ? FLAG.inactive : FLAG.other) : '';
+  const flag = c ? (c.mine ? FLAG.mine : c.kind === 'wild' ? (c.hint ? HINT_COLOR[c.hint] : FLAG.wild) : c.inactive ? FLAG.inactive : FLAG.other) : '';
   const labelY = s.spot % 2 ? 126 : 206;
   return (
     <g
@@ -196,7 +219,7 @@ export function SpotMark({ s, at, home, selected, onPick }: { s: Spot; at: Coord
       onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), onPick())}
     >
       <title>{label}</title>
-      <rect x={x - SPOT_W / 2} y={GROUND + 20} width={wilds ? 60 : SPOT_W} height={H - GROUND - 20} fill="transparent" />
+      <rect x={x - (site ? 19 : wilds ? 22 : SPOT_W / 2)} y={GROUND + 20} width={site ? 38 : wilds ? 44 : SPOT_W} height={H - GROUND - 20} fill="transparent" />
       {selected && <ellipse cx={x} cy={y} rx={22} ry={12} fill="none" stroke="#F6F7F0" strokeWidth={2.5} />}
       {c && scent ? (
         <>
@@ -204,7 +227,12 @@ export function SpotMark({ s, at, home, selected, onPick }: { s: Spot; at: Coord
           {[-7, 0, 7].map((dx, i) => (
             <path key={dx} d={`M${x + dx} ${y - 4} q-6 -9 0 -18 t0 -18${i === 1 ? ' t0 -12' : ''}`} stroke={flag} strokeWidth={2.6} fill="none" strokeLinecap="round" className="ps-scent" />
           ))}
-          <text x={x} y={labelY} textAnchor="middle" className="ps-name">{short(c.known === 'familiar' ? c.name : c.kind === 'wild' ? 'Wild scent' : 'Ant scent')}</text>
+          <text x={x} y={labelY} textAnchor="middle" className="ps-name">{site ? short(c.name.replace(/ scent$/, ''), 9) : short(c.name)}</text>
+        </>
+      ) : c && site ? (
+        <>
+          <WildSite c={c} x={x} y={y} />
+          <text x={x} y={labelY} textAnchor="middle" className="ps-name">{short(c.herd ? 'Aphids' : c.wild?.kind === 'den' ? 'Spider' : c.wild?.kind === 'mound' ? 'Termites' : c.name, 9)}</text>
         </>
       ) : c ? (
         <>
@@ -223,9 +251,43 @@ export function SpotMark({ s, at, home, selected, onPick }: { s: Spot; at: Coord
       {(ours.length > 0 || theirs.length > 0) && (
         <circle cx={x + 14} cy={y - 14} r={4} fill={hostile ? '#C4473A' : '#E8B23A'} stroke="#2B1D13" strokeWidth={0.8} className="ps-moving" />
       )}
-      <text x={x} y={H - 6} textAnchor="middle" className="ps-num">{wilds ? '' : s.spot}</text>
+      <text x={x} y={H - 6} textAnchor="middle" className="ps-num">{wilds || site ? '' : s.spot}</text>
     </g>
   );
+}
+
+/** A known wild site, drawn: aphids on a stem, a termite mound, or a silk-lidded burrow. */
+function WildSite({ c, x, y }: { c: SpotColony; x: number; y: number }) {
+  if (c.herd) {
+    const tended = c.herd.tended;
+    return (
+      <>
+        <path d={`M${x} ${y + 4} C${x - 2} ${y - 14} ${x + 4} ${y - 26} ${x + 1} ${y - 40}`} stroke="#5E8A2E" strokeWidth={3} fill="none" strokeLinecap="round" />
+        <path d={`M${x + 1} ${y - 26} q9 -6 13 -2 q-6 4 -13 2z`} fill="#7DB043" />
+        {[[-3, -14], [2, -20], [-1, -28], [3, -33]].map(([dx, dy], i) => (
+          <ellipse key={i} cx={x + dx} cy={y + dy} rx={3.4} ry={2.4} fill="#B9D25A" stroke="#2B1D13" strokeWidth={0.7} />
+        ))}
+        <circle cx={x - 6} cy={y - 4} r={1.8} fill="#F2C94C" />
+        {tended && <circle cx={x + 8} cy={y - 2} r={3} fill={c.herd.yours ? FLAG.mine : FLAG.other} stroke="#2B1D13" strokeWidth={0.8} />}
+      </>
+    );
+  }
+  if (c.wild?.kind === 'mound')
+    return (
+      <>
+        <path d={`M${x - 15} ${y + 4} L${x - 6} ${y - 40} Q${x - 2} ${y - 48} ${x + 2} ${y - 38} L${x + 6} ${y - 26} L${x + 9} ${y - 32} L${x + 15} ${y + 4}Z`} fill="#A47E55" stroke="#2B1D13" strokeWidth={1.2} />
+        <path d={`M${x - 8} ${y - 6} h6 M${x - 2} ${y - 20} h5 M${x + 4} ${y - 10} h5`} stroke="#6E5236" strokeWidth={1.4} />
+      </>
+    );
+  if (c.wild?.kind === 'den')
+    return (
+      <>
+        <ellipse cx={x} cy={y} rx={14} ry={6} fill="#1C140E" />
+        <path d={`M${x - 14} ${y} L${x + 4} ${y - 16} L${x + 9} ${y - 12} L${x - 8} ${y + 2}Z`} fill="#7A5C40" stroke="#2B1D13" strokeWidth={1} />
+        {[-16, -8, 8, 16].map((dx) => <path key={dx} d={`M${x} ${y} L${x + dx} ${y + 8}`} stroke="#E8E2D6" strokeWidth={0.7} opacity={0.8} />)}
+      </>
+    );
+  return <ellipse cx={x} cy={y} rx={12} ry={6} fill="#4A3726" />;
 }
 
 /* ---------- a spot's card ---------- */
@@ -284,7 +346,7 @@ function terrainSummary(t: (typeof TERRAIN)[keyof typeof TERRAIN]) {
 }
 
 export function SpotCard({ s, at, onAct }: { s: Spot; at: Coords; onAct: (type: MissionType, at: Coords) => void }) {
-  const { colony, state, now } = useGame();
+  const { colony, state, now, act } = useGame();
   if (!colony || !state) return null;
   const canFound = (state.player.research.nuptial_flight ?? 0) > 0;
   const c = s.colony;
@@ -293,6 +355,8 @@ export function SpotCard({ s, at, onAct }: { s: Spot; at: Coords; onAct: (type: 
   const go = (type: MissionType) => onAct(type, at);
   const scent = isScent(c);
   const wildKind = c?.kind === 'wild';
+  const herd = c?.herd;
+  const site = isSiteSpot(s.spot);
   const pact = c && !scent && c.relation ? raidBlockMessage({ relation: c.relation, until: c.relationUntil ?? undefined }) : null;
   const pactLabel = c ? relationLabel(c, now) : null;
   return (
@@ -313,14 +377,31 @@ export function SpotCard({ s, at, onAct }: { s: Spot; at: Coords; onAct: (type: 
                 {c.known === 'familiar'
                   ? `You've smelled this scent before: ${c.kind === 'wild' ? 'its ants' : `${c.owner}'s ants`} ${c.smelledAt ? `came at you ${fmtAgo(now - c.smelledAt)} ago` : 'came at you'}. Scout it to see inside.`
                   : c.kind === 'wild'
-                  ? "It smells of wild ants. You can't tell which kind, how many, or what they store."
+                  ? WILD_SCENTS[c.hint ?? 'nest'].text
                   : "Another player's colony, by the smell. Scout it to learn whose."}
               </span>
+            </>
+          ) : herd ? (
+            <>
+              <strong>
+                {c!.name} <span className="wild-tag">{wildTag(c!)}</span>
+              </strong>
+              <span className="muted small">{herd.style}</span>
+              <span className="small">
+                Makes {fmtNum(herd.nectarPerHour)} Nectar an hour while tended
+                {herd.tended ? (herd.yours ? ', and your ants tend it.' : `. ${herd.tenderName}'s ants tend it: raid them to take it.`) : '. Nobody tends it.'}
+              </span>
+              {herd.yours && (
+                <span className="muted small">
+                  Your tenders: {Object.entries(herd.tenders ?? {}).filter(([, n]) => n > 0).map(([k, n]) => `${fmtNum(n)} ${CASTES[k as keyof typeof CASTES]?.name ?? k}`).join(', ') || 'none'}.
+                  {' '}Honeydew waiting: {fmtNum(herd.honeydew ?? 0)} of {fmtNum(herd.storeCap)}, carried home every {HERDS.deliverEveryHours} hours.
+                </span>
+              )}
             </>
           ) : c?.wild ? (
             <>
               <strong>
-                {c.name} <span className="wild-tag">Wild nest · Level {c.wild.level}</span>
+                {c.name} <span className="wild-tag">{wildTag(c)}</span>
               </strong>
               <span className="muted small">{c.owner}. {c.wild.style}</span>
             </>
@@ -347,7 +428,7 @@ export function SpotCard({ s, at, onAct }: { s: Spot; at: Coords; onAct: (type: 
               {!canFound && <span className="muted small">A Winged Queen could found a colony here. Research Nuptial Flight to raise one.</span>}
             </>
           )}
-          <span className="muted small coords">{fmtCoords(at)}{terrain && c ? ` · ${terrain.name}` : ''}</span>
+          <span className="muted small coords">{fmtCoords(at)}{site ? ' · the wilds' : terrain && c ? ` · ${terrain.name}` : ''}</span>
         </div>
         <div className="spot-actions">
           {wilds && can('forage') && <button className="btn small" onClick={() => go('forage')}>Forage</button>}
@@ -356,7 +437,17 @@ export function SpotCard({ s, at, onAct }: { s: Spot; at: Coords; onAct: (type: 
           {c && !c.mine && (
             <>
               <button className={`btn small${scent ? ' primary' : ''}`} onClick={() => go('scout')}>{scent ? 'Scout' : 'Scout again'}</button>
-              {can('raid') && (
+              {can('tend') && (scent ? c.hint === 'herd' : herd && (!herd.tended || herd.yours)) && (
+                <button className="btn small" disabled={scent} title={scent ? DISCOVERY_MESSAGES.tend_needs_scout : undefined} onClick={() => go('tend')}>
+                  {herd?.yours ? 'Send more tenders' : 'Tend'}
+                </button>
+              )}
+              {herd?.yours && (
+                <button className="btn ghost small" onClick={() => act(() => api.post(`/api/herds/${c.id}/recall`), 'Your tenders are heading home with the honeydew.')}>
+                  Call tenders home
+                </button>
+              )}
+              {can('raid') && !(herd && (!herd.tended || herd.yours)) && (
                 <button className="btn small" disabled={scent || !!pact} title={scent ? DISCOVERY_MESSAGES.raid_needs_scout : pact ?? undefined} onClick={() => go('raid')}>
                   Raid
                 </button>
@@ -374,13 +465,13 @@ export function SpotCard({ s, at, onAct }: { s: Spot; at: Coords; onAct: (type: 
             </>
           )}
           {c?.mine && c.id !== colony.id && <button className="btn small" onClick={() => go('relocate')}>Relocate</button>}
-          {!c && !wilds && canFound && can('colonize') && <button className="btn small" onClick={() => go('colonize')}>Found colony</button>}
+          {!c && !wilds && !site && canFound && can('colonize') && <button className="btn small" onClick={() => go('colonize')}>Found colony</button>}
         </div>
       </div>
-      {c && scent && <p className="why small">{DISCOVERY_MESSAGES.raid_needs_scout}</p>}
+      {c && scent && <p className="why small">{c.hint === 'herd' ? DISCOVERY_MESSAGES.tend_needs_scout : DISCOVERY_MESSAGES.raid_needs_scout}</p>}
       {pact && <p className="muted small">{pact}</p>}
       {s.corpses > 0 && <span className="corpses">{fmtNum(s.corpses)} protein in corpses</span>}
-      {c && !c.mine && !scent && <ScoutView at={at} />}
+      {c && !c.mine && !scent && !herd && <ScoutView at={at} />}
       <Movements at={at} home={colony.coords} />
     </div>
   );

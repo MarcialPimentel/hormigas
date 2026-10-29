@@ -57,7 +57,7 @@ export async function launchSwarm(q: Tx, colony: Colony, units: Record<string, n
   const world = await getWorld(q);
   const wild = await wildPlayerId(q, world.id, t);
   // the swarm comes out of the wilds; the missions table needs an origin colony, so it's anchored on the patch's wild nest (or the target itself)
-  const nest = await q.query('SELECT id FROM colonies WHERE world_id = $1 AND region = $2 AND patch = $3 AND npc IS NOT NULL LIMIT 1', [world.id, colony.region, colony.patch]);
+  const nest = await q.query('SELECT id FROM colonies WHERE world_id = $1 AND region = $2 AND patch = $3 AND npc IS NOT NULL AND spot <= 12 LIMIT 1', [world.id, colony.region, colony.patch]);
   const anchor = { ...colony, id: nest.rows[0]?.id ?? colony.id, spot: WILDS_SPOT } as Colony;
   const target = { region: colony.region, patch: colony.patch, spot: colony.spot };
   return launchMission(q, {

@@ -19,7 +19,11 @@ import {
   forageOddsSummary,
   isInactive,
   SPECIES,
-  NEST_REGROW_HOURS,
+  HERDS,
+  herdNectarPerHour,
+  herdStoreCap,
+  regrowHours,
+  speciesKind,
   type CasteId,
 } from '@hormigas/shared';
 import type { Tx } from '../db';
@@ -27,7 +31,8 @@ import type { ArrivalOutcome, Mission } from './missions';
 import { GameError } from '../errors';
 import { cachedWorldSpeed } from '../world';
 import { advance, getColony, getPlayer, lockColony, saveColony } from '../colony';
-import { syncNest } from './nests';
+import { nestStateOf, syncNest } from './nests';
+import { herdOf } from './herds';
 import { defineMission, garrisonUnits } from './missions';
 import { addReport } from './reports';
 import { refreshPointsAfterCommit } from './points';
@@ -41,6 +46,7 @@ defineMission('transport', {
   async validate({ q, targetColony, colony, player }) {
     if (!targetColony) throw new GameError('bad_target', 'There is no colony there.');
     if (targetColony.id === colony.id) throw new GameError('bad_target', 'Pick a different colony.');
+    if (herdOf(targetColony)) throw new GameError('bad_target', "Aphids don't take deliveries. Send ants to tend them instead.");
     if (targetColony.npc) throw new GameError('bad_target', "Wild ants don't accept deliveries.");
     await requireKnown(q, player.id, targetColony.id, 'send');
   },
@@ -126,7 +132,9 @@ defineMission('scout', {
     const found = await getColony(q, m.targetColonyId);
     const target = found.npc ? await syncNest(q, await lockColony(q, found.id), at) : advance(found, at);
     const attacker = await getPlayer(q, m.playerId);
-    const defender = await getPlayer(q, target.playerId);
+    // at an aphid herd, the tenders (if any) are the ones who might spot the scouts (docs/24-npcs.md)
+    const herd = herdOf(target);
+    const defender = await getPlayer(q, herd?.tender ? herd.tender.playerId : target.playerId);
     const scouts = lvl(m.units, 'scout');
     const yours = lvl(attacker.research, 'scent_reading');
     const theirs = lvl(defender.research, 'scent_reading');
@@ -135,10 +143,12 @@ defineMission('scout', {
     const chance = scoutDetectionChance(homeUnits, scouts, yours, theirs, researchSum(attacker.research, 'scoutStealth'));
     const caught = createRng(randomSeed())() < chance;
 
+    const nest = nestStateOf(target);
     const data: any = {
       colony: target.name,
-      owner: defender.isNpc ? SPECIES[target.npc!.species].name : defender.username,
-      ...(target.npc ? { wild: { species: target.npc.species, level: target.npc.level, style: SPECIES[target.npc.species].style } } : {}),
+      owner: herd ? (herd.tender ? `Tended by ${defender.username}` : 'Untended') : nest ? SPECIES[nest.species].name : defender.username,
+      ...(nest ? { wild: { species: nest.species, kind: speciesKind(nest.species), level: nest.level, style: SPECIES[nest.species].style } } : {}),
+      ...(herd ? { herd: { level: herd.level, nectarPerHour: herdNectarPerHour(herd.level), storeCap: herdStoreCap(herd.level), tended: !!herd.tender, tenderName: herd.tender ? defender.username : null, style: HERDS.style } } : {}),
       coords: target ? { region: target.region, patch: target.patch, spot: target.spot } : m.target,
       detail,
       detectionChance: chance,
@@ -152,7 +162,7 @@ defineMission('scout', {
       [m.playerId, target.id, at],
     );
     if (raid.rows[0]?.at) data.raidArrivesAt = Number(raid.rows[0].at);
-    if (target.npc) data.regrowMs = (NEST_REGROW_HOURS * 3600_000) / cachedWorldSpeed();
+    if (nest) data.regrowMs = (regrowHours(nest.species) * 3600_000) / cachedWorldSpeed();
     if (detail !== 'resources') {
       data.units = target.units;
       // allied soldiers holding position fight too, so scouts count them
@@ -167,10 +177,10 @@ defineMission('scout', {
     m.result = { reportDetail: detail, caught };
     // A scout report turns the scent into a known colony; the target now recognizes the scouts' scent (one way).
     await discover(q, m.playerId, target.id, 'scouted', at);
-    await smelledBy(q, target.playerId, m.originColonyId, 'scouted_you', at);
+    await smelledBy(q, defender.id, m.originColonyId, 'scouted_you', at);
     await addReport(q, m.worldId, m.playerId, 'scout', `Scout report: ${target.name} (${coordsKey(m.target)})`, data, at);
     if (!defender.isNpc) await addReport(
-      q, m.worldId, target.playerId, 'scouted',
+      q, m.worldId, defender.id, 'scouted',
       caught ? `Your colony killed ${scouts} enemy ${scouts === 1 ? 'scout' : 'scouts'}` : `Enemy scouts spotted near ${target.name}`,
       { colony: target.name, from: attacker.username, origin: m.origin, scouts, caught },
       at,

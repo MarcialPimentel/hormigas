@@ -1,6 +1,6 @@
 {
   "_version": "0.1",
-  "_note": "Wild nests (NPC colonies), docs/17-wild-nests.md. Level = highest level whose minPatchPoints <= the points of the strongest active player in the patch; never goes down. Times are hours at world speed 1 (divide by world speed).",
+  "_note": "Wild nests (NPC colonies), docs/17-wild-nests.md; termite mounds, spider dens and aphid herds, docs/24-npcs.md. Level = highest level whose minPatchPoints <= the points of the strongest active player in the patch; never goes down. Times are hours at world speed 1 (divide by world speed).",
   "levels": [
     {"level": 1, "minPatchPoints": 0, "stock": {"foliage": 1600, "protein": 1000, "nectar": 400}},
     {"level": 2, "minPatchPoints": 20, "stock": {"foliage": 4000, "protein": 2800, "nectar": 1200}},
@@ -45,7 +45,80 @@
         {"units": {"minor_soldier": 15, "major_soldier": 12}, "defenses": {"pit_trap": 10, "soil_wall": 1, "acid_sentry": 2}},
         {"units": {"minor_soldier": 25, "major_soldier": 30}, "defenses": {"pit_trap": 20, "soil_wall": 1, "acid_sentry": 4}}
       ]
+    },
+    "honeypot": {
+      "name": "Honeypot Ants", "nest": "Honeypot Ant Nest", "terrains": ["sandy_soil", "sunny_meadow"],
+      "_stockPct": "Percent of the level's normal food store, per resource: honeypot ants hoard Nectar in living storage jars.",
+      "stockPct": {"foliage": 60, "protein": 60, "nectar": 250},
+      "style": "Hoarders: a big Nectar store, guarded by Workers and Minor Soldiers. Light to beat; bring Workers to carry it home.",
+      "levels": [
+        {"units": {"worker": 3, "minor_soldier": 2}, "defenses": {}},
+        {"units": {"worker": 6, "minor_soldier": 6}, "defenses": {}},
+        {"units": {"worker": 10, "minor_soldier": 10, "major_soldier": 2}, "defenses": {}},
+        {"units": {"worker": 16, "minor_soldier": 26, "major_soldier": 4}, "defenses": {}},
+        {"units": {"worker": 25, "minor_soldier": 55, "major_soldier": 12}, "defenses": {"pit_trap": 1}},
+        {"units": {"worker": 40, "minor_soldier": 90, "major_soldier": 35}, "defenses": {"pit_trap": 3}}
+      ]
+    },
+    "trapjaw": {
+      "name": "Trap-jaw Ants", "nest": "Trap-jaw Ant Nest", "terrains": ["creek_bank", "rotting_log"],
+      "style": "Ambushers: no Workers, just a few heavily armed Major Soldiers behind pit traps. Numbers win: swarm them with Minor Soldiers.",
+      "levels": [
+        {"units": {"minor_soldier": 2}, "defenses": {"pit_trap": 1}},
+        {"units": {"minor_soldier": 3, "major_soldier": 1}, "defenses": {"pit_trap": 1}},
+        {"units": {"major_soldier": 6}, "defenses": {"pit_trap": 2}},
+        {"units": {"major_soldier": 14}, "defenses": {"pit_trap": 4}},
+        {"units": {"major_soldier": 32}, "defenses": {"pit_trap": 6, "acid_sentry": 1}},
+        {"units": {"major_soldier": 70}, "defenses": {"pit_trap": 10, "acid_sentry": 2}}
+      ]
+    },
+    "termite": {
+      "kind": "mound", "name": "Termites", "nest": "Termite Mound", "terrains": [],
+      "_note": "A termite mound (docs/24-npcs.md): a rich, heavily defended mid-game target on its own wild site. Its tier follows the area's strongest active player (minPoints), never drops. Regrows slowly and never raids.",
+      "style": "A fortress of armoured soldiers and walls, packed with chewed wood. Bring a big army of Major Soldiers and plenty of carriers.",
+      "regrowHours": 72,
+      "raids": false,
+      "levels": [
+        {"minPoints": 0,    "units": {"termite_worker": 60,  "termite_soldier": 40},  "defenses": {"soil_wall": 1, "pit_trap": 4},  "stock": {"foliage": 40000,  "protein": 20000, "nectar": 3000}},
+        {"minPoints": 600,  "units": {"termite_worker": 120, "termite_soldier": 85},  "defenses": {"soil_wall": 1, "pit_trap": 8, "acid_sentry": 1},  "stock": {"foliage": 70000,  "protein": 35000, "nectar": 5000}},
+        {"minPoints": 1500, "units": {"termite_worker": 200, "termite_soldier": 180}, "defenses": {"soil_wall": 1, "pit_trap": 14, "acid_sentry": 3}, "stock": {"foliage": 120000, "protein": 60000, "nectar": 9000}}
+      ]
+    },
+    "spider": {
+      "kind": "den", "name": "Trapdoor Spider", "nest": "Spider Den", "terrains": [],
+      "_note": "A boss (docs/24-npcs.md): one huge spider and her young under a silk lid. One player can beat it late in the game; the Alliances build may reuse it for joint raids. Regrows over a week and never raids.",
+      "style": "One giant spider and her spiderlings. Her fangs cut through any ant; only a large army brings her down. A small raid can't wear her down: she's whole again next time.",
+      "regrowHours": 168,
+      "raids": false,
+      "levels": [
+        {"minPoints": 0,    "units": {"trapdoor_spider": 1, "spiderling": 80}, "defenses": {}, "stock": {"foliage": 10000, "protein": 40000, "nectar": 8000}},
+        {"minPoints": 1500, "units": {"trapdoor_spider": 2, "spiderling": 200}, "defenses": {}, "stock": {"foliage": 20000, "protein": 80000, "nectar": 15000}}
+      ]
     }
+  },
+  "_area": "Where wild things live (docs/24-npcs.md): every patch within `range` patches (same region) of a patch with players gets a wild nest and an aphid herd. Termite mounds sit in patches where patch % every == offset, spider dens likewise, each spawned once a player lives within its range. Sites are extra spots in the wilds that never take one of the 12 colony spots.",
+  "area": {
+    "range": 2,
+    "mound": {"every": 5, "offset": 3, "range": 2},
+    "den": {"every": 10, "offset": 8, "range": 7},
+    "sites": {"herd": 14, "mound": 15, "den": 16}
+  },
+  "herds": {
+    "_note": "Aphid herds (docs/24-npcs.md). A herd makes Nectar only while a player's ants tend it. nectarPerHour by level (levels follow the area leader like wild nests: npc.levels[].minPatchPoints). Honeydew piles up in the herd (up to storeHours of production) and the tenders carry it home every deliverEveryHours. Left untended for wanderAfterHours, the herd wanders to another patch nearby. Hours at world speed 1.",
+    "name": "Aphid Herd",
+    "nectarPerHour": [10, 20, 35, 60, 100, 160],
+    "storeHours": 12,
+    "deliverEveryHours": 6,
+    "wanderAfterHours": 48,
+    "perColony": 1,
+    "style": "Aphids on a stem, dripping honeydew. Tend them and they make Nectar for you; anyone can drive your tenders off and take over."
+  },
+  "scents": {
+    "_note": "What an unscouted wild scent hints at (docs/24-npcs.md).",
+    "nest": {"name": "Wild scent", "text": "It smells sharp, of wild ants. You can't tell which kind, how many, or what they store."},
+    "herd": {"name": "Sweet scent", "text": "It smells sweet, like honeydew. Something here could make Nectar."},
+    "mound": {"name": "Woody scent", "text": "It smells of chewed wood and damp earth. Something big was built here."},
+    "den": {"name": "Danger scent", "text": "Silk threads on the ground and no ants anywhere near. Every scout's antennae say: careful."}
   },
   "regrowHours": 24,
   "raids": {

@@ -1,5 +1,5 @@
 // Map, distance, travel and mission rules. Spec: docs/09-missions.md, docs/11-world.md
-import { CASTES, FORMULAS, TERRAIN, TERRAIN_IDS, type CasteId, type TerrainId } from './data';
+import { CASTES, FORMULAS, NPC_DATA, TERRAIN, TERRAIN_IDS, type CasteId, type TerrainId } from './data';
 import { researchBonus, researchPerLevel, type ResearchLevels, type UnitCounts } from './economy';
 
 const D = FORMULAS.distance;
@@ -17,13 +17,17 @@ export const WORLD = FORMULAS.world;
 export const coordsKey = (c: Coords) => `${c.region}:${c.patch}:${c.spot}`;
 export const sameCoords = (a: Coords, b: Coords) => a.region === b.region && a.patch === b.patch && a.spot === b.spot;
 
-export function validCoords(c: Coords, allowWilds = false): boolean {
+/** Wild sites: extra spots in the wilds for aphid herds, termite mounds and spider dens (docs/24-npcs.md). */
+const SITE_SPOT_LIST = Object.values(NPC_DATA.area.sites) as number[];
+
+/** A real place: a colony spot (1–12), optionally the wilds (13), optionally a wild site (14+). */
+export function validCoords(c: Coords, allowWilds = false, allowSites = false): boolean {
   const maxSpot = WORLD.spotsPerPatch + (allowWilds ? 1 : 0);
   return (
     Number.isInteger(c.region) && Number.isInteger(c.patch) && Number.isInteger(c.spot) &&
     c.region >= 1 && c.region <= WORLD.regions &&
     c.patch >= 1 && c.patch <= WORLD.patchesPerRegion &&
-    c.spot >= 1 && c.spot <= maxSpot
+    ((c.spot >= 1 && c.spot <= maxSpot) || (allowSites && SITE_SPOT_LIST.includes(c.spot)))
   );
 }
 

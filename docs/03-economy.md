@@ -8,7 +8,7 @@
 |---|---|---|---|
 | **Foliage** | Bulk | Leaf Garden | Chambers, most castes |
 | **Protein** | Mid | Hunting Grounds, battlefield corpses | Castes, research |
-| **Nectar** | Rare | Aphid Pasture | Advanced castes/research, **mission fuel** |
+| **Nectar** | Rare | Aphid Pasture, tended aphid herds ([24-npcs](24-npcs.md)) | Advanced castes/research, **mission fuel** |
 | **Workforce** | Capacity (not stored) | Nursery, Queen's Chamber | Required to run production chambers |
 
 ## Production
