@@ -30,5 +30,7 @@ export const CASTE_LABEL: Record<Caste | 'drone', string> = {
   soldier: 'Soldier',
   queen: 'Queen',
   alate: 'Winged queen',
+  army: 'Army ant',
+  army_major: 'Army ant major',
   drone: 'Winged male',
 };

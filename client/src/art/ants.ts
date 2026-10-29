@@ -7,7 +7,7 @@
 //   swing          leg angle in degrees for one walk pose (tripod gait)
 //   walk           animate the legs with SMIL (close-ups and the preview sheet)
 
-export type Caste = 'worker' | 'soldier' | 'queen' | 'alate';
+export type Caste = 'worker' | 'soldier' | 'queen' | 'alate' | 'army' | 'army_major';
 export type Lod = 'sprite' | 'portrait';
 
 export interface Palette { base: string; light: string; shade: string; far: string; ink: string }
@@ -20,6 +20,14 @@ interface CasteSpec {
   mand: number;
   scars?: boolean;
   wings?: boolean;
+  /** A second waist node (army ants have two). */
+  postpet?: Ellipse;
+  /** Long sickle jaws that hook back up (army-ant majors) instead of the usual short blades. */
+  sickle?: boolean;
+  /** Army ants are blind: no eye. */
+  blind?: boolean;
+  /** Stretch the legs sideways from the hip (army ants are leggy). */
+  legX?: number;
   pal: Palette;
   /** viewBox: x, y, width, height */
   vb: [number, number, number, number];
@@ -29,7 +37,7 @@ interface CasteSpec {
 const AMBER: Palette = { base: '#c98b52', light: '#f2d3a2', shade: '#8c5730', far: '#6e4325', ink: '#2b1d13' };
 const RUST: Palette = { base: '#a95f2f', light: '#e0a46e', shade: '#713c1c', far: '#552c14', ink: '#24170e' };
 /** Other colonies' raiders: same anatomy, blood-red chitin. */
-const ENEMY: Palette = { base: '#c4473a', light: '#ef9a8a', shade: '#86281f', far: '#64201a', ink: '#2b1210' };
+export const ENEMY: Palette = { base: '#c4473a', light: '#ef9a8a', shade: '#86281f', far: '#64201a', ink: '#2b1210' };
 
 export const CASTES: Record<Caste, CasteSpec> = {
   worker: {
@@ -69,6 +77,33 @@ export const CASTES: Record<Caste, CasteSpec> = {
     wings: true,
     pal: RUST,
     vb: [0, -5, 78, 39],
+  },
+  // Army ants (docs/20-swarms.md), Eciton-like: slim, leggy, two waist nodes, blind; the major's
+  // sickle jaws are its sign. Raider red like other colonies' ants, so red still means hostile.
+  army: {
+    gaster: { cx: 14, cy: 16.5, rx: 8.6, ry: 6 },
+    pet: { cx: 24.6, cy: 15.6, rx: 1.9, ry: 2.6 },
+    postpet: { cx: 27.6, cy: 15.4, rx: 1.8, ry: 2.4 },
+    front: { x: 29.5, s: 1 },
+    head: { cx: 46, cy: 12.5, rx: 5.4, ry: 4.6 },
+    mand: 1.2,
+    blind: true,
+    legX: 1.3,
+    pal: ENEMY,
+    vb: [-1, -2, 66, 33],
+  },
+  army_major: {
+    gaster: { cx: 14, cy: 16.5, rx: 9, ry: 6.4 },
+    pet: { cx: 25, cy: 15.6, rx: 2, ry: 2.8 },
+    postpet: { cx: 28.1, cy: 15.4, rx: 1.9, ry: 2.6 },
+    front: { x: 30, s: 1.05 },
+    head: { cx: 48.5, cy: 12, rx: 7.6, ry: 6.6 },
+    mand: 2,
+    sickle: true,
+    blind: true,
+    legX: 1.3,
+    pal: ENEMY,
+    vb: [-1, -8, 80, 39],
   },
 };
 
@@ -110,6 +145,8 @@ export interface AntOptions {
   palette?: Partial<Palette>;
 }
 
+const stretch = (l: Leg, k = 1): Leg => (k === 1 ? l : { ...l, pts: l.pts.map(([x, y]) => [l.pts[0][0] + (x - l.pts[0][0]) * k, y] as Pt) });
+
 function leg(l: Leg, color: string, width: number, portrait: boolean, pal: Palette, o: AntOptions) {
   const [cx, cy] = l.pts[0];
   const sign = l.set === 'a' ? 1 : -1;
@@ -147,7 +184,7 @@ export function antBody(caste: Caste, o: AntOptions = {}) {
 
   // far side: legs and antenna in shadow colour, behind the body
   out.push(`<g transform="${ft}" fill="none" stroke-linecap="round" stroke-linejoin="round">`);
-  for (const l of FAR_LEGS) out.push(leg(l, pal.far, legW * 0.85, portrait, pal, o));
+  for (const l of FAR_LEGS) out.push(leg(stretch(l, c.legX), pal.far, legW * 0.85, portrait, pal, o));
   out.push(antenna(h, pal.far, portrait ? 1 : 1.4, portrait, pal, true));
   out.push('</g>');
 
@@ -170,6 +207,7 @@ export function antBody(caste: Caste, o: AntOptions = {}) {
   out.push(`<ellipse cx="${f(g.cx - g.rx * 0.12)}" cy="${f(g.cy - g.ry * 0.47)}" rx="${f(g.rx * 0.55)}" ry="${f(g.ry * 0.26)}" fill="${pal.light}"/>`);
   out.push('</g>');
   out.push(`<ellipse cx="${pet.cx}" cy="${pet.cy}" rx="${pet.rx}" ry="${pet.ry}" fill="${pal.base}" ${line}/>`);
+  if (c.postpet) out.push(`<ellipse cx="${c.postpet.cx}" cy="${c.postpet.cy}" rx="${c.postpet.rx}" ry="${c.postpet.ry}" fill="${pal.base}" ${line}/>`);
 
   // front section: mesosoma, head, mouthparts, near antenna, near legs
   out.push(`<g transform="${ft}" stroke-linecap="round" stroke-linejoin="round">`);
@@ -182,13 +220,16 @@ export function antBody(caste: Caste, o: AntOptions = {}) {
   out.push('</g>');
   // jaws: two curved blades (far one behind) that hook down at the tip
   const mx = h.cx + h.rx * 0.78, my = h.cy + h.ry * 0.5, m = c.mand;
-  const jaw = (dx: number, dy: number) => `M${f(mx + dx)},${f(my + dy)} q${f(3 * m)},${f(-1 * m)} ${f(4 * m)},${f(1.6 * m)}`;
-  const jw = (portrait ? 1.1 : 1.5) * Math.sqrt(m);
+  // sickle: reaches forward, sweeps up, and the point hooks back toward the head
+  const jaw = c.sickle
+    ? (dx: number, dy: number) => `M${f(mx + dx)},${f(my + dy)} C${f(mx + dx + 3 * m)},${f(my + dy + 1 * m)} ${f(mx + dx + 5.5 * m)},${f(my + dy + 0.2 * m)} ${f(mx + dx + 6 * m)},${f(my + dy - 1.6 * m)} Q${f(mx + dx + 6 * m)},${f(my + dy - 2.8 * m)} ${f(mx + dx + 4.7 * m)},${f(my + dy - 2.6 * m)}`
+    : (dx: number, dy: number) => `M${f(mx + dx)},${f(my + dy)} q${f(3 * m)},${f(-1 * m)} ${f(4 * m)},${f(1.6 * m)}`;
+  const jw = (portrait ? 1.1 : 1.5) * (c.sickle ? 1 : Math.sqrt(m));
   out.push(`<g fill="none" stroke-linecap="round">`);
   out.push(`<path d="${jaw(-0.6, 1)}" stroke="${pal.far}" stroke-width="${f(jw)}"/>`);
   if (portrait) out.push(`<path d="${jaw(0, 0)}" stroke="${pal.ink}" stroke-width="${f(jw + 0.9)}"/>`);
   out.push(`<path d="${jaw(0, 0)}" stroke="${portrait ? pal.shade : pal.base}" stroke-width="${f(jw)}"/>`);
-  if (portrait && m > 1.5) {
+  if (portrait && m > 1.5 && !c.sickle) {
     for (const t of [0.35, 0.6]) out.push(`<path d="M${f(mx + 2.4 * m * t)},${f(my + 0.3 * m * t)} l0.2,0.9" stroke="${pal.ink}" stroke-width="0.5"/>`);
   }
   out.push('</g>');
@@ -196,12 +237,12 @@ export function antBody(caste: Caste, o: AntOptions = {}) {
   if (o.load) out.push(`<circle cx="${f(mx + 3.6 * m)}" cy="${f(my + 0.4 * m)}" r="3.4" fill="${o.load}" stroke="${pal.ink}" stroke-width="${portrait ? 0.6 : 0}"/>`);
   // eye (small: ants see poorly)
   const ex = h.cx + h.rx * 0.28, ey = h.cy - h.ry * 0.12;
-  out.push(`<ellipse cx="${f(ex)}" cy="${f(ey)}" rx="${f(Math.min(1.5, h.rx * 0.22))}" ry="${f(Math.min(1.2, h.ry * 0.2))}" fill="${pal.ink}"/>`);
-  if (portrait) out.push(`<circle cx="${f(ex - 0.35)}" cy="${f(ey - 0.35)}" r="0.35" fill="${pal.light}"/>`);
+  if (!c.blind) out.push(`<ellipse cx="${f(ex)}" cy="${f(ey)}" rx="${f(Math.min(1.5, h.rx * 0.22))}" ry="${f(Math.min(1.2, h.ry * 0.2))}" fill="${pal.ink}"/>`);
+  if (portrait && !c.blind) out.push(`<circle cx="${f(ex - 0.35)}" cy="${f(ey - 0.35)}" r="0.35" fill="${pal.light}"/>`);
   out.push(`<g fill="none">${antenna(h, pal.base, portrait ? 1.1 : 1.6, portrait, pal)}</g>`);
   out.push(`<g fill="none">`);
-  for (const l of NEAR_LEGS) out.push(leg(l, pal.base, legW, portrait, pal, o));
-  if (portrait) for (const l of NEAR_LEGS) out.push(`<circle cx="${l.pts[1][0]}" cy="${l.pts[1][1]}" r="0.8" fill="${pal.shade}"/>`);
+  for (const l of NEAR_LEGS) out.push(leg(stretch(l, c.legX), pal.base, legW, portrait, pal, o));
+  if (portrait) for (const l of NEAR_LEGS.map((n) => stretch(n, c.legX))) out.push(`<circle cx="${f(l.pts[1][0])}" cy="${l.pts[1][1]}" r="0.8" fill="${pal.shade}"/>`);
   out.push('</g></g>');
 
   // wings lie over the back of a winged queen

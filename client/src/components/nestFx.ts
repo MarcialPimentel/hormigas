@@ -5,7 +5,7 @@ import { Graphics } from 'pixi.js';
 import { lvl, storageCapacity, workforce, type ChamberId, type ChamberLevels, type ResourceId } from '@hormigas/shared';
 import type { ServerColony, ServerState } from '../game';
 import type { Moment } from '../moments';
-import { C, LAYOUT, SURFACE, sampler, surfaceParties, type Geo, type Pt } from './nestScene';
+import { C, LAYOUT, SURFACE, partyCaste, sampler, surfaceParties, type Geo, type Pt } from './nestScene';
 import { drawAnt, walkFrame, type AntFrames } from './antSprites';
 import type { Caste } from '../art/ants';
 
@@ -345,11 +345,11 @@ export function createFx(w: number, h: number, geo: Geo, chambers: ChamberLevels
       const y = surfaceY - (p.lane % 3) * 1.5;
       if (p.kind === 'ours') {
         const loads = p.cargo ? (Object.keys(RES_COLOR) as ResourceId[]).filter((r) => (p.cargo![r] ?? 0) > 0).map((r) => RES_COLOR[r]) : [];
-        party(over, frames, p.x, y, p.heading, p.n, 'worker', 0xffffff, loads, t, reduced);
+        party(over, frames, p.x, y, p.heading, p.n, () => 'worker', 0xffffff, loads, t, reduced);
       } else {
-        // other colonies' ants are tinted: raids blood-red soldiers, scouts pale red
-        const tint = p.kind === 'raid' ? FX.enemy : p.kind === 'scout' ? FX.scoutEnemy : 0xffffff;
-        party(over, frames, p.x, y, p.heading, p.n, p.kind === 'raid' ? 'soldier' : 'worker', tint, [], t, reduced);
+        // other colonies' ants are tinted: raids blood-red soldiers, scouts pale red; army ants are drawn red already
+        const tint = p.type === 'swarm' ? 0xffffff : p.kind === 'raid' ? FX.enemy : p.kind === 'scout' ? FX.scoutEnemy : 0xffffff;
+        party(over, frames, p.x, y, p.heading, p.n, (i) => partyCaste(p, i), tint, [], t, reduced, p.type === 'swarm' ? 8 : 10);
         if (p.kind === 'raid') raid = true;
       }
     }
@@ -374,10 +374,10 @@ export function createFx(w: number, h: number, geo: Geo, chambers: ChamberLevels
 }
 
 /** A small group walking along the surface, standing on y; the leader is at x. */
-function party(g: Graphics, frames: AntFrames, x: number, y: number, heading: number, n: number, caste: Caste, tint: number, loads: number[], t: number, reduced: boolean) {
+function party(g: Graphics, frames: AntFrames, x: number, y: number, heading: number, n: number, caste: (i: number) => Caste, tint: number, loads: number[], t: number, reduced: boolean, gap = 10) {
   for (let i = 0; i < n; i++) {
-    const px = x - heading * i * 10;
-    drawAnt(g, frames, caste, px, y, heading > 0 ? 0 : Math.PI, { feet: true, tint, frame: reduced ? 1 : Math.floor(t / 85) + i * 2 });
+    const px = x - heading * i * gap;
+    drawAnt(g, frames, caste(i), px, y, heading > 0 ? 0 : Math.PI, { feet: true, tint, frame: reduced ? 1 : Math.floor(t / 85) + i * 2 });
     if (loads.length) g.circle(px + heading * 5.5, y - 3.5, 1.6).fill(loads[i % loads.length]);
   }
 }

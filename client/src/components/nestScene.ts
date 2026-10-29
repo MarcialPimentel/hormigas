@@ -2,6 +2,7 @@
 import { Graphics } from 'pixi.js';
 import type { ChamberId, Resources } from '@hormigas/shared';
 import type { ServerColony, ServerState } from '../game';
+import type { Caste } from '../art/ants';
 
 /** Where the soil starts, as a fraction of the view's height. Above it: the sky and the surface. */
 export const SURFACE = 0.15;
@@ -150,6 +151,12 @@ export interface SurfaceParty {
 }
 
 /** Our parties out and back, and others heading for us: where they are on the surface right now. */
+/** Which ant to draw for the i-th ant of a party: a swarm is army ants, one major in five. */
+export function partyCaste(p: SurfaceParty, i: number): Caste {
+  if (p.type === 'swarm') return i % 5 === 2 ? 'army_major' : 'army';
+  return p.kind === 'raid' ? 'soldier' : 'worker';
+}
+
 export function surfaceParties(w: number, entranceX: number, c: ServerColony, state: ServerState, now: number): SurfaceParty[] {
   const out: SurfaceParty[] = [];
   const home = c.coords;
@@ -174,11 +181,12 @@ export function surfaceParties(w: number, entranceX: number, c: ServerColony, st
     const edge = fromLeft ? -8 : w + 8;
     const k = i.departAt ? clamp01((now - i.departAt) / (i.arriveAt - i.departAt)) : 0.5;
     const x = lerp(edge, entranceX + 12 * (fromLeft ? -1 : 1), k);
-    // an army-ant swarm (docs/20-swarms.md) walks in like a raid, only longer
+    // an army-ant swarm (docs/20-swarms.md) walks in like a raid: army ants, and a much longer column
     const kind = i.type === 'raid' || i.type === 'swarm' ? 'raid' : i.type === 'scout' ? 'scout' : 'delivery';
+    const n = i.type === 'swarm' ? Math.min(30, Math.max(6, Math.ceil(i.unitCount / 3))) : kind === 'raid' ? Math.min(10, Math.max(3, Math.ceil(i.unitCount / 6))) : 2;
     out.push({
       key: `i${i.id}`, x, lane: lane++, heading: fromLeft ? 1 : -1, kind,
-      n: kind === 'raid' ? Math.min(i.type === 'swarm' ? 16 : 10, Math.max(3, Math.ceil(i.unitCount / 6))) : 2, cargo: null,
+      n, cargo: null,
       type: i.type, outbound: true, endAt: i.arriveAt,
     });
   }
