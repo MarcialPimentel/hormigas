@@ -174,10 +174,11 @@ export function surfaceParties(w: number, entranceX: number, c: ServerColony, st
     const edge = fromLeft ? -8 : w + 8;
     const k = i.departAt ? clamp01((now - i.departAt) / (i.arriveAt - i.departAt)) : 0.5;
     const x = lerp(edge, entranceX + 12 * (fromLeft ? -1 : 1), k);
-    const kind = i.type === 'raid' ? 'raid' : i.type === 'scout' ? 'scout' : 'delivery';
+    // an army-ant swarm (docs/20-swarms.md) walks in like a raid, only longer
+    const kind = i.type === 'raid' || i.type === 'swarm' ? 'raid' : i.type === 'scout' ? 'scout' : 'delivery';
     out.push({
       key: `i${i.id}`, x, lane: lane++, heading: fromLeft ? 1 : -1, kind,
-      n: kind === 'raid' ? Math.min(10, Math.max(3, Math.ceil(i.unitCount / 6))) : 2, cargo: null,
+      n: kind === 'raid' ? Math.min(i.type === 'swarm' ? 16 : 10, Math.max(3, Math.ceil(i.unitCount / 6))) : 2, cargo: null,
       type: i.type, outbound: true, endAt: i.arriveAt,
     });
   }

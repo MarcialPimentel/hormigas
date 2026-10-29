@@ -73,7 +73,18 @@ export function ActivityList({ go }: { go: (screen: string) => void }) {
       endAt: i.arriveAt,
       label: i.hostile ? (
         <>
-          <strong>{i.type === 'raid' ? 'Raid incoming' : 'Enemy scouts incoming'}</strong> from {i.from} ({fmtCoords(i.origin)}){i.type === 'raid' ? ` — ${i.unitCount.toLocaleString()} units` : ''}
+          {i.type === 'swarm' ? (
+            <>
+              <strong>Army ant swarm incoming</strong> out of the wilds — {i.unitCount.toLocaleString()} ants
+              <span className="muted small">
+                {' '}It's sized so the army you have at home now usually wins. Keep your soldiers in to fight it and win corpses to haul, or send them away and let it take some unprotected food. It never touches chambers.
+              </span>
+            </>
+          ) : (
+            <>
+              <strong>{i.type === 'raid' ? 'Raid incoming' : 'Enemy scouts incoming'}</strong> from {i.from} ({fmtCoords(i.origin)}){i.type === 'raid' ? ` — ${i.unitCount.toLocaleString()} units` : ''}
+            </>
+          )}
           {i.wild && i.type === 'raid' && (
             <span className="muted small"> Wild ants. Keep soldiers at home to fight them off, or send your army away until they've gone.</span>
           )}

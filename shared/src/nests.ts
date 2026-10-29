@@ -34,6 +34,11 @@ export interface NestState {
   level: number;
   /** when units/defenses/resources were last saved */
   at: number;
+  /**
+   * When soldier and defense regrowth is counted from. Usually a little before `at`: whole ants are
+   * regrown, and the time already spent on the next one is kept here so a save doesn't throw it away.
+   */
+  unitsAt?: number;
 }
 
 export interface NestSnapshot {
@@ -75,9 +80,12 @@ function regrowCounts<K extends string>(have: Partial<Record<K, number>>, target
  * A nest's live soldiers, defenses and food at time t: its saved values plus regrowth since `state.at`.
  * Everything regrows in a straight line to full over NEST_REGROW_HOURS (÷ world speed). Pure; nothing ticks.
  */
+const regrowFraction = (from: number, t: number, worldSpeed: number) => Math.max(0, Math.min(1, ((t - from) / 3600_000) * worldSpeed / NEST_REGROW_HOURS));
+
 export function nestAt(state: NestState, saved: NestSnapshot, t: number, worldSpeed = 1): NestSnapshot {
   const target = nestTargets(state.species, state.level);
-  const fraction = Math.max(0, Math.min(1, ((t - state.at) / 3600_000) * worldSpeed / NEST_REGROW_HOURS));
+  const fraction = regrowFraction(state.at, t, worldSpeed);
+  const unitFraction = regrowFraction(state.unitsAt ?? state.at, t, worldSpeed);
   const resources = res();
   for (const r of Object.keys(target.resources) as (keyof Resources)[]) {
     const have = saved.resources[r] ?? 0;
@@ -85,10 +93,38 @@ export function nestAt(state: NestState, saved: NestSnapshot, t: number, worldSp
     resources[r] = have >= goal ? have : Math.min(goal, have + goal * fraction);
   }
   return {
-    units: regrowCounts<CasteId>(saved.units, target.units, fraction),
-    defenses: regrowCounts<DefenseId>(saved.defenses, target.defenses, fraction),
+    units: regrowCounts<CasteId>(saved.units, target.units, unitFraction),
+    defenses: regrowCounts<DefenseId>(saved.defenses, target.defenses, unitFraction),
     resources,
   };
+}
+
+/**
+ * The `unitsAt` to save alongside nestAt(state, saved, t): t, minus the time already spent toward the next
+ * soldier or defense that hasn't appeared yet. Without it, a nest saved often (scouted, raided) regrows nothing.
+ */
+export function nestUnitsAt(state: NestState, saved: NestSnapshot, t: number, worldSpeed = 1): number {
+  const target = nestTargets(state.species, state.level);
+  const from = state.unitsAt ?? state.at;
+  const fraction = regrowFraction(from, t, worldSpeed);
+  const fullMs = (NEST_REGROW_HOURS * 3600_000) / worldSpeed;
+  let carry = 0;
+  const pairs: [Record<string, number | undefined>, Record<string, number | undefined>][] = [
+    [saved.units, target.units],
+    [saved.defenses, target.defenses],
+  ];
+  for (const [have, goal] of pairs) {
+    for (const k of Object.keys(goal)) {
+      const g = goal[k] ?? 0;
+      const h = have[k] ?? 0;
+      if (g <= 0 || h >= g) continue;
+      const exact = g * fraction;
+      if (h + Math.floor(exact) >= g) continue; // full now: nothing to carry
+      // keep the largest partial, so no kind loses progress (others gain at most one unit's worth)
+      carry = Math.max(carry, ((exact - Math.floor(exact)) / g) * fullMs);
+    }
+  }
+  return Math.round(t - Math.min(carry, t - from));
 }
 
 /** Hours (world speed 1) until the next nest raid, picked uniformly from NEST_RAIDS.everyHours. */

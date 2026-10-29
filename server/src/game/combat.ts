@@ -27,7 +27,7 @@ import type { Q, Tx } from '../db';
 import { GameError } from '../errors';
 import { advance, getColony, getPlayer, lockColony, saveColony, type Player } from '../colony';
 import { syncNest } from './nests';
-import { defineMission } from './missions';
+import { defineMission, type Mission } from './missions';
 import { addReport } from './reports';
 import { refreshPointsAfterCommit } from './points';
 
@@ -90,84 +90,92 @@ defineMission('raid', {
   },
   async arrive(q, m, at) {
     if (!m.targetColonyId) return { home: true };
-    let target = await lockColony(q, m.targetColonyId);
-    target = target.npc ? await syncNest(q, target, at) : advance(target, at);
-    const attacker = await getPlayer(q, m.playerId);
-    const defender = await getPlayer(q, target.playerId);
-    // Wild nests fight under their nest's name and get no reports or points.
-    const attackerName = attacker.isNpc ? (await getColony(q, m.originColonyId)).name : attacker.username;
-    const defenderName = defender.isNpc ? target.name : defender.username;
-    const seed = randomSeed();
-    const rng = createRng(seed);
-
-    const startAttacker = nonZero(m.units);
-    const startDefender = nonZero(target.units);
-    const startDefenses = nonZero(target.defenses);
-    const result = simulateBattle(
-      { units: startAttacker, research: attacker.research },
-      { units: startDefender, defenses: target.defenses, research: defender.research },
-      rng,
-    );
-    const rebuilt = rebuildDefenses(result.defensesDestroyed, rng);
-
-    m.units = nonZero(result.attackerSurvivors);
-    target.units = nonZero(result.defenderSurvivors);
-    target.defenses = nonZero(addCounts(subCounts(target.defenses, result.defensesDestroyed), rebuilt));
-
-    let loot = { foliage: 0, protein: 0, nectar: 0 };
-    if (result.winner === 'attacker') {
-      loot = fillCargo(lootable(target.resources, protectedAmount(target.chambers)), groupCargo(m.units));
-      target.resources = sub(target.resources, loot);
-      m.cargo = loot;
-    }
-    await saveColony(q, target);
-
-    const corpses = corpseProtein(result.attackerLost, result.defenderLost);
-    await addCorpses(q, m.worldId, m.target, corpses, at);
-    await q.query('INSERT INTO raid_log (world_id, attacker_id, colony_id, winner, at) VALUES ($1,$2,$3,$4,$5)', [
-      m.worldId, attacker.id, target.id, result.winner, at,
-    ]);
-
-    const data = {
-      winner: result.winner,
-      seed,
-      at: coordsKey(m.target),
-      target: m.target,
-      attacker: {
-        name: attackerName,
-        wild: attacker.isNpc,
-        origin: m.origin,
-        units: startAttacker,
-        lost: nonZero(result.attackerLost),
-        bonuses: { mandibles: attacker.research.mandibles ?? 0, chitin: attacker.research.chitin ?? 0, guard_formation: attacker.research.guard_formation ?? 0 },
-      },
-      defender: {
-        name: defenderName,
-        wild: defender.isNpc,
-        colony: target.name,
-        units: startDefender,
-        defenses: startDefenses,
-        lost: nonZero(result.defenderLost),
-        defensesDestroyed: nonZero(result.defensesDestroyed),
-        defensesRebuilt: nonZero(rebuilt),
-        bonuses: { mandibles: defender.research.mandibles ?? 0, chitin: defender.research.chitin ?? 0, guard_formation: defender.research.guard_formation ?? 0 },
-      },
-      rounds: result.rounds,
-      loot,
-      corpses,
-    };
-    m.result = { winner: result.winner, loot, corpses };
-    const verb = result.winner === 'attacker' ? 'won' : result.winner === 'defender' ? 'lost' : 'drew';
-    if (!attacker.isNpc)
-      await addReport(q, m.worldId, attacker.id, 'battle', `Raid on ${target.name} (${coordsKey(m.target)}): you ${verb}`, { ...data, perspective: 'attacker' }, at);
-    const dverb = result.winner === 'defender' ? 'held' : result.winner === 'attacker' ? 'was raided' : 'held (draw)';
-    if (!defender.isNpc)
-      await addReport(q, m.worldId, defender.id, 'battle', `${target.name} ${dverb} — attack by ${attackerName}`, { ...data, perspective: 'defender' }, at);
-    if (!defender.isNpc) await refreshPointsAfterCommit(q, defender.id);
-    if (!attacker.isNpc) await refreshPointsAfterCommit(q, attacker.id);
+    await resolveRaid(q, m, at);
     return { home: presentUnits(m.units).length > 0 };
   },
 });
+
+/**
+ * Fight a raid that has arrived: battle, loot into m.cargo, corpses, the raid log and both reports.
+ * Leaves the surviving attackers in m.units. Used by player raids, wild-nest raids and swarms.
+ */
+export async function resolveRaid(q: Tx, m: Mission, at: number, opts: { attackerName?: string } = {}): Promise<void> {
+  let target = await lockColony(q, m.targetColonyId!);
+  target = target.npc ? await syncNest(q, target, at) : advance(target, at);
+  const attacker = await getPlayer(q, m.playerId);
+  const defender = await getPlayer(q, target.playerId);
+  // Wild nests fight under their nest's name and get no reports or points.
+  const attackerName = opts.attackerName ?? (attacker.isNpc ? (await getColony(q, m.originColonyId)).name : attacker.username);
+  const defenderName = defender.isNpc ? target.name : defender.username;
+  const seed = randomSeed();
+  const rng = createRng(seed);
+
+  const startAttacker = nonZero(m.units);
+  const startDefender = nonZero(target.units);
+  const startDefenses = nonZero(target.defenses);
+  const result = simulateBattle(
+    { units: startAttacker, research: attacker.research },
+    { units: startDefender, defenses: target.defenses, research: defender.research },
+    rng,
+  );
+  const rebuilt = rebuildDefenses(result.defensesDestroyed, rng);
+
+  m.units = nonZero(result.attackerSurvivors);
+  target.units = nonZero(result.defenderSurvivors);
+  target.defenses = nonZero(addCounts(subCounts(target.defenses, result.defensesDestroyed), rebuilt));
+
+  let loot = { foliage: 0, protein: 0, nectar: 0 };
+  if (result.winner === 'attacker') {
+    loot = fillCargo(lootable(target.resources, protectedAmount(target.chambers)), groupCargo(m.units));
+    target.resources = sub(target.resources, loot);
+    m.cargo = loot;
+  }
+  await saveColony(q, target);
+
+  const corpses = corpseProtein(result.attackerLost, result.defenderLost);
+  await addCorpses(q, m.worldId, m.target, corpses, at);
+  await q.query('INSERT INTO raid_log (world_id, attacker_id, colony_id, winner, at) VALUES ($1,$2,$3,$4,$5)', [
+    m.worldId, attacker.id, target.id, result.winner, at,
+  ]);
+
+  const data = {
+    winner: result.winner,
+    seed,
+    at: coordsKey(m.target),
+    target: m.target,
+    attacker: {
+      name: attackerName,
+      wild: attacker.isNpc,
+      origin: m.origin,
+      units: startAttacker,
+      lost: nonZero(result.attackerLost),
+      bonuses: { mandibles: attacker.research.mandibles ?? 0, chitin: attacker.research.chitin ?? 0, guard_formation: attacker.research.guard_formation ?? 0 },
+    },
+    defender: {
+      name: defenderName,
+      wild: defender.isNpc,
+      colony: target.name,
+      units: startDefender,
+      defenses: startDefenses,
+      lost: nonZero(result.defenderLost),
+      defensesDestroyed: nonZero(result.defensesDestroyed),
+      defensesRebuilt: nonZero(rebuilt),
+      bonuses: { mandibles: defender.research.mandibles ?? 0, chitin: defender.research.chitin ?? 0, guard_formation: defender.research.guard_formation ?? 0 },
+    },
+    rounds: result.rounds,
+    loot,
+    corpses,
+  };
+  m.result = { winner: result.winner, loot, corpses };
+  const verb = result.winner === 'attacker' ? 'won' : result.winner === 'defender' ? 'lost' : 'drew';
+  if (!attacker.isNpc)
+    await addReport(q, m.worldId, attacker.id, 'battle', `Raid on ${target.name} (${coordsKey(m.target)}): you ${verb}`, { ...data, perspective: 'attacker' }, at);
+  const dverb = result.winner === 'defender' ? 'held' : result.winner === 'attacker' ? 'was raided' : 'held (draw)';
+  if (!defender.isNpc)
+    await addReport(q, m.worldId, defender.id, 'battle', `${target.name} ${dverb} — attack by ${attackerName}`, { ...data, perspective: 'defender' }, at);
+  if (!defender.isNpc) await refreshPointsAfterCommit(q, defender.id);
+  if (!attacker.isNpc) await refreshPointsAfterCommit(q, attacker.id);
+}
 
 defineMission('haul', {
   allowsCargo: false,

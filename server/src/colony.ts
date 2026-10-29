@@ -3,6 +3,7 @@ import {
   canAfford,
   explainShortfall,
   nestAt,
+  nestUnitsAt,
   productionPerHour,
   shortfalls,
   storageCapacity,
@@ -112,7 +113,7 @@ export async function saveColony(q: Q, c: Colony) {
 export const advance = (c: Colony, to: number): Colony => {
   if (c.npc) {
     const live = nestAt(c.npc, c, to, cachedWorldSpeed());
-    return { ...c, ...live, lastUpdated: to, npc: { ...c.npc, at: to } };
+    return { ...c, ...live, lastUpdated: to, npc: { ...c.npc, at: to, unitsAt: nestUnitsAt(c.npc, c, to, cachedWorldSpeed()) } };
   }
   return syncColony(c, to, cachedWorldSpeed());
 };

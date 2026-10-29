@@ -100,6 +100,9 @@ export function GameProvider({ children }: { children: ReactNode }) {
   const [colonyId, setColonyId] = useState(storedColony);
   const [toasts, setToasts] = useState<Toast[]>([]);
   const refreshing = useRef(false);
+  /** a refresh was asked for while one was running (e.g. a colony switch): run it once that one ends */
+  const refreshAgain = useRef(false);
+  const latestRefresh = useRef<() => Promise<void>>(async () => {});
   const lastTimerRefresh = useRef(0);
 
   const toast = useCallback((kind: Toast['kind'], text: string) => {
@@ -109,7 +112,10 @@ export function GameProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const refresh = useCallback(async () => {
-    if (refreshing.current) return;
+    if (refreshing.current) {
+      refreshAgain.current = true;
+      return;
+    }
     refreshing.current = true;
     try {
       const s = await api.get<ServerState>(`/api/state${colonyId ? `?colony=${colonyId}` : ''}`);
@@ -123,8 +129,13 @@ export function GameProvider({ children }: { children: ReactNode }) {
       }
     } finally {
       refreshing.current = false;
+      if (refreshAgain.current) {
+        refreshAgain.current = false;
+        latestRefresh.current(); // the newest refresh: after a colony switch, it asks for the new colony
+      }
     }
   }, [colonyId]);
+  latestRefresh.current = refresh;
 
   useEffect(() => {
     refresh();
@@ -167,7 +178,9 @@ export function GameProvider({ children }: { children: ReactNode }) {
     let ws: WebSocket | null = null;
     let closed = false;
     let retry = 1000;
+    let reconnect: ReturnType<typeof setTimeout> | null = null;
     const connect = () => {
+      if (closed) return;
       const proto = location.protocol === 'https:' ? 'wss' : 'ws';
       ws = new WebSocket(`${proto}://${location.host}/api/ws`);
       ws.onopen = () => (retry = 1000);
@@ -179,29 +192,32 @@ export function GameProvider({ children }: { children: ReactNode }) {
           return;
         }
         if (msg.type === 'hello') return;
-        refresh();
+        latestRefresh.current();
         if (msg.type === 'report') {
           if (!pushNotification(msg.report.title, undefined, `report-${msg.report.id}`) && document.visibilityState === 'visible') toast('ok', msg.report.title);
           if (msg.report.type === 'nest_event' && msg.report.kind) emitMoment({ kind: 'nest_event', event: msg.report.kind });
         }
-        if (msg.type === 'incoming' && (msg.missionType === 'raid' || msg.missionType === 'scout')) {
-          const text = msg.missionType === 'raid' ? `Raid incoming from ${msg.from}!` : `Enemy scouts heading for ${msg.colony}`;
+        if (msg.type === 'incoming' && (msg.missionType === 'raid' || msg.missionType === 'scout' || msg.missionType === 'swarm')) {
+          const text =
+            msg.missionType === 'swarm' ? `An army ant swarm is heading for ${msg.colony}!` : msg.missionType === 'raid' ? `Raid incoming from ${msg.from}!` : `Enemy scouts heading for ${msg.colony}`;
           if (!pushNotification(text, `Arrives ${new Date(msg.arriveAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`, 'incoming'))
             toast('error', text);
         }
       };
       ws.onclose = () => {
         if (closed) return;
-        setTimeout(connect, retry);
+        reconnect = setTimeout(connect, retry);
         retry = Math.min(retry * 2, 30_000);
       };
     };
     connect();
     return () => {
+      // cancel a pending reconnect too, or logging out / remounting mid-retry leaves a second live socket (duplicate pop-ups)
       closed = true;
+      if (reconnect) clearTimeout(reconnect);
       ws?.close();
     };
-  }, [loggedIn, refresh, toast]);
+  }, [loggedIn, toast]);
 
   // things that just finished: animate them, and say so (a notification in the background, a pop-up in view)
   const prev = useRef<ServerState | null>(null);
@@ -269,7 +285,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!state) return setTitleBadge(0);
     const hostile = (state.incoming ?? []).filter((i: any) => i.hostile);
-    const raid = hostile.some((i: any) => i.type === 'raid');
+    const raid = hostile.some((i: any) => i.type === 'raid' || i.type === 'swarm');
     setTitleBadge((state.unreadReports ?? 0) + hostile.length, raid ? 'Raid incoming!' : hostile.length ? 'Scouts incoming' : undefined);
   }, [state]);
 

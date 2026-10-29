@@ -59,13 +59,16 @@ export function useAway(state: ServerState | null, colony: ServerColony | null, 
   const snap = useCallback((): Snapshot | null => {
     const { state: s, colony: c, now: t } = latest.current;
     if (!s || !c) return null;
-    return { at: t, colonyId: c.id, chambers: { ...c.chambers } as any, research: { ...s.player.research }, resources: { ...c.resources } };
+    return { at: Math.max(t, s.serverNow), colonyId: c.id, chambers: { ...c.chambers } as any, research: { ...s.player.research }, resources: { ...c.resources } };
   }, []);
 
   /** Compare the stored snapshot with now; show a summary if the player was gone long enough. */
   const check = useCallback(async () => {
-    const { state: s, colony: c, now: t } = latest.current;
+    const { state: s, colony: c } = latest.current;
     if (!s || !c) return;
+    // the server's clock from the state just fetched: a phone freezes the page's own 1-second clock
+    // while the game is in the background, so the local "now" would say no time had passed
+    const t = s.serverNow;
     const before = read(keyFor(s.player.id));
     const cur = snap();
     if (cur) write(keyFor(s.player.id), cur);
@@ -90,12 +93,16 @@ export function useAway(state: ServerState | null, colony: ServerColony | null, 
     if (anything) setSummary(out);
   }, [snap]);
 
-  // first state of the session: compare with the last visit
+  // first state of the session, and the first fresh state after coming back into view: compare with the last visit
+  const recheck = useRef(false);
   useEffect(() => {
-    if (!state || !colony || checked.current) return;
+    if (!state || !colony) return;
+    if (checked.current && !recheck.current) return;
     checked.current = true;
+    recheck.current = false;
     check();
-  }, [state, colony, check]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state]);
 
   // keep the snapshot fresh while the game is in view; compare again when it comes back into view
   useEffect(() => {
@@ -107,7 +114,11 @@ export function useAway(state: ServerState | null, colony: ServerColony | null, 
       const s = snap();
       if (s) write(key, s);
     };
-    const onVis = () => (document.visibilityState === 'visible' ? check() : save(true));
+    // on return, wait for the refresh the game does on becoming visible, then compare with fresh data
+    const onVis = () => {
+      if (document.visibilityState === 'visible') recheck.current = true;
+      else save(true);
+    };
     const onHide = () => save(true);
     const t = setInterval(save, 30_000);
     document.addEventListener('visibilitychange', onVis);

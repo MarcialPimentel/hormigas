@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  NEST_SPECIES, NEST_MAX_LEVEL, nestAt, nestLevelFor, nestRaidParty, nestTargets, previewBattle, speciesForTerrain,
+  NEST_SPECIES, NEST_MAX_LEVEL, nestAt, nestUnitsAt, nestLevelFor, nestRaidParty, nestTargets, previewBattle, speciesForTerrain,
   total, unitsValue, type UnitCounts,
 } from '../src';
 
@@ -44,6 +44,19 @@ describe('wild nests', () => {
     // loot carried home above the store stays until someone takes it
     const rich = { ...full, resources: { foliage: 99999, protein: 0, nectar: 0 } };
     expect(nestAt(state, rich, 3600_000).resources.foliage).toBe(99999);
+  });
+
+  it('a nest saved every hour (scouted, raided) still regrows fully in 24 h', () => {
+    const full = nestTargets('pavement', 1);
+    let state: { species: 'pavement'; level: number; at: number; unitsAt?: number } = { species: 'pavement', level: 1, at: 0 };
+    let saved = { units: {}, defenses: {}, resources: { foliage: 0, protein: 0, nectar: 0 } };
+    for (let h = 1; h <= 24; h++) {
+      const t = h * 3600_000;
+      const unitsAt = nestUnitsAt(state, saved, t);
+      saved = nestAt(state, saved, t) as typeof saved;
+      state = { ...state, at: t, unitsAt };
+    }
+    expect(saved.units).toEqual(full.units);
   });
 
   it('a fair army beats every nest at its level with moderate losses; half of it pays far more', () => {

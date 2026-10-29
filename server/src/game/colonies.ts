@@ -24,6 +24,7 @@ import { defineMission } from './missions';
 import { addReport } from './reports';
 import { ensureNest } from './nests';
 import { scheduleNestEvent } from './nestEvents';
+import { scheduleSwarm } from './swarms';
 import { refreshPointsAfterCommit } from './points';
 
 /**
@@ -43,6 +44,7 @@ export async function createColony(
   );
   const id = r.rows[0].id as number;
   await scheduleNestEvent(q, o.worldId, id, o.t);
+  await scheduleSwarm(q, o.worldId, id, o.t);
   // every patch with players has a wild nest (docs/17-wild-nests.md)
   await ensureNest(q, o.worldId, o.at.region, o.at.patch, o.t);
   return id;

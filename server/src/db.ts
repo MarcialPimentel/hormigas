@@ -57,3 +57,14 @@ export async function afterCommit(q: Q, fn: () => Promise<unknown>): Promise<voi
   if (tasks) tasks.push(task);
   else await task();
 }
+
+/** How many after-commit tasks `q` has queued so far (pair with dropAfterCommitSince around a savepoint). */
+export function afterCommitMark(q: Q): number {
+  return afterCommitTasks.get(q)?.length ?? 0;
+}
+
+/** Forget tasks queued after `mark`: their work was rolled back to a savepoint, so they must not run. */
+export function dropAfterCommitSince(q: Q, mark: number) {
+  const tasks = afterCommitTasks.get(q);
+  if (tasks && tasks.length > mark) tasks.length = mark;
+}

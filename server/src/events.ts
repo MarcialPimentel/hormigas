@@ -1,6 +1,6 @@
 // Scheduled event queue. Everything with a duration (builds, research, missions…) is an event
 // resolved in due_at order by processDueEvents(). Handlers run inside a transaction.
-import { getPool, tx, type Q, type Tx } from './db';
+import { getPool, tx, type Q, type Tx, afterCommitMark, dropAfterCommitSince } from './db';
 import { now } from './clock';
 
 export interface GameEvent {
@@ -68,12 +68,15 @@ async function runDue(max: number): Promise<number> {
       );
       const ev = r.rows[0] as GameEvent | undefined;
       if (!ev) return 'empty';
+      const mark = afterCommitMark(q);
       try {
         await q.query('SAVEPOINT ev');
         await handlers.get(ev.type)!(q, ev);
         await q.query('RELEASE SAVEPOINT ev');
       } catch (e) {
         await q.query('ROLLBACK TO SAVEPOINT ev');
+        // whatever the failed handler asked to do after commit (reports to push, points to refresh) is void now
+        dropAfterCommitSince(q, mark);
         const attempts = (Number(ev.payload?.attempts) || 0) + 1;
         if (isTemporary(e) && attempts < MAX_ATTEMPTS) {
           // e.g. a deadlock with a player action: nothing is wrong with the event, so keep it for the next run.

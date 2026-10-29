@@ -20,6 +20,7 @@ import {
   travelSeconds,
   validCoords,
   WILDS_SPOT,
+  SWARM,
   type CasteId,
   type Coords,
   type Resources,
@@ -34,7 +35,7 @@ import { getWorld } from '../world';
 import { refreshPointsAfterCommit } from './points';
 import { notify } from '../realtime';
 
-export type MissionType = 'transport' | 'relocate' | 'scout' | 'raid' | 'haul' | 'forage' | 'colonize';
+export type MissionType = 'transport' | 'relocate' | 'scout' | 'raid' | 'haul' | 'forage' | 'colonize' | 'swarm';
 
 export interface Mission {
   id: number;
@@ -327,11 +328,11 @@ export function missionView(m: Mission) {
 export async function incomingMissions(q: Q, playerId: number) {
   const r = await q.query(
     `SELECT m.id, m.type, m.depart_at, m.arrive_at, m.target_colony_id, m.origin_region, m.origin_patch, m.origin_spot, m.units,
-            CASE WHEN p.is_npc THEN o.name ELSE p.username END AS username, p.is_npc
+            CASE WHEN m.type = 'swarm' THEN $2 WHEN p.is_npc THEN o.name ELSE p.username END AS username, p.is_npc
        FROM missions m JOIN colonies c ON c.id = m.target_colony_id JOIN players p ON p.id = m.player_id
        JOIN colonies o ON o.id = m.origin_colony_id
       WHERE c.player_id = $1 AND m.player_id <> $1 AND m.status = 'outbound' ORDER BY m.arrive_at`,
-    [playerId],
+    [playerId, SWARM.name],
   );
   return r.rows.map((row: any) => ({
     id: row.id,
@@ -344,7 +345,7 @@ export async function incomingMissions(q: Q, playerId: number) {
     from: row.username,
     /** a wild nest, not a player */
     wild: row.is_npc,
-    hostile: row.type === 'raid' || row.type === 'scout',
+    hostile: row.type === 'raid' || row.type === 'scout' || row.type === 'swarm',
     unitCount: Object.values(row.units as Record<string, number>).reduce((a, b) => a + b, 0),
   }));
 }

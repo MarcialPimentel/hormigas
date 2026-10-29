@@ -35,4 +35,4 @@ export function chamberTag(colony: ServerColony, state: ServerState | null, now:
 
 /** The name on a party's timer: "Forage", "Forage home", "Raid", "Scouts", "Delivery". */
 export const partyLabel = (p: SurfaceParty) =>
-  p.kind === 'raid' ? 'Raid' : p.kind === 'scout' ? 'Scouts' : p.kind === 'delivery' ? 'Delivery' : `${MISSION_LABEL[p.type as MissionType] ?? p.type}${p.outbound ? '' : ' home'}`;
+  p.type === 'swarm' ? 'Swarm' : p.kind === 'raid' ? 'Raid' : p.kind === 'scout' ? 'Scouts' : p.kind === 'delivery' ? 'Delivery' : `${MISSION_LABEL[p.type as MissionType] ?? p.type}${p.outbound ? '' : ' home'}`;
