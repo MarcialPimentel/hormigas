@@ -68,44 +68,44 @@ export function ant(caste: Caste, x: number, y: number, len: number, left = fals
   return `<g data-ant="${caste}" data-key="${key}" transform="translate(${f(x)} ${f(y)}) scale(${f(left ? -k : k)} ${f(k)}) translate(${f(-(vx + vw / 2))} ${-FOOT_Y})"><rect x="${vx}" y="${vy}" width="${vw}" height="${vh}" fill="transparent"/>${antBody(caste, { lod: 'portrait' })}${extra}</g>`;
 }
 
-const leafBit = (x: number, y: number, r: number, s = 1) =>
+export const leafBit = (x: number, y: number, r: number, s = 1) =>
   `<path d="M${f(x - 6 * s)},${f(y)} Q${f(x)},${f(y - 6 * s)} ${f(x + 6 * s)},${f(y)} Q${f(x)},${f(y - 2.4 * s)} ${f(x - 6 * s)},${f(y)}Z" fill="${FOOD.leaf}" stroke="${FOOD.leafDark}" stroke-width="0.6" transform="rotate(${f(r)} ${f(x)} ${f(y)})"/>`;
 
-const egg = (x: number, y: number, r = 0) =>
+export const egg = (x: number, y: number, r = 0) =>
   `<g transform="rotate(${f(r)} ${f(x)} ${f(y)})"><ellipse cx="${f(x)}" cy="${f(y)}" rx="2.6" ry="1.8" fill="#f3ead8" stroke="#bfb29a" stroke-width="0.4"/><ellipse cx="${f(x - 0.8)}" cy="${f(y - 0.6)}" rx="0.9" ry="0.5" fill="#fffaf0"/></g>`;
 
 /** A C-shaped grub, curled, lying on its side. */
-const larva = (x: number, y: number, s = 1, flip = false) => {
+export const larva = (x: number, y: number, s = 1, flip = false) => {
   const sx = flip ? -s : s;
   return `<g transform="translate(${f(x)} ${f(y)}) scale(${f(sx)} ${f(s)})"><path d="M-5,0 C-6,-6 2,-8 5,-4 C6,-2 5,0 3,0" fill="none" stroke="#efe6d2" stroke-width="4.2" stroke-linecap="round"/><path d="M-3.2,-4.6 l0.9,1.5 M-0.4,-5.8 l0.3,1.7 M2.4,-5 l-0.5,1.6" stroke="#cdbf9f" stroke-width="0.6"/><circle cx="3.4" cy="-0.6" r="1.3" fill="#c49a5a"/></g>`;
 };
 
 /** A cocoon (pupa), pale tan with a seam. */
-const pupa = (x: number, y: number, r = 0) =>
+export const pupa = (x: number, y: number, r = 0) =>
   `<g transform="rotate(${f(r)} ${f(x)} ${f(y)})"><ellipse cx="${f(x)}" cy="${f(y)}" rx="5" ry="2.8" fill="#d9c39a" stroke="#a88f63" stroke-width="0.5"/><path d="M${f(x - 4)},${f(y)} Q${f(x)},${f(y - 1)} ${f(x + 4)},${f(y)}" stroke="#b9a175" stroke-width="0.5" fill="none"/><circle cx="${f(x + 3.6)}" cy="${f(y)}" r="0.7" fill="#7a5a33"/></g>`;
 
-const drop = (x: number, y: number, s = 1) =>
+export const drop = (x: number, y: number, s = 1) =>
   `<g transform="translate(${f(x)} ${f(y)}) scale(${f(s)})"><path d="M0,-5 C1.6,-2.4 3,-1 3,0.6 A3,3 0 0 1 -3,0.6 C-3,-1 -1.6,-2.4 0,-5Z" fill="${FOOD.honey}" stroke="${FOOD.honeyDark}" stroke-width="0.5"/><ellipse cx="-1" cy="0" rx="0.7" ry="1.1" fill="${FOOD.honeyLight}"/></g>`;
 
 const pebble = (x: number, y: number, r: number, c = SOIL.pebble) => `<ellipse cx="${f(x)}" cy="${f(y)}" rx="${f(r)}" ry="${f(r * 0.75)}" fill="${c}"/>`;
 
 /** A dead beetle on its back, legs up: food for the colony. */
-const beetle = (x: number, y: number, s = 1) =>
+export const beetle = (x: number, y: number, s = 1) =>
   `<g transform="translate(${f(x)} ${f(y)}) scale(${f(s)})"><g stroke="#4e3626" stroke-width="1" stroke-linecap="round" fill="none"><path d="M-5,-4 l-2,-4 l-1.5,-1"/><path d="M-1,-5 l0,-4.5 l1,-1"/><path d="M3,-4.5 l2,-4 l1.5,-0.5"/></g><ellipse cx="0" cy="-2.2" rx="8" ry="4.4" fill="#6b4a33" stroke="#2a1d14" stroke-width="0.6"/><path d="M0,-6.4 L0,2" stroke="#3b2a1e" stroke-width="0.7"/><ellipse cx="-2.8" cy="-4.2" rx="3.2" ry="1.1" fill="#a07a58"/><ellipse cx="3" cy="-4" rx="2" ry="0.7" fill="#8a6548"/><circle cx="8.2" cy="-1.6" r="2.4" fill="#4e3626" stroke="#2a1d14" stroke-width="0.5"/></g>`;
 
 /** A bit of prey: a severed cricket leg. */
-const preyLeg = (x: number, y: number, r: number) =>
+export const preyLeg = (x: number, y: number, r: number) =>
   `<g transform="rotate(${f(r)} ${f(x)} ${f(y)})"><path d="M${f(x - 8)},${f(y)} L${f(x + 2)},${f(y - 1)} L${f(x + 8)},${f(y + 2)}" stroke="${FOOD.proteinDark}" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M${f(x - 8)},${f(y)} L${f(x + 2)},${f(y - 1)}" stroke="${FOOD.protein}" stroke-width="1" fill="none" stroke-linecap="round"/></g>`;
 
-const meat = (x: number, y: number, r: number, s = 1) =>
+export const meat = (x: number, y: number, r: number, s = 1) =>
   `<g transform="rotate(${f(r)} ${f(x)} ${f(y)})"><path d="M${f(x - 4.4 * s)},${f(y + 1 * s)} Q${f(x - 3 * s)},${f(y - 3.2 * s)} ${f(x + 1 * s)},${f(y - 2.8 * s)} Q${f(x + 4.6 * s)},${f(y - 2 * s)} ${f(x + 4 * s)},${f(y + 1.6 * s)} Q${f(x)},${f(y + 2.8 * s)} ${f(x - 4.4 * s)},${f(y + 1 * s)}Z" fill="#b65a50" stroke="${FOOD.proteinDark}" stroke-width="0.6"/><path d="M${f(x - 2 * s)},${f(y - 1.6 * s)} q${f(1.6 * s)},${f(-0.8 * s)} ${f(3 * s)},0" stroke="#d98a80" stroke-width="${f(0.8 * s)}" fill="none" stroke-linecap="round"/></g>`;
 
 /** An aphid: plump green body, two little tail-pipes (cornicles), tiny legs. */
-const aphid = (x: number, y: number, r = 0, s = 1) =>
+export const aphid = (x: number, y: number, r = 0, s = 1) =>
   `<g transform="translate(${f(x)} ${f(y)}) rotate(${f(r)}) scale(${f(s)})"><path d="M-3,1.5 l-1,1.6 M-0.5,2 l-0.4,1.8 M2,1.6 l0.6,1.6" stroke="#5f7d36" stroke-width="0.5"/><ellipse cx="0" cy="0" rx="3.6" ry="2.4" fill="#9cc25a" stroke="#6a8a35" stroke-width="0.4"/><path d="M-3,-1 l-1.6,-1.4 M-2.4,-1.6 l-1,-1.8" stroke="#6a8a35" stroke-width="0.6"/><circle cx="3.4" cy="-0.2" r="1.1" fill="#7fa344"/><ellipse cx="-0.8" cy="-0.9" rx="1.3" ry="0.6" fill="#c5e08f"/></g>`;
 
 /** A honeypot ant (replete) hanging from the ceiling, its gaster swollen with honeydew. */
-const replete = (x: number, y: number, s = 1) =>
+export const replete = (x: number, y: number, s = 1) =>
   `<g transform="translate(${f(x)} ${f(y)}) scale(${f(s)})"><g stroke="#6e4325" stroke-width="0.9" stroke-linecap="round" stroke-linejoin="round" fill="none"><path d="M-1.6,4 l-3.4,-2 l-1,-4"/><path d="M0,4 l0,-4.2"/><path d="M1.6,4 l3.4,-2 l1,-4"/></g><ellipse cx="0" cy="5" rx="2.2" ry="2.6" fill="#a95f2f"/><circle cx="0" cy="1.4" r="1.9" fill="#a95f2f"/><circle cx="0" cy="8.4" r="1" fill="#a95f2f"/><ellipse cx="0" cy="19" rx="9.4" ry="10.4" fill="${FOOD.honey}" fill-opacity="0.9" stroke="${FOOD.honeyDark}" stroke-width="0.7"/><path d="M-5.6,11.4 Q0,8.6 5.6,11.4" stroke="#6e4325" stroke-width="1.3" fill="none" opacity="0.75" stroke-linecap="round"/><path d="M-8.4,15.4 Q0,12.6 8.4,15.4" stroke="#8a5a2a" stroke-width="0.7" fill="none" opacity="0.45" stroke-linecap="round"/><path d="M-5.6,13 Q-7.6,19 -4.2,25" stroke="${FOOD.honeyLight}" stroke-width="2" fill="none" opacity="0.65" stroke-linecap="round"/></g>`;
 
 /** Leafcutter fungus garden: a spongy pale mound with leaf bits worked into it. */

@@ -3,8 +3,15 @@ import { useGame } from '../game';
 import { fmtDuration, fmtFull, fmtNum } from '../format';
 import { RESOURCE_LABEL } from '../describe';
 import type { ReactNode } from 'react';
+import { picSvg, type PicKind } from '../art/icons';
 import { useMotion } from '../motion';
 import { CASTES, antSvg, type Caste } from '../art/ants';
+
+/** The picture for a chamber, unit, defense or research, on its light tile (client/src/art/icons.ts). Decorative: the name sits beside it. */
+export function Pic({ kind, id }: { kind: PicKind; id: string }) {
+  const svg = picSvg(kind, id);
+  return svg ? <span className="pic" aria-hidden="true" dangerouslySetInnerHTML={{ __html: svg }} /> : <span className="pic" aria-hidden="true" />;
+}
 
 /** Each resource as a little picture: a cut leaf, prey, a drop of honeydew, a worker. */
 const RES_ICON: Record<'foliage' | 'protein' | 'nectar' | 'workforce', ReactNode> = {

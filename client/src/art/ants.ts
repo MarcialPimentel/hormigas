@@ -10,7 +10,7 @@
 export type Caste = 'worker' | 'soldier' | 'queen' | 'alate';
 export type Lod = 'sprite' | 'portrait';
 
-interface Palette { base: string; light: string; shade: string; far: string; ink: string }
+export interface Palette { base: string; light: string; shade: string; far: string; ink: string }
 interface Ellipse { cx: number; cy: number; rx: number; ry: number }
 interface CasteSpec {
   gaster: Ellipse;
@@ -106,6 +106,8 @@ export interface AntOptions {
   load?: string;
   /** Draw as another colony's ant. */
   enemy?: boolean;
+  /** Override the caste's colours (e.g. a darker Major Soldier, a black Bullet Ant). */
+  palette?: Partial<Palette>;
 }
 
 function leg(l: Leg, color: string, width: number, portrait: boolean, pal: Palette, o: AntOptions) {
@@ -135,7 +137,7 @@ function antenna(h: Ellipse, color: string, width: number, portrait: boolean, pa
 export function antBody(caste: Caste, o: AntOptions = {}) {
   const c = CASTES[caste];
   const { gaster: g, pet, head: h } = c;
-  const pal = o.enemy ? ENEMY : c.pal;
+  const pal = { ...(o.enemy ? ENEMY : c.pal), ...o.palette };
   const portrait = o.lod === 'portrait';
   const line = portrait ? `stroke="${pal.ink}" stroke-width="0.9"` : '';
   const ft = `translate(${c.front.x} 16) scale(${c.front.s}) translate(-29 -16)`;

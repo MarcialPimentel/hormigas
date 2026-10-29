@@ -4,7 +4,7 @@ import { useGame } from '../game';
 import { fmtDuration } from '../format';
 import { CHAMBER_BLURB, chamberEffect } from '../describe';
 import { chamberPlan } from '../chamberPlan';
-import { Cost, Countdown, Panel } from '../components/ui';
+import { Cost, Countdown, Panel, Pic } from '../components/ui';
 
 const GROUPS: { title: string; ids: ChamberId[] }[] = [
   { title: 'Food & workforce', ids: ['leaf_garden', 'hunting_grounds', 'aphid_pasture', 'nursery'] },
@@ -51,7 +51,8 @@ export function Chambers() {
             {g.ids.map((id) => {
               const { level, next, locked, cost, secs, blocked } = chamberPlan(colony, state, id);
               return (
-                <li key={id} className={`row${locked ? ' locked' : ''}`}>
+                <li key={id} className={`row has-pic${locked ? ' locked' : ''}`}>
+                  <Pic kind="chamber" id={id} />
                   <div className="row-main">
                     <div className="row-title">
                       <h3>{CHAMBERS[id].name}</h3>

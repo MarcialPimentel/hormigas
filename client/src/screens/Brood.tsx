@@ -18,7 +18,7 @@ import {
 import { api } from '../api';
 import { useGame } from '../game';
 import { fmtDuration, fmtFull, fmtNum } from '../format';
-import { Cost, Countdown, Panel } from '../components/ui';
+import { Cost, Countdown, Panel, Pic } from '../components/ui';
 import { whyShort } from '../describe';
 
 export const CASTE_BLURB: Record<string, string> = {
@@ -128,7 +128,8 @@ export function Brood() {
             else if (cap === 0) blocked = `Limit ${def.max} per colony`;
             else if (n > maxN) blocked = maxAfford < n ? whyShort(colony, scale(def.cost, n), state.world.speed) : 'Over the limit';
             return (
-              <li key={id} className={`row${missing.length ? ' locked' : ''}`}>
+              <li key={id} className={`row has-pic${missing.length ? ' locked' : ''}`}>
+                <Pic kind={tab === 'caste' ? 'unit' : 'defense'} id={id} />
                 <div className="row-main">
                   <div className="row-title">
                     <h3>{def.name}</h3>
