@@ -26,6 +26,19 @@ Units are **castes** raised in the Brood Hall. Each unit represents a squad of a
 | **Hauler** | Bulk cargo | Unlocked after Major Soldier. |
 | **Winged Queen** | Founds a new colony | Brood Hall 4 + Nuptial Flight 1. Used up on landing ([19-colonies](19-colonies.md)). |
 
+## Feeding the brood
+Well-fed ant larvae develop faster. When you raise castes in the Brood Hall you pick a diet for the batch:
+
+| Feeding | Extra Protein per unit | Raising time |
+|---|---|---|
+| Normal | none | as usual |
+| **Well fed** | +50% of the caste's Foliage + Protein cost | 25% faster |
+| **Feast** | +150% | 40% faster |
+
+- Castes only; defenses aren't brood. The choice is made per batch when it's queued, and the queue shows it.
+- The second step costs much more for a smaller gain: a real choice between speed now and saving Protein.
+- Feeding adds no points (points count the units, not the meal). Numbers: `formulas.json` → `brood.feeding`. Decided by Marz, 29 Oct 2026 (#65); see [03-economy](03-economy.md#why-protein-needed-a-sink-playtest-29-oct-2026).
+
 ## v1 castes (designed, not in MVP)
 | Caste | Role |
 |---|---|
