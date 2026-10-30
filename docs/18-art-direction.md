@@ -40,7 +40,9 @@ From the 3D direction proposal, [art/sunlit-microcosm.md](art/sunlit-microcosm.m
 4. **Counts: real size, capped.** One drawn ant per ant up to a cap; above it, the label gives the true number.
 5. **First build:** colour and real ants in the 3D slab (this change). The 3D patch comes next.
 
-Still open: teal for allies (decides with the Garden), and who builds the master ant in Blender.
+6. **Allies are teal** (30 Oct): supercolony mates' flags, lights and threads are teal `#2F9C95`, so honey = you, teal = allies, red = hostile or wild, with no overlap.
+7. **Hero art: Claude builds the master ant in Blender** (30 Oct), with Blender open and its MCP add-on connected, after the Patch, swarm and Garden builds.
+8. **The rest lands as separate PRs** (30 Oct), each its own playtest: A the 3D Patch, B swarms and battles on the patch (battle reports save per-round counts for replays), C the Garden and the zoom between levels, D living chambers in the nest.
 
 ## Palette
 Ants are lighter than the soil so they read on it. Colours sit alongside the UI palette in `client/src/styles.css`, which has a dark (soil) and a light (field-guide paper) theme following the device; the nest itself looks the same in both.
@@ -126,6 +128,7 @@ The computer nest is a 3D block of earth ([12-ui-nest-view.md](12-ui-nest-view.m
 - **Hollows lit from inside.** Each chamber's 2D picture stays on its hollow's back wall, but its near-black soil is recoloured to warm lit clay in 3D, and the chamber glows (gold for nectar, violet for the Pheromone Chamber, green for aphids, amber for the rest). At night the glow strengthens, so the nest reads like lanterns.
 - **The surface** has swaying, backlit grass `#2E5E25` → `#BCE35C`, flowers overhead, a red toadstool, an orange leaf and a sandy entrance mound `#C8A06A`.
 - **Real 3D ants** (`client/src/components/nest3d/ants3d.ts`): one body plan (gaster, petiole, mesosoma, head, mandibles, elbowed antennae, six legs) with the castes' proportions, legs swinging in a tripod gait in the shader, a warm rim light on the chitin by day and a cool one at night. Chitin: worker `#D9934A`, soldier `#B5662F`, queen `#A95F2F`, raider `#C4473A`, army ant `#8E2216`, army major `#B23A26`. Loads ride on the ants in resource colours.
+- **The Patch** (Missions screen, computers; `client/src/components/patch3d/`): your patch as a sunlit diorama, the spots in the drawn patch's order left to right. Terrain bands blend into each other (meadow `#A9C450` with flowers, sand `#D9BE84` with pebbles, grassland `#6FA83E`, leaf litter `#8A6A44` under a fallen log with orange bracket fungus, creek bank `#8FB0A0` with a creek and reeds, the wilds `#4F7A36`). Colonies are sandy mounds on cleared ground with flags (honey yours, teal allies, amber others, grey inactive, red wild); unscouted colonies are three swaying scent plumes over a stain; aphids climb a stem, termites build a tower, a spider hides under a silk lid. A marble and a bottle cap lie at true size. Every party walks a faint scent ribbon in its colour. Zooming in lowers the camera to ant height; a scale bar says how much of the garden is in view (1 unit ≈ 14 mm, an ant is 5 mm).
 - **Counts:** the nest shows one ant per ant up to 160 workers and 30 soldiers; a party on the surface shows one per ant up to 300, a swarm up to 1,500 (half on touch devices). The party label gives the true number.
 
 ## Assets

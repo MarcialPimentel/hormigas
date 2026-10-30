@@ -164,8 +164,8 @@ The first build (colour and real ants in the slab) updated `18-art-direction.md`
 3. ~~Ants: real 3D ants from one model, instanced, replacing the flat cards in 3D?~~ **Decided 2026-10-30: yes**, real instanced 3D ants (phones keep 2D for now).
 4. ~~Counts: armies and swarms at real size (capped, true number on the tag) instead of 1 per 3, max 30?~~ **Decided 2026-10-30: real count, capped**, true number on the tag.
 5. ~~First build: colour and real ants in the slab, or straight to the 3D patch?~~ **Decided 2026-10-30: colour and real ants in the slab.**
-6. Allies: teal for supercolony lights and threads?
-7. Hero art: Claude builds the master ant in Blender (Blender open with the connector), or start from a concept image in Meshy or Tripo?
+6. ~~Allies: teal for supercolony lights and threads?~~ **Decided 2026-10-30: yes, teal.**
+7. ~~Hero art: Claude builds the master ant in Blender, or start from a concept image in Meshy or Tripo?~~ **Decided 2026-10-30: Claude in Blender.**
 
 Risks: each system costs a little 3D work on top of its 2D fallback; cheap phones are the real test; hero art is the slowest part. Menus remain the fallback for everything.
 
