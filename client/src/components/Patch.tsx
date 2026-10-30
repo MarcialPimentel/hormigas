@@ -1,7 +1,7 @@
 // A patch drawn as ground with its colonies, scents and the wilds, plus the world picker (docs/11-world.md, docs/22-discovery.md).
 // The wilds also hold wild sites: aphid herds, termite mounds and spider dens (docs/24-npcs.md).
 // Used by the Missions screen: tap a spot, then scout, raid, send or forage from its card.
-import { useEffect, useState, type ReactNode } from 'react';
+import { Suspense, lazy, useEffect, useState, type ReactNode } from 'react';
 import {
   WORLD, WILDS_SPOT, TERRAIN, CHAMBERS, CASTES, DEFENSES, DISCOVERY_MESSAGES, WILD_SCENTS, HERDS, foundColonyBlocker, isSiteSpot, raidBlockMessage, terrainForSpot,
   type Knowledge, type Relation, type ScentHint, type ScentKind, type TerrainId,
@@ -13,6 +13,21 @@ import { Trip } from './ui';
 import { ENABLED_MISSIONS, MISSION_LABEL, type MissionType } from '../nav';
 
 const can = (t: MissionType) => ENABLED_MISSIONS.includes(t);
+
+// The 3D Patch on computers, the drawn patch on phones; either can be switched to the other, saved per browser.
+const Patch3D = lazy(() => import('./patch3d/Patch3D').then((m) => ({ default: m.Patch3D })));
+const VIEW_KEY = 'hormigas.patch';
+type PatchMode = '3d' | '2d';
+const finePointer = () => typeof matchMedia !== 'undefined' && matchMedia('(pointer: fine)').matches;
+function savedMode(): PatchMode {
+  try {
+    const v = localStorage.getItem(VIEW_KEY);
+    if (v === '3d' || v === '2d') return v;
+  } catch {
+    /* no storage: use the default */
+  }
+  return finePointer() && window.innerWidth >= 760 ? '3d' : '2d';
+}
 
 /** A colony as this player knows it. Scents carry only `known`, `kind` and a generic name; familiar scents add the name. */
 export interface SpotColony {
@@ -554,6 +569,17 @@ export function PatchView({ start, selected, onAct }: { start?: { region: number
   const [world, setWorld] = useState(false);
   const [error, setError] = useState('');
   const [jumping, setJumping] = useState(false);
+  const [mode, setMode] = useState<PatchMode>(savedMode);
+  const [failed3d, setFailed3d] = useState(false);
+  const choose = (m: PatchMode) => {
+    try {
+      localStorage.setItem(VIEW_KEY, m);
+    } catch {
+      /* not saved; still applies until reload */
+    }
+    setMode(m);
+  };
+  const show3d = mode === '3d' && !failed3d;
 
   useEffect(() => {
     if (start && (start.region !== region || start.patch !== patch)) go(start.region, start.patch);
@@ -607,6 +633,11 @@ export function PatchView({ start, selected, onAct }: { start?: { region: number
               Back to my patch
             </button>
           )}
+          {!failed3d && (show3d || finePointer()) && (
+            <button className="btn ghost small" onClick={() => choose(show3d ? '2d' : '3d')} title={show3d ? 'Show the flat drawn patch instead' : 'Show the patch in 3D'}>
+              {show3d ? '2D view' : '3D view'}
+            </button>
+          )}
           <button className={`btn small${world ? ' on' : ' ghost'}`} aria-expanded={world} onClick={() => setWorld(!world)}>
             World
           </button>
@@ -614,11 +645,16 @@ export function PatchView({ start, selected, onAct }: { start?: { region: number
       </div>
       {world && <WorldPicker region={region} patch={patch} onGo={(r, p) => go(r, p)} />}
       {error && <p className="form-error">{error}</p>}
-      <div className="patch-row">
+      <div className={`patch-row${show3d ? ' p3' : ''}`}>
         <button className="btn ghost nearest" onClick={() => nearest(-1)} disabled={jumping} aria-label="Jump to the nearest colony before this patch">
           <span aria-hidden="true">‹</span>
           <small>Nearest colony</small>
         </button>
+        {show3d ? (
+          <Suspense fallback={<div className="patch3d loading">Sniffing out the patch…</div>}>
+            <Patch3D region={region} patch={patch} spots={spots} selected={picked?.spot ?? null} onPick={setSel} onFail={() => setFailed3d(true)} />
+          </Suspense>
+        ) : (
         <div className="patch-scroll">
           <svg className="patch-scene" viewBox={`0 0 ${W} ${H}`} role="group" aria-label={`Patch ${patch}, ${regionName(region)}`}>
             <Ground seed={region * 1000 + patch} />
@@ -631,6 +667,7 @@ export function PatchView({ start, selected, onAct }: { start?: { region: number
             )}
           </svg>
         </div>
+        )}
         <button className="btn ghost nearest" onClick={() => nearest(1)} disabled={jumping} aria-label="Jump to the nearest colony after this patch">
           <span aria-hidden="true">›</span>
           <small>Nearest colony</small>

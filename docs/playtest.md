@@ -10,7 +10,8 @@ _Current as of Build 11 (2026-10-30)._
 ## Controls
 - Tap or click everything; the tabs are Colony, Chambers, Brood Hall, Research, Missions, Allies, Reports and Rankings ([12-ui-nest-view](12-ui-nest-view.md)).
 - **3D nest (computers):** drag to turn it; scroll, pinch or the + and − buttons to zoom. Tap a chamber to open it.
-- **Phones** get the 2D nest; everything else is the same.
+- **3D Patch (computers, Missions):** drag to move, scroll or pinch to zoom (the camera drops toward ant height), right-drag or shift-drag to turn, double-click for the whole patch. **Ant's-eye view** jumps down beside your mound. Tap a mound or scent to open its card.
+- **Phones** get the 2D nest and the drawn patch; everything else is the same. On a computer, **2D view** / **3D view** switches either.
 
 ## Testing with more than one player
 - Open a second browser or a private window and sign up a second player. New players are placed in the same patch, up to 4 per patch ([11-world](11-world.md)), so the two can scout, raid, truce and form a supercolony.

@@ -6,7 +6,7 @@
 | Layer | Choice |
 |---|---|
 | Language | **TypeScript** everywhere |
-| Client | Vite + React; **Three.js** for the 3D nest (computers, lazy-loaded), **PixiJS** for the 2D nest (phones, fallback) |
+| Client | Vite + React; **Three.js** for the 3D nest and the 3D Patch on the Missions screen (computers, lazy-loaded; real ants shared from `nest3d/ants3d.ts`), **PixiJS** for the 2D nest (phones, fallback) |
 | Server | Node.js + Fastify |
 | Database | PostgreSQL |
 | Realtime | WebSockets (raid incoming, mission updates) |
