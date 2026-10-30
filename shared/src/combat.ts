@@ -18,6 +18,11 @@ const C = FORMULAS.combat;
 
 export interface CombatSide {
   units: UnitCounts;
+  /**
+   * Attacker only: the fall-back order (docs/08-combat.md). After a round in which the attackers have lost
+   * at least this percent of their army's worth (resources), they break off. 0 or missing: fight to the end.
+   */
+  retreatPct?: number;
   defenses?: DefenseCounts;
   research: ResearchLevels;
   /**
@@ -51,23 +56,39 @@ export interface BattleResult {
   /** Per allied group (same order as defender.allies): losses and survivors. Empty without allies. */
   alliesLost: UnitCounts[];
   alliesSurvivors: UnitCounts[];
+  /** The round after which the attackers fell back (fall-back order); missing if they didn't. Counts as a defender win. */
+  retreatedAfterRound?: number;
 }
 
 /** c: the side's own castes, d: defenses, a<i>: castes of allied group i. */
 type EntityKey = `c:${CasteId}` | `d:${DefenseId}` | `a${number}:${CasteId}`;
 
+interface EntityStats {
+  attack: number;
+  guard: number;
+  health: number;
+  frenzy: Record<string, number>;
+  id: string;
+  /** a defense (shots at defenses can be soaked by a shield) */
+  defense: boolean;
+  /** Soil Wall: its guard soaks shots aimed at the other defenses */
+  shield: boolean;
+  /** resources it cost, for the fall-back order */
+  value: number;
+}
+
 interface Army {
   keys: EntityKey[]; // type table
-  stats: { attack: number; guard: number; health: number; frenzy: Record<string, number>; id: string }[];
+  stats: EntityStats[];
   type: Uint16Array; // per entity → index into keys
   health: Float64Array;
   guard: Float64Array;
   size: number;
 }
 
-function statsFor(key: EntityKey, research: ResearchLevels) {
+function statsFor(key: EntityKey, research: ResearchLevels): EntityStats {
   const id = key.slice(key.indexOf(':') + 1);
-  const base: CombatStats = key[0] === 'd' ? DEFENSES[id as DefenseId] : CASTES[id as CasteId];
+  const base: CombatStats & { cost: Resources } = key[0] === 'd' ? DEFENSES[id as DefenseId] : CASTES[id as CasteId];
   // Formic Acid: defenses get an extra percentage on all three stats.
   const def = key[0] === 'd' ? researchSum(research, 'defensePct') / 100 : 0;
   return {
@@ -76,6 +97,9 @@ function statsFor(key: EntityKey, research: ResearchLevels) {
     guard: base.guard * (1 + researchFraction(research, 'guardPct') + def),
     health: base.health * (1 + researchFraction(research, 'healthPct') + def),
     frenzy: base.frenzy ?? {},
+    defense: key[0] === 'd',
+    shield: !!(base as { shield?: boolean }).shield,
+    value: base.cost.foliage + base.cost.protein + base.cost.nectar,
   };
 }
 
@@ -83,7 +107,9 @@ function buildArmy(side: CombatSide): Army {
   const keys: EntityKey[] = [];
   const counts: number[] = [];
   for (const [id, n] of Object.entries(side.units)) if ((n ?? 0) > 0) { keys.push(`c:${id as CasteId}`); counts.push(n!); }
-  for (const [id, n] of Object.entries(side.defenses ?? {})) if ((n ?? 0) > 0) { keys.push(`d:${id as DefenseId}`); counts.push(n!); }
+  // structures (the Narrow Tunnel) shape the fight but aren't in it
+  for (const [id, n] of Object.entries(side.defenses ?? {}))
+    if ((n ?? 0) > 0 && !DEFENSES[id as DefenseId].chokepoint) { keys.push(`d:${id as DefenseId}`); counts.push(n!); }
   const research: ResearchLevels[] = keys.map(() => side.research);
   // Allies come last, so a battle without allies runs exactly as before (same RNG draws).
   (side.allies ?? []).forEach((g, i) => {
@@ -105,29 +131,53 @@ function resetGuards(a: Army) {
   for (let i = 0; i < a.size; i++) a.guard[i] = a.stats[a.type[i]].guard;
 }
 
-/** Each entity of `src` fires at random entities of `dst`. Returns [shots, damage]. */
-function fire(src: Army, dst: Army, rng: Rng): [number, number] {
+/** Apply one shot of `dmg` to entity `t` of `a`: guard first, then health, then the collapse roll. */
+function hit(a: Army, t: number, dmg: number, rng: Rng) {
+  const ts = a.stats[a.type[t]];
+  if (dmg <= a.guard[t]) a.guard[t] -= dmg;
+  else {
+    a.health[t] -= dmg - a.guard[t];
+    a.guard[t] = 0;
+  }
+  const h = a.health[t];
+  if (h > 0 && h < (C.collapseBelowHealthPct / 100) * ts.health && rng() < 1 - h / ts.health) a.health[t] = 0;
+}
+
+/** A living Soil Wall with guard left this round, or -1. */
+function liveShield(a: Army): number {
+  for (let i = 0; i < a.size; i++) if (a.stats[a.type[i]].shield && a.health[i] > 0 && a.guard[i] > 0) return i;
+  return -1;
+}
+
+/**
+ * Each entity of `src` fires at random entities of `dst`. Returns [shots, damage].
+ * `fireChance` < 1: only that share of `src` gets to fire (attackers squeezing through a Narrow Tunnel).
+ */
+function fire(src: Army, dst: Army, rng: Rng, fireChance = 1): [number, number] {
   let shots = 0;
   let damage = 0;
   if (dst.size === 0) return [0, 0];
+  const hasShield = dst.stats.some((s) => s.shield);
   for (let i = 0; i < src.size; i++) {
     const s = src.stats[src.type[i]];
     if (s.attack <= 0) continue;
+    if (fireChance < 1 && rng() >= fireChance) continue;
     for (;;) {
       shots++;
       const t = Math.floor(rng() * dst.size);
       const ts = dst.stats[dst.type[t]];
       if (dst.health[t] > 0) {
-        const dmg = s.attack;
+        let dmg = s.attack;
         if (dmg >= (C.glanceThresholdPctOfGuard / 100) * ts.guard) {
           damage += dmg;
-          if (dmg <= dst.guard[t]) dst.guard[t] -= dmg;
-          else {
-            dst.health[t] -= dmg - dst.guard[t];
-            dst.guard[t] = 0;
+          // the Soil Wall's guard soaks shots at the other defenses first (docs/06-defense.md)
+          const w = hasShield && ts.defense && !ts.shield ? liveShield(dst) : -1;
+          if (w >= 0 && dmg >= (C.glanceThresholdPctOfGuard / 100) * dst.stats[dst.type[w]].guard) {
+            const soaked = Math.min(dmg, dst.guard[w]);
+            dst.guard[w] -= soaked;
+            dmg -= soaked;
           }
-          const h = dst.health[t];
-          if (h > 0 && h < (C.collapseBelowHealthPct / 100) * ts.health && rng() < 1 - h / ts.health) dst.health[t] = 0;
+          if (dmg > 0) hit(dst, t, dmg, rng);
         }
       }
       const n = s.frenzy[ts.id] ?? 1;
@@ -160,21 +210,47 @@ function countByKey(a: Army): Map<EntityKey, number> {
   return m;
 }
 
+/** The Narrow Tunnel the defender has, if any: for its first `rounds` rounds only `sharePct`% of attackers fight. */
+function chokepointOf(side: CombatSide): { rounds: number; sharePct: number } | null {
+  for (const [id, n] of Object.entries(side.defenses ?? {})) {
+    const c = DEFENSES[id as DefenseId].chokepoint;
+    if ((n ?? 0) > 0 && c) return c;
+  }
+  return null;
+}
+
+function armyValue(a: Army): number {
+  let v = 0;
+  for (let i = 0; i < a.size; i++) v += a.stats[a.type[i]].value;
+  return v;
+}
+
 export function simulateBattle(attacker: CombatSide, defender: CombatSide, rng: Rng): BattleResult {
   const A = buildArmy(attacker);
   const D = buildArmy(defender);
   const rounds: RoundSummary[] = [];
+  const choke = chokepointOf(defender);
+  const startValue = armyValue(A);
+  const retreatPct = attacker.retreatPct ?? 0;
+  let retreatedAfterRound: number | undefined;
   for (let round = 1; round <= C.maxRounds && A.size > 0 && D.size > 0; round++) {
     resetGuards(A);
     resetGuards(D);
-    const [as, ad] = fire(A, D, rng);
+    const share = choke && round <= choke.rounds ? choke.sharePct / 100 : 1;
+    const [as, ad] = fire(A, D, rng, share);
     const [ds, dd] = fire(D, A, rng);
     compact(A);
     compact(D);
     rounds.push({ round, attackerShots: as, defenderShots: ds, attackerDamage: ad, defenderDamage: dd, attackerRemaining: A.size, defenderRemaining: D.size });
+    // fall-back order: break off once the losses pass the line, unless the fight is already over
+    if (retreatPct > 0 && A.size > 0 && D.size > 0 && round < C.maxRounds && startValue > 0 && (startValue - armyValue(A)) * 100 >= retreatPct * startValue) {
+      retreatedAfterRound = round;
+      break;
+    }
   }
 
-  const winner: Winner = A.size === 0 ? (D.size === 0 ? 'draw' : 'defender') : D.size === 0 ? 'attacker' : 'draw';
+  const winner: Winner =
+    retreatedAfterRound != null ? 'defender' : A.size === 0 ? (D.size === 0 ? 'draw' : 'defender') : D.size === 0 ? 'attacker' : 'draw';
 
   const aLeft = countByKey(A);
   const dLeft = countByKey(D);
@@ -196,7 +272,7 @@ export function simulateBattle(attacker: CombatSide, defender: CombatSide, rng: 
   }
   const defensesDestroyed: DefenseCounts = {};
   for (const [id, n] of Object.entries(defender.defenses ?? {})) {
-    if (!n) continue;
+    if (!n || DEFENSES[id as DefenseId].chokepoint) continue; // the tunnel can't be destroyed
     const left = dLeft.get(`d:${id as DefenseId}`) ?? 0;
     if (n - left > 0) defensesDestroyed[id as DefenseId] = n - left;
   }
@@ -214,7 +290,10 @@ export function simulateBattle(attacker: CombatSide, defender: CombatSide, rng: 
     alliesLost.push(lost);
     alliesSurvivors.push(left);
   });
-  return { winner, rounds, attackerLost, attackerSurvivors, defenderLost, defenderSurvivors, defensesDestroyed, alliesLost, alliesSurvivors };
+  return {
+    winner, rounds, attackerLost, attackerSurvivors, defenderLost, defenderSurvivors, defensesDestroyed, alliesLost, alliesSurvivors,
+    ...(retreatedAfterRound != null ? { retreatedAfterRound } : {}),
+  };
 }
 
 /** Each destroyed defense independently rebuilds with probability defenseRebuildChance. */
@@ -249,6 +328,10 @@ export function corpseProtein(...lost: UnitCounts[]): number {
   }
   return Math.floor((v * C.corpsePctOfDestroyedValue) / 100);
 }
+
+/** The fall-back orders a raider can pick, in percent of the army's worth lost (0 = fight to the end). */
+export const RETREAT_PCTS: readonly number[] = C.retreatOptions.pcts;
+export const isValidRetreatPct = (pct: number): boolean => RETREAT_PCTS.includes(pct);
 
 /** Share of unprotected stores a winning raid can take, in percent: 50, plus Raiding Columns. */
 export const lootPct = (attackerResearch?: ResearchLevels): number => C.lootPctOfUnprotected + researchSum(attackerResearch, 'lootPct');
@@ -289,6 +372,8 @@ export interface BattlePreview {
   winRate: number;
   drawRate: number;
   lossRate: number;
+  /** Share of runs where the attackers fell back (fall-back order). Included in lossRate. */
+  retreatRate: number;
   avgAttackerLossValue: number;
   avgDefenderLossValue: number;
   /** Average loot if the attacker wins (0 if never). */
@@ -308,11 +393,12 @@ export function previewBattle(
   // keep previews responsive for huge battles
   const runs = opts.runs ?? (totalEntities > 50000 ? 5 : totalEntities > 10000 ? 15 : 50);
   const rng = createRng(opts.seed ?? 12345);
-  let win = 0, draw = 0, lossA = 0, lossD = 0, loot = 0;
+  let win = 0, draw = 0, retreat = 0, lossA = 0, lossD = 0, loot = 0;
   for (let i = 0; i < runs; i++) {
     const r = simulateBattle(attacker, defender, rng);
     if (r.winner === 'attacker') win++;
     else if (r.winner === 'draw') draw++;
+    if (r.retreatedAfterRound != null) retreat++;
     const la = unitsValue(r.attackerLost);
     const ld = r.alliesLost.reduce((v, l) => add(v, unitsValue(l)), add(unitsValue(r.defenderLost), defensesValue(r.defensesDestroyed)));
     lossA += la.foliage + la.protein + la.nectar;
@@ -327,6 +413,7 @@ export function previewBattle(
     winRate: win / runs,
     drawRate: draw / runs,
     lossRate: (runs - win - draw) / runs,
+    retreatRate: retreat / runs,
     avgAttackerLossValue: Math.round(lossA / runs),
     avgDefenderLossValue: Math.round(lossD / runs),
     avgLootOnWin: win > 0 ? Math.round(loot / win) : 0,
