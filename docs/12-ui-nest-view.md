@@ -37,6 +37,7 @@ On computers the nest is a block of earth cut open at the front, like an ant far
 - **Same information as the 2D nest:** chamber names, levels and tags; dashed outlines for chambers you could dig next; surface parties with timers; raiders in red with the entrance ringing; diggers on the rim; the Pheromone Chamber glowing with drifting motes while research runs; a sky by the player's clock, with chambers glowing at night.
 - **Taps:** a chamber opens its sheet (no Look inside: zoom instead); double-clicking a built chamber glides in on it; zoomed in, a tap on an ant meets her; the entrance opens Missions.
 - **The queen** sits in the middle of her chamber, facing her eggs, always.
+- **Soldiers stand guard on the mound,** spread in rings around the hole and milling a little, not queued in the shaft (they used to share one short patrol path and stacked into a column; Marz's playtest, 2026-10-30). **Workers in the shaft** each keep to their own lane across its width, and only about a third come all the way up through the hole; the rest turn back at different depths, moving between the chambers, so the top of the shaft isn't a queue.
 - **Which nest:** 3D on computers, 2D on phones. A button in the corner switches (saved per browser). Without WebGL the 2D nest shows. Motion off draws a still slab, refreshed about once a second.
 
 ## Nest View (2D, phones)

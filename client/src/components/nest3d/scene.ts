@@ -13,7 +13,7 @@ import { fmtDuration } from '../../format';
 import { BACK, D, H, SHAFT_HW, W, ZS, carve, pathTo, room, shaftX, type P3, type Room } from './slab';
 import { CHITIN, antUniforms, createAnts, type AntOpts, type CargoKind } from './ants3d';
 import { createContents } from './contents';
-import { createCrew, crewFor, heapAt, shareCrews, type Crew, type CrewPose } from './crew';
+import { createCrew, crewFor, guardPosts, heapAt, shareCrews, type Post, type Crew, type CrewPose } from './crew';
 import { CASTE_LABEL, antName } from '../../art/antNames';
 
 export interface NestData {
@@ -494,6 +494,15 @@ export async function createNestScene(
     dir: 1 | -1;
     speed: number;
     pause: number;
+    /**
+     * where she turns back on the way up: a third of the workers come all the way out of the hole, the rest turn
+     * at different depths, moving between the chambers, so the top of the shaft isn't where everyone piles up
+     */
+    upTo?: number;
+    /** where across the shaft's width she climbs, so the traffic spreads over it rather than one stacked line */
+    lane?: number;
+    /** guards on the mound: where around the hole she keeps watch (moundPost) */
+    post?: Post;
   }
   let walkers: Walker[] = [];
   const sample = (w: { pts: P3[]; lens: number[] }, d: number) => {
@@ -509,6 +518,21 @@ export async function createNestScene(
     for (let i = 1; i < pts.length; i++) lens.push(lens[i - 1] + Math.hypot(pts[i].x - pts[i - 1].x, pts[i].y - pts[i - 1].y));
     return { pts, lens, total: lens[lens.length - 1] };
   };
+  const HOLE = { x: SX0, z: -D / 2 - 0.2 };
+  /** Height of the mound's surface at distance r from the hole (matches the lathe above). */
+  const moundY = (r: number) => SURF - 0.05 + (r / 0.85 <= 2.8 ? moundProfile(Math.max(0.3, r / 0.85)) * 0.95 : 0) + 0.02;
+  /** Where a mound guard is at time t: milling along her ring a little, facing the way she's going, or out when still. */
+  function moundPost(p: Post, t: number) {
+    const swing = Math.sin(t * p.sp + p.ph);
+    const a = p.a + (0.45 / p.r) * swing;
+    // z grows toward the front: keep everyone a little back from the block's front edge
+    const x = HOLE.x + Math.cos(a) * p.r, z = Math.min(-0.35, HOLE.z - Math.sin(a) * p.r);
+    const moving = Math.abs(Math.cos(t * p.sp + p.ph)) > 0.35;
+    // tangent while milling (sign follows the swing), facing out from the hole while standing
+    const dir = Math.cos(t * p.sp + p.ph) >= 0 ? 1 : -1;
+    const vx = moving ? -Math.sin(a) * dir : Math.cos(a), vz = moving ? -Math.cos(a) * dir : -Math.sin(a);
+    return { x, y: moundY(p.r), z, yaw: Math.atan2(-vz, vx), moving };
+  }
   const guardPath = (z: number) => [{ x: SX0, y: SURF, z }, { x: shaftX(-1), y: -1, z }, { x: shaftX(-2.5), y: -2.5, z }];
 
   function routeFor(w: Walker) {
@@ -616,7 +640,15 @@ export async function createNestScene(
       const z = ZS + (r2() - 0.5) * 1.2;
       guards.push({ caste: 'soldier', to: 'guard', z, pts: [], lens: [], total: 0, d: r2() * 4, dir: 1, speed: 0.6 + r2() * 0.4, pause: 0 });
     }
+    // soldiers stand guard around the hole on the mound, not queued in the shaft
+    const posts = guardPosts(guards.length);
+    guards.forEach((g, i) => (g.post = posts[i]));
     walkers = [...workers, ...guards];
+    const r3 = seeded(5);
+    for (const w of walkers) {
+      w.lane ??= (r3() - 0.5) * SHAFT_HW * 1.1;
+      w.upTo ??= r3() < 0.35 ? 0 : 1.5 + r3() * 14;
+    }
     for (const w of walkers) {
       if (w.to !== 'guard' && !targets.includes(w.to)) w.to = targets[Math.floor(r2() * targets.length)];
       routeFor(w);
@@ -1020,15 +1052,30 @@ export async function createNestScene(
     const cid = d.colony?.id ?? null;
     walkers.forEach((w, i) => {
       const key = `t:${i}`, looked = held === key;
+      if (w.post) {
+        // a mound guard: her own clock (w.d) stops while you look at her
+        if (!looked) w.d += mdt;
+        const g = moundPost(w.post, w.d);
+        ants.ant('soldier', g.x, g.y, g.z, {
+          scale: ANT_LEN.soldier, yaw: looked ? g.yaw + 0.9 : g.yaw, pitch: looked ? 0.35 : 0,
+          step: reduced || looked || !g.moving ? 0 : 9,
+        });
+        if (cid !== null) pickables.push({ key, caste: 'soldier', x: g.x, y: g.y, z: g.z, name: antName(`${cid}:tunnel:${i}`, 'soldier'), job: 'Guarding the entrance' });
+        return;
+      }
       if (looked) {
         // being looked at: she stops where she is
       } else if (w.pause > 0) w.pause -= mdt;
       else {
         w.d += w.dir * w.speed * mdt;
         if (w.d >= w.total) { w.d = w.total; w.dir = -1; w.pause = w.to === 'guard' ? 0.5 : 0.6 + Math.random() * 1.6; }
-        if (w.d <= 0) { w.d = 0; w.dir = 1; w.pause = w.to === 'guard' ? 0.5 : 0.3; }
+        const top = Math.min(w.upTo ?? 0, w.total * 0.6);
+        if (w.d <= top) { w.d = top; w.dir = 1; w.pause = w.to === 'guard' ? 0.5 : top > 0 ? 0.6 + Math.random() : 0.3; }
       }
       const s = sample(w, w.d);
+      // in the shaft, each ant keeps to her own lane across its width
+      // (easing out where she turns into a tunnel and as she comes up through the hole)
+      if (w.lane) s.p.x += w.lane * Math.max(0, 1 - Math.abs(s.p.x - shaftX(s.p.y)) / 0.6) * THREE.MathUtils.clamp((SURF - s.p.y) / 0.8, 0, 1);
       // workers carry food down to the stores and come back up empty
       const load = w.to !== 'guard' && w.dir === 1 ? STORE[w.to] ?? null : null;
       const dx = s.dx * w.dir;
