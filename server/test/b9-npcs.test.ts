@@ -1,7 +1,7 @@
 // Build 9: more wild things (docs/24-npcs.md): nests in neighbouring patches, aphid herds, termite mounds, spider dens.
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { FastifyInstance } from 'fastify';
-import { HERDS, SITE_SPOTS, WILD_SCENTS, groupCargo, herdNectarPerHour, herdStoreCap, nestTargets, regrowHours, total } from '@hormigas/shared';
+import { FORMULAS, HERDS, SITE_SPOTS, WILD_SCENTS, groupCargo, herdNectarPerHour, herdStoreCap, nestTargets, regrowHours, total } from '@hormigas/shared';
 import { getPool, tx } from '../src/db';
 import { ensureWildNests } from '../src/game/nests';
 import { setupTest, teardownTest, newPlayer, setColony, setPlayer, calmWildNests, knowAll, type Client } from './helpers';
@@ -104,12 +104,12 @@ describe('termite mound', () => {
     await clock.advance(6 * H);
     const battle = await latest(a, 'battle');
     expect(battle.data.winner).toBe('attacker');
-    // the haul is half the mound's store, or as much as the survivors can carry (which survive is down to the dice)
+    // the haul is the wild share of the mound's store (75%), or as much as the survivors can carry (which survive is down to the dice)
     const loot = battle.data.loot.foliage + battle.data.loot.protein + battle.data.loot.nectar;
     const survivors = Object.fromEntries(Object.entries(battle.data.attacker.units as Record<string, number>).map(([k, n]) => [k, n - (battle.data.attacker.lost[k] ?? 0)]));
-    const half = total(nestTargets('termite', 1).resources) / 2;
+    const share = (total(nestTargets('termite', 1).resources) * FORMULAS.combat.lootPctOfWild) / 100;
     expect(loot).toBeGreaterThan(0);
-    expect(Math.abs(loot - Math.min(half, groupCargo(survivors)))).toBeLessThanOrEqual(3);
+    expect(Math.abs(loot - Math.min(share, groupCargo(survivors)))).toBeLessThanOrEqual(3);
   });
 });
 
