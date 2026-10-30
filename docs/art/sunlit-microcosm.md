@@ -1,6 +1,6 @@
 # Sunlit Microcosm: taking Hormigas properly 3D
 
-**Status:** proposal, waiting on Marz (drafted 30 Oct 2026). Nothing in the design docs has changed yet.
+**Status:** approved 2026-10-30 (drafted the same day). The decisions are below and in [18-art-direction.md](../18-art-direction.md) § Decisions; the first build (colour and real 3D ants in the slab) shipped in [#90](https://github.com/MarcialPimentel/hormigas/pull/90).
 **Mock-up:** [sunlit-microcosm-mockup.html](sunlit-microcosm-mockup.html) (open in a browser; published as "Hormigas Sunlit Microcosm"). Sources in [sunlit-microcosm/](sunlit-microcosm/): edit `page.src.html` and `scene.js`, then run `python docs/art/sunlit-microcosm/build.py`. New pictures: `icons/scale-*.svg`.
 
 Builds on [3d-exploration.md](3d-exploration.md) (the slab) and [18-art-direction.md](../18-art-direction.md).
