@@ -3,6 +3,7 @@
 _Current as of Build 11 (2026-10-30)._ Newest first. One entry per build, in players' words, built from the merged PRs. Smaller PRs merged between builds are listed with the nearest build.
 
 ## Next build (unreleased)
+- Fixed: soldiers no longer stack in a column at the top of the 3D nest's shaft. They stand guard spread around the entrance on the mound, and workers use the shaft's whole width, most of them moving between chambers rather than all queuing at the hole.
 - Fights pay in loot: beating a wild nest, termite mound or spider den now carries off 75% of its store, not 50%. Raiding players and aphid herds is unchanged.
 - Battle reports end with the net result: what your losses cost, what you carried home, and what it comes to if you haul the corpses. Defenders see what the fight cost them.
 - Research pays half of its Nectar in Protein (3 Protein per Nectar), so the Protein from battles has a use and Nectar goes further. Research takes no longer than before, and nobody's points change.
