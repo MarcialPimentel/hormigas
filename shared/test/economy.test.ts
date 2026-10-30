@@ -3,8 +3,11 @@ import {
   CHAMBERS, CHAMBER_IDS, CASTES, CASTE_IDS, DEFENSES, DEFENSE_IDS, RESEARCH, RESEARCH_IDS, TERRAIN, TERRAIN_IDS,
   chamberCost, chamberBuildSeconds, researchCost, researchSeconds, unitSeconds,
   workforce, productionPerHour, storageCapacity, protectedAmount, accrue,
-  spaceUsed, spaceMax, missingRequirements, isUnlocked, res, shortfalls, explainShortfall,
+  spaceUsed, spaceMax, missingRequirements, isUnlocked, res, shortfalls, explainShortfall, GATHER_MULTIPLIER,
+  chamberOutputPerHour, FORMULAS,
 } from '../src';
+
+const G = GATHER_MULTIPLIER;
 
 describe('data integrity', () => {
   it('id lists match data files exactly', () => {
@@ -65,20 +68,25 @@ describe('costs and times', () => {
 
 describe('workforce and production', () => {
   it('base income with no chambers', () => {
-    expect(productionPerHour({}, 'grassland')).toEqual(res(60, 30, 0));
-    expect(productionPerHour({}, 'grassland', 5)).toEqual(res(300, 150, 0));
+    expect(productionPerHour({}, 'grassland')).toEqual(res(60 * G, 30 * G, 0));
+    expect(productionPerHour({}, 'grassland', 5)).toEqual(res(300 * G, 150 * G, 0));
   });
   it('production scales with level and terrain', () => {
     const p = productionPerHour({ leaf_garden: 1, nursery: 1 }, 'grassland');
-    expect(p.foliage).toBeCloseTo(60 + 30 * 1.1, 5);
+    expect(p.foliage).toBeCloseTo((60 + 30 * 1.1) * G, 5);
     const sunny = productionPerHour({ leaf_garden: 1, nursery: 1 }, 'sunny_meadow');
-    expect(sunny.foliage).toBeCloseTo(60 + 30 * 1.1 * 1.2, 5);
+    expect(sunny.foliage).toBeCloseTo((60 + 30 * 1.1 * 1.2) * G, 5);
   });
   it('workforce shortage reduces production proportionally', () => {
     const wf = workforce({ leaf_garden: 5, hunting_grounds: 5 });
     expect(wf.ratio).toBeLessThan(1);
     const p = productionPerHour({ leaf_garden: 5, hunting_grounds: 5 }, 'grassland');
-    expect(p.foliage).toBeCloseTo(60 + 30 * 5 * Math.pow(1.1, 5) * wf.ratio, 5);
+    expect(p.foliage).toBeCloseTo((60 + 30 * 5 * Math.pow(1.1, 5) * wf.ratio) * G, 5);
+  });
+  it('the gathering multiplier comes from formulas.json and scales chamber output, not storage', () => {
+    expect(G).toBe(FORMULAS.gathering.multiplier);
+    expect(chamberOutputPerHour('leaf_garden', 1, 'grassland')!.amount).toBeCloseTo(30 * 1.1 * G, 6);
+    expect(storageCapacity({}).foliage).toBe(10000);
   });
 });
 

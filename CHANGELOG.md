@@ -3,6 +3,7 @@
 _Current as of Build 11 (2026-10-30)._ Newest first. One entry per build, in players' words, built from the merged PRs. Smaller PRs merged between builds are listed with the nearest build.
 
 ## Next build (unreleased)
+- Twice the harvest: chambers, base income, Gardener Minims, forage parties and aphid herds all gather twice as much. Storage is the same size, so a Granary or Larder pays off sooner. An engaged player now reaches Nectar in about 1.3 hours instead of 2.4.
 - The dig plan: from Queen's Chamber 4, plan the next chamber while one is being dug. It starts on its own the moment the dig ends and the stores can pay, even while you're away, and costs nothing until then.
 
 ## Build 11: The full roster — 2026-10-30

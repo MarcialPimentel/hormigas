@@ -1,5 +1,5 @@
 // Aphid herds and where wild things live. Spec: docs/24-npcs.md
-import { NPC_DATA, WILDS_SPOT } from './data';
+import { GATHER_MULTIPLIER, NPC_DATA, WILDS_SPOT } from './data';
 import { WORLD } from './world';
 import { nestLevelFor, type NestKind, type NestState } from './nests';
 
@@ -42,8 +42,8 @@ export const isHerdState = (npc: unknown): npc is HerdState => !!npc && (npc as 
 /** Herd levels follow the area's strongest active player, like wild nests, and never drop. */
 export const herdLevelFor = (leaderPoints: number, current = 1) => Math.min(HERD_MAX_LEVEL, nestLevelFor(leaderPoints, current));
 
-/** Nectar per hour a tended herd makes, at world speed 1. */
-export const herdNectarPerHour = (level: number) => HERDS.nectarPerHour[Math.min(Math.max(1, level), HERD_MAX_LEVEL) - 1];
+/** Nectar per hour a tended herd makes, at world speed 1 (× the gathering multiplier). */
+export const herdNectarPerHour = (level: number) => HERDS.nectarPerHour[Math.min(Math.max(1, level), HERD_MAX_LEVEL) - 1] * GATHER_MULTIPLIER;
 
 /** Most honeydew a herd holds before the aphids stop being milked. */
 export const herdStoreCap = (level: number) => herdNectarPerHour(level) * HERDS.storeHours;

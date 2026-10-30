@@ -4,7 +4,7 @@ _Current as of Build 11 (2026-10-30)._
 
 ## Play the current build
 - Open **https://hormigas.marz.gg** in any browser (computer or phone), sign up and found a colony. No install.
-- The live world runs at **×1 speed**: a first session reaches Nectar in about 2.4 hours of play for an engaged player ([16-milestones](16-milestones.md)). Check in a few times a day.
+- The live world runs at **×1 speed**: a first session reaches Nectar in about 1.3 hours of play for an engaged player (gathering is ×2 since 2026-10-30) ([16-milestones](16-milestones.md)). Check in a few times a day.
 - What's new in this build: the latest entry in [CHANGELOG.md](../CHANGELOG.md). Each build's PR has its own playtest steps.
 
 ## Controls

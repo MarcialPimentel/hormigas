@@ -19,9 +19,9 @@ describe('pacing (engaged player, live speed ×1)', () => {
     expect(at('queen2')).toBeLessThan(30 * 60);
   });
 
-  it('Nectar is the first big goal: reached in 1.5–4 hours', () => {
-    expect(at('nectar')).toBeGreaterThan(1.5 * H);
-    expect(at('nectar')).toBeLessThan(4 * H);
+  it('Nectar is the first big goal: reached in 1–3 hours', () => {
+    expect(at('nectar')).toBeGreaterThan(1 * H);
+    expect(at('nectar')).toBeLessThan(3 * H);
   });
 
   it('Brood Hall and first castes follow Nectar quickly', () => {

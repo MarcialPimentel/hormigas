@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   NEST_SPECIES, NEST_MAX_LEVEL, nestAt, nestUnitsAt, nestLevelFor, nestRaidParty, nestTargets, previewBattle, speciesForTerrain,
   total, unitsValue, maxLevel, regrowHours, nestRaidsBack, speciesOfKind, SPECIES, NPC_DATA,
-  herdHoneydewAt, herdLevelFor, herdNectarPerHour, herdStoreCap, wildThingsAround, isSiteSpot, validCoords,
+  herdHoneydewAt, herdLevelFor, herdNectarPerHour, herdStoreCap, wildThingsAround, isSiteSpot, validCoords, GATHER_MULTIPLIER,
   type UnitCounts, type NestSpecies, CASTES, FAIR_NEST_ARMIES, FAIR_MOUND_ARMIES, FAIR_DEN_ARMIES,
 } from '../src';
 
@@ -172,8 +172,9 @@ describe('aphid herds', () => {
     expect(herdLevelFor(250)).toBe(4);
     expect(herdLevelFor(0, 5)).toBe(5);
     for (let l = 2; l <= 6; l++) expect(herdNectarPerHour(l)).toBeGreaterThan(herdNectarPerHour(l - 1));
-    // at the end of the pacing run an engaged colony makes ~520 Nectar/h (docs/16-milestones.md); a top herd is well under half
-    expect(herdNectarPerHour(6)).toBeLessThan(520 / 2);
+    // at the end of the pacing run an engaged colony makes ~520 Nectar/h at the original pace (docs/16-milestones.md);
+    // both scale with the gathering multiplier, and a top herd stays well under half
+    expect(herdNectarPerHour(6)).toBeLessThan((520 * GATHER_MULTIPLIER) / 2);
   });
 });
 

@@ -13,8 +13,12 @@
     "researchFormula": "baseCost * researchCostFactor^(level - 1)",
     "researchCostFactor": 2
   },
+  "gathering": {
+    "_note": "One dial for everything a colony gathers itself (docs/03-economy.md): base income, producing chambers, Gardener Minims, forage finds (still only what the party can carry) and aphid herd Nectar. Raid loot, wild-nest stores, quest rewards and storage are not affected. Set to 2 on 2026-10-30 after playtest feedback; 1 is the original pace.",
+    "multiplier": 2
+  },
   "production": {
-    "perHour": "(baseIncome + base * level * levelGrowth^level * (1 + terrainPct/100) * workforceRatio) * worldSpeed",
+    "perHour": "(baseIncome + base * level * levelGrowth^level * (1 + terrainPct/100) * workforceRatio) * gathering.multiplier * worldSpeed",
     "workforceRatio": "min(1, workforceSupply / workforceDemand)",
     "workforceUse": "workforceUse * level * levelGrowth^level",
     "workforceSupply": "baseWorkforce + nursery.base * level * levelGrowth^level",
@@ -138,7 +142,7 @@
       "giveToPct": { "food_cache": 70, "dead_beetle": 30 }
     },
     "findCap": {
-      "formula": "round((base + perPoint * playerPoints) * (1 + luckPctPerLevel/100 * forageLuck)), and never more than the party can carry",
+      "formula": "round((base + perPoint * playerPoints) * (1 + luckPctPerLevel/100 * forageLuck) * gathering.multiplier), and never more than the party can carry",
       "base": 3000,
       "perPoint": 25,
       "luckPctPerLevel": 10
