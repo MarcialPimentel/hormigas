@@ -14,7 +14,10 @@ Combat is automatic and resolves instantly when a raid arrives. The skill is in 
 5. **Health** damage persists for the whole battle.
 6. **Collapse chance:** a unit below 70% Health has a chance to die when hit, equal to `1 − currentHealth / maxHealth`.
 7. **Frenzy:** after firing, a unit with Frenzy *N* against the target's type has a `(N−1)/N` chance to fire again at a new random target.
-8. Battle ends when one side is wiped out or after round 6 (draw).
+8. **Soil Wall shield:** a shot at one of the defender's other defenses hits the Soil Wall's guard first, while the wall stands and has guard left this round. What the guard doesn't soak goes on to the target ([06-defense](06-defense.md)).
+9. **Narrow Tunnel:** if the defender has one, in round 1 each raider fights with a 50% chance (`defenses.json` → `chokepoint`). The tunnel itself isn't in the fight.
+10. **Fall-back order:** after a round in which the raiders have lost at least their chosen share of their army's worth (Foliage + Protein + Nectar cost), they break off (below).
+11. Battle ends when one side is wiped out, the raiders fall back, or after round 6 (draw).
 
 Research bonuses (Mandibles, Chitin, Guard Formation) apply to both sides' stats before the battle.
 
@@ -24,6 +27,14 @@ Research bonuses (Mandibles, Chitin, Guard Formation) apply to both sides' stats
 | **Attacker wins** | Loots up to **50%** of the defender's *unprotected* resources, limited by cargo |
 | **Draw** | No loot; both sides retreat with survivors |
 | **Defender wins** | No loot |
+| **Raiders fell back** | Counts as the defender holding: no loot, the surviving raiders walk home |
+
+## Fall-back order (Build 10)
+Real raiding ants break off when a fight goes badly. On the raid screen the player picks **Fight to the end**, **After 25% losses** or **After 50% losses** (`formulas.json` → `combat.retreatOptions`).
+- Checked after each round, against the army's worth when it set out. A raid that has already won or lost doesn't fall back.
+- Falling back saves the rest of the army but brings no loot. The battle preview shows how often it would happen.
+- Only player raids carry an order. Wild-nest raids and army-ant swarms fight to the end.
+- With no order, battles run exactly as before (the same random draws).
 
 Loot is taken evenly across resource types where possible (fill cargo by thirds, then fill remaining space with whatever is left).
 
@@ -42,4 +53,4 @@ This is a core fairness goal: players should never need an external simulator.
 
 ## Open Questions
 - Should the preview be exact (seeded RNG) or a Monte Carlo range? Proposal: run ~50 simulations, show range.
-- Should defenders get a home advantage (e.g., +10% Guard)?
+- ~~Should defenders get a home advantage (e.g., +10% Guard)?~~ Decided (Build 10): no flat bonus. The Narrow Tunnel and the Soil Wall's shield are the defender's advantages, and they cost something to build. Terrain-based home advantage (antlion pits stronger in Sandy Soil) is a candidate for later.

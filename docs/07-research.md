@@ -22,10 +22,10 @@ Since Build 6 research is a **tree**: research can need other research (not only
 | **Aphid Husbandry** | Harvest | Pher 3 | +5% Nectar from Aphid Pastures per level |
 | **Fungus Farming** | Harvest | Pher 3, Aphid Husbandry 2 | +5% Foliage from Leaf Gardens per level |
 | **Repletes** | Harvest | Pher 5, Aphid Husbandry 4, Fungus Farming 2 | +10% storage per level |
-| **Brood Science** | Nest | Pher 1 | Major Soldier (1), Hauler (2); max 2 |
+| **Brood Science** | Nest | Pher 1 | Major Soldier and Acid Sprayer (1), Hauler (2); max 2 |
 | **Nurse Workers** | Nest | Pher 3, Brood Science 1 | Units raised 5% faster per level (max 6) |
 | **Deep Digging** | Nest | Pher 4 | +5 space per level in all colonies |
-| **Tunnel Engineering** | Nest | Pher 4, Deep Digging 2 | Chambers dug 5% faster per level (max 6) |
+| **Tunnel Engineering** | Nest | Pher 4, Deep Digging 2 | Chambers dug 5% faster per level (max 6); level 1 also opens the Narrow Tunnel defense |
 | **Nuptial Flight** | Nest | Pher 3 | Unlocks the Winged Queen; +1 colony at levels 1, 3, 5… ([19-colonies](19-colonies.md)) |
 | **Pheromone Trails** | Scent | Pher 1 | +10% unit speed per level |
 | **Colony Mind** | Scent | Pher 1 | +1 mission slot per level |

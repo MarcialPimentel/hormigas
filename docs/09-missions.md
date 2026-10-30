@@ -12,7 +12,7 @@
 ## Mission types
 | Mission | MVP | What it does |
 |---|---|---|
-| **Raid** | ✅ | Attack a colony; loot on win |
+| **Raid** | ✅ | Attack a colony; loot on win. Pick a fall-back order: fight to the end, or break off after 25% or 50% losses ([08-combat](08-combat.md#fall-back-order-build-10)) |
 | **Scout** | ✅ | Send Scouts to gather a report on a colony, or to survey the wilds (below) |
 | **Transport** | ✅ | Move resources to any colony; units return |
 | **Relocate** | ✅ | Move units + resources to one of your own colonies; units stay |
