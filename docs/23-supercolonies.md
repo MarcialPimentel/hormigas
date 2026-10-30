@@ -89,6 +89,9 @@ Four new tables, read and written only through `server/src/game/diplomacy.ts`:
 - **6 players per supercolony.** With today's player count a bigger cap would let one supercolony hold most of the world, leaving nobody to raid.
 - Decided in the build (Marz may overrule): allies hold position regardless of strength difference; declared wars wait; the founder can remove members, who fade like anyone leaving; Hold Position uses a mission slot.
 
+## On the map
+In the 3D Garden ([11-world](11-world.md)), patches where your supercolony mates live are teal lights, with teal threads from your own patch; on the 3D Patch, a mate's mound flies a teal flag. Only members count: a mate whose scent is fading is no longer lit. The region map (`/api/map/region`) says `ally` per patch for this.
+
 ## Open Questions
 - Should the host be able to send an ally's garrison home without leaving the supercolony? Proposal: yes, if playtests show unwanted garrisons.
 - Should a truce offer expire if unanswered? Proposal: not until unanswered offers clutter the Allies screen.

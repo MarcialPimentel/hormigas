@@ -16,6 +16,7 @@ const can = (t: MissionType) => ENABLED_MISSIONS.includes(t);
 
 // The 3D Patch on computers, the drawn patch on phones; either can be switched to the other, saved per browser.
 const Patch3D = lazy(() => import('./patch3d/Patch3D').then((m) => ({ default: m.Patch3D })));
+const Garden3D = lazy(() => import('./patch3d/Garden3D').then((m) => ({ default: m.Garden3D })));
 const VIEW_KEY = 'hormigas.patch';
 type PatchMode = '3d' | '2d';
 const finePointer = () => typeof matchMedia !== 'undefined' && matchMedia('(pointer: fine)').matches;
@@ -560,7 +561,7 @@ function WorldPicker({ region, patch, onGo }: { region: number; patch: number; o
  * A patch you can look around and act from. Opens on your own patch; "World" opens the region grid to look further.
  * `selected` highlights the current mission target when it's in view.
  */
-export function PatchView({ start, selected, onAct, replay }: { start?: { region: number; patch: number }; selected?: Coords; onAct: (type: MissionType, at: Coords) => void; replay?: unknown }) {
+export function PatchView({ start, selected, onAct, replay, go: nav }: { start?: { region: number; patch: number }; selected?: Coords; onAct: (type: MissionType, at: Coords) => void; replay?: unknown; go?: (screen: string) => void }) {
   const { colony, state } = useGame();
   const [region, setRegion] = useState(start?.region ?? colony?.coords.region ?? 1);
   const [patch, setPatch] = useState(start?.patch ?? colony?.coords.patch ?? 1);
@@ -581,6 +582,9 @@ export function PatchView({ start, selected, onAct, replay }: { start?: { region
     setMode(m);
   };
   const show3d = mode === '3d' && !failed3d;
+  // in 3D, World opens the Garden; its Region grid button (and 2D mode) shows the grid
+  const [grid, setGrid] = useState(false);
+  const garden = show3d && world && !grid;
 
   useEffect(() => {
     if (start && (start.region !== region || start.patch !== patch)) go(start.region, start.patch);
@@ -639,21 +643,32 @@ export function PatchView({ start, selected, onAct, replay }: { start?: { region
               {show3d ? '2D view' : '3D view'}
             </button>
           )}
-          <button className={`btn small${world ? ' on' : ' ghost'}`} aria-expanded={world} onClick={() => setWorld(!world)}>
+          <button className={`btn small${world ? ' on' : ' ghost'}`} aria-expanded={world} onClick={() => (setWorld(!world), setGrid(false))}>
             World
           </button>
         </div>
       </div>
-      {world && <WorldPicker region={region} patch={patch} onGo={(r, p) => go(r, p)} />}
+      {world && (!show3d || grid) && <WorldPicker region={region} patch={patch} onGo={(r, p) => (go(r, p), setWorld(false), setGrid(false))} />}
       {error && <p className="form-error">{error}</p>}
       <div className={`patch-row${show3d ? ' p3' : ''}`}>
         <button className="btn ghost nearest" onClick={() => nearest(-1)} disabled={jumping} aria-label="Jump to the nearest colony before this patch">
           <span aria-hidden="true">‹</span>
           <small>Nearest colony</small>
         </button>
-        {show3d ? (
+        {garden ? (
+          <Suspense fallback={<div className="patch3d loading">Looking over the garden…</div>}>
+            <Garden3D
+              region={region}
+              patch={patch}
+              onPick={(r, p) => (go(r, p), setWorld(false))}
+              onFail={() => setFailed3d(true)}
+              onBack={() => setWorld(false)}
+              onGrid={() => setGrid(true)}
+            />
+          </Suspense>
+        ) : show3d ? (
           <Suspense fallback={<div className="patch3d loading">Sniffing out the patch…</div>}>
-            <Patch3D region={region} patch={patch} spots={spots} selected={picked?.spot ?? null} onPick={setSel} onFail={() => setFailed3d(true)} replay={replay} />
+            <Patch3D region={region} patch={patch} spots={spots} selected={picked?.spot ?? null} onPick={setSel} onFail={() => setFailed3d(true)} replay={replay} onRise={() => (setWorld(true), setGrid(false))} onNest={nav ? () => nav('nest') : undefined} />
           </Suspense>
         ) : (
         <div className="patch-scroll">

@@ -134,11 +134,16 @@ export async function worldRoutes(app: FastifyInstance) {
       `SELECT patch,
               count(*) FILTER (WHERE npc IS NULL)::int AS colonies,
               bool_or(npc IS NOT NULL) AS wild,
-              bool_or(npc IS NULL AND player_id = $3) AS mine
+              bool_or(npc IS NULL AND player_id = $3) AS mine,
+              -- a supercolony mate lives here: the Garden lights it teal (docs/23-supercolonies.md)
+              bool_or(npc IS NULL AND player_id <> $3 AND player_id IN (
+                SELECT o.player_id FROM supercolony_members me
+                  JOIN supercolony_members o ON o.supercolony_id = me.supercolony_id
+                 WHERE me.player_id = $3 AND me.status = 'member' AND o.status = 'member')) AS ally
          FROM colonies WHERE world_id = $1 AND region = $2 GROUP BY patch ORDER BY patch`,
       [world.id, region, req.playerId],
     );
-    return { region, patches: r.rows.map((x: any) => ({ patch: x.patch, colonies: x.colonies, wild: x.wild, mine: x.mine })) };
+    return { region, patches: r.rows.map((x: any) => ({ patch: x.patch, colonies: x.colonies, wild: x.wild, mine: x.mine, ally: !!x.ally })) };
   });
 
   /**

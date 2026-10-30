@@ -79,7 +79,7 @@ function targetName(spot: Spot | null | undefined, at: Coords, home: Coords): st
   return spot.colony.name;
 }
 
-export function Missions({ draft }: { draft?: MissionDraft }) {
+export function Missions({ draft, go }: { draft?: MissionDraft; go?: (screen: string) => void }) {
   const { colony, state, act, now } = useGame();
   const [type, setType] = useState<MissionType>(draft?.type && ENABLED_MISSIONS.includes(draft.type) ? draft.type : 'transport');
   const [target, setTarget] = useState<Coords>(draft?.target ?? colony?.coords ?? { region: 1, patch: 1, spot: 1 });
@@ -208,7 +208,7 @@ export function Missions({ draft }: { draft?: MissionDraft }) {
   return (
     <div className="stack">
       <Panel title="Missions">
-        <PatchView start={draft?.view ?? (draft?.target ? { region: draft.target.region, patch: draft.target.patch } : undefined)} selected={target} onAct={pick} replay={draft?.replay} />
+        <PatchView start={draft?.view ?? (draft?.target ? { region: draft.target.region, patch: draft.target.patch } : undefined)} selected={target} onAct={pick} replay={draft?.replay} go={go} />
       </Panel>
 
       <div ref={formRef} className="scroll-anchor" />

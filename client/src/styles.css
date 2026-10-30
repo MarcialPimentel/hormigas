@@ -513,7 +513,10 @@ pre.report-body { white-space: pre-wrap; overflow-x: auto; }
 .p3-label.wild { border-color: #C4473A; }
 .p3-label.scent { background: rgba(251, 246, 234, 0.7); font-style: italic; font-weight: 400; }
 .p3-trip { transform: translate(-50%, -100%); transition: none; }
-.p3-tools { position: absolute; left: 10px; top: 10px; display: flex; gap: 6px; }
+.p3-label.region { background: rgba(43, 29, 19, 0.72); color: #f6efe0; border-color: transparent; font-size: 0.76rem; letter-spacing: 0.02em; }
+.p3-tools { position: absolute; left: 10px; top: 10px; right: 10px; display: flex; flex-wrap: wrap; gap: 6px; pointer-events: none; }
+.p3-tools .btn { pointer-events: auto; }
+.p3-tools .btn.ghost { background: rgba(251, 246, 234, 0.92); }
 .p3-scale { position: absolute; right: 10px; bottom: 10px; display: flex; align-items: center; gap: 6px; font-size: 0.72rem; font-weight: 700; color: #2b1d13; background: rgba(251, 246, 234, 0.9); padding: 2px 10px; border-radius: 999px; pointer-events: none; }
 .p3-scale i { display: block; width: 40px; height: 6px; border: 2px solid #2b1d13; border-top: 0; }
 .p3-hint { position: absolute; left: 10px; bottom: 10px; margin: 0; font-size: 0.68rem; color: #efe4d2; background: rgba(35, 26, 20, 0.7); padding: 2px 10px; border-radius: 999px; white-space: nowrap; pointer-events: none; }

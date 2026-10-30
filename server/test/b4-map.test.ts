@@ -31,7 +31,24 @@ describe('region overview', () => {
   it("shows another player's patch without saying who lives there", async () => {
     const r = await a.get(`/api/map/region?region=${far.region}`);
     const p = r.patches.find((x: any) => x.patch === far.patch);
-    expect(p).toEqual({ patch: far.patch, colonies: 1, wild: false, mine: false });
+    expect(p).toEqual({ patch: far.patch, colonies: 1, wild: false, mine: false, ally: false });
+  });
+
+  it('marks the patches where your supercolony mates live, and only for members', async () => {
+    const q = getPool();
+    const [ida, idb] = [(await a.get('/api/state')).player.id, (await b.get('/api/state')).player.id];
+    const world = (await q.query('SELECT world_id FROM players WHERE id = $1', [ida])).rows[0].world_id;
+    const sc = (await q.query("INSERT INTO supercolonies (world_id, name, founder_id, created_at) VALUES ($1, 'Map Mates', $2, 0) RETURNING id", [world, ida])).rows[0].id;
+    await q.query("INSERT INTO supercolony_members (supercolony_id, player_id, status, joined_at) VALUES ($1, $2, 'member', 0), ($1, $3, 'member', 0)", [sc, ida, idb]);
+    const mate = (await a.get(`/api/map/region?region=${far.region}`)).patches.find((x: any) => x.patch === far.patch);
+    expect(mate.ally).toBe(true);
+    // your own patch is yours, not an ally's
+    expect((await a.get(`/api/map/region?region=${ca.coords.region}`)).patches.find((x: any) => x.patch === ca.coords.patch).ally).toBe(false);
+    // a mate whose scent is fading is no longer lit
+    await q.query("UPDATE supercolony_members SET status = 'fading' WHERE supercolony_id = $1 AND player_id = $2", [sc, idb]);
+    expect((await a.get(`/api/map/region?region=${far.region}`)).patches.find((x: any) => x.patch === far.patch).ally).toBe(false);
+    await q.query('DELETE FROM supercolony_members WHERE supercolony_id = $1', [sc]);
+    await q.query('DELETE FROM supercolonies WHERE id = $1', [sc]);
   });
 
   it('refuses a region that does not exist', async () => {
