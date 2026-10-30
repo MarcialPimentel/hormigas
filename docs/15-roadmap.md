@@ -20,7 +20,7 @@ _Current as of Build 11 (2026-10-30)._ Hormigas has no GitHub milestones: each b
 | 9 | More wild things ([#67](https://github.com/MarcialPimentel/hormigas/issues/67)) | done |
 | 10 | Castes with a purpose ([#80](https://github.com/MarcialPimentel/hormigas/issues/80)) | done |
 | 11 | The full roster ([#83](https://github.com/MarcialPimentel/hormigas/issues/83)) | **current** (live) |
-| — | Tuning: gathering ×2 | in review |
+| — | Tuning: gathering ×2 ([#107](https://github.com/MarcialPimentel/hormigas/pull/107)) | in review |
 | 12 | Reasons to come back: daily colony tasks, Diapause, Field Journal | next (no issue yet) |
 | v1 | Supercolonies stage B, joint raids on spider dens, more defenses | later |
 
