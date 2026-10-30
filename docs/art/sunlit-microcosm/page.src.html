@@ -1,0 +1,420 @@
+<title>Hormigas Sunlit Microcosm</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&display=swap">
+<style>
+/* Layout: one wide playable stage first, then the proposal as a calm field-guide column with tables doing the work.
+   Page colours are the game's own menu tokens (lichen paper by day, soil by night); the stage HUD keeps fixed in-world colours. */
+:root {
+  --page: #E9ECE0; --panel: #F6F7F0; --ink: #2B1D13; --muted: #5A4F3C; --line: #C9CBB8; --link: #3B6522;
+  --honey: #E8B23A; --scent: #6B38B8; --raider: #9C2B20; --soft: rgba(43, 29, 19, 0.06);
+  --hud-paper: rgba(247, 244, 234, 0.94); --hud-ink: #2B1D13; --hud-muted: #5A4F3C; --hud-line: rgba(43, 29, 19, 0.2);
+  --display: 'Bricolage Grotesque', 'Segoe UI', system-ui, sans-serif;
+  --body: 'Atkinson Hyperlegible', 'Segoe UI', system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { --page: #1D1611; --panel: #2A2018; --ink: #EFE4D2; --muted: #B3A089; --line: #4C3A2B; --link: #A9CB78; --scent: #C59BFF; --raider: #F08A7E; --soft: rgba(239, 228, 210, 0.06); color-scheme: dark; }
+}
+:root[data-theme="dark"] { --page: #1D1611; --panel: #2A2018; --ink: #EFE4D2; --muted: #B3A089; --line: #4C3A2B; --link: #A9CB78; --scent: #C59BFF; --raider: #F08A7E; --soft: rgba(239, 228, 210, 0.06); color-scheme: dark; }
+
+body { background: var(--page); color: var(--ink); font: 16px/1.6 var(--body); padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+main { max-width: 1180px; margin: 0 auto; padding-block: 28px 72px; display: grid; gap: 64px; }
+a { color: var(--link); }
+h1, h2, h3 { font-family: var(--display); line-height: 1.1; text-wrap: balance; margin: 0; }
+h1 { font-size: clamp(2.2rem, 5vw, 3.6rem); font-weight: 800; letter-spacing: -0.02em; }
+h2 { font-size: clamp(1.5rem, 3vw, 2.1rem); font-weight: 700; letter-spacing: -0.01em; }
+h3 { font-size: 1.15rem; font-weight: 700; }
+p { margin: 0; }
+.eyebrow { font: 700 0.78rem/1 var(--body); letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+.lead { font-size: 1.15rem; color: var(--muted); max-width: 68ch; }
+.prose { display: grid; gap: 14px; max-width: 72ch; }
+section { display: grid; gap: 22px; min-width: 0; }
+.head { display: grid; gap: 12px; }
+.small { font-size: 0.9rem; color: var(--muted); }
+
+/* ---------- stage */
+.stage { position: relative; height: clamp(500px, 78vh, 780px); border-radius: 18px; overflow: hidden; background: #A9D3E8; border: 1px solid var(--line); isolation: isolate; }
+.stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: pan-y; cursor: grab; }
+.fallback { position: absolute; inset: 0; display: grid; place-items: center; padding: 24px; text-align: center; color: var(--hud-ink); font-weight: 700; }
+.haze { position: absolute; inset: 0; opacity: 0; pointer-events: none; z-index: 3; }
+.labels { position: absolute; inset: 0; pointer-events: none; z-index: 2; overflow: hidden; }
+.tag { position: absolute; left: 0; top: 0; white-space: nowrap; background: var(--hud-paper); color: var(--hud-ink); border: 1.5px solid var(--hud-ink); border-radius: 999px; padding: 3px 10px 3px 8px; font: 0.78rem/1.25 var(--body); box-shadow: 0 2px 8px rgba(30, 20, 10, 0.18); display: flex; gap: 6px; align-items: center; }
+.tag::before { content: ""; width: 9px; height: 9px; border-radius: 50%; background: #F2B25C; border: 1.5px solid var(--hud-ink); flex: none; }
+.tag b { font-weight: 700; }
+.tag.you::before { background: #FFC93C; } .tag.wild::before { background: #C4473A; } .tag.leaf::before { background: #A6D83A; }
+.tag.note::before { background: #3C9BE8; } .tag.scent::before { background: #B98CFF; } .tag.region::before { display: none; }
+.tag.region { font-family: var(--display); font-size: 0.86rem; padding: 4px 12px; }
+.tag.small { font-size: 0.7rem; padding: 2px 8px 2px 6px; } .tag.small::before { width: 7px; height: 7px; background: #FFB347; }
+.tag.scent.small::before { background: #B98CFF; }
+
+.hud-top { position: absolute; top: 12px; left: 12px; right: 12px; display: flex; flex-wrap: wrap; gap: 8px; justify-content: space-between; align-items: flex-start; z-index: 4; pointer-events: none; }
+.hud-top > * { pointer-events: auto; }
+.ladder { display: flex; background: var(--hud-paper); border: 1.5px solid var(--hud-ink); border-radius: 14px; padding: 3px; gap: 2px; box-shadow: 0 3px 12px rgba(30, 20, 10, 0.2); }
+.ladder button { display: flex; align-items: center; gap: 6px; border: 0; background: transparent; color: var(--hud-ink); font: 700 0.85rem/1 var(--display); padding: 5px 10px 5px 5px; border-radius: 10px; cursor: pointer; }
+.ladder button svg { width: 28px; height: 28px; flex: none; }
+.ladder button[aria-pressed="true"] { background: #E8B23A; }
+.ladder .sep { align-self: center; color: var(--hud-muted); font-size: 0.75rem; }
+.hud-right { display: flex; gap: 6px; }
+.hud-btn, .chip, .sheet button { font: 700 0.85rem/1 var(--body); color: var(--hud-ink); background: var(--hud-paper); border: 1.5px solid var(--hud-ink); border-radius: 999px; padding: 9px 14px; cursor: pointer; box-shadow: 0 2px 8px rgba(30, 20, 10, 0.16); }
+.hud-btn:hover, .chip:hover, .sheet button:hover { background: #FFFDF6; }
+.chip.hot, .sheet button.primary { background: #E8B23A; }
+.chip:disabled, .sheet button:disabled { opacity: 0.5; cursor: default; }
+:is(.hud-btn, .chip, .sheet button, .ladder button):focus-visible { outline: 3px solid #3C9BE8; outline-offset: 2px; }
+.res { position: absolute; top: 66px; left: 12px; display: flex; gap: 6px; z-index: 4; flex-wrap: wrap; }
+.res span { background: var(--hud-paper); border: 1.5px solid var(--hud-ink); color: var(--hud-ink); border-radius: 999px; padding: 4px 10px 4px 6px; font: 0.8rem/1.2 var(--body); display: flex; align-items: center; gap: 6px; font-variant-numeric: tabular-nums; }
+.res i { width: 12px; height: 12px; border-radius: 50%; border: 1.5px solid var(--hud-ink); display: block; }
+.res span.pop { animation: pop 0.6s ease; }
+@keyframes pop { 40% { transform: scale(1.15); background: #FFE7A6; } }
+.scalebar { position: absolute; right: 12px; bottom: 64px; z-index: 4; background: var(--hud-paper); color: var(--hud-ink); border: 1.5px solid var(--hud-ink); border-radius: 8px; padding: 4px 10px; font: 0.75rem/1.3 var(--body); font-variant-numeric: tabular-nums; }
+.scalebar::before { content: ""; display: inline-block; width: 26px; height: 6px; border: 1.5px solid var(--hud-ink); border-top: 0; margin-right: 8px; vertical-align: 1px; }
+.chips { position: absolute; left: 0; right: 0; bottom: 0; z-index: 4; display: flex; gap: 8px; padding: 12px; overflow-x: auto; scrollbar-width: none; }
+.chips .chip { flex: none; }
+.hint { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 5; background: rgba(43, 29, 19, 0.82); color: #F7F4EA; padding: 8px 14px; border-radius: 999px; font: 700 0.85rem/1.2 var(--body); pointer-events: none; }
+.toast { position: absolute; left: 50%; top: 116px; transform: translate(-50%, -8px); width: max-content; max-width: min(520px, calc(100% - 24px)); z-index: 5; background: #2B1D13; color: #F7F4EA; padding: 10px 16px; border-radius: 12px; font: 0.88rem/1.4 var(--body); opacity: 0; transition: opacity 0.3s, transform 0.3s; pointer-events: none; text-align: center; }
+.toast.on { opacity: 1; transform: translate(-50%, 0); }
+.sheet { position: absolute; left: 12px; bottom: 64px; width: min(400px, calc(100% - 24px)); z-index: 6; background: var(--hud-paper); color: var(--hud-ink); border: 1.5px solid var(--hud-ink); border-radius: 16px; padding: 16px; box-shadow: 0 10px 30px rgba(30, 20, 10, 0.3); display: grid; gap: 10px; }
+.sheet h3 { font-size: 1.1rem; padding-right: 30px; }
+.sheet p { font-size: 0.9rem; line-height: 1.45; }
+.sheet .cost { color: var(--hud-muted); font-size: 0.82rem; }
+.sheet .acts { display: flex; flex-wrap: wrap; gap: 8px; }
+.sheet .fake { font-size: 0.75rem; color: var(--hud-muted); }
+.sheet .x { position: absolute; top: 10px; right: 10px; width: 32px; height: 32px; padding: 0; border-radius: 50%; font-size: 1.1rem; box-shadow: none; }
+@media (max-width: 640px) {
+  .stage { height: 82vh; min-height: 520px; border-radius: 14px; }
+  .ladder button span { display: none; } .ladder button { padding: 4px; } .ladder .sep { display: none; }
+  .res { top: 58px; } .res span { font-size: 0.72rem; }
+  .scalebar { bottom: 62px; font-size: 0.68rem; }
+  .stage:has(.sheet:not([hidden])) .scalebar { display: none; }
+  .toast { top: 100px; }
+  .sheet { left: 12px; right: 12px; width: auto; }
+}
+.under { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 0.9rem; color: var(--muted); margin-top: 10px; }
+.under b { color: var(--ink); }
+
+/* ---------- proposal */
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 18px; display: grid; gap: 8px; align-content: start; min-width: 0; }
+.card .k { font: 700 0.72rem/1 var(--body); letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+.card.rec { border: 2px solid var(--honey); }
+.card .badge { justify-self: start; background: var(--honey); color: #2B1D13; font: 700 0.72rem/1 var(--body); padding: 4px 8px; border-radius: 999px; }
+.tablewrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; background: var(--panel); }
+table { border-collapse: collapse; width: 100%; font-size: 0.92rem; min-width: 620px; }
+th, td { text-align: left; vertical-align: top; padding: 10px 14px; border-bottom: 1px solid var(--line); }
+th { font: 700 0.78rem/1.2 var(--body); letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); background: var(--soft); }
+tr:last-child td { border-bottom: 0; }
+td:first-child { font-weight: 700; }
+.ladder-diagram { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.rung { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 14px; display: grid; gap: 8px; align-content: start; position: relative; }
+.rung svg { width: 56px; height: 56px; }
+.rung .og { font-size: 0.82rem; color: var(--muted); }
+.rung:not(:last-child)::after { content: "→"; position: absolute; right: -11px; top: 32px; color: var(--muted); font-weight: 700; }
+@media (max-width: 760px) { .ladder-diagram { grid-template-columns: 1fr 1fr; } .rung::after { display: none; } }
+.rules { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 12px; counter-reset: rule; }
+.rule { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; display: grid; gap: 4px; }
+.rule h3 { font-size: 1rem; }
+.rule h3::before { counter-increment: rule; content: counter(rule) ". "; color: var(--muted); }
+.swatches { display: grid; gap: 18px; }
+.swgroup { display: grid; gap: 8px; }
+.swrow { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 8px; }
+.sw { border-radius: 10px; padding: 34px 10px 8px; font: 0.76rem/1.3 var(--body); border: 1px solid rgba(0, 0, 0, 0.12); }
+.sw b { display: block; font-size: 0.8rem; }
+.sw.d { color: #2B1D13; } .sw.l { color: #FBF6EA; }
+.retired { display: flex; gap: 4px; align-items: center; flex-wrap: wrap; font-size: 0.85rem; color: var(--muted); }
+.retired i { width: 28px; height: 18px; border-radius: 4px; display: inline-block; border: 1px solid rgba(0, 0, 0, 0.15); }
+.icons { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; }
+.icons figure { margin: 0; display: grid; gap: 6px; justify-items: center; font-size: 0.82rem; color: var(--muted); }
+.icons svg { width: 80px; height: 80px; }
+.layers { display: grid; gap: 6px; }
+.layer { border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px; background: var(--panel); display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.layer.new { border: 2px solid var(--honey); }
+.layer span { color: var(--muted); font-size: 0.88rem; }
+ol.steps { margin: 0; padding-left: 1.3em; display: grid; gap: 6px; }
+pre.prompt { white-space: pre-wrap; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 14px; font: 0.86rem/1.5 ui-monospace, Consolas, monospace; margin: 0; }
+.decide { background: var(--panel); border: 2px solid var(--honey); border-radius: 16px; padding: 22px; display: grid; gap: 12px; }
+.decide ol { margin: 0; padding-left: 1.3em; display: grid; gap: 10px; }
+.decide li b { font-family: var(--display); }
+code { font: 0.88em ui-monospace, Consolas, monospace; background: var(--soft); padding: 1px 4px; border-radius: 4px; }
+</style>
+
+<main>
+  <header class="head">
+    <p class="eyebrow">Hormigas · 3D art direction · draft for Marz · 30 Oct 2026</p>
+    <h1>Make the small feel huge</h1>
+    <p class="lead">From a 3D nest inside a 2D game to one world you zoom through, the way a space game zooms from galaxy to planet. The garden, then your patch, then the nest. It's sunlit, full of colour, and the swarms are drawn at their real size.</p>
+  </header>
+
+  <section aria-label="Playable mock-up">
+    <div class="stage" id="stage" data-scale="patch">
+      <canvas id="scene" role="img" aria-label="A 3D patch of ground seen at ant scale: ant mounds, scent trails with columns of ants, flowers, a fallen leaf, a glass marble, a rotting log and the wilds. Buttons below switch to the whole garden or to the nest cut open."></canvas>
+      <div class="fallback" id="fallback">Loading the garden…</div>
+      <div class="labels" id="labels" aria-hidden="true"></div>
+      <div class="haze" id="haze"></div>
+      <div class="hud-top">
+        <nav class="ladder" aria-label="Scale">
+          <button type="button" data-go="garden" aria-pressed="false">{{ICON:scale-garden}}<span>Garden</span></button>
+          <span class="sep" aria-hidden="true">›</span>
+          <button type="button" data-go="patch" aria-pressed="true">{{ICON:scale-patch}}<span>Patch</span></button>
+          <span class="sep" aria-hidden="true">›</span>
+          <button type="button" data-go="nest" aria-pressed="false">{{ICON:scale-nest}}<span>Nest</span></button>
+        </nav>
+        <div class="hud-right"><button type="button" class="hud-btn" id="dn">Night</button><button type="button" class="hud-btn" id="reset">Reset view</button></div>
+      </div>
+      <div class="res" aria-label="Stores (made up)">
+        <span id="res-foliage"><i style="background:#8DB255"></i><b>12,480</b></span>
+        <span id="res-protein"><i style="background:#D06A6A"></i><b>6,215</b></span>
+        <span id="res-nectar"><i style="background:#E8B23A"></i><b>3,902</b></span>
+      </div>
+      <div class="scalebar" id="scalebar">View ≈ 80 cm across</div>
+      <div class="hint" id="hint" hidden></div>
+      <div class="toast" id="toast" role="status" aria-live="polite"></div>
+      <div class="sheet" id="sheet" hidden>
+        <button type="button" class="x" id="sheetX" aria-label="Close">×</button>
+        <h3 id="sheetTitle"></h3>
+        <div id="sheetBody" class="prose"></div>
+        <div class="acts" id="sheetActions"></div>
+        <p class="fake">Numbers are made up. In the game the server decides every result.</p>
+      </div>
+      <div class="chips" id="chips"></div>
+    </div>
+    <div class="under">
+      <span><b>Drag</b> to turn · <b>scroll or pinch</b> to zoom; keep zooming out to rise a level</span>
+      <span><b>Tap</b> your mound, chambers and garden lights</span>
+      <span>Try <b>Ant's-eye view</b>, then <b>Army-ant swarm</b></span>
+    </div>
+  </section>
+
+  <section>
+    <div class="head"><p class="eyebrow">1 · The short version</p><h2>Five calls</h2></div>
+    <div class="cards">
+      <div class="card"><p class="k">Structure</p><h3>A ladder of scales</h3><p>Garden → Patch → Nest → Chamber, one camera, one zoom. Each rung is a game screen you already have, turned into a place.</p></div>
+      <div class="card"><p class="k">Look</p><h3>Sunlit microcosm</h3><p>Macro-photo light: low sun behind things, glossy backlit ants, colourful soil, flowers overhead. No more one-brown nest.</p></div>
+      <div class="card"><p class="k">Swarms</p><h3>Real crowds</h3><p>Ants are 3D and instanced, so a raid is hundreds of ants and a swarm is a red tide of thousands, not 30 sprites.</p></div>
+      <div class="card"><p class="k">Technology</p><h3>More Three.js, no engine swap</h3><p>Instancing and small shaders on the Three.js we already ship. No physics engine yet; the few physical moments are hand-written.</p></div>
+      <div class="card"><p class="k">Art</p><h3>One master ant, built in Blender</h3><p>A low-poly ant and a garden kit made once in Blender. The 2D pictures get rendered from the same models, so menus and world match.</p></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="head"><p class="eyebrow">2 · The big idea</p><h2>OGame had a solar system. We have a garden.</h2>
+      <p class="lead">Space games feel big because you can zoom from a single ship out to a galaxy. Ants have the same ladder built in, and our world already uses it: the five regions are parts of one back garden, a patch is a square of ground, and the nest is under a mound.</p></div>
+    <div class="ladder-diagram">
+      <div class="rung">{{ICON:scale-garden}}<h3>Garden</h3><p class="og">OGame: the galaxy</p><p>The whole world, about 15 m across. A light where colonies live, never names or strength. Your colonies in honey, allies in teal, threads for missions under way.</p></div>
+      <div class="rung">{{ICON:scale-patch}}<h3>Patch</h3><p class="og">OGame: the solar system</p><p>Your neighbourhood, about 80 cm across: mounds, scents, wild things, and every mission as a column of ants on a scent trail.</p></div>
+      <div class="rung">{{ICON:scale-nest}}<h3>Nest</h3><p class="og">OGame: the planet</p><p>Your colony cut open under the mound: the slab you have now, in colour, with real ants.</p></div>
+      <div class="rung">{{ICON:scale-chamber}}<h3>Chamber</h3><p class="og">OGame: a building</p><p>One hollow up close. Its sheet, its names, its contents. The close-up you have now.</p></div>
+    </div>
+    <div class="cards">
+      <div class="card rec"><span class="badge">Recommended</span><h3>A. The scale ladder</h3><p>Garden, Patch and Nest in 3D, joined by one zoom (scroll out past the edge and you rise a level). Colony screen = Nest. Missions screen = Patch. World = Garden. Lists stay as cards over the world.</p><p class="small">Cost: the patch and garden are new scenes. The payoff: every screen you visit is a place.</p></div>
+      <div class="card"><h3>B. Two separate 3D views</h3><p>3D nest (have it) and a 3D patch on the Missions screen, with no zoom between them. The world grid stays 2D.</p><p class="small">About 60% of the work, most of the wow, but the "one world" feeling is gone.</p></div>
+      <div class="card"><h3>C. Hero moments only</h3><p>Keep the screens as they are and add short 3D scenes for big events: a swarm arriving, a battle replay, a nuptial flight.</p><p class="small">Cheapest. It looks great in a trailer, but day to day you'd still be using a menu.</p></div>
+    </div>
+    <p class="small">Not proposed: a free camera you fly through the tunnels. It loses the at-a-glance read of the colony, and it turns a check-in game into a navigation game.</p>
+  </section>
+
+  <section>
+    <div class="head"><p class="eyebrow">3 · Small things, big feeling</p><h2>Eight rules borrowed from macro photography</h2>
+      <p class="lead">Nature documentaries make an ant feel huge with a handful of lens and light tricks. These become the rules for every scale.</p></div>
+    <div class="rules">
+      <div class="rule"><h3>Get the camera down</h3><p>Zooming in also lowers the camera, until it sits at ant height looking across the ground. The horizon rises and the grass becomes a forest.</p></div>
+      <div class="rule"><h3>Neighbours at true size</h3><p>A marble, a bottle cap, a fallen leaf, a garden hose, drawn at their real size. Nothing says "you are 5 mm long" better.</p></div>
+      <div class="rule"><h3>Shallow focus</h3><p>Out-of-focus grass across the bottom of the lens and soft sun discs at the top. Strongest up close, gone when you pull out.</p></div>
+      <div class="rule"><h3>Light from behind</h3><p>A low warm sun behind the scene: chitin glows at the edges, grass blades light up green, shadows run toward you.</p></div>
+      <div class="rule"><h3>Crowds at real count</h3><p>One drawn ant per ant, up to a cap. When the cap bites, the tag says the true number.</p></div>
+      <div class="rule"><h3>Slow world, quick ants</h3><p>Grass sways slowly, light drifts slowly; ants scurry fast with a real tripod gait. The contrast in speed sells the scale.</p></div>
+      <div class="rule"><h3>Show the scale</h3><p>A live scale bar ("view ≈ 80 cm across · 160 ant lengths") on every rung, so zooming always teaches you where you are.</p></div>
+      <div class="rule"><h3>Colour comes from life</h3><p>Petals, aphids, fungus, honey, iridescent beetles, rusty clay. Brown is one colour among many, never the whole picture.</p></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="head"><p class="eyebrow">4 · The swarm look</p><h2>Rivers, fans and threads</h2></div>
+    <div class="prose">
+      <p><b>Columns are rivers.</b> Every mission is a column walking a scent trail in the owner's colour. Ants have their own speed, so they overtake, bunch and spread. From far away it reads as a flowing line; up close, as hundreds of individuals.</p>
+      <p><b>Army ants come as a fan.</b> Real <i>Eciton</i> raids sweep forward as a wide front with a column trailing behind, flushing insects ahead of them. The mock-up does exactly that: a red fan that narrows into a column, springtails leaping away, dust where it meets your soldiers, and upside-down dead left behind for your workers to haul home.</p>
+      <p><b>Far away, a light.</b> At garden scale a colony is a glow and a mission is a thread. Night turns the garden into a star map.</p>
+      <p><b>Honest numbers.</b> Up to about 3,000 ants on screen on computers and 900 on phones. Above that, each drawn ant stands for several and the tag gives the real count. The server still decides who wins. The ants only act out what it returns, so this is choreography, not a simulation (the vision's non-goal holds).</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="head"><p class="eyebrow">5 · Palette</p><h2>Sunlit microcosm</h2>
+      <p class="lead">Light and air first, then life, then soil horizons that look like a geology plate rather than one brown. The code colours stay: amber for players' ants, red for hostile and wild, honey for yours, violet for scent and research, and a new teal for allies.</p></div>
+    <div class="swatches">
+      <div class="swgroup"><h3>Light and air</h3><div class="swrow">
+        <div class="sw d" style="background:#FFD98A"><b>Sunbeam</b>#FFD98A · key light</div>
+        <div class="sw d" style="background:#8CCBEB"><b>Sky</b>#8CCBEB</div>
+        <div class="sw d" style="background:#F5E2B5"><b>Warm haze</b>#F5E2B5 · fog, horizon</div>
+        <div class="sw d" style="background:#DDF4FF"><b>Dew</b>#DDF4FF</div>
+        <div class="sw l" style="background:#131D43"><b>Night</b>#131D43</div>
+      </div></div>
+      <div class="swgroup"><h3>Life</h3><div class="swrow">
+        <div class="sw d" style="background:#BCE35C"><b>Backlit blade</b>#BCE35C</div>
+        <div class="sw l" style="background:#2E5E25"><b>Blade root</b>#2E5E25</div>
+        <div class="sw d" style="background:#FFD23F"><b>Buttercup</b>#FFD23F</div>
+        <div class="sw d" style="background:#F6B6D2"><b>Clover</b>#F6B6D2</div>
+        <div class="sw d" style="background:#FF6B4F"><b>Poppy</b>#FF6B4F</div>
+        <div class="sw d" style="background:#F08A3C"><b>Bracket fungus</b>#F08A3C</div>
+        <div class="sw l" style="background:#2F8F83"><b>Beetle sheen</b>#2F8F83</div>
+        <div class="sw d" style="background:#B5E04A"><b>Aphid</b>#B5E04A</div>
+      </div></div>
+      <div class="swgroup"><h3>Soil horizons (the nest face)</h3><div class="swrow">
+        <div class="sw l" style="background:#3E2B1E"><b>Leaf litter</b>#3E2B1E</div>
+        <div class="sw l" style="background:#7B4A2D"><b>Topsoil</b>#7B4A2D</div>
+        <div class="sw l" style="background:#A9552F"><b>Iron clay</b>#A9552F</div>
+        <div class="sw d" style="background:#D3A05A"><b>Ochre sand</b>#D3A05A</div>
+        <div class="sw d" style="background:#7E8E96"><b>Gley clay</b>#7E8E96</div>
+        <div class="sw d" style="background:#FFB347"><b>Hollow glow</b>#FFB347</div>
+      </div></div>
+      <div class="swgroup"><h3>Who's who (fills, never text)</h3><div class="swrow">
+        <div class="sw d" style="background:#D9934A"><b>Worker amber</b>#D9934A</div>
+        <div class="sw d" style="background:#FFC93C"><b>Your trail</b>#FFC93C</div>
+        <div class="sw d" style="background:#46C9B8"><b>Allies (new)</b>#46C9B8</div>
+        <div class="sw l" style="background:#C4473A"><b>Raider red</b>#C4473A</div>
+        <div class="sw l" style="background:#8E2216"><b>Army ant</b>#8E2216</div>
+        <div class="sw d" style="background:#B98CFF"><b>Scent</b>#B98CFF</div>
+      </div></div>
+      <p class="retired">Retired: the three-step brown strata <i style="background:#6B4F37"></i><i style="background:#4A3726"></i><i style="background:#33261A"></i>. Menu colours don't change; they already pass contrast in both themes. The new HUD text was checked too: ink on paper 14.8:1, tag accents 5.5–6.9:1, and on honey, teal and leaf fills only ink is used (8.0:1 or better).</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="head"><p class="eyebrow">6 · Type and pictures</p><h2>Same fonts, four new pictures</h2></div>
+    <div class="prose"><p>Keep Bricolage Grotesque for headings and Atkinson Hyperlegible for text: both already in the game and in this page. The pictures follow the house rules (side view, ink outline, light tile with the leaf-green ring). These four name the scales in the ladder:</p></div>
+    <div class="icons">
+      <figure>{{ICON:scale-garden}}<figcaption>Garden</figcaption></figure>
+      <figure>{{ICON:scale-patch}}<figcaption>Patch</figcaption></figure>
+      <figure>{{ICON:scale-nest}}<figcaption>Nest</figcaption></figure>
+      <figure>{{ICON:scale-chamber}}<figcaption>Chamber</figcaption></figure>
+    </div>
+    <p class="small">Later, the unit and chamber pictures can be rendered in Blender from the 3D models (side view, ink line), so a soldier in the Brood Hall list is the same soldier you see walking.</p>
+  </section>
+
+  <section>
+    <div class="head"><p class="eyebrow">7 · Interaction map</p><h2>Every system gets a place and a verb</h2>
+      <p class="lead">Menus open from the world as cards, and the server still decides every result. Nothing below needs a server change except the battle replay, which needs the round-by-round numbers the report already computes.</p></div>
+    <div class="tablewrap"><table>
+      <thead><tr><th>System</th><th>Where it lives</th><th>What the player does</th><th>Builds on</th></tr></thead>
+      <tbody>
+        <tr><td>World map</td><td>Garden: a light per inhabited patch; your colonies honey, allies teal</td><td>Scroll out to rise; tap a light to dive in</td><td>Missions → World region grid</td></tr>
+        <tr><td>Your patch, scouting</td><td>Patch: mounds with flags, scent plumes, wild sites</td><td>Tap a mound or plume for its card (Scout, Raid, Send, Forage)</td><td><code>Patch.tsx</code> spot card</td></tr>
+        <tr><td>Missions</td><td>Patch: a trail is laid, then a column walks it with its timer tag</td><td>Send from the card, watch, recall</td><td>Missions, <code>surfaceParties</code></td></tr>
+        <tr><td>Incoming raids</td><td>Patch: a red column, the alarm ring at your mound</td><td>Keep the army home or send it away</td><td>Incoming list</td></tr>
+        <tr><td>Army-ant swarms</td><td>Patch: a fan-shaped front, insects fleeing, the real count</td><td>Hold the line or send the army away</td><td>Swarm events (<code>20-swarms</code>)</td></tr>
+        <tr><td>Battles</td><td>Patch: the clash at your mound; dead lie upside down</td><td>Watch it land, or replay it from the report</td><td>Battle report (needs per-round counts)</td></tr>
+        <tr><td>Corpse hauling</td><td>Patch: workers carry the dead home as protein</td><td>Haul</td><td>Haul mission, corpse fields</td></tr>
+        <tr><td>Aphid herds</td><td>Patch: aphids on a stem in the wilds, your tenders on it</td><td>Tend, call home</td><td>Herds (<code>24-npcs</code>)</td></tr>
+        <tr><td>Chambers</td><td>Nest: carved hollows that widen with level</td><td>Tap for the card; Dig deeper sends diggers who carry soil up to the heap</td><td>Build jobs, <code>chamberPlan.ts</code></td></tr>
+        <tr><td>Stores</td><td>Nest: leaf piles, prey, honey pools that grow and shrink</td><td>Glance; tap for amounts</td><td>Resources, capacity</td></tr>
+        <tr><td>Brood</td><td>Nest: eggs, larvae and cocoons; new ants walk out</td><td>Raise units</td><td>Brood queue</td></tr>
+        <tr><td>Research</td><td>Nest: violet motes in the Pheromone Chamber; the tree as a card</td><td>Tap to open the tree</td><td>Research jobs</td></tr>
+        <tr><td>New colonies</td><td>Garden: a winged queen flies an arc and a new light appears</td><td>Pick a spot</td><td>Found Colony (<code>19-colonies</code>)</td></tr>
+        <tr><td>Supercolonies</td><td>Garden: teal threads link allied lights</td><td>Open Allies from a thread</td><td>Truces, supercolonies</td></tr>
+        <tr><td>Nest events</td><td>Patch and Nest: rain, a beetle dragged down, leaves falling</td><td>Watch</td><td>Nest events</td></tr>
+        <tr><td>Reports, rankings, feedback</td><td>Cards over the current scale</td><td>Unchanged</td><td>Unchanged</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section>
+    <div class="head"><p class="eyebrow">8 · Technology</p><h2>Build on what ships</h2></div>
+    <div class="layers">
+      <div class="layer"><b>React menus and cards</b><span>Unchanged; float over whichever scale is open</span></div>
+      <div class="layer new"><b>One Three.js world with three scenes: Garden, Patch, Nest</b><span>New: one renderer and camera, lazy-loaded per scale</span></div>
+      <div class="layer new"><b>Instanced ants and grass, small shaders, hand-written "physics"</b><span>New: thousands of ants in a few draw calls</span></div>
+      <div class="layer"><b>PixiJS 2D nest and drawn patch</b><span>Kept as the fallback (no WebGL, weak phones, Motion off)</span></div>
+      <div class="layer"><b>Same colony, missions, incoming and reports data → server</b><span>Unchanged</span></div>
+    </div>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Option</th><th>Verdict</th></tr></thead>
+      <tbody>
+        <tr><td>Three.js WebGL2 + InstancedMesh + custom shaders</td><td><b>Recommended.</b> Already in the game. The mock-up draws 2,000+ swarming ants with walking legs in two draw calls.</td></tr>
+        <tr><td>Three.js WebGPU renderer (compute shaders)</td><td>Later. For 50,000-ant swarms with GPU flocking. It ships in the same package, so it's an upgrade, not a rewrite.</td></tr>
+        <tr><td>Hand-written physics (hops, falls, splashes, sway)</td><td><b>Recommended now.</b> About 100 lines, no download, same result every time.</td></tr>
+        <tr><td>cannon-es (≈120 KB)</td><td>Maybe later, for bodies tumbling in a battle replay.</td></tr>
+        <tr><td>Rapier (WASM, ≈1.5 MB)</td><td>No. A great engine, but nothing here needs collisions solved, and it's a heavy download.</td></tr>
+        <tr><td>Post-processing (real depth of field and bloom)</td><td>Phase 4, computers only. The mock-up fakes both cheaply.</td></tr>
+        <tr><td>React Three Fiber, Babylon.js, Unity/Godot web</td><td>No. Same reasons as the slab: one hand-driven scene, heavier downloads, a second app.</td></tr>
+        <tr><td>Blender</td><td><b>Yes</b>, for the master ant, caste variants, the garden kit, and rendering 2D pictures from the models.</td></tr>
+      </tbody>
+    </table></div>
+    <div class="cards">
+      <div class="card"><p class="k">Download</p><p>Three.js is already loaded on the Colony screen. Scene code under 150 KB; models under 800 KB in total (meshopt-compressed), loaded per scale.</p></div>
+      <div class="card"><p class="k">Geometry</p><p>One ant ≤ 600 triangles. ≤ 3,000 ants on computers, ≤ 900 on phones. Under 100 draw calls per scale. Hidden groups aren't drawn.</p></div>
+      <div class="card"><p class="k">Frame rate and battery</p><p>60 fps on computers, 30 on phones. Stop drawing when hidden or off screen. Motion off: still frame or the 2D view.</p></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="head"><p class="eyebrow">9 · Making the art</p><h2>Code now, Blender for the heroes</h2></div>
+    <div class="cards">
+      <div class="card"><p class="k">Now, in code</p><p>Everything in the mock-up: the ant body plan (same parts as <code>ants.ts</code>), grass, flowers, pebbles, the log, soil horizons, chamber contents.</p></div>
+      <div class="card"><p class="k">Hero pieces, Blender</p><p>A master ant (worker, soldier, queen, army ant and major as variants), a baked walk, and a garden kit: leaves, petals, pebbles, twig, acorn, bottle cap, marble, termite cone, aphid.</p></div>
+      <div class="card"><p class="k">Later</p><p>A 3D artist for a consistent set, and cosmetic nest themes (they're palette and prop swaps, so never pay-to-win).</p></div>
+    </div>
+    <div class="prose">
+      <h3>The Blender pipeline</h3>
+      <ol class="steps">
+        <li>Model the worker low-poly (≤ 600 triangles) to the body plan, legs as separate segments.</li>
+        <li>Make the castes as shape keys: big head and jaws (soldier), long gaster (queen), slim with two waist nodes (army ant), sickle jaws (major).</li>
+        <li>Rig six legs, animate one tripod walk loop, and bake it to a vertex animation texture, so thousands walk on the GPU like in the mock-up.</li>
+        <li>Export <code>.glb</code> with meshopt; I wire it into the instancing code.</li>
+        <li>Render each model side-on with an ink line to make the 2D pictures.</li>
+      </ol>
+      <p>I can drive Blender directly through its connector, which timed out in this session. If you open Blender with the MCP add-on before a session, I'll build the master ant there. Or make a concept image and let an image-to-3D tool rough it out:</p>
+    </div>
+    <pre class="prompt">A worker leafcutter ant carrying a cut leaf over its head, seen side-on at ant level.
+Stylised low-poly 3D model, glossy amber chitin with a warm backlit rim, chunky readable silhouette,
+six clearly separated legs, elbowed antennae, pinched waist, field-guide naturalism, no cartoon face.
+Colours: amber body #D9934A, highlight #FFE2A8, leaf #8DCB4A.
+Isolated on a plain light background, three-quarter side view, whole model in frame.</pre>
+    <p class="small">Steps if you make one: paste the prompt into an image generator → upload the image to Meshy or Tripo, choose low poly, download the <code>.glb</code> → drop it in the chat. Check each tool's terms allow commercial use before anything ships.</p>
+  </section>
+
+  <section>
+    <div class="head"><p class="eyebrow">10 · Conflicts with the design docs</p><h2>What would change on paper</h2>
+      <p class="lead">I haven't edited any of these. They change, with the decision log, in the same pull request as the first piece of work you approve.</p></div>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Where</th><th>Says today</th><th>Would say</th></tr></thead>
+      <tbody>
+        <tr><td>18-art-direction · In 3D</td><td>2D art in a 3D block; ants on flat cards; a paper diorama</td><td>3D ants from one master model, instanced; 2D sprites stay for the 2D fallback and pictures</td></tr>
+        <tr><td>18-art-direction · Palette</td><td>Soil strata #6B4F37 → #33261A; the nest looks the same in both themes</td><td>Sunlit microcosm: soil horizons, backlit life colours, teal for allies; day and night by the player's clock</td></tr>
+        <tr><td>18-art-direction · Scale</td><td>Two zoom levels (whole nest, chamber close-up), sprites 11–15 px</td><td>Four scales on one zoom: Garden, Patch, Nest, Chamber, with a live scale bar</td></tr>
+        <tr><td>art/3d-exploration · decisions</td><td>No inside views; phones not a priority; no 3D models for now</td><td>Still no free camera; ant-level views on the patch; 3D patch on capable phones; models from Blender</td></tr>
+        <tr><td>11-world · Missions screen</td><td>The patch drawn in 2D; World = a 10×10 grid per region</td><td>3D patch diorama; World = the garden with regions as places (grid as an overlay); same "no names or strength" rule</td></tr>
+        <tr><td>12-ui-nest-view · Nest</td><td>3D slab on computers, 2D on phones; Open Question on a raid scene</td><td>Slab becomes the Nest rung; the raid scene is answered: the clash plays on the patch</td></tr>
+        <tr><td>20-swarms · How players see it</td><td>Column shows one ant per 3, at least 6 and at most 30</td><td>A fan-shaped front at the real count up to the cap, flushed insects, the true number on the tag</td></tr>
+        <tr><td>13-tech · Client</td><td>Three.js loaded on the Colony screen only</td><td>Three.js world shared by the Colony and Missions screens</td></tr>
+        <tr><td>00-vision · Non-goals</td><td>Not a per-ant simulation</td><td>Unchanged: the ants act out server results</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section>
+    <div class="head"><p class="eyebrow">11 · Plan and decisions</p><h2>Value early, stop safely</h2></div>
+    <ol class="steps">
+      <li><b>Colour and real ants in the slab.</b> Instanced 3D ants replace the sprite cards, plus the soil horizons and the sunlit surface. Small and visible; phones keep 2D.</li>
+      <li><b>The 3D patch</b> on the Missions screen (computers): diorama, trails, columns, scents, wild sites. The drawn 2D patch stays as the fallback.</li>
+      <li><b>Swarm and battle moments:</b> the fan front, fleeing insects, the clash at the mound, corpses to haul, a replay from the report.</li>
+      <li><b>The Garden</b> and the zoom that ties the rungs together; nuptial flights; supercolony threads. Then real depth of field and bloom on computers.</li>
+      <li><b>Blender hero art,</b> and the 2D pictures re-rendered from it. Phones get the 3D patch if phase 2 holds 30 fps on a mid-range phone.</li>
+    </ol>
+    <div class="decide">
+      <h3>What I need from you</h3>
+      <ol>
+        <li><b>Structure:</b> A (the scale ladder), B (two separate 3D views) or C (hero moments only)? I recommend A.</li>
+        <li><b>Look:</b> retire the brown strata for the sunlit microcosm palette (soil horizons, backlit ants, flowers overhead)?</li>
+        <li><b>Ants:</b> real 3D ants from one model, instanced, replacing the flat cards in 3D?</li>
+        <li><b>Counts:</b> draw armies and swarms at their real size (capped, with the true number on the tag) instead of 1 per 3, max 30?</li>
+        <li><b>First build:</b> colour and real ants in the slab (my pick), or go straight to the 3D patch?</li>
+        <li><b>Allies:</b> teal for supercolony lights and threads?</li>
+        <li><b>Hero art:</b> I build the master ant in Blender (you open Blender with the connector), or you start from a concept image in Meshy or Tripo?</li>
+      </ol>
+      <p class="small">Risks: every system costs a little 3D work on top of its 2D fallback; cheap phones are the real test; hero art is the slowest part. The menus remain the fallback for everything.</p>
+    </div>
+  </section>
+</main>
+
+<script type="module">
+{{SCENE}}
+</script>
