@@ -1,5 +1,5 @@
-// The ants you meet inside a chamber (docs/12-ui-nest-view.md, "Inside a chamber"): when the 3D nest dives into
-// a hollow, a small crew does that chamber's work there, each with a name and a job. Hauliers bring loads in
+// The ants at work in the chambers (docs/12-ui-nest-view.md, "Meeting the ants"): every built chamber of the 3D
+// nest has a small crew doing its work, each with a name and a job, met by zooming in. Hauliers bring loads in
 // from the tunnel, others tend the pile, the brood or the queen. It's choreography: the server's numbers decide
 // what the chamber holds (contents.ts); the crew only shows the kind of work that goes on in it.
 //
@@ -97,9 +97,28 @@ export function tunnelSide(r: Room) {
   return -(s || 1);
 }
 
-/** How many ants work in a chamber: more in a bigger one, never more than the colony has. */
+/** How many ants work in a chamber: more in a bigger one, never more than the colony can spare. */
 export function crewSize(level: number, workers: number) {
-  return Math.max(1, Math.min(10, 3 + Math.floor(level / 2), workers));
+  return Math.max(0, Math.min(10, 3 + Math.floor(level / 2), workers));
+}
+
+/**
+ * Share `budget` workers out over the chambers (their levels, in order) a few at a time, so every chamber gets
+ * someone before any gets a full crew. Returns each chamber's crew size.
+ */
+export function shareCrews(levels: number[], budget: number) {
+  const size = levels.map(() => 0);
+  for (let given = 0, more = true; more && given < budget; ) {
+    more = false;
+    for (let i = 0; i < levels.length && given < budget; i++) {
+      if (size[i] < crewSize(levels[i], Infinity)) {
+        size[i]++;
+        given++;
+        more = true;
+      }
+    }
+  }
+  return size;
 }
 
 export interface Member {

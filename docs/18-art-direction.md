@@ -60,7 +60,7 @@ Resource colours (leaf, protein, honey) stay reserved for cargo and stores, neve
 ## Scale
 An ant needs about 14–18px of length on screen to read as an ant. In the 2D nest there are two zoom levels (the 3D views follow the scale ladder above):
 - **Whole nest:** sprites at 11px (workers) to 15px (queens). Small, but on phone screens (2× pixels) they read as ants.
-- **Chamber close-up:** tap a chamber to see portraits at 40–70px. In the 3D nest, diving into a chamber shows the crew at about a seventh of the hollow's width (roughly 150–250px on a computer), cut finer than the crowds in the tunnels.
+- **Chamber close-up:** tap a chamber to see portraits at 40–70px. In the 3D nest, zooming in (up to 10×) shows every chamber's crew; at the double-click glide (8×) an ant is roughly 45–90px long on a computer. Crews are cut finer than the crowds in the tunnels.
 
 ## Chambers
 Built in layers, not one picture each, so they can grow with level and show how full they are:
@@ -92,7 +92,7 @@ In the game: the close-up draws the full art; the whole-nest view draws each cha
 **Next:** contents that grow with level and fill (more leaves as the Granary fills, more repletes as the gallery grows), and bolder silhouettes for the chambers that are weak at nest size.
 
 ## Names
-Every ant you meet inside a chamber has a name: in the 3D nest, point at her for her name and caste, and click her for a field-guide card (name, caste, what she's doing) while she stops and turns to you; in the 2D close-up, hover, click or tap for a small tag. See [12-ui-nest-view.md](12-ui-nest-view.md), "Inside a chamber".
+Every ant you can look at closely has a name: in the 3D nest, zoom in and point at any ant for her name and caste, and click her for a field-guide card (name, caste, what she's doing) while she stops and turns to you; in the 2D close-up, hover, click or tap for a small tag. See [12-ui-nest-view.md](12-ui-nest-view.md), "Meeting the ants".
 - **The card** is a little specimen label on paper `#F7F4EA` with ant-ink text and border (honey ring when pinned), the same in both themes since it sits in the world.
 - Names are common given names in Spain, kept in `docs/data/ant-names.json` (100 female, 100 male).
 - **Biologically accurate:** workers, soldiers and queens are all female, so they take female names; a queen is titled ("Reina Isabel"). Male names are for winged males (drones), which aren't drawn yet.
