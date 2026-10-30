@@ -2,7 +2,7 @@
 // Three.js never reaches players on the 2D nest. Tapping a chamber opens the same sheet as the 2D nest;
 // tapping the entrance opens Missions. If WebGL can't start, the parent falls back to the 2D nest.
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { CHAMBERS, CHAMBER_IDS, isUnlocked, lvl, type ChamberId } from '@hormigas/shared';
+import { CHAMBERS, CHAMBER_IDS, isUnlocked, lvl, roleCount, type ChamberId } from '@hormigas/shared';
 import { useGame } from '../../game';
 import { setMotionPref, useMotion, type MotionPref } from '../../motion';
 import type { Nav } from '../../nav';
@@ -68,7 +68,7 @@ export function Nest3D({ nav, onFail, onSwitch, fill, inset }: { nav: Nav; onFai
   // what the slab is carved from: built chambers, ones you could dig next, how many ants there are
   const research = state?.player.research ?? {};
   const totalUnits = colony ? Object.values(colony.units).reduce((a, b) => a + (b ?? 0), 0) : 0;
-  const soldiers = colony ? (colony.units.minor_soldier ?? 0) + (colony.units.major_soldier ?? 0) + (colony.units.acid_sprayer ?? 0) + (colony.units.trap_jaw ?? 0) : 0;
+  const soldiers = colony ? roleCount(colony.units, 'soldier') : 0;
   const layout: Layout | null = colony
     ? {
         chambers: Object.fromEntries(CHAMBER_IDS.map((id) => [id, lvl(colony.chambers, id)])),

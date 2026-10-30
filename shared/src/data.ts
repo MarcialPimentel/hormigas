@@ -119,8 +119,15 @@ export interface CombatStats {
   health: number;
   frenzy: Record<string, number>;
 }
+/** What a caste is for (castes.json "role"). Screens group castes by it instead of listing ids. */
+export const CASTE_ROLES = ['worker', 'soldier', 'scout', 'carrier', 'queen', 'wild'] as const;
+export type CasteRole = (typeof CASTE_ROLES)[number];
+
 export interface CasteDef extends CombatStats {
   name: string;
+  role: CasteRole;
+  /** The field-guide line shown in the Brood Hall. */
+  blurb: string;
   mvp: boolean;
   cost: Resources;
   speed: number;
@@ -136,6 +143,8 @@ export interface CasteDef extends CombatStats {
 }
 export interface DefenseDef extends CombatStats {
   name: string;
+  /** The line shown in the Brood Hall. */
+  blurb: string;
   mvp: boolean;
   cost: Resources;
   max?: number;
@@ -212,5 +221,15 @@ export const DIPLOMACY_DATA = diplomacyJson;
 export const MVP_CASTES = CASTE_IDS.filter((id) => CASTES[id].mvp);
 export const MVP_DEFENSES = DEFENSE_IDS.filter((id) => DEFENSES[id].mvp);
 export const MVP_RESEARCH = RESEARCH_IDS.filter((id) => RESEARCH[id].mvp);
+
+/** Castes with the given role, in list order. */
+export const castesWithRole = (role: CasteRole): CasteId[] => CASTE_IDS.filter((id) => CASTES[id].role === role);
+
+/** How many ants of a role are in `units` (e.g. soldiers at home, for the nest's guards). */
+export function roleCount(units: Partial<Record<CasteId, number>>, role: CasteRole): number {
+  let n = 0;
+  for (const [id, k] of Object.entries(units)) if (CASTES[id as CasteId]?.role === role) n += k ?? 0;
+  return n;
+}
 
 export const ZERO: Readonly<Resources> = Object.freeze({ foliage: 0, protein: 0, nectar: 0 });

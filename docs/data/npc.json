@@ -132,6 +132,26 @@
     "perPlayerCooldownHours": 24,
     "revengeWeight": 2
   },
+  "tuning": {
+    "_note": "The armies the balance checks use (npm run combat, shared/test/nests.test.ts): a fair army for a player whose area is at each wild-nest level, and for each termite mound and spider den tier. A fair army should win at least 90% of the time with moderate losses; half of it should pay far more. Not used by the game itself.",
+    "nestArmies": {
+      "1": {"minor_soldier": 8},
+      "2": {"minor_soldier": 20},
+      "3": {"minor_soldier": 20, "major_soldier": 12},
+      "4": {"minor_soldier": 80, "major_soldier": 10},
+      "5": {"minor_soldier": 150, "major_soldier": 40},
+      "6": {"minor_soldier": 250, "major_soldier": 100}
+    },
+    "moundArmies": [
+      {"minor_soldier": 120, "major_soldier": 40},
+      {"minor_soldier": 250, "major_soldier": 110},
+      {"minor_soldier": 450, "major_soldier": 220}
+    ],
+    "denArmies": [
+      {"minor_soldier": 250, "major_soldier": 100},
+      {"minor_soldier": 450, "major_soldier": 220}
+    ]
+  },
   "swarm": {
     "_note": "Army-ant swarms (docs/20-swarms.md): each player colony is visited about every 4 days, with warningHours of notice. The swarm is sized by simulating the battle against what the colony has at home when the swarm is spotted, so the colony wins about defenderWinRate of the time if it keeps its army home. Hours are at world speed 1.",
     "name": "Army ant swarm",

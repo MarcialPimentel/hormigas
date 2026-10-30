@@ -24,9 +24,22 @@ Needs Node 22+ and Docker (for local Postgres).
 | `npm test` | All tests (needs the database running) |
 | `npm run typecheck` | Type-check every package |
 | `npm run sim` | Milestone pacing simulation (`npm run sim -- 5` for ×5) |
+| `npm run combat` | Balance tables from the real combat code: castes against each other, raids on defenses, fair armies against every wild nest (`-- castes`, `-- defenses`, `-- nests`; `--budget`, `--runs`) |
 | `npm run build` then `npm start` | Production mode, one server on :3000 |
 
-Run `npm run typecheck` and `npm test` before calling work done. CI runs both, plus the build, on every push and PR.
+Run `npm run typecheck` and `npm test` before calling work done. CI runs both, plus the build, on every push and PR. After changing `castes.json`, `defenses.json`, `npc.json` or `combat.ts`, also run `npm run combat`.
+
+**Local setup notes.** On Marz's PC, Docker Desktop may not be running: start it first, then `docker compose -p hormigas up -d` (from a worktree too, so it reuses the same database volume). To preview in the Claude desktop app, start the `server` and `client` entries in `.claude/launch.json` separately: the preview sets `PORT`, which the game server also reads, so `npm run dev` as one entry puts both on the same port.
+
+## Adding a caste or defense
+
+Mostly a data change in `docs/data/`:
+1. `castes.json` / `defenses.json`: stats, cost, `unlock`, `frenzy` (who it strikes again and again), `outnumbers` if it wins by numbers, `role` (castes: worker, soldier, scout, carrier, queen, wild) and `blurb` (the Brood Hall line). Screens group castes by `role`, never by listing ids.
+2. Add the id to `CASTE_IDS` / `DEFENSE_IDS` in `shared/src/data.ts`.
+3. A picture in `client/src/art/icons.ts` (the type-checker insists).
+4. `npm run combat` to see where it lands; `shared/test/castes-triangle.test.ts` and `nests.test.ts` guard the balance. Update `docs/05-castes-units.md` / `06-defense.md`.
+
+A new combat *mechanic* (like the Soil Wall's shield or the Narrow Tunnel's chokepoint) also needs `shared/src/combat.ts`.
 
 ## Design-doc conventions
 
