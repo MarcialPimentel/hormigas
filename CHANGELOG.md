@@ -3,6 +3,7 @@
 _Current as of Build 11 (2026-10-30)._ Newest first. One entry per build, in players' words, built from the merged PRs. Smaller PRs merged between builds are listed with the nearest build.
 
 ## Next build (unreleased)
+- A new carrier, the **Media Worker** (leafcutter media): carries 3,500, more than twice a Worker, for 500 Foliage and 200 Protein, from Brood Hall 2 with no research. It fills the jump from Workers straight to Haulers, and hauls corpses too.
 - Fixed: scouts from a player you have a truce with (or share a supercolony scent with) no longer show up as "Enemy scouts". They're listed as visiting scouts with your pact beside their name, aren't drawn in enemy red, and never set off the alarm. Your ants never kill them, and you always get a report saying who looked.
 - Fixed: soldiers no longer stack in a column at the top of the 3D nest's shaft. They stand guard spread around the entrance on the mound, and workers use the shaft's whole width, most of them moving between chambers rather than all queuing at the hole.
 - Fights pay in loot: beating a wild nest, termite mound or spider den now carries off 75% of its store, not 50%. Raiding players and aphid herds is unchanged.
