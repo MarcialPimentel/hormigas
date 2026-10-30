@@ -27,6 +27,8 @@ A player starts with one colony and can found more by sending a **Winged Queen**
   - A report says where it was founded.
 - **If the spot was taken** while she flew (or the cap was reached), the flight turns back and everyone comes home. Nothing is lost but the Nectar.
 
+On the 3D Garden ([11-world](11-world.md)) the Winged Queen is a glowing mote flying a dotted arc from your patch to her target patch, with the time left; her colony's light appears when she lands.
+
 ## Running several colonies
 - Each colony has its own chambers, stores, units, defenses, build queue and Brood Hall queue. Research is shared, and only one research runs at a time for the whole account.
 - Switch colony from the picker in the top bar.

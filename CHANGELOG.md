@@ -8,6 +8,7 @@ _Current as of Build 11 (2026-10-30)._ Newest first. One entry per build, in pla
 - Six instinct researches, one per fighting caste, and a second counter layer shown as Strong vs / Weak vs in the Brood Hall ([#84](https://github.com/MarcialPimentel/hormigas/pull/84)).
 - On computers the research tree fills the screen ([#86](https://github.com/MarcialPimentel/hormigas/pull/86)).
 - On computers, the Missions screen shows your patch in 3D: mounds with flags, scents, wild sites, and every party walking its scent trail at its real size; zoom down to ant height, or jump there with Ant's-eye view ([#92](https://github.com/MarcialPimentel/hormigas/pull/92)).
+- The World button opens the whole world as a 3D back garden: a light for every patch where colonies live (yours honey, your supercolony's teal with threads to you), a star map by night, Winged Queens flying their arcs. Zoom out of a patch to rise to it, tap a light to dive in, and go down into your nest from the patch (#97).
 - On the 3D patch, an army-ant swarm comes on as a fan-shaped front with insects fleeing ahead of it, and battles play out where they were fought: live when a raid or swarm lands while you watch, or from any battle report with **Replay on the patch** ([#96](https://github.com/MarcialPimentel/hormigas/pull/96)).
 - The 3D nest is sunlit: coloured soil layers, chambers lit from inside, and real 3D ants walking the tunnels at their real numbers, capped ([#90](https://github.com/MarcialPimentel/hormigas/pull/90)).
 

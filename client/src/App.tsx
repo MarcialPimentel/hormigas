@@ -69,7 +69,7 @@ export function App() {
     { id: 'chambers', label: 'Chambers', icon: ICONS.chambers, render: () => <Chambers /> },
     { id: 'brood', label: 'Brood Hall', icon: ICONS.brood, render: () => <Brood /> },
     { id: 'research', label: 'Research', icon: ICONS.research, render: () => <Research /> },
-    { id: 'missions', label: 'Missions', icon: ICONS.missions, render: () => <Missions draft={params} />, badge: (state.incoming ?? []).filter((i: any) => i.hostile).length },
+    { id: 'missions', label: 'Missions', icon: ICONS.missions, render: (n) => <Missions draft={params} go={n} />, badge: (state.incoming ?? []).filter((i: any) => i.hostile).length },
     { id: 'allies', label: 'Allies', icon: ICONS.allies, render: (n) => <Allies go={n} />, badge: state.player.pendingDiplomacy },
     { id: 'reports', label: 'Reports', icon: ICONS.reports, render: (n) => <Reports go={n} />, badge: state.unreadReports },
     { id: 'rankings', label: 'Rankings', icon: ICONS.ranks, render: () => <Rankings /> },

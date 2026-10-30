@@ -8,7 +8,7 @@ import { useMotion } from '../../motion';
 import type { Spot } from '../Patch';
 import { createPatchScene, type PatchScene } from './scene';
 
-export function Patch3D({ region, patch, spots, selected, onPick, onFail, replay }: {
+export function Patch3D({ region, patch, spots, selected, onPick, onFail, replay, onRise, onNest }: {
   region: number;
   patch: number;
   spots: Spot[] | null;
@@ -17,6 +17,10 @@ export function Patch3D({ region, patch, spots, selected, onPick, onFail, replay
   onFail: () => void;
   /** a battle report's data to act out on the patch (Replay on the patch, from Reports) */
   replay?: unknown;
+  /** zoomed out past the whole patch: rise to the Garden */
+  onRise?: () => void;
+  /** down into your own nest (the Colony screen) */
+  onNest?: () => void;
 }) {
   const { colony, state, now } = useGame();
   const host = useRef<HTMLDivElement>(null);
@@ -26,6 +30,8 @@ export function Patch3D({ region, patch, spots, selected, onPick, onFail, replay
   dataRef.current = { colony, state, now };
   const pickRef = useRef(onPick);
   pickRef.current = onPick;
+  const riseRef = useRef(onRise);
+  riseRef.current = onRise;
   const { reduced } = useMotion();
   const [scale, setScale] = useState('');
   const [ready, setReady] = useState(false);
@@ -36,7 +42,7 @@ export function Patch3D({ region, patch, spots, selected, onPick, onFail, replay
 
   useEffect(() => {
     let dead = false;
-    createPatchScene(host.current!, labels.current!, () => dataRef.current, { onPick: (s) => pickRef.current(s) }, reduced)
+    createPatchScene(host.current!, labels.current!, () => dataRef.current, { onPick: (s) => pickRef.current(s), onRise: () => riseRef.current?.() }, reduced)
       .then((s) => {
         if (dead) return s.dispose();
         sceneRef.current = s;
@@ -105,6 +111,16 @@ export function Patch3D({ region, patch, spots, selected, onPick, onFail, replay
         <button type="button" className="btn ghost small" onClick={() => sceneRef.current?.resetView()} title="See the whole patch (or double-click)">
           Whole patch
         </button>
+        {onRise && (
+          <button type="button" className="btn ghost small" onClick={onRise} title="Rise to the whole garden (or keep zooming out)">
+            ↑ Garden
+          </button>
+        )}
+        {onNest && (
+          <button type="button" className="btn ghost small" onClick={onNest} title="Down into your nest">
+            ↓ Your nest
+          </button>
+        )}
       </div>
       {scale && (
         <div className="p3-scale" aria-live="off">
@@ -120,7 +136,7 @@ export function Patch3D({ region, patch, spots, selected, onPick, onFail, replay
           </button>
         ))}
       </div>
-      <p className="p3-hint" aria-hidden="true">Drag to move · scroll to zoom · right-drag to turn · tap a mound</p>
+      <p className="p3-hint" aria-hidden="true">Drag to move · scroll to zoom (out past the patch to rise to the garden) · right-drag to turn · tap a mound</p>
     </div>
   );
 }

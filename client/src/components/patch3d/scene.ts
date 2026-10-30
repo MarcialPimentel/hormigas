@@ -100,7 +100,7 @@ export async function createPatchScene(
   host: HTMLElement,
   labelsEl: HTMLElement,
   get: () => PatchData,
-  cb: { onPick: (spot: number) => void },
+  cb: { onPick: (spot: number) => void; onRise?: () => void },
   initiallyReduced: boolean,
 ): Promise<PatchScene> {
   const canvas = document.createElement('canvas');
@@ -993,6 +993,7 @@ export async function createPatchScene(
     const w = host.clientWidth, h = host.clientHeight;
     // a hidden or collapsed host has no size yet: wait for the next resize
     if (w < 2 || h < 2) return;
+    sized = [w, h];
     renderer.setSize(w, h, false);
     camera.aspect = w / h;
     camera.updateProjectionMatrix();
@@ -1002,6 +1003,7 @@ export async function createPatchScene(
     if (wasHome || goal.dist > homeDist) goal.dist = homeDist;
     goal.pitch = pitchFor(goal.dist);
   }
+  let sized = [0, 0];
   const ro = new ResizeObserver(fit);
   ro.observe(host);
   fit();
@@ -1037,7 +1039,18 @@ export async function createPatchScene(
     setNdc(e.clientX, e.clientY);
     return (ray.intersectObjects(taps, false)[0]?.object as THREE.Mesh | undefined) ?? null;
   };
+  // keep zooming out past the whole patch and you rise to the Garden (the scale ladder)
+  let rise = 0;
   function zoomAt(f: number, cx: number, cy: number) {
+    if (f > 1 && goal.dist >= homeDist * 0.999) {
+      rise += f - 1;
+      if (rise > 0.45 && cb.onRise) {
+        rise = 0;
+        cb.onRise();
+      }
+      return;
+    }
+    rise = 0;
     const d = THREE.MathUtils.clamp(goal.dist * f, MIN_DIST, homeDist);
     if (d === goal.dist) return;
     setNdc(cx, cy);
@@ -1153,6 +1166,8 @@ export async function createPatchScene(
     clock += reduced ? 0 : dt;
     antUniforms.uTime.value = clock;
     grassU.uTime.value = clock;
+    // a view that opened hidden or at zero size measures itself again once it has one
+    if (host.clientWidth !== sized[0] || host.clientHeight !== sized[1]) fit();
     const hour = new Date(d.now).getHours();
     if (hour !== hourShown) applySky(hour);
     const k = reduced ? 1 : Math.min(1, dt * 8);
