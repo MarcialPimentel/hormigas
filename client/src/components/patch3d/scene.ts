@@ -51,6 +51,8 @@ const EDGE = HALF_W + 4; // where parties from other patches enter
 const pxToX = (px: number) => (px - 345) / 9.6;
 const SPOT_PX = 45;
 const spotPx = (n: number) => (n === WILDS_SPOT ? 562 : n > WILDS_SPOT ? 562 + (n - WILDS_SPOT) * 38 : (n - 0.5) * SPOT_PX);
+/** Spots on a patch: the colony spots, the wilds, then the four wild sites. */
+const SPOT_COUNT = WILDS_SPOT + 4;
 /** Where a spot sits: the drawn patch's order left to right, staggered front and back so neighbours don't crowd. */
 export function spotPos(n: number) {
   const x = pxToX(spotPx(n));
@@ -207,8 +209,18 @@ export async function createPatchScene(
   }
 
   // ---------- grass: instanced blades, swaying in the shader, lit from behind ----------
-  // uFade: 0 solid, 1 see-through (while you move around the zoomed-out patch, so the ants show)
-  const grassU = { uTime: { value: 0 }, uWind: { value: 0.1 }, uGlow: { value: 0.22 }, uRim: { value: new THREE.Color(0.28, 0.36, 0.05) }, uFade: { value: 0 } };
+  // uCam / uLook / uClear: blades that stand between the camera and what it looks at sink to stubs (see clearSight)
+  const grassU = {
+    uTime: { value: 0 }, uWind: { value: 0.1 }, uGlow: { value: 0.22 }, uRim: { value: new THREE.Color(0.28, 0.36, 0.05) },
+    uCam: { value: new THREE.Vector3() }, uLook: { value: new THREE.Vector3() }, uClear: { value: 0 },
+    // every spot on the patch, on the ground (they never move)
+    uSpots: {
+      value: Array.from({ length: SPOT_COUNT }, (_, i) => {
+        const s = spotPos(i + 1);
+        return new THREE.Vector3(s.x, gH(s.x, s.z), s.z);
+      }),
+    },
+  };
   const bladeGeo = (() => {
     const g = keep(new THREE.PlaneGeometry(1, 1, 1, 5));
     const p = g.attributes.position, col: number[] = [];
@@ -223,34 +235,80 @@ export async function createPatchScene(
     g.computeVertexNormals();
     return g;
   })();
-  // two looks of the same grass: solid, and see-through (blended, writing no depth so ants and trails show behind it)
-  const grassMat = keep(new THREE.MeshStandardMaterial({ vertexColors: true, side: THREE.DoubleSide, roughness: 0.72 }));
-  const grassSeeThrough = keep(new THREE.MeshStandardMaterial({ vertexColors: true, side: THREE.DoubleSide, roughness: 0.72, transparent: true, depthWrite: false }));
-  const GRASS_MIN_OPACITY = 0.18;
-  const grassShader = (see: boolean) => (sh: Parameters<THREE.Material['onBeforeCompile']>[0]) => {
-    Object.assign(sh.uniforms, grassU);
-    sh.vertexShader = 'uniform float uTime;\nuniform float uWind;\n' + sh.vertexShader.replace('#include <begin_vertex>', `
+  /**
+   * Vertex code for tall instanced plants (grass blades, reeds) whose local height runs 0..1: a blade sinks to a stub
+   * when it stands in the corridor from the camera to the point it looks at (wide by the lens, where anything fills the
+   * screen; narrower at the focus; a little past it, more when the camera is low) and is tall enough to cut the line
+   * of sight. So nothing grows in front of what you're looking at, and the rest of the meadow stays as it is.
+   */
+  const clearSight = (sway: boolean) => `
       vec3 transformed = vec3(position);
-      float wp = uTime * 1.5 + instanceMatrix[3].x * 0.31 + instanceMatrix[3].z * 0.23;
-      float bend = position.y * position.y * uWind;
+      vec3 base = instanceMatrix[3].xyz;
+      float tallW = length(instanceMatrix[1].xyz);
+      vec2 seg = uLook.xz - uCam.xz;
+      float segL = max(length(seg), 0.001);
+      vec2 dir = seg / segL;
+      vec2 rel = base.xz - uCam.xz;
+      float along = dot(rel, dir);
+      float side = abs(rel.x * dir.y - rel.y * dir.x);
+      float tt = clamp(along / segL, 0.0, 1.0);
+      float halfW = mix(0.45 * segL + 1.2, 2.4 + 0.04 * segL, tt);
+      float past = mix(2.0, 6.0, uClear);
+      float inLane = (1.0 - smoothstep(halfW * 0.65, halfW, side)) * smoothstep(-1.0, 0.0, along) * (1.0 - smoothstep(segL + past * 0.6, segL + past, along));
+      float lineY = max(mix(uCam.y, uLook.y, tt) - base.y, 0.05);
+      float cuts = smoothstep(0.55, 0.95, tallW / lineY);
+      float clearK = uClear * inLane * cuts;
+      // and a narrower lane to every spot near the camera (mounds, sites, empty spots), so they're never hidden either
+      for (int i = 0; i < SIGHT_SPOTS; i++) {
+        vec2 sg = uSpots[i].xz - uCam.xz;
+        float sl = max(length(sg), 0.001);
+        vec2 sd = sg / sl;
+        float al = dot(rel, sd);
+        float st = clamp(al / sl, 0.0, 1.0);
+        float hw = mix(0.6, 2.6, st);
+        float lane = (1.0 - smoothstep(hw * 0.65, hw, abs(rel.x * sd.y - rel.y * sd.x)))
+          * smoothstep(-0.5, 0.0, al) * (1.0 - smoothstep(sl - 0.5, sl + 0.5, al)) * (1.0 - smoothstep(18.0, 28.0, sl));
+        float ly = max(mix(uCam.y, uSpots[i].y + 1.2, st) - base.y, 0.05);
+        clearK = max(clearK, uClear * lane * smoothstep(0.55, 0.95, tallW / ly));
+      }
+      transformed.y *= 1.0 - clearK;
+      ${sway ? `float wp = uTime * 1.5 + base.x * 0.31 + base.z * 0.23;
+      float bend = transformed.y * transformed.y * uWind;
       transformed.x += sin(wp) * bend;
-      transformed.z += (0.5 + 0.5 * cos(wp * 0.73)) * bend * 0.6;`);
-    sh.fragmentShader = 'uniform vec3 uRim;\nuniform float uGlow;\nuniform float uFade;\n' + sh.fragmentShader.replace('#include <dithering_fragment>', `
+      transformed.z += (0.5 + 0.5 * cos(wp * 0.73)) * bend * 0.6;` : ''}`;
+  const SIGHT_UNIFORMS = `#define SIGHT_SPOTS ${SPOT_COUNT}
+uniform float uTime;
+uniform float uWind;
+uniform float uClear;
+uniform vec3 uCam;
+uniform vec3 uLook;
+uniform vec3 uSpots[SIGHT_SPOTS];
+`;
+  type Shader = Parameters<THREE.Material['onBeforeCompile']>[0];
+  const sightVertex = (sh: Shader, sway: boolean) => {
+    Object.assign(sh.uniforms, grassU);
+    sh.vertexShader = SIGHT_UNIFORMS + sh.vertexShader.replace('#include <begin_vertex>', clearSight(sway));
+  };
+  const grassMat = keep(new THREE.MeshStandardMaterial({ vertexColors: true, side: THREE.DoubleSide, roughness: 0.72 }));
+  grassMat.onBeforeCompile = (sh) => {
+    sightVertex(sh, true);
+    sh.fragmentShader = 'uniform vec3 uRim;\nuniform float uGlow;\n' + sh.fragmentShader.replace('#include <dithering_fragment>', `
       gl_FragColor.rgb += vColor * uGlow;
       float rimG = 1.0 - abs(dot(normalize(normal), normalize(vViewPosition)));
       gl_FragColor.rgb += uRim * rimG * rimG;
-      ${see ? `gl_FragColor.a *= 1.0 - uFade * ${(1 - GRASS_MIN_OPACITY).toFixed(2)};` : ''}
       #include <dithering_fragment>`);
   };
-  grassMat.onBeforeCompile = grassShader(false);
-  grassSeeThrough.onBeforeCompile = grassShader(true);
-  grassSeeThrough.customProgramCacheKey = () => 'grass-see-through';
-  grassMat.customProgramCacheKey = () => 'grass-solid';
-  let grassInst: THREE.InstancedMesh | null = null;
+  // shadows follow the blades (a cleared blade casts no shadow, and the shadows sway)
+  const sightDepth = (sway: boolean) => {
+    const m = keep(new THREE.MeshDepthMaterial({ depthPacking: THREE.RGBADepthPacking, side: THREE.DoubleSide }));
+    m.onBeforeCompile = (sh) => sightVertex(sh, sway);
+    m.customProgramCacheKey = () => (sway ? 'sight-depth-sway' : 'sight-depth');
+    return m;
+  };
   const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), e = new THREE.Euler(), v3 = new THREE.Vector3(), s3 = new THREE.Vector3(), cl = new THREE.Color();
   /** Blades are kept off the spots' centres so mounds and sites stay clear. */
   const nearSpot = (x: number, z: number, r: number) => {
-    for (let n = 1; n <= WILDS_SPOT + 4; n++) {
+    for (let n = 1; n <= SPOT_COUNT; n++) {
       const s = spotPos(n);
       if ((s.x - x) ** 2 + (s.z - z) ** 2 < r * r) return true;
     }
@@ -273,7 +331,8 @@ export async function createPatchScene(
       const h = (far ? rr(2.5, 6) : rr(0.6, 1.9) * tall) * (z < -HALF_D ? 1.5 : 1);
       blades.push({ x, z, h, w: rr(0.1, 0.2), tint: t === 'sandy_soil' ? '#E8E2B0' : t === 'wilds' ? '#D2E2B0' : pick(['#FFFFFF', '#F2F7E0', '#E6F0C8', '#FFF6D8']) });
     }
-    const inst = (grassInst = new THREE.InstancedMesh(bladeGeo, grassMat, blades.length));
+    const inst = new THREE.InstancedMesh(bladeGeo, grassMat, blades.length);
+    inst.customDepthMaterial = sightDepth(true);
     blades.forEach((b, i) => {
       q.setFromEuler(e.set(rr(-0.15, 0.15), rnd() * 6.28, rr(-0.12, 0.12)));
       m4.compose(v3.set(b.x, gH(b.x, b.z) - 0.02, b.z), q, s3.set(b.w, b.h, b.w * 1.5));
@@ -330,15 +389,22 @@ export async function createPatchScene(
       scene.add(shadow(p));
     }
     // reeds by the creek
-    const reed = keep(new THREE.CylinderGeometry(0.04, 0.06, 1, 4).translate(0, 0.5, 0));
+    // (one instanced mesh, cleared from the line of sight like the grass)
+    const reedMat = keep(new THREE.MeshStandardMaterial({ roughness: 0.85 }));
+    reedMat.onBeforeCompile = (sh) => sightVertex(sh, false);
+    reedMat.customProgramCacheKey = () => 'reed';
+    const reeds = new THREE.InstancedMesh(keep(new THREE.CylinderGeometry(0.04, 0.06, 1, 4).translate(0, 0.5, 0)), reedMat, 60);
+    reeds.customDepthMaterial = sightDepth(false);
     for (let i = 0; i < 60; i++) {
       const z = rr(-HALF_D - 6, HALF_D + 3), x = CREEK_X + 0.6 * Math.sin(z * 0.25) + (rnd() < 0.5 ? -1 : 1) * rr(1, 1.7);
-      const r = new THREE.Mesh(reed, mat(pick(['#5E8A3A', '#7FA048', '#4F7A36'])));
-      r.position.set(x, gH(x, z), z);
-      r.scale.y = rr(3, 7);
-      r.rotation.set(rr(-0.1, 0.1), 0, rr(-0.1, 0.1));
-      scene.add(shadow(r));
+      q.setFromEuler(e.set(rr(-0.1, 0.1), 0, rr(-0.1, 0.1)));
+      m4.compose(v3.set(x, gH(x, z), z), q, s3.set(1, rr(3, 7), 1));
+      reeds.setMatrixAt(i, m4);
+      reeds.setColorAt(i, cl.set(pick(['#5E8A3A', '#7FA048', '#4F7A36'])));
     }
+    reeds.castShadow = !coarse;
+    reeds.receiveShadow = true;
+    scene.add(reeds);
     // the rotting log across the back of its band, with orange bracket fungus
     const [l0, l1] = range('rotting_log');
     const lx = (l0 + l1) / 2;
@@ -434,10 +500,29 @@ export async function createPatchScene(
   const plumes: { line: THREE.Mesh; base: THREE.Vector3; phase: number }[] = [];
   const hitMat = keep(new THREE.MeshBasicMaterial({ visible: false }));
   const tapGeo = keep(new THREE.CylinderGeometry(2.1, 2.1, 3.5, 12));
-  const moundPts: THREE.Vector2[] = [];
-  const moundProfile = (d: number) => (d < 0.62 ? -0.05 + 0.85 * smooth(0.3, 0.62, d) : 0.8 * Math.exp(-(((d - 0.62) / 1.05) ** 2)));
-  for (let d = 0.3; d <= 2.8; d += 0.1) moundPts.push(new THREE.Vector2(d * 0.75, moundProfile(d) * 0.9));
-  const moundGeo = keep(new THREE.LatheGeometry(moundPts, 28));
+  // the mound: a low dome of dug-out soil with a shallow crater on top round the entrance. The profile runs from the
+  // outer edge up over the rim and down into the crater, so the outside of the dome is the side you see.
+  const MOUND = { R: 2.1, rim: 0.42, hole: 0.2, H: 0.75, dip: 0.26 };
+  const moundGeo = (() => {
+    const { R, rim, hole, H, dip } = MOUND;
+    const pts: THREE.Vector2[] = [];
+    for (let i = 0; i <= 18; i++) {
+      const u = i / 18;
+      pts.push(new THREE.Vector2(R - (R - rim) * u, H * Math.pow(Math.sin((u * Math.PI) / 2), 1.6)));
+    }
+    for (let i = 1; i <= 4; i++) pts.push(new THREE.Vector2(rim - (rim - hole) * (i / 4), H - dip * Math.sin(((i / 4) * Math.PI) / 2)));
+    const g = keep(new THREE.LatheGeometry(pts, 32));
+    // lumps of carried-out soil, so it isn't a perfect bowl (hashed by position, so the seam stays closed)
+    const pos = g.attributes.position;
+    for (let i = 0; i < pos.count; i++) {
+      const x = pos.getX(i), z = pos.getZ(i), r = Math.hypot(x, z);
+      if (r < hole + 0.03 || r > R - 0.05) continue;
+      const n = Math.sin(Math.round(x * 1000) * 0.012989 + Math.round(z * 1000) * 0.078233) * 43758.5453;
+      pos.setY(i, pos.getY(i) + (n - Math.floor(n) - 0.5) * 0.09 * smooth(0, 0.6, (R - r) / R));
+    }
+    g.computeVertexNormals();
+    return g;
+  })();
   const flagGeo = (() => {
     const s = new THREE.Shape();
     s.moveTo(0, 0);
@@ -468,10 +553,11 @@ export async function createPatchScene(
     m.position.set(x, y - 0.05, z);
     m.scale.setScalar(scale);
     spotGroup.add(shadow(m));
+    // the entrance, at the bottom of the crater
     const hole = new THREE.Mesh(holeGeo, mat('#140E0A'));
     hole.scale.setScalar(scale);
     hole.rotation.x = -Math.PI / 2;
-    hole.position.set(x, y - 0.02, z);
+    hole.position.set(x, y - 0.05 + (MOUND.H - MOUND.dip) * scale + 0.01, z);
     spotGroup.add(hole);
     if (flag) {
       const p = new THREE.Mesh(pole, mat('#3A2A1C'));
@@ -1176,23 +1262,6 @@ export async function createPatchScene(
     clampGoal();
   }
 
-  // grass: see-through while the camera moves over the zoomed-out patch, so the columns show; it grows back
-  // half a second after the camera settles. At ant height the grass stays solid: there, it's the point.
-  let grassFade = 0, settled = 1;
-  const lastCam = new THREE.Vector3().copy(camera.position);
-  function fadeGrass(dt: number) {
-    const moved = camera.position.distanceTo(lastCam) > view.dist * 0.0004;
-    lastCam.copy(camera.position);
-    settled = moved || keys.active() ? 0 : settled + dt;
-    const high = smooth(12, homeDist * 0.5, view.dist);
-    const want = settled < 0.5 ? high : 0;
-    grassFade = reduced ? want : want > grassFade ? Math.min(want, grassFade + dt * 6) : Math.max(want, grassFade - dt * 2.5);
-    grassU.uFade.value = grassFade;
-    if (!grassInst) return;
-    grassInst.material = grassFade > 0.01 ? grassSeeThrough : grassMat;
-    grassInst.castShadow = !coarse && grassFade < 0.5;
-  }
-
   // pointer: drag to move across the patch (or turn, with the right button or shift), wheel or pinch to zoom, tap a spot
   const ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
   const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), hit = new THREE.Vector3();
@@ -1353,7 +1422,10 @@ export async function createPatchScene(
     view.dist += (goal.dist - view.dist) * k;
     view.pitch = pitchFor(view.dist);
     placeCamera();
-    fadeGrass(dt);
+    // clear the grass from the line of sight once the camera comes down among it (from high up, blades are specks)
+    grassU.uCam.value.copy(camera.position);
+    grassU.uLook.value.set(view.tx, gH(view.tx, view.tz), view.tz);
+    grassU.uClear.value = 1 - smooth(25, 60, view.dist);
     for (const p of plumes) {
       p.line.position.set(p.base.x + (reduced ? 0 : Math.sin(clock * 0.9 + p.phase) * 0.12), p.base.y, p.base.z);
       p.line.rotation.y = reduced ? 0 : Math.sin(clock * 0.5 + p.phase) * 0.4;
