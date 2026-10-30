@@ -76,6 +76,9 @@ Proposed by the rules session as defaults and approved by Marz on 2026-10-29 bef
 - **Production bonuses are +5% per level, chamber output only** (not the base trickle), like OGame's Plasma Tech: small, steady, always worth one more level.
 - **Symbiosis and Supercolony stay "later"** but appear on the tree with their prerequisites.
 
+## Instincts (Build 11)
+Each branch had been "everyone gets the same percentages". Instincts let a player commit to a style: one research per fighting ant caste (Swarm Raiding, Armoured Heads, Acid Glands, Snap Reflex, Crushing Heads, Propaganda Glands), +5% attack and health per level for that caste only, capped at 10. They need the same research as the caste itself, so they appear as soon as the caste does. Read through `casteResearchFraction`, never by level. Symbiosis became playable as a 4-level ally ladder, like OGame's drive levels unlocking ships.
+
 ## Open Questions
 - Should the Research screen let you **queue** the next research (OGame doesn't)? Proposal: not yet; one-at-a-time keeps check-ins meaningful.
 - Raiding Columns cap 3 (65%) vs Nest Plugging uncapped: is that the right balance after playtest?

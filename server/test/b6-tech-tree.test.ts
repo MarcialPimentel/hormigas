@@ -44,9 +44,9 @@ describe('research prerequisites', () => {
     expect(r.error.code).toBe('max');
   });
 
-  it('research that is not in the game yet stays out', async () => {
+  it('Symbiosis (in the game since Build 11) waits for its prerequisites', async () => {
     const r = await p.post('/api/research', { colonyId, research: 'symbiosis' });
-    expect(r.error.code).toBe('bad_research');
+    expect(r.error.code).toBe('locked');
   });
 });
 

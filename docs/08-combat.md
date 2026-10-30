@@ -14,12 +14,15 @@ Combat is automatic and resolves instantly when a raid arrives. The skill is in 
 5. **Health** damage persists for the whole battle.
 6. **Collapse chance:** a unit below 70% Health has a chance to die when hit, equal to `1 − currentHealth / maxHealth`.
 7. **Frenzy:** after firing, a unit with Frenzy *N* against the target's type has a `(N−1)/N` chance to fire again at a new random target.
-8. **Soil Wall shield:** a shot at one of the defender's other defenses hits the Soil Wall's guard first, while the wall stands and has guard left this round. What the guard doesn't soak goes on to the target ([06-defense](06-defense.md)).
-9. **Narrow Tunnel:** if the defender has one, in round 1 each raider fights with a 50% chance (`defenses.json` → `chokepoint`). The tunnel itself isn't in the fight.
-10. **Fall-back order:** after a round in which the raiders have lost at least their chosen share of their army's worth (Foliage + Protein + Nectar cost), they break off (below).
-11. Battle ends when one side is wiped out, the raiders fall back, or after round 6 (draw).
+8. **Trample** (Build 11): a unit with trample *N* whose bite kills its target carries the leftover damage on into up to *N* more random enemies (stopping if what's left would glance). Only big units have it (Supermajor 4, Rhinoceros Beetle 8), so battles without them run exactly as before.
+9. **Soil Wall shield:** a shot at one of the defender's other defenses hits the Soil Wall's guard first, while the wall stands and has guard left this round. What the guard doesn't soak goes on to the target ([06-defense](06-defense.md)).
+10. **Narrow Tunnel:** if the defender has one, in round 1 each raider fights with a 50% chance (`defenses.json` → `chokepoint`). The tunnel itself isn't in the fight.
+11. **Fall-back order:** after a round in which the raiders have lost at least their chosen share of their army's worth (Foliage + Protein + Nectar cost), they break off (below).
+12. Battle ends when one side is wiped out, the raiders fall back, or after round 6 (draw).
 
-Research bonuses (Mandibles, Chitin, Guard Formation) apply to both sides' stats before the battle.
+Research bonuses (Mandibles, Chitin, Guard Formation, and each caste's instinct) apply to both sides' stats before the battle.
+
+**Slave-makers** (Build 11): after a won raid, the raiders carry up to 400 Protein of corpses each straight home; only the rest is left on the field.
 
 ## Outcome
 | Result | Effect |
