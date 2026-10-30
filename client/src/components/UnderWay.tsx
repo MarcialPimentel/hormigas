@@ -5,7 +5,9 @@ import { CASTES, MISSION_TYPES, type MissionType } from '@hormigas/shared';
 import { api } from '../api';
 import { useGame } from '../game';
 import { fmtClock, fmtCoords, fmtDuration, fmtFull } from '../format';
-import { Empty } from './ui';
+import { Empty, TRIP_LOAD, tripAnt } from './ui';
+import { useMotion } from '../motion';
+import type { Caste } from '../art/ants';
 
 type Coords = { region: number; patch: number; spot: number };
 /** A row was clicked: show its column. `key` is the patch scene's party key ('m12', 'i7'). */
@@ -13,6 +15,15 @@ export type FocusParty = (key: string, at: Coords, alsoAt?: Coords) => void;
 
 const clamp01 = (v: number) => Math.max(0, Math.min(1, v));
 const sum = (o: Record<string, number> | undefined) => Object.values(o ?? {}).reduce((a, b) => a + (b ?? 0), 0);
+/** Draw a party as soldiers when fighters are most of it (raids, holds), else as workers. */
+const soldierLed = (units: Record<string, number>) => {
+  let f = 0, all = 0;
+  for (const [id, c] of Object.entries(units ?? {})) {
+    all += c;
+    if ((CASTES as Record<string, { role?: string }>)[id]?.role === 'soldier') f += c;
+  }
+  return all > 0 && f * 2 >= all;
+};
 const label = (t: string) => (MISSION_TYPES as Record<string, { label: string }>)[t]?.label ?? t;
 const INCOMING: Record<string, string> = { swarm: 'Army ant swarm', raid: 'Raid', scout: 'Enemy scouts', hold: 'Allied soldiers', transport: 'Delivery' };
 
@@ -26,12 +37,32 @@ export function tripProgress(m: { status: string; departAt: number; arriveAt: nu
   return { x: 0.5 + back * 0.5, phase: 'back' as const, oneWay };
 }
 
-function Bar({ x, oneWay, tone, back }: { x: number; oneWay: boolean; tone: 'ours' | 'hostile' | 'friend'; back?: boolean }) {
+/** The party itself walks along the bar: a few small ants, facing home on the way back, carrying what they found. */
+const ANT_PX = 24;
+const PARTY_W = 3 * (ANT_PX + 2) + 4;
+function Bar({ x, oneWay, tone, back, caste = 'worker', loads = [], still }: {
+  x: number;
+  oneWay: boolean;
+  tone: 'ours' | 'hostile' | 'friend';
+  back?: boolean;
+  caste?: Caste;
+  loads?: string[];
+  still?: boolean;
+}) {
+  const { reduced } = useMotion();
+  const walk = !reduced && !still;
   return (
     <span className={`mbar ${tone}${back ? ' back' : ''}`} role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(x * 100)}>
-      <span className="mbar-fill" style={{ width: `${(x * 100).toFixed(2)}%` }} />
-      {!oneWay && <span className="mbar-tick" aria-hidden="true" />}
-      <span className="mbar-pin" style={{ left: `${(x * 100).toFixed(2)}%` }} aria-hidden="true" />
+      <span className="mbar-track">
+        <span className="mbar-fill" style={{ width: `${(x * 100).toFixed(2)}%` }} />
+        {!oneWay && <span className="mbar-tick" aria-hidden="true" />}
+      </span>
+      {/* the whole party stays on the bar: it slides across the room the bar has left over */}
+      <span className={`mbar-party${back ? ' back' : ''}`} style={{ left: `calc((100% - ${PARTY_W}px) * ${x.toFixed(4)})` }} aria-hidden="true">
+        {[0, 1, 2].map((i) => (
+          <i key={i} dangerouslySetInnerHTML={{ __html: tripAnt(caste, i, walk, tone === 'hostile' && caste !== 'army', loads.length ? TRIP_LOAD[loads[i % loads.length]] : undefined, ANT_PX) }} />
+        ))}
+      </span>
     </span>
   );
 }
@@ -67,7 +98,7 @@ export function UnderWay({ onFocus, compact, limit }: { onFocus?: FocusParty; co
                   )}
                   <span className="uw-time">{i.arriveAt > now ? fmtDuration(i.arriveAt - now) : 'now'}</span>
                 </div>
-                <Bar x={x} oneWay tone={i.hostile ? 'hostile' : 'friend'} />
+                <Bar x={x} oneWay tone={i.hostile ? 'hostile' : 'friend'} caste={i.type === 'swarm' ? 'army' : i.type === 'raid' || i.type === 'hold' ? 'soldier' : 'worker'} />
                 <p className="uw-sub">
                   {i.from}{i.unitCount && i.type !== 'scout' ? ` · ${fmtFull(i.unitCount)} ${i.type === 'swarm' ? 'ants' : 'units'}` : ''} → {i.herd ? 'your aphid herd' : homes.get(i.targetColonyId)?.name ?? 'you'}
                 </p>
@@ -97,7 +128,15 @@ export function UnderWay({ onFocus, compact, limit }: { onFocus?: FocusParty; co
                   {ends ? `${verb} ${ends > now ? `in ${fmtDuration(ends - now)}` : 'now'}` : verb}
                 </span>
               </div>
-              <Bar x={p.x} oneWay={p.oneWay} tone="ours" back={p.phase === 'back'} />
+              <Bar
+                x={p.x}
+                oneWay={p.oneWay}
+                tone="ours"
+                back={p.phase === 'back'}
+                still={p.phase === 'holding'}
+                caste={m.type === 'colonize' ? 'alate' : soldierLed(m.units) ? 'soldier' : 'worker'}
+                loads={p.phase === 'back' ? Object.keys(TRIP_LOAD).filter((r) => (m.cargo?.[r] ?? 0) > 0) : []}
+              />
               <p className="uw-sub">
                 {compact ? `${fmtFull(n)} ants` : what || `${fmtFull(n)} ants`}
                 {m.result?.recalled ? ' · recalled' : m.result?.turnedBack ? ' · turned back' : ''}

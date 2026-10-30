@@ -781,15 +781,18 @@ pre.report-body { white-space: pre-wrap; overflow-x: auto; }
 .uw-sub { margin: 0; font-size: 0.78rem; color: var(--muted); display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; }
 .uw-recall { margin-left: auto; padding: 0 0.5rem; }
 .underway.compact li { padding: 0.35rem 0.5rem; }
-.mbar { position: relative; display: block; height: 8px; border-radius: 999px; background: rgba(128, 110, 90, 0.22); overflow: visible; }
-.mbar-fill { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 999px; background: var(--honey); transition: width 1s linear; }
+/* the bar is a track the ants walk along: they stand on it, the fill shows how far they've come */
+.mbar { position: relative; display: block; height: 22px; }
+.mbar-track { position: absolute; left: 0; right: 0; bottom: 2px; height: 6px; border-radius: 999px; background: rgba(128, 110, 90, 0.22); }
+.mbar-fill { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 999px; background: var(--honey); opacity: 0.75; transition: width 1s linear; }
 .mbar.hostile .mbar-fill { background: var(--danger); }
 .mbar.friend .mbar-fill { background: #3FC2B8; }
-.mbar-tick { position: absolute; left: 50%; top: -3px; bottom: -3px; width: 2px; margin-left: -1px; background: currentColor; opacity: 0.45; }
-.mbar-pin { position: absolute; top: 50%; width: 12px; height: 12px; margin: -6px 0 0 -6px; border-radius: 50%; background: var(--wall); border: 2px solid var(--honey); transition: left 1s linear; }
-.mbar.hostile .mbar-pin { border-color: var(--danger); }
-.mbar.friend .mbar-pin { border-color: #3FC2B8; }
-@media (prefers-reduced-motion: reduce) { .mbar-fill, .mbar-pin { transition: none; } }
+.mbar-tick { position: absolute; left: 50%; top: -4px; bottom: -4px; width: 2px; margin-left: -1px; background: currentColor; opacity: 0.45; }
+.mbar-party { position: absolute; bottom: 3px; display: flex; gap: 2px; transition: left 1s linear; }
+.mbar-party.back { transform: scaleX(-1); }
+.mbar-party i { display: block; line-height: 0; }
+.mbar-party i svg { display: block; overflow: visible; }
+@media (prefers-reduced-motion: reduce) { .mbar-fill, .mbar-party { transition: none; } }
 
 /* ---------- the Colony screen on a computer: the nest fills the screen, cards float in its sky and corners ---------- */
 @media (min-width: 900px) {

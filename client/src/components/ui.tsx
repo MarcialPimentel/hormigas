@@ -106,17 +106,17 @@ export function Empty({ children }: { children: ReactNode }) {
 }
 
 // hex, not CSS variables: these go inside the ant SVG
-const TRIP_LOAD: Record<string, string> = { foliage: '#8db255', protein: '#d06a6a', nectar: '#e8b23a' };
+export const TRIP_LOAD: Record<string, string> = { foliage: '#8db255', protein: '#d06a6a', nectar: '#e8b23a' };
 const TRIP_ANT_LEN = 18;
 
 const tripAntCache = new Map<string, string>();
 /** One small walking ant for a trip track (cached: the same few are drawn every second). */
-function tripAnt(caste: Caste, i: number, walk: boolean, enemy: boolean, load?: string) {
-  const key = `${caste}|${i}|${walk}|${enemy}|${load ?? ''}`;
+export function tripAnt(caste: Caste, i: number, walk: boolean, enemy: boolean, load?: string, size = TRIP_ANT_LEN) {
+  const key = `${caste}|${i}|${walk}|${enemy}|${load ?? ''}|${size}`;
   let svg = tripAntCache.get(key);
   if (!svg) {
     const [, , w, h] = CASTES[caste].vb;
-    const len = caste === 'soldier' ? TRIP_ANT_LEN + 2 : TRIP_ANT_LEN;
+    const len = caste === 'soldier' ? size + 2 : size;
     svg = antSvg(caste, { lod: 'sprite', walk, enemy, load, phase: i * 0.13 }, `width="${len}" height="${((len * h) / w).toFixed(1)}"`);
     tripAntCache.set(key, svg);
   }
