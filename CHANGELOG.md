@@ -3,6 +3,7 @@
 _Current as of Build 11 (2026-10-30)._ Newest first. One entry per build, in players' words, built from the merged PRs. Smaller PRs merged between builds are listed with the nearest build.
 
 ## Next build (unreleased)
+- Back inside the chambers: in the 3D nest, **Look inside** on a chamber's card (or double-click it) dives into the chamber. A small crew does its work there (hauling leaves in, cutting up prey, feeding the honeypots, licking eggs, grooming the queen), and every ant has a name: click one and she stops and turns to you, with a card saying who she is and what she's doing. The queen now sits in her chamber. In the 2D close-up, clicking an ant keeps her name up.
 - The dig plan: from Queen's Chamber 4, plan the next chamber while one is being dug. It starts on its own the moment the dig ends and the stores can pay, even while you're away, and costs nothing until then.
 
 ## Build 11: The full roster — 2026-10-30
