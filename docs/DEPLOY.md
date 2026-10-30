@@ -45,8 +45,8 @@ The files that define the hub are in [`deploy/`](../deploy/). The copy on the se
 
 Merging to `main` deploys automatically:
 
-1. **CI** (`.github/workflows/ci.yml`) runs typecheck, tests and build.
-2. If CI passes, **Deploy** (`.github/workflows/deploy.yml`) builds the image on GitHub's runners and pushes it to GitHub Container Registry as `latest` and as the commit SHA.
+1. **CI** (`.github/workflows/ci.yml`) runs two jobs side by side: typecheck, tests and build in one, and the Docker image build in the other. On `main` the image is pushed to GitHub Container Registry tagged with the commit SHA. On PRs the image is only built, to prove the Dockerfile still works.
+2. If both jobs pass, **Deploy** (`.github/workflows/deploy.yml`) takes that same image (no second build) and tags it `latest` in the registry. `latest` therefore only ever points at a build that passed CI.
 3. Deploy then SSHes into the droplet as `deploy` and, in `/opt/hub`:
    1. **Backs up the `hormigas` database** to `backups/predeploy-<date>-<commit>.sql.gz` (the newest 10 are kept). If the backup fails, nothing is deployed.
    2. Tags the running image as `hormigas:previous`.
@@ -65,13 +65,13 @@ If a release is live but broken (say, a bug players hit, and the server is healt
 1. Find the last good commit on `main` (the repo's commit list, or the PR that was fine).
 2. **Actions → Deploy → Run workflow**, paste its commit SHA (the short 7-character one works), and run it.
 
-This deploys the saved image for that commit, with the same backup and health check as a normal deploy. Then fix forward: the next merge to `main` deploys as usual.
+This deploys the saved image for that commit, with the same backup and health check as a normal deploy, and points `latest` at it. It refuses a commit whose CI run failed. Then fix forward: the next merge to `main` deploys as usual.
 
 On the droplet, `docker tag ghcr.io/marcialpimentel/hormigas:previous ghcr.io/marcialpimentel/hormigas:latest && docker compose up -d hormigas` does the same for the build that ran just before the current one.
 
 Two things to know:
 - **Migrations aren't undone.** An older build runs on the newer database. That's fine for migrations that only add tables or columns, which is how they should be written. If a migration rewrote data, restore the pre-deploy backup instead (below).
-- Don't run `docker compose pull hormigas` by hand after a rollback. It fetches the newest `latest` from GitHub, which is the broken build.
+- After a rollback done **on the droplet** (the `previous` command above), don't run `docker compose pull hormigas` by hand: GitHub's `latest` still points at the broken build. A rollback through **Run workflow** moves `latest` too, so it doesn't have this problem.
 
 Deploy needs two repository secrets: `DROPLET_HOST` (the droplet's IP) and `DROPLET_SSH_KEY` (the private half of a key used only by GitHub). The GHCR package `hormigas` is public so the droplet can pull it without logging in.
 
