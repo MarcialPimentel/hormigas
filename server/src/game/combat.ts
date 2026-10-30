@@ -6,6 +6,8 @@ import {
   corpseDecayFactor,
   corpseFieldAmount,
   corpseProtein,
+  corpseCarry,
+  res,
   createRng,
   fillCargo,
   groupCargo,
@@ -180,7 +182,10 @@ export async function resolveRaid(q: Tx, m: Mission, at: number, opts: { attacke
   const allies = garrisons.map((g, i) => ({ name: allyPlayers[i].username, units: allyStart[i], lost: nonZero(result.alliesLost[i]) }));
 
   const corpses = corpseProtein(result.attackerLost, result.defenderLost, ...result.alliesLost);
-  await addCorpses(q, m.worldId, m.target, corpses, at);
+  // Slave-makers carry the dead home at once after a won raid; the rest stay on the field (docs/05-castes-units.md)
+  const carried = result.winner === 'attacker' ? Math.min(corpses, corpseCarry(m.units)) : 0;
+  if (carried > 0) m.cargo = { ...(m.cargo ?? res()), protein: (m.cargo?.protein ?? 0) + carried };
+  await addCorpses(q, m.worldId, m.target, corpses - carried, at);
   await q.query('INSERT INTO raid_log (world_id, attacker_id, colony_id, winner, at) VALUES ($1,$2,$3,$4,$5)', [
     m.worldId, attacker.id, target.id, result.winner, at,
   ]);
@@ -215,6 +220,7 @@ export async function resolveRaid(q: Tx, m: Mission, at: number, opts: { attacke
     rounds: result.rounds,
     loot,
     corpses,
+    ...(carried > 0 ? { corpsesCarried: carried } : {}),
   };
   m.result = { winner: result.winner, loot, corpses };
   const verb = result.retreatedAfterRound != null ? 'fell back' : result.winner === 'attacker' ? 'won' : result.winner === 'defender' ? 'lost' : 'drew';

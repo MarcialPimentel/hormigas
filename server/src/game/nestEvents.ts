@@ -28,7 +28,7 @@ const nestEvents = recurringColonyEvent('nest_event', {
 
     c = advance(c, t);
     const world = await getWorld(q);
-    const roll = rollNestEvent(createRng(randomSeed()), productionPerHour(c.chambers, c.terrain, world.speed, c.research), c.resources, storageCapacity(c.chambers, c.research));
+    const roll = rollNestEvent(createRng(randomSeed()), productionPerHour(c.chambers, c.terrain, world.speed, c.research, c.units), c.resources, storageCapacity(c.chambers, c.research));
     const def = NEST_EVENTS[roll.event];
     const gift = { foliage: 0, protein: 0, nectar: 0 };
     if (roll.resource && roll.amount > 0) {

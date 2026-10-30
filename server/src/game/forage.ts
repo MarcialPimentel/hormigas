@@ -1,5 +1,5 @@
 // Forage expeditions into the wilds (spot 13 of any patch).
-import { WILDS_SPOT, coordsKey, createRng, forageLuck, groupCargo, randomSeed, resolveForage, returnLegMs, type CasteId, type UnitCounts } from '@hormigas/shared';
+import { WILDS_SPOT, coordsKey, createRng, partyForageLuck, groupCargo, randomSeed, resolveForage, returnLegMs, type CasteId, type UnitCounts } from '@hormigas/shared';
 import type { Q } from '../db';
 import { GameError } from '../errors';
 import { getPlayer } from '../colony';
@@ -24,7 +24,7 @@ defineMission('forage', {
   },
   async arrive(q, m, at) {
     const player = await getPlayer(q, m.playerId);
-    const luck = forageLuck(player.research);
+    const luck = partyForageLuck(player.research, m.units); // Desert Ants in the party add luck
     const firstTrip = !(await hasForagedBefore(q, m.playerId, m.id));
     const r = resolveForage(createRng(randomSeed()), { cargo: groupCargo(m.units), playerPoints: player.points.total, luck, firstTrip });
 

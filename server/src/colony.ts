@@ -139,7 +139,7 @@ export const advance = (c: Colony, to: number): Colony => {
 /** Throw a plain-language error if the colony can't pay `cost`. */
 export function requireAffordable(c: Colony, cost: Resources) {
   if (canAfford(c.resources, cost)) return;
-  const why = explainShortfall(shortfalls(cost, c.resources, storageCapacity(c.chambers, c.research), productionPerHour(c.chambers, c.terrain, cachedWorldSpeed(), c.research)));
+  const why = explainShortfall(shortfalls(cost, c.resources, storageCapacity(c.chambers, c.research), productionPerHour(c.chambers, c.terrain, cachedWorldSpeed(), c.research, c.units)));
   throw new GameError('cant_afford', why || 'Not enough resources.');
 }
 
