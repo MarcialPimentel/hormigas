@@ -33,11 +33,8 @@ Since Build 6 research is a **tree**: research can need other research (not only
 | **Tandem Running** | Scent | Pher 4, Colony Mind 2, Pheromone Trails 2 | Research 5% faster per level (max 6) |
 | **Chemical Mimicry** | Scent | Pher 4, Scent Reading 3 | Each level halves the chance your scouts are spotted (max 3) |
 | **Supercolony** | Nest | Pher 3, Nuptial Flight 1, Colony Mind 1 | Found or join a supercolony (max 1; [23-supercolonies](23-supercolonies.md)) |
-
-## Later research
-| Research | Branch | Needs | Effect |
-|---|---|---|---|
-| **Symbiosis** | Harvest | Pher 5, Aphid Husbandry 3, Chemical Mimicry 1 | Unlocks ally species (beetles, bullet ants) |
+| **Symbiosis** | Harvest | Pher 5, Aphid Husbandry 3, Chemical Mimicry 1 | Allies (max 4): Carrion Beetle (1), Assassin Bug (2), Bullet Ant (3), Rhinoceros Beetle (4). Playable since Build 11 |
+| **Instincts** (6) | Jaws | the same research as their caste | +5% attack and health per level for one caste only, max 10 ([05](05-castes-units.md#instincts-build-11)) |
 
 ## Scouting detail by Scent Reading difference
 `diff = yourScentReading − theirScentReading + (scouts sent − 1) / 2` (rounded down). Scent Reading counts through its `scoutLevel` effect; the 2 and the thresholds below are in `formulas.json` → `scouting.detail`.

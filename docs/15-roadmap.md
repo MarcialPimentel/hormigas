@@ -22,6 +22,7 @@ Keep the MVP **brutally small**. Its only job is to answer: *is the core loop fu
 - Truces and supercolonies (alliances stage A): meet before you deal; truces with 24 h notice; supercolonies of up to 6 with the Supercolony research; Hold Position; a 3-day scent fade on leaving ([23-supercolonies](23-supercolonies.md)). Moved up from v1.
 - Protein sink (Build 8): feed the brood for faster castes; larval digestion turns Protein into Nectar ([03-economy](03-economy.md), [05-castes-units](05-castes-units.md)).
 - More wild things (Build 9): wild nests in neighbouring patches, Honeypot and Trap-jaw Ants, aphid herds held by tenders (contested Nectar), termite mounds, a spider-den boss; wild scents hint at what they are ([24-npcs](24-npcs.md)). Aphid herding moved up from v1.
+- The full roster (Build 11): Supermajor, Slave-maker, Desert Ant and Gardener Minim; allies through Symbiosis (Carrion Beetle, Assassin Bug, Bullet Ant, Rhinoceros Beetle); trample for big units; one instinct research per fighting caste ([05](05-castes-units.md)).
 - Castes with a purpose (Build 10): a counter triangle (Minor beats Major, Major beats the new Acid Sprayer, Sprayer beats Minor), the Trap-jaw Ant to break defenses, Pit Traps that catch small ants, a Soil Wall that shields, the Narrow Tunnel, a fall-back order on raids, and counter hints in the Brood Hall, battle preview and reports ([05](05-castes-units.md), [06](06-defense.md), [08](08-combat.md)).
 - The colony comes alive (Build 3): the Nest View shows parties, raids, storage, brood, digging and research; while-you-were-away card; small nest events ([12-ui-nest-view](12-ui-nest-view.md), [04-colony](04-colony.md)).
 
@@ -53,11 +54,10 @@ Keep the MVP **brutally small**. Its only job is to answer: *is the core loop fu
 
 ## v1 — "A world worth staying in"
 - Supercolonies, stage B: joint raids, trade trails, a members' board (stage A shipped early: truces, supercolonies, hold position)
-- Ally species: Carrion Beetle, Bullet Ant (after the Build 10 triangle has been playtested)
 - ~~Aphid herding (raidable livestock economy)~~ (moved up: Build 9)
 - Joint raids on spider dens (bosses from [24-npcs](24-npcs.md))
 - More defenses (Sticky Resin; the Narrow Tunnel shipped in Build 10)
-- Reasons to come back (next, Build 11): daily colony tasks with no streak penalty, Diapause (vacation mode), a Field Journal of achievements and titles
+- Reasons to come back (next, Build 12): daily colony tasks with no streak penalty, Diapause (vacation mode), a Field Journal of achievements and titles
 - Vacation mode
 
 ## Later ideas

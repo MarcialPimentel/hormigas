@@ -40,6 +40,8 @@ Sent to the wild edge of a patch (spot 13). Outcome rolled on arrival:
 | Rainstorm | 4% | Loses 20–50% of the party |
 | The Boot | 1% | Whole party lost |
 
+**Desert Ants** (Build 11) in a party add luck: every 5 count as one more Foraging Instinct level for that trip, up to +5 (`formulas.json` → `desertAnts`). The forage screen shows the party's luck.
+
 Foraging Instinct research shifts odds toward good outcomes: each level (its `forageLuck` effect) moves 2 points of chance from Nothing, Lost the trail, Spider ambush, Rainstorm and The Boot, in that order, to Food cache (70%) and Dead beetle (30%). Each bad outcome always keeps at least a quarter of its chance. All the forage numbers (chances, luck shift, find cap, how much each find is worth, losses, return times) are in `formulas.json` → `forage`. Every result has short flavor text — this is where the game's personality shows.
 
 - **The first expedition always finds food.** A player's first party to reach the wilds rolls a Food cache worth at least 70% of what it can carry, and loses nobody. Sending foragers is a founding task, so it has to land well; the gamble starts with the second trip. A recalled party doesn't use up the guarantee.

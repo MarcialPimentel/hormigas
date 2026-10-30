@@ -78,7 +78,7 @@ export function Overview({ go }: { go: (screen: string, params?: any) => void })
   const frame = useCardInset(wide);
   if (!colony || !state) return null;
 
-  const rate = productionPerHour(colony.chambers, colony.terrain, state.world.speed, colony.research);
+  const rate = productionPerHour(colony.chambers, colony.terrain, state.world.speed, colony.research, colony.units);
   const cap = storageCapacity(colony.chambers, colony.research);
   const safe = protectedAmount(colony.chambers, colony.research);
   const wf = workforce(colony.chambers);

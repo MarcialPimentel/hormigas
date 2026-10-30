@@ -24,6 +24,10 @@ Units are **castes** raised in the Brood Hall. Each unit represents a squad of a
 | **Major Soldier** | Heavy | Expensive and armoured. Crushes Acid Sprayers and Trap-jaw Ants; drowns under a swarm of Minors. |
 | **Acid Sprayer** (Build 10) | Anti-swarm | *Formica* soldiers spray formic acid over a crowd. Frenzy vs Minor Soldiers and Workers; dies fast to Majors. Brood Hall 2 + Brood Science 1. |
 | **Trap-jaw Ant** (Build 10) | Siege | *Odontomachus* jaws snap shut faster than anything in nature. Frenzy vs every defense; fragile against ants, so it needs an escort. Brood Hall 3 + Mandibles 2. |
+| **Supermajor** (Build 11) | Heavy | Leafcutter (*Atta*) supermajor. Very tough, **tramples** (a killing bite carries on into up to 4 more ants). Crushes Majors, Sprayers and Trap-jaws; drowns under Minor swarms. Brood Hall 4 + Chitin 3 + Guard Formation 2. |
+| **Slave-maker** (Build 11) | Late raider | *Polyergus*. A middling fighter that, on a **won raid, carries corpses home at once** (400 Protein each) before anyone else can haul them. Brood Hall 6 + Raiding Columns 1 + Chemical Mimicry 2. |
+| **Desert Ant** (Build 11) | Forager | *Cataglyphis*. Very fast; every 5 in a forage party count as one more Foraging Instinct level for that trip (up to +5). Brood Hall 3 + Foraging Instinct 2. |
+| **Gardener Minim** (Build 11) | Economy | The tiniest leafcutters, tending the fungus. Each at home adds 0.5% to the Leaf Gardens' output, counting up to 4 per Leaf Garden level ([03](03-economy.md#gardener-minims-build-11)). Fights like a Worker, so raids can kill some. Brood Hall 2 + Fungus Farming 1. |
 | **Scout** | Espionage | Near-zero combat value; dies easily. |
 | **Hauler** | Bulk cargo | Unlocked after Major Soldier. |
 | **Winged Queen** | Founds a new colony | Brood Hall 4 + Nuptial Flight 1. Used up on landing ([19-colonies](19-colonies.md)). |
@@ -41,12 +45,17 @@ Well-fed ant larvae develop faster. When you raise castes in the Brood Hall you 
 - The second step costs much more for a smaller gain: a real choice between speed now and saving Protein.
 - Feeding adds no points (points count the units, not the meal). Numbers: `formulas.json` → `brood.feeding`. Decided by Marz, 29 Oct 2026 (#65); see [03-economy](03-economy.md#why-protein-needed-a-sink-playtest-29-oct-2026).
 
-## v1 castes (designed, not in MVP)
-| Caste | Role |
-|---|---|
-| **Carrion Beetle** (ally species) | Dedicated corpse hauler, huge corpse cargo |
-| **Bullet Ant** (ally) | Elite striker, frenzy vs Major Soldiers. Waits until the triangle has been playtested, so it doesn't become the new "one best unit". |
-| **Army Ant swarm** | Late-game mass unit |
+## Allies (Build 11)
+Other insects that live with the colony, unlocked by **Symbiosis** levels 1–4 and raised in the Brood Hall like any caste (Marz, 30 Oct 2026: "just treat them like ants").
+
+| Ally | Symbiosis | Role |
+|---|---|---|
+| **Carrion Beetle** | 1 (Brood Hall 4) | Corpse hauler: 20,000 cargo for corpses only. Can't fight. |
+| **Assassin Bug** | 2 (Brood Hall 5) | Giant-killer: stabs through armour (frenzy vs Rhinoceros Beetles and Supermajors). Fragile against small ants. |
+| **Bullet Ant** | 3 (Brood Hall 5) | Heavy-hunter (frenzy vs Majors, Supermajors, beetles). Minors pull it down. |
+| **Rhinoceros Beetle** | 4 (Brood Hall 6) | The giant: hugely tough, **tramples** up to 8. Crushes the mid castes; falls to Minor swarms, Supermajors, Assassin Bugs and Bullet Ants. |
+
+Later idea: Army Ant swarm as a late-game mass unit.
 
 ## Counters: the triangle (Build 10)
 Before Build 10 the best army was "as many Minor Soldiers as you can afford": at equal cost they beat Major Soldiers about 89% of the time, and defenses lost to them at roughly a 3 : 1 cost ratio even after free rebuilds. With only two fighting castes, changing one number just flipped which one dominated. A third caste makes a stable triangle:
@@ -76,7 +85,34 @@ Tuning check (combat code, equal spend of 44k a side, no research; `shared/test/
 | Minor / Major / Sprayer → even mix | 33% / 59% / 4% |
 | Trap-jaw → any soldier caste | 0% |
 
+## The second layer: big units and their hunters (Build 11)
+In this combat engine one bite kills at most one ant and both sides strike at once, so a big unit with the same health per cost as a small one always loses to a swarm. Big units are therefore **tough** (several times the health per cost) and **trample** (leftover damage from a kill carries on, [08](08-combat.md)). That adds a layer on top of the triangle:
+
+```
+Big units (Supermajor, Rhinoceros Beetle)  ──crush──▶  the mid castes (Major, Sprayer, Trap-jaw)
+Hunters (Bullet Ant, Assassin Bug)         ──hunt───▶  the big units
+Small castes (Minor, Sprayer, Trap-jaw)    ──mob────▶  the hunters
+Minor swarms                               ──pull down──▶  the big units too
+```
+
+Tuning check (combat code, 120k a side, no research; `npm run combat`, guarded by `shared/test/full-roster.test.ts`):
+
+| Attacker → defender | Wins |
+|---|---|
+| Supermajor → Major / Sprayer / Trap-jaw | 100% / 100% / 100% |
+| Rhinoceros Beetle → Major / Sprayer / Trap-jaw | 100% / 98% / 100% |
+| Minor → Supermajor / Rhinoceros Beetle | 75% / 100% |
+| Bullet Ant → Supermajor / Rhinoceros Beetle | 100% / 100% |
+| Assassin Bug → Supermajor / Rhinoceros Beetle | 100% / 100% |
+| Minor, Sprayer or Trap-jaw → Bullet Ant or Assassin Bug | 100% |
+| Supermajor → Rhinoceros Beetle | 73% |
+
+## Instincts (Build 11)
+One research per fighting ant caste, in the Jaws branch: **Swarm Raiding** (Minor), **Armoured Heads** (Major), **Acid Glands** (Sprayer), **Snap Reflex** (Trap-jaw), **Crushing Heads** (Supermajor), **Propaganda Glands** (Slave-maker). Each gives +5% attack and +5% health per level to that caste only, up to level 10. Players who pick a style can go deep on it ([21-tech-tree](21-tech-tree.md)).
+
 Rule: every unit should have **at least one counter** and **at least one thing it's good against**. No dominant unit.
+
+**Decisions (Marz, 30 Oct 2026, Build 11):** bigger units are wanted for variety, without copying OGame's combat exactly; beetles and other bugs fit the fantasy; ship the whole roster at once (research gates already spread it over weeks); one instinct per caste; allies are raised like ants; Gardener Minims can die in raids, capped.
 
 **Decisions (Marz, 29 Oct 2026, Build 10):** a triangle plus a siege caste, rather than retuning the two old castes (that stays knife-edge) or adding ally species now. Existing armies are unchanged; every player got a report explaining the change. No refunds.
 

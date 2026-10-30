@@ -33,7 +33,7 @@ export function ForageOdds({ luck, compact = false }: { luck: number; compact?: 
       </ul>
       {!compact && (
         <details className="small">
-          <summary>Every outcome{luck > 0 ? ` (Foraging Instinct ${luck} applied)` : ''}</summary>
+          <summary>Every outcome{luck > 0 ? ` (luck ${luck} from Foraging Instinct and Desert Ants applied)` : ''}</summary>
           <ul className="counts">
             {FORAGE_OUTCOMES.map((k) => (
               <li key={k}>

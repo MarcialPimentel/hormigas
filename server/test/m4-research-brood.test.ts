@@ -56,8 +56,8 @@ describe('research', () => {
     expect(s.colony.resources.foliage).toBeCloseTo(before + researchCost('chitin', 1).foliage, 0);
   });
 
-  it('rejects non-MVP research', async () => {
-    const r = await p.post('/api/research', { colonyId, research: 'symbiosis' });
+  it('rejects unknown research', async () => {
+    const r = await p.post('/api/research', { colonyId, research: 'warp_drive' });
     expect(r.error.code).toBe('bad_research');
   });
 });
@@ -107,8 +107,12 @@ describe('brood hall', () => {
     // the Winged Queen exists since Build 4, but needs Brood Hall 4 and Nuptial Flight
     const queen = await p.post(`/api/colonies/${colonyId}/brood`, { kind: 'caste', id: 'winged_queen', count: 1 });
     expect(queen.error.code).toBe('locked');
-    const later = await p.post(`/api/colonies/${colonyId}/brood`, { kind: 'caste', id: 'carrion_beetle', count: 1 });
-    expect(later.error.code).toBe('bad_unit');
+    // allies are in the game since Build 11, behind Symbiosis
+    const beetle = await p.post(`/api/colonies/${colonyId}/brood`, { kind: 'caste', id: 'carrion_beetle', count: 1 });
+    expect(beetle.error.code).toBe('locked');
+    // NPC-only units can never be raised
+    const termite = await p.post(`/api/colonies/${colonyId}/brood`, { kind: 'caste', id: 'termite_soldier', count: 1 });
+    expect(termite.error.code).toBe('bad_unit');
   });
 
   it("can't enlarge the Brood Hall while it is raising units", async () => {

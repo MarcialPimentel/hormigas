@@ -10,7 +10,7 @@ import {
   type DefenseId,
   type Resources,
 } from './data';
-import { researchFraction, researchSum, type DefenseCounts, type ResearchLevels, type UnitCounts } from './economy';
+import { casteResearchFraction, researchFraction, researchSum, type DefenseCounts, type ResearchLevels, type UnitCounts } from './economy';
 import { res, add, scale } from './resources';
 import { createRng, type Rng } from './rng';
 
@@ -75,6 +75,8 @@ interface EntityStats {
   shield: boolean;
   /** resources it cost, for the fall-back order */
   value: number;
+  /** how many more enemies a killing bite carries on into */
+  trample: number;
 }
 
 interface Army {
@@ -91,15 +93,19 @@ function statsFor(key: EntityKey, research: ResearchLevels): EntityStats {
   const base: CombatStats & { cost: Resources } = key[0] === 'd' ? DEFENSES[id as DefenseId] : CASTES[id as CasteId];
   // Formic Acid: defenses get an extra percentage on all three stats.
   const def = key[0] === 'd' ? researchSum(research, 'defensePct') / 100 : 0;
+  // Instincts: research that sharpens only this caste (docs/21-tech-tree.md)
+  const ownAttack = key[0] === 'd' ? 0 : casteResearchFraction(research, id, 'casteAttackPct');
+  const ownHealth = key[0] === 'd' ? 0 : casteResearchFraction(research, id, 'casteHealthPct');
   return {
     id,
-    attack: base.attack * (1 + researchFraction(research, 'attackPct') + def),
+    attack: base.attack * (1 + researchFraction(research, 'attackPct') + def + ownAttack),
     guard: base.guard * (1 + researchFraction(research, 'guardPct') + def),
-    health: base.health * (1 + researchFraction(research, 'healthPct') + def),
+    health: base.health * (1 + researchFraction(research, 'healthPct') + def + ownHealth),
     frenzy: base.frenzy ?? {},
     defense: key[0] === 'd',
     shield: !!(base as { shield?: boolean }).shield,
     value: base.cost.foliage + base.cost.protein + base.cost.nectar,
+    trample: (base as { trample?: number }).trample ?? 0,
   };
 }
 
@@ -132,15 +138,21 @@ function resetGuards(a: Army) {
 }
 
 /** Apply one shot of `dmg` to entity `t` of `a`: guard first, then health, then the collapse roll. */
-function hit(a: Army, t: number, dmg: number, rng: Rng) {
+function hit(a: Army, t: number, dmg: number, rng: Rng): number {
   const ts = a.stats[a.type[t]];
+  let over = 0;
   if (dmg <= a.guard[t]) a.guard[t] -= dmg;
   else {
     a.health[t] -= dmg - a.guard[t];
     a.guard[t] = 0;
+    if (a.health[t] < 0) {
+      over = -a.health[t]; // the damage a killing bite had left over (for trample)
+      a.health[t] = 0;
+    }
   }
   const h = a.health[t];
   if (h > 0 && h < (C.collapseBelowHealthPct / 100) * ts.health && rng() < 1 - h / ts.health) a.health[t] = 0;
+  return over;
 }
 
 /** A living Soil Wall with guard left this round, or -1. */
@@ -177,7 +189,16 @@ function fire(src: Army, dst: Army, rng: Rng, fireChance = 1): [number, number] 
             dst.guard[w] -= soaked;
             dmg -= soaked;
           }
-          if (dmg > 0) hit(dst, t, dmg, rng);
+          if (dmg > 0) {
+            let left = hit(dst, t, dmg, rng);
+            // trample: a big bite that kills carries on into more enemies (only units with trample draw extra randoms)
+            for (let k = 0; k < s.trample && left > 0; k++) {
+              const u = Math.floor(rng() * dst.size);
+              if (dst.health[u] <= 0) continue;
+              if (left < (C.glanceThresholdPctOfGuard / 100) * dst.stats[dst.type[u]].guard) break;
+              left = hit(dst, u, left, rng);
+            }
+          }
         }
       }
       const n = s.frenzy[ts.id] ?? 1;
@@ -317,6 +338,13 @@ export function defensesValue(defenses: DefenseCounts): Resources {
   let v = res();
   for (const [id, n] of Object.entries(defenses)) if (n) v = add(v, scale(DEFENSES[id as DefenseId].cost, n));
   return v;
+}
+
+/** How many corpses (Protein) raiders can carry home straight from the battlefield: Slave-makers' corpseCargo. */
+export function corpseCarry(units: UnitCounts): number {
+  let n = 0;
+  for (const [id, k] of Object.entries(units)) n += (CASTES[id as CasteId]?.corpseCargo ?? 0) * (k ?? 0);
+  return n;
 }
 
 /** Protein left as corpses: 30% of Foliage+Protein value of destroyed units (both sides). */
