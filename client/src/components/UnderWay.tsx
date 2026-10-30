@@ -99,6 +99,15 @@ export function UnderWay({ onFocus, compact, limit }: { onFocus?: FocusParty; co
                   <span className="uw-time">{i.arriveAt > now ? fmtDuration(i.arriveAt - now) : 'now'}</span>
                 </div>
                 <Bar x={x} oneWay tone={i.hostile ? 'hostile' : 'friend'} caste={i.type === 'swarm' ? 'army' : i.type === 'raid' || i.type === 'hold' ? 'soldier' : 'worker'} />
+                {i.hostile && (i.type === 'swarm' || (i.type === 'raid' && (i.wild || i.herd))) && (
+                  <p className="uw-advice">
+                    {i.type === 'swarm'
+                      ? "Sized so the army you have at home now usually wins. Keep your soldiers in to fight it and win corpses to haul, or send them away and let it take some unprotected food. It never touches chambers."
+                      : i.herd
+                        ? "They're after your tenders and the honeydew. Send more soldiers to tend it, or call your tenders home before they land."
+                        : 'Wild ants. Keep soldiers at home to fight them off, or send your army away until they’ve gone.'}
+                  </p>
+                )}
                 <p className="uw-sub">
                   {i.from}{i.unitCount && i.type !== 'scout' ? ` · ${fmtFull(i.unitCount)} ${i.type === 'swarm' ? 'ants' : 'units'}` : ''} → {i.herd ? 'your aphid herd' : homes.get(i.targetColonyId)?.name ?? 'you'}
                 </p>

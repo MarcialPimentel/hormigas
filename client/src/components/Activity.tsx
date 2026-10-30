@@ -17,7 +17,11 @@ interface Item {
 }
 
 /** Everything with a timer: construction, research, brood queue, missions, incoming raids. */
-export function ActivityList({ go }: { go: (screen: string) => void }) {
+/**
+ * What's going on in the colony, soonest first. `trips` false leaves out missions and parties coming at you, for
+ * screens that show them in Under way; `quiet` returns nothing instead of the "start a build" nudge when idle.
+ */
+export function ActivityList({ go, trips = true, quiet = false }: { go: (screen: string) => void; trips?: boolean; quiet?: boolean }) {
   const { state, colony } = useGame();
   if (!state || !colony) return null;
   const items: Item[] = [];
@@ -74,7 +78,7 @@ export function ActivityList({ go }: { go: (screen: string) => void }) {
       screen: 'brood',
     });
   }
-  for (const m of state.missions ?? []) {
+  for (const m of trips ? state.missions ?? [] : []) {
     if (m.status === 'holding') continue; // no timer: holding until recalled (shown under Missions)
     const out = m.status === 'outbound';
     items.push({
@@ -90,7 +94,7 @@ export function ActivityList({ go }: { go: (screen: string) => void }) {
       screen: 'missions',
     });
   }
-  for (const i of state.incoming ?? []) {
+  for (const i of trips ? state.incoming ?? [] : []) {
     items.push({
       key: `i${i.id}`,
       trip: <Trip departAt={i.departAt} arriveAt={i.arriveAt} status="outbound" incoming hostile={i.hostile} />,
@@ -123,7 +127,7 @@ export function ActivityList({ go }: { go: (screen: string) => void }) {
   }
 
   items.sort((a, b) => a.endAt - b.endAt);
-  if (items.length === 0) return <Empty>Nothing in progress. Every idle minute is wasted growth — start a build.</Empty>;
+  if (items.length === 0) return quiet ? null : <Empty>Nothing in progress. Every idle minute is wasted growth — start a build.</Empty>;
   return (
     <ul className="activity">
       {items.map((i) => (
