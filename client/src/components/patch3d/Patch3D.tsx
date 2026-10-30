@@ -11,7 +11,7 @@ import { createPatchScene, type PatchScene } from './scene';
 
 export type Inset = { left: number; right: number; top: number; bottom: number };
 
-export function Patch3D({ region, patch, spots, selected, onPick, onFail, replay, onRise, onNest, inset, focus }: {
+export function Patch3D({ region, patch, spots, selected, onPick, onFail, replay, onRise, onNest, inset, focus, order }: {
   region: number;
   patch: number;
   spots: Spot[] | null;
@@ -28,6 +28,8 @@ export function Patch3D({ region, patch, spots, selected, onPick, onFail, replay
   inset?: Inset;
   /** fly to this party's column ('m12', 'i7'); `n` changes to ask again */
   focus?: { key: string; n: number } | null;
+  /** the order being written in Deploy, drawn as From → To */
+  order?: { from: { region: number; patch: number; spot: number }; to: { region: number; patch: number; spot: number }; label: string } | null;
 }) {
   const { colony, state, now } = useGame();
   const host = useRef<HTMLDivElement>(null);
@@ -78,6 +80,12 @@ export function Patch3D({ region, patch, spots, selected, onPick, onFail, replay
     if (inset) sceneRef.current?.setInset(inset);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [insetKey]);
+  // after the inset, so the order is framed in the room Deploy leaves
+  const orderKey = JSON.stringify(order ?? null);
+  useEffect(() => {
+    if (ready) sceneRef.current?.setOrder(order ?? null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [orderKey, ready]);
   // a party may only appear on the patch once the map and state have caught up: try for a few seconds
   useEffect(() => {
     if (!focus || !ready) return;

@@ -11,6 +11,7 @@ _Current as of Build 11 (2026-10-30)._ Newest first. One entry per build, in pla
 - Six instinct researches, one per fighting caste, and a second counter layer shown as Strong vs / Weak vs in the Brood Hall ([#84](https://github.com/MarcialPimentel/hormigas/pull/84)).
 - On computers the research tree fills the screen ([#86](https://github.com/MarcialPimentel/hormigas/pull/86)).
 - On computers, the Missions screen shows your patch in 3D: mounds with flags, scents, wild sites, and every party walking its scent trail at its real size; zoom down to ant height, or jump there with Ant's-eye view ([#92](https://github.com/MarcialPimentel/hormigas/pull/92)).
+- Missions orders read **From → To**: pick the sending colony in Deploy (it switches your colony), see the target, Swap between your own colonies, and watch the route drawn on the patch. Your other colonies offer Transport, Relocate and Send from here; **Send ants…** opens Deploy without tapping a spot; Under way names your colonies.
 - The Colony screen no longer lists missions twice: Happening now shows digs, research and brood, and steps aside while parties are out with nothing else going on; raid and swarm advice moved onto the threat in Under way.
 - Under way's progress bars are walked by the party itself: three little ants facing home on the way back with their loads, red raiders or army ants for threats.
 - On the 3D patch, empty spots and the wilds are marked with dotted circles you can see and tap; hovering one names it.

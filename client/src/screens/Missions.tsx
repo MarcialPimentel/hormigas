@@ -150,7 +150,7 @@ export function Missions({ draft, go }: { draft?: MissionDraft; go?: (screen: st
         replay={draft?.replay}
         go={go}
         pm={pm}
-        stage={{ side: underWay, deploy: deploy ? <div className="deploy">{form}</div> : null, focus, inset: { left: deploy ? 300 : 16, right: 200, top: 80, bottom: 40 } }}
+        stage={{ side: underWay, deploy: deploy ? <div className="deploy">{form}</div> : null, focus, order: deploy ? { from: colony.coords, to: target, label: MISSION_LABEL[type] } : null, onDeploy: () => setDeploy(true), inset: { left: deploy ? 450 : 16, right: 200, top: 80, bottom: 40 } }}
       />
     );
   return (
@@ -177,7 +177,7 @@ function SendMission({ type, setType, target, setTarget, onClose, onSent }: {
   onClose?: () => void;
   onSent?: () => void;
 }) {
-  const { colony, state, act, now } = useGame();
+  const { colony, state, act, now, selectColony } = useGame();
   const [units, setUnits] = useState<Record<string, string>>({});
   const [cargo, setCargo] = useState<Record<string, string>>({});
   const [speedPct, setSpeedPct] = useState(100);
@@ -248,6 +248,9 @@ function SendMission({ type, setType, target, setTarget, onClose, onSent }: {
   }
 
   const stays = rules.oneWay;
+  const homeAnts = Object.values(colony.units).reduce((a, b) => a + (b ?? 0), 0);
+  // sending to another of your colonies: offer to send the other way round
+  const swapWith = state.colonies.find((c) => c.id !== colony.id && c.coords.region === target.region && c.coords.patch === target.patch && c.coords.spot === target.spot);
   const times = oneWay ? missionTimes(type, now, oneWay) : null;
 
   function applyReturnBy(value: string) {
@@ -289,7 +292,7 @@ function SendMission({ type, setType, target, setTarget, onClose, onSent }: {
 
   return (
       <Panel
-        title={onClose ? `Deploy: ${MISSION_LABEL[type]} → ${targetName(targetSpot, target, colony.coords)}` : 'Send a mission'}
+        title={`${MISSION_LABEL[type]}: ${colony.name} → ${targetName(targetSpot, target, colony.coords)}`}
         actions={
           <>
             <span className="muted small">{used}/{max} {pool === 'forage' ? 'forage parties' : 'slots'} in use</span>
@@ -301,6 +304,55 @@ function SendMission({ type, setType, target, setTarget, onClose, onSent }: {
           </>
         }
       >
+        {/* the order, read like one: who sends, and where to (Marz, 30 Oct 2026) */}
+        <div className="route" role="group" aria-label="Who goes where">
+          <div className="route-row">
+            <span className="route-k">From</span>
+            {state.colonies.length > 1 ? (
+              <select className="route-from" value={colony.id} onChange={(e) => selectColony(Number(e.target.value))} aria-label="Send from which colony" title="Switches the colony you're playing as">
+                {state.colonies.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name} ({fmtCoords(c.coords)})
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <strong>{colony.name}</strong>
+            )}
+            <span className="muted small route-note">{fmtFull(homeAnts)} ants home</span>
+          </div>
+          {swapWith && (
+            <button className="btn ghost small route-swap" onClick={() => (setTarget(colony.coords), selectColony(swapWith.id))} title={`Send from ${swapWith.name} to ${colony.name} instead`} aria-label="Swap From and To">
+              ⇅ Swap
+            </button>
+          )}
+          <div className="route-row">
+            <span className="route-k">To</span>
+            <strong>{targetName(targetSpot, target, colony.coords)}</strong>
+            <span className="muted small">{valid ? fmtCoords(target) : 'not a place'}</span>
+            {unscouted && <span className="scent-tag">Not scouted</span>}
+            <button className="btn ghost small route-edit" aria-expanded={manual} onClick={() => setManual(!manual)}>
+              {manual ? 'Done' : 'Enter coordinates'}
+            </button>
+          </div>
+          {manual && (
+            <div className="coords-input">
+              {(['region', 'patch', 'spot'] as const).map((k) => (
+                <label key={k}>
+                  {k[0].toUpperCase() + k.slice(1)}
+                  <input type="number" min={1} value={target[k]} onChange={(e) => setTarget({ ...target, [k]: Math.floor(Number(e.target.value)) || 1 })} />
+                </label>
+              ))}
+              {wildsOk && target.spot !== WILDS_SPOT && (
+                <button className="btn ghost small" onClick={() => setTarget({ ...colony.coords, spot: WILDS_SPOT })}>
+                  My patch's wilds
+                </button>
+              )}
+            </div>
+          )}
+          <p className="muted small route-hint">Tap a spot on the patch{onClose ? '' : ' above'} to change where they go.</p>
+        </div>
+
         <div className="seg" role="radiogroup" aria-label="Mission type">
           {ENABLED_MISSIONS.filter((t) => t !== 'hold' || state.player.supercolony || type === 'hold').map((t) => (
             <button
@@ -320,34 +372,7 @@ function SendMission({ type, setType, target, setTarget, onClose, onSent }: {
         </div>
         <p className="muted small">{MISSION_HELP[type]}</p>
 
-        <fieldset className="field">
-          <legend>Target</legend>
-          <div className="target-line">
-            <span>
-              <strong>{targetName(targetSpot, target, colony.coords)}</strong>{' '}
-              <span className="muted small">{valid ? fmtCoords(target) : 'not a place'}</span>
-              {unscouted && <span className="scent-tag">Not scouted</span>}
-            </span>
-            <button className="btn ghost small" aria-expanded={manual} onClick={() => setManual(!manual)}>
-              {manual ? 'Done' : 'Enter coordinates'}
-            </button>
-          </div>
-          <p className="muted small">Pick a target by tapping it on the patch{onClose ? '' : ' above'}.</p>
-          {manual && (
-            <div className="coords-input">
-              {(['region', 'patch', 'spot'] as const).map((k) => (
-                <label key={k}>
-                  {k[0].toUpperCase() + k.slice(1)}
-                  <input type="number" min={1} value={target[k]} onChange={(e) => setTarget({ ...target, [k]: Math.floor(Number(e.target.value)) || 1 })} />
-                </label>
-              ))}
-              {wildsOk && target.spot !== WILDS_SPOT && (
-                <button className="btn ghost small" onClick={() => setTarget({ ...colony.coords, spot: WILDS_SPOT })}>
-                  My patch's wilds
-                </button>
-              )}
-            </div>
-          )}
+        <div className="target-notes">
           {type === 'scout' && target.spot === WILDS_SPOT && (
             <p className="muted small">Scouts will survey the wilds: what foragers can expect there, who lives in the patch, and any corpses lying around.</p>
           )}
@@ -360,7 +385,7 @@ function SendMission({ type, setType, target, setTarget, onClose, onSent }: {
           {type === 'scout' && unscouted && (
             <p className="muted small">Scouting turns this scent into a colony you know: its name, owner and what's inside. Then you can raid it.</p>
           )}
-        </fieldset>
+        </div>
 
         {type === 'forage' && (
           <fieldset className="field">

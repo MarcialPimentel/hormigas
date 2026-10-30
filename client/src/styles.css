@@ -513,6 +513,7 @@ pre.report-body { white-space: pre-wrap; overflow-x: auto; }
 .p3-label.mine { background: #F2C14E; border-color: #2b1d13; }
 .p3-label.ally { background: #BFE6E2; border-color: #2F9C95; }
 .p3-label.wild { border-color: #C4473A; }
+.p3-label.order { background: #FFC93C; border-color: #2b1d13; font-weight: 600; }
 .p3-label.open { background: rgba(255, 249, 232, 0.85); border-style: dashed; font-weight: 600; }
 .p3-label.scent { background: rgba(251, 246, 234, 0.7); font-style: italic; font-weight: 400; }
 .p3-trip { transform: translate(-50%, -100%); transition: none; }
@@ -761,6 +762,14 @@ pre.report-body { white-space: pre-wrap; overflow-x: auto; }
 .war-place p { margin: 0; }
 .war-place-actions { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: 0.15rem; }
 .war-left .world-picker { background: var(--wall); border: 1px solid var(--seam); border-radius: var(--r-md); padding: 0.6rem; overflow: auto; }
+.route { display: grid; gap: 0.35rem; padding: 0.55rem 0.65rem; margin-bottom: 0.6rem; border-radius: 10px; background: rgba(232, 178, 58, 0.12); border: 1px solid rgba(232, 178, 58, 0.55); position: relative; }
+.route-row { display: flex; align-items: baseline; flex-wrap: wrap; gap: 0.4rem; }
+.route-k { width: 2.6rem; flex: none; font-size: 0.72rem; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: var(--honey-ink); }
+.route-from { font: inherit; font-weight: 700; max-width: 100%; }
+.route-edit { margin-left: auto; }
+.route-swap { justify-self: start; margin-left: 2.6rem; padding: 0 0.5rem; }
+.route-hint { margin: 0; }
+.target-notes:empty { display: none; }
 .deploy { min-height: 0; overflow-y: auto; border-radius: var(--r-md); scrollbar-width: thin; }
 .deploy .panel { margin: 0; border-color: var(--honey); }
 .deploy .panel-head h2 { font-size: 1.05rem; }

@@ -362,7 +362,7 @@ function terrainSummary(t: (typeof TERRAIN)[keyof typeof TERRAIN]) {
 }
 
 export function SpotCard({ s, at, onAct }: { s: Spot; at: Coords; onAct: (type: MissionType, at: Coords) => void }) {
-  const { colony, state, now, act } = useGame();
+  const { colony, state, now, act, selectColony } = useGame();
   if (!colony || !state) return null;
   // a Winged Queen at home (or one this colony could raise), and room under the colony cap: same rules the server checks
   const flying = (state.missions ?? []).filter((m: any) => m.type === 'colonize' && m.status === 'outbound').length;
@@ -477,13 +477,33 @@ export function SpotCard({ s, at, onAct }: { s: Spot; at: Coords; onAct: (type: 
                 </button>
               )}
               {!wildKind && (
-                <button className="btn ghost small" disabled={scent} title={scent ? DISCOVERY_MESSAGES.send_needs_scout : undefined} onClick={() => go('transport')}>
-                  Send
+                <button className="btn ghost small" disabled={scent} title={scent ? DISCOVERY_MESSAGES.send_needs_scout : 'Carry food to this colony'} onClick={() => go('transport')}>
+                  Send food
                 </button>
               )}
             </>
           )}
-          {c?.mine && c.id !== colony.id && <button className="btn small" onClick={() => go('relocate')}>Relocate</button>}
+          {/* another of your colonies: send it food, move ants there for good, or give orders from it */}
+          {c?.mine && c.id !== colony.id && (
+            <>
+              {can('transport') && (
+                <button className="btn small primary" onClick={() => go('transport')} title="Carry food there; the carriers come back">
+                  Transport
+                </button>
+              )}
+              {can('relocate') && (
+                <button className="btn small" onClick={() => go('relocate')} title="Move ants and food there; they stay">
+                  Relocate
+                </button>
+              )}
+              {c.id != null && (
+                <button className="btn ghost small" onClick={() => selectColony(c.id!)} title="Give orders from this colony instead">
+                  Send from here
+                </button>
+              )}
+            </>
+          )}
+          {c?.mine && c.id === colony.id && <span className="muted small">Orders go out from here</span>}
           {!c && !wilds && !site && canFound && can('colonize') && <button className="btn small" onClick={() => go('colonize')}>Found colony</button>}
         </div>
       </div>
@@ -589,6 +609,10 @@ export interface Stage {
   deploy: ReactNode | null;
   focus: PartyFocus | null;
   inset: { left: number; right: number; top: number; bottom: number };
+  /** the order being written in Deploy, drawn on the patch */
+  order?: { from: Coords; to: Coords; label: string } | null;
+  /** open Deploy without picking a spot first */
+  onDeploy?: () => void;
 }
 
 export function PatchView({ start, selected, onAct, replay, go: nav, pm: given, stage }: {
@@ -694,6 +718,7 @@ export function PatchView({ start, selected, onAct, replay, go: nav, pm: given, 
               onNest={onNest}
               inset={stage.inset}
               focus={stage.focus}
+              order={stage.order ?? null}
             />
           </Suspense>
         )}
@@ -710,6 +735,11 @@ export function PatchView({ start, selected, onAct, replay, go: nav, pm: given, 
               </p>
             )}
             <div className="war-place-actions">
+              {stage.onDeploy && !stage.deploy && (
+                <button className="btn small primary" onClick={stage.onDeploy} title="Open the mission card: pick who goes, and where">
+                  Send ants…
+                </button>
+              )}
               <button className="btn ghost small" onClick={() => nearest(-1)} disabled={jumping} title="The nearest colony before this patch">
                 ‹ Nearest
               </button>

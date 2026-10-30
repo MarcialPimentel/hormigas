@@ -29,6 +29,9 @@ A player starts with one colony and can found more by sending a **Winged Queen**
 
 On the 3D Garden ([11-world](11-world.md)) the Winged Queen is a glowing mote flying a dotted arc from your patch to her target patch, with the time left; her colony's light appears when she lands.
 
+## Giving orders from several colonies
+Every order goes out from the colony you're playing as. On the Missions screen, Deploy's **From** picker switches it (as does the colony picker at the top), and tapping another of your colonies offers **Transport** (carry food, carriers come back), **Relocate** (move ants and food for good) and **Send from here**. Sending between two of your colonies offers **Swap**. Under way says which colony sent each party.
+
 ## Running several colonies
 - Each colony has its own chambers, stores, units, defenses, build queue and Brood Hall queue. Research is shared, and only one research runs at a time for the whole account.
 - Switch colony from the picker in the top bar.
