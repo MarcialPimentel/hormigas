@@ -40,6 +40,7 @@ The Honeypot Gallery (see [03-economy](03-economy.md#protected-storage--the-hone
 - Rationale: one persistent world means new players join months behind. Catching up to "competitive" must take weeks, not years.
 
 ## Vacation mode
+_Planned: not built yet. It comes in Build 12 as **Diapause** ([15-roadmap](15-roadmap.md))._
 - Freezes a colony: no production, no raids in or out, timers paused.
 - Min 48 h; can't be entered with missions in flight.
 

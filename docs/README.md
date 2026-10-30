@@ -38,4 +38,4 @@ _Current as of Build 11 (2026-10-30)._ Every doc, its role and its status. The n
 | [art/sunlit-microcosm.md](art/sunlit-microcosm.md) | Art reference | reference | The approved "sunlit microcosm" 3D direction (2026-10-30) and its mock-up |
 | [data/](data/) | Numbers | current | Costs, stats and formulas as JSON, read by the game; the data wins over any doc |
 
-_Last doc sync: 2026-10-30 at d60b653 (doc-sync)._
+_Last doc sync: 2026-10-30 at a82c17d (doc-sync)._
