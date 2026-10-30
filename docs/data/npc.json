@@ -104,7 +104,7 @@
     "sites": {"herd": 14, "mound": 15, "den": 16}
   },
   "herds": {
-    "_note": "Aphid herds (docs/24-npcs.md). A herd makes Nectar only while a player's ants tend it. nectarPerHour by level (levels follow the area leader like wild nests: npc.levels[].minPatchPoints). Honeydew piles up in the herd (up to storeHours of production) and the tenders carry it home every deliverEveryHours. Left untended for wanderAfterHours, the herd wanders to another patch nearby. Hours at world speed 1.",
+    "_note": "Aphid herds (docs/24-npcs.md). A herd makes Nectar only while a player's ants tend it. nectarPerHour by level, before the gathering multiplier in formulas.json (levels follow the area leader like wild nests: npc.levels[].minPatchPoints). Honeydew piles up in the herd (up to storeHours of production) and the tenders carry it home every deliverEveryHours. Left untended for wanderAfterHours, the herd wanders to another patch nearby. Hours at world speed 1.",
     "name": "Aphid Herd",
     "nectarPerHour": [10, 20, 35, 60, 100, 160],
     "storeHours": 12,
