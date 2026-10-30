@@ -159,7 +159,7 @@ These change, with the decision log, in the same pull request as the first appro
 
 ## Decisions needed
 
-1. Structure: A (scale ladder), B (two separate 3D views) or C (hero moments only)? Recommended: A.
+1. ~~Structure: A (scale ladder), B (two separate 3D views) or C (hero moments only)?~~ **Decided 2026-10-30: A, the scale ladder** (Garden → Patch → Nest → Chamber, one camera, zoom out to rise a rung).
 2. Look: retire the brown strata for the sunlit microcosm palette?
 3. Ants: real 3D ants from one model, instanced, replacing the flat cards in 3D?
 4. Counts: armies and swarms at real size (capped, true number on the tag) instead of 1 per 3, max 30?
