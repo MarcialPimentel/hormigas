@@ -32,6 +32,16 @@ gaster · petiole · mesosoma · head · mandibles · elbowed antenna · six leg
 
 - **Walking** uses a tripod gait: near front, near hind and far middle legs swing together, against the other three. Legs pivot at the hip in code; no hand-drawn frames.
 
+## Decisions (Marz, 30 Oct 2026)
+From the 3D direction proposal, [art/sunlit-microcosm.md](art/sunlit-microcosm.md):
+1. **Structure: the scale ladder.** Garden → Patch → Nest → Chamber, OGame's galaxy → system → planet as one garden: one camera, zoom out past a level to rise to the next.
+2. **Look: the sunlit microcosm.** Macro-photo light, soil in coloured horizons, colour from life (flowers, stores, beetles). The old brown strata are retired.
+3. **Ants: real 3D ants** from one body plan, instanced, in every 3D view. The 2D sprites stay for the 2D nest (phones, fallback) and the pictures.
+4. **Counts: real size, capped.** One drawn ant per ant up to a cap; above it, the label gives the true number.
+5. **First build:** colour and real ants in the 3D slab (this change). The 3D patch comes next.
+
+Still open: teal for allies (decides with the Garden), and who builds the master ant in Blender.
+
 ## Palette
 Ants are lighter than the soil so they read on it. Colours sit alongside the UI palette in `client/src/styles.css`, which has a dark (soil) and a light (field-guide paper) theme following the device; the nest itself looks the same in both.
 
@@ -46,7 +56,7 @@ Ants are lighter than the soil so they read on it. Colours sit alongside the UI 
 Resource colours (leaf, protein, honey) stay reserved for cargo and stores, never for ant bodies, so a carried load always stands out.
 
 ## Scale
-An ant needs about 14–18px of length on screen to read as an ant. There are two zoom levels:
+An ant needs about 14–18px of length on screen to read as an ant. In the 2D nest there are two zoom levels (the 3D views follow the scale ladder above):
 - **Whole nest:** sprites at 11px (workers) to 15px (queens). Small, but on phone screens (2× pixels) they read as ants.
 - **Chamber close-up:** tap a chamber to see portraits at 40–70px.
 
@@ -110,8 +120,13 @@ The Research screen has a **Tree / List** switch. Computers open on the tree, ph
 ## Scents on the patch
 A colony you haven't scouted is drawn as a **scent**: three wavy strokes rising from a faint stain on the ground, with no mound, flag or name ([22-discovery](22-discovery.md)). They use the flag colours, so players learn one code: **amber = players' ants, red = wild ants** (honey stays yours). Strokes sway slowly; reduced motion holds them still. The label reads "Ant scent" or "Wild scent", or the colony's name once it has scouted or raided you. Mock-up: [art/scents-mockup.html](art/scents-mockup.html) (made before the build; the real screen is `client/src/components/Patch.tsx`).
 
-## In 3D: 2D art in a 3D block
-The computer nest is a 3D block of earth ([12-ui-nest-view.md](12-ui-nest-view.md), "The 3D slab"), but its life is this 2D art: chamber pictures on the hollows' back walls and ant sprites on flat cards. The look is a paper diorama; the soil strata (`#6B4F37` → `#4A3726` → `#33261A`), hollow (`#1C140E`) and grass (`#6F9A3E`) come from [art/3d-exploration.md](art/3d-exploration.md). Hero models can replace cards one at a time later.
+## In 3D: the sunlit microcosm
+The computer nest is a 3D block of earth ([12-ui-nest-view.md](12-ui-nest-view.md), "The 3D slab") in the look of [art/sunlit-microcosm.md](art/sunlit-microcosm.md):
+- **Soil horizons** on the cut face and sides, top to bottom: litter `#3E2B1E`, topsoil `#7B4A2D`, iron clay `#A9552F`, ochre sand `#D3A05A`, grey-blue gley clay `#7E8E96`, deep subsoil `#5E3C2A`, with pebbles, pale roots and fallen petals painted in. Hollow and tunnel walls are warm clay `#9A5C38`.
+- **Hollows lit from inside.** Each chamber's 2D picture stays on its hollow's back wall, but its near-black soil is recoloured to warm lit clay in 3D, and the chamber glows (gold for nectar, violet for the Pheromone Chamber, green for aphids, amber for the rest). At night the glow strengthens, so the nest reads like lanterns.
+- **The surface** has swaying, backlit grass `#2E5E25` → `#BCE35C`, flowers overhead, a red toadstool, an orange leaf and a sandy entrance mound `#C8A06A`.
+- **Real 3D ants** (`client/src/components/nest3d/ants3d.ts`): one body plan (gaster, petiole, mesosoma, head, mandibles, elbowed antennae, six legs) with the castes' proportions, legs swinging in a tripod gait in the shader, a warm rim light on the chitin by day and a cool one at night. Chitin: worker `#D9934A`, soldier `#B5662F`, queen `#A95F2F`, raider `#C4473A`, army ant `#8E2216`, army major `#B23A26`. Loads ride on the ants in resource colours.
+- **Counts:** the nest shows one ant per ant up to 160 workers and 30 soldiers; a party on the surface shows one per ant up to 300, a swarm up to 1,500 (half on touch devices). The party label gives the true number.
 
 ## Assets
 Chambers come from `client/src/art/chambers.ts`; `npx tsx art/chambers/build.ts` writes each to `art/chambers/<id>.svg` with a `preview.html` sheet (every chamber large, and at nest size). Edit `chambers.ts`, not the SVGs.

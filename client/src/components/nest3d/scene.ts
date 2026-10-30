@@ -1,19 +1,19 @@
-// The 3D nest (docs/12-ui-nest-view.md, "The 3D slab"; docs/18-art-direction.md): the colony as a block of
-// earth cut open at the front, like an ant farm on a plinth. The block, its carved hollows and tunnels are
-// real 3D; everything living in it is the game's 2D art on flat cards (chamber art on each hollow's back
-// wall, ant sprites walking at slightly different depths), so it reads as a paper diorama you can turn.
+// The 3D nest (docs/12-ui-nest-view.md, "The 3D slab"; docs/art/sunlit-microcosm.md): the colony as a block of
+// earth cut open at the front, like an ant farm on a plinth, in the sunlit-microcosm look: soil in coloured
+// horizons, hollows lit from inside, grass and flowers towering on top. The ants are real 3D ants, drawn at
+// their true numbers up to a cap (ants3d.ts); the chambers keep their 2D art on each hollow's back wall.
 // Like the 2D nest, it only shows what the server says; nothing here decides anything.
 import * as THREE from 'three';
 import { CHAMBERS, CHAMBER_IDS, lvl, type ChamberId, type ResourceId } from '@hormigas/shared';
 import type { ServerColony, ServerState } from '../../game';
-import { CASTES, FOOT_Y, WALK_SWINGS, type Caste } from '../../art/ants';
+import type { Caste } from '../../art/ants';
 import { HOLLOW, VIEW } from '../../art/chambers';
-import { loadCanvases as antCanvases, walkFrame } from '../antSprites';
 import { loadCanvases as roomCanvases } from '../chamberSprites';
 import { partyCaste, surfaceParties, type SurfaceParty } from '../nestScene';
 import { chamberTag, partyLabel } from '../nestInfo';
 import { fmtDuration } from '../../format';
-import { BACK, D, H, SHAFT_HW, W, ZS, carve, floorAt, pathTo, room, shaftX, type P3, type Room } from './slab';
+import { BACK, D, H, SHAFT_HW, W, ZS, carve, pathTo, room, shaftX, type P3, type Room } from './slab';
+import { CHITIN, antUniforms, createAnts, type AntOpts, type CargoKind } from './ants3d';
 
 export interface NestData {
   colony: ServerColony | null;
@@ -82,7 +82,7 @@ export async function createNestScene(
   canvas.setAttribute('aria-hidden', 'true');
   // throws without WebGL: the caller falls back to the 2D nest
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
-  const [antPics, roomPics] = await Promise.all([antCanvases(), roomCanvases()]);
+  const roomPics = await roomCanvases();
   host.prepend(canvas);
   renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
   renderer.shadowMap.enabled = true;
@@ -116,42 +116,168 @@ export async function createNestScene(
     return t;
   };
 
+  // ---------- the soil: horizons painted once, shown on the cut face and the block's sides ----------
+  // Litter, topsoil, iron clay, ochre sand, grey-blue gley clay, deep subsoil (docs/art/sunlit-microcosm.md):
+  // colourful, not one brown. Pebbles, roots and fallen petals are painted in.
+  const HORIZONS: [number, string, string][] = [
+    [0, '#3E2B1E', '#4E3826'], [1.0, '#7B4A2D', '#8A5434'], [6.6, '#A9552F', '#BB6338'],
+    [12.4, '#D3A05A', '#DFB06A'], [18.2, '#7E8E96', '#8E9DA4'], [21.6, '#5E3C2A', '#6B4631'],
+  ];
+  const PX = coarse ? 24 : 40;
+  const soil = document.createElement('canvas');
+  soil.width = W * PX;
+  soil.height = H * PX;
+  {
+    const g = soil.getContext('2d')!;
+    const bound = (i: number, x: number) => HORIZONS[i][0] + (i ? 0.35 * Math.sin(x * 0.3 + i * 1.7) + 0.2 * Math.sin(x * 0.9 + i * 3.1) : 0);
+    HORIZONS.forEach(([top, c0, c1], i) => {
+      g.beginPath();
+      for (let x = 0; x <= W; x += 0.5) g.lineTo(x * PX, bound(i, x) * PX);
+      for (let x = W; x >= 0; x -= 0.5) g.lineTo(x * PX, (i + 1 < HORIZONS.length ? bound(i + 1, x) + 0.05 : H) * PX);
+      const gr = g.createLinearGradient(0, top * PX, 0, (HORIZONS[i + 1]?.[0] ?? H) * PX);
+      gr.addColorStop(0, c0);
+      gr.addColorStop(1, c1);
+      g.fillStyle = gr;
+      g.fill();
+    });
+    const k = PX / 40;
+    for (let i = 0; i < 9000; i++) {
+      g.fillStyle = rnd() < 0.5 ? 'rgba(255,240,210,0.13)' : 'rgba(30,15,5,0.16)';
+      g.fillRect(rnd() * W * PX, rnd() * H * PX, rr(1, 4) * k, rr(1, 3) * k);
+    }
+    for (let i = 0; i < 160; i++) {
+      const x = rnd() * W * PX, y = rr(1, H) * PX, r = rr(3, 13) * k;
+      g.fillStyle = pick(['#E9E1D2', '#B9B4AA', '#C77C55', '#8D8781', '#F2EBDD']);
+      g.beginPath();
+      g.ellipse(x, y, r * 1.3, r, rr(0, 3), 0, 7);
+      g.fill();
+      g.fillStyle = 'rgba(255,255,255,0.35)';
+      g.beginPath();
+      g.ellipse(x - r * 0.3, y - r * 0.35, r * 0.4, r * 0.25, 0, 0, 7);
+      g.fill();
+    }
+    g.lineCap = 'round';
+    for (let i = 0; i < 18; i++) {
+      let x = rnd() * W * PX, y = 0;
+      const w = rr(3, 7) * k, len = rr(4, 11) * PX;
+      g.strokeStyle = 'rgba(238,224,196,0.75)';
+      g.beginPath();
+      g.moveTo(x, y);
+      while (y < len) {
+        x += rr(-14, 14) * k;
+        y += rr(10, 22) * k;
+        g.lineWidth = w * (1 - y / len) + 0.6;
+        g.lineTo(x, y);
+      }
+      g.stroke();
+    }
+    for (let i = 0; i < 70; i++) {
+      g.save();
+      g.translate(rnd() * W * PX, rr(0.1, 0.9) * PX);
+      g.rotate(rr(0, 6));
+      g.fillStyle = pick(['#7DB33A', '#E07B39', '#F2C14E', '#B5562F', '#9BB84A']);
+      g.beginPath();
+      g.ellipse(0, 0, rr(6, 14) * k, rr(3, 6) * k, 0, 0, 7);
+      g.fill();
+      g.restore();
+    }
+  }
+  // the cut face's UVs are its x, y in slab units: stretch the canvas over the whole face
+  const faceTex = tex(soil);
+  faceTex.repeat.set(1 / W, 1 / H);
+  faceTex.offset.set(0.5, 1);
+  const soilSide = keep(new THREE.MeshStandardMaterial({ map: tex(soil), roughness: 0.95 }));
+
+  // ---------- grass: instanced blades that sway in the shader and glow with the sun behind them ----------
+  const grassU = { uTime: { value: 0 }, uWind: { value: 0.11 }, uGlow: { value: 0.22 }, uRim: { value: new THREE.Color(0.28, 0.36, 0.05) } };
+  const bladeGeo = (() => {
+    const g = keep(new THREE.PlaneGeometry(1, 1, 1, 5));
+    const p = g.attributes.position, col: number[] = [];
+    const c0 = new THREE.Color('#2E5E25'), c1 = new THREE.Color('#BCE35C'), c = new THREE.Color();
+    for (let i = 0; i < p.count; i++) {
+      const y = p.getY(i) + 0.5;
+      p.setXYZ(i, p.getX(i) * (1 - y * 0.92), y, y * y * 0.28);
+      c.copy(c0).lerp(c1, Math.pow(y, 0.8));
+      col.push(c.r, c.g, c.b);
+    }
+    g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
+    g.computeVertexNormals();
+    return g;
+  })();
+  const grassMat = keep(new THREE.MeshStandardMaterial({ vertexColors: true, side: THREE.DoubleSide, roughness: 0.72 }));
+  grassMat.onBeforeCompile = (sh) => {
+    Object.assign(sh.uniforms, grassU);
+    sh.vertexShader = 'uniform float uTime;\nuniform float uWind;\n' + sh.vertexShader.replace('#include <begin_vertex>', `
+      vec3 transformed = vec3(position);
+      float wp = uTime * 1.5 + instanceMatrix[3].x * 0.31 + instanceMatrix[3].z * 0.23;
+      float bend = position.y * position.y * uWind;
+      transformed.x += sin(wp) * bend;
+      transformed.z += (0.5 + 0.5 * cos(wp * 0.73)) * bend * 0.6;`);
+    sh.fragmentShader = 'uniform vec3 uRim;\nuniform float uGlow;\n' + sh.fragmentShader.replace('#include <dithering_fragment>', `
+      gl_FragColor.rgb += vColor * uGlow;
+      float rimG = 1.0 - abs(dot(normalize(normal), normalize(vViewPosition)));
+      gl_FragColor.rgb += uRim * rimG * rimG;
+      #include <dithering_fragment>`);
+  };
+
   // ---------- the block: back, plinth, surface ----------
   {
-    const side = mat('#4A3727'), top = mat('#5A4330'), hollow = mat('#1C140E');
-    const back = new THREE.Mesh(keep(new THREE.BoxGeometry(W, H, BACK)), [side, side, top, side, hollow, side]);
-    back.position.set(0, -H / 2, -D - BACK / 2);
+    const top = mat('#6FA83E'), under = mat('#3A2618'), behind = mat('#2A1A12');
+    const back = new THREE.Mesh(keep(new THREE.BoxGeometry(W, H, BACK)), [soilSide, soilSide, top, under, behind, soilSide]);
+    // a hair behind the face, so the lit back walls of the hollows sit in front of it without flicker
+    back.position.set(0, -H / 2, -D - BACK / 2 - 0.05);
     back.receiveShadow = back.castShadow = true;
     scene.add(back);
-    box(W + 5, 1.6, D + BACK + 5, mat('#3A2A1C'), 0, -H - 0.8, -(D + BACK) / 2).receiveShadow = true;
-    box(W + 6, 0.5, D + BACK + 6, mat('#2E2116'), 0, -H - 1.85, -(D + BACK) / 2);
-    const g = mat('#6F9A3E');
+    box(W + 5, 1.6, D + BACK + 5, mat('#5B4636'), 0, -H - 0.8, -(D + BACK) / 2).receiveShadow = true;
+    box(W + 6, 0.5, D + BACK + 6, mat('#463428'), 0, -H - 1.85, -(D + BACK) / 2);
+    const g = mat('#6FA83E');
     const lw = SX0 - SHAFT_HW - 0.2 + W / 2;
     box(lw, SURF, D, g, -W / 2 + lw / 2, SURF / 2, -D / 2).receiveShadow = true;
     const rw = W / 2 - (SX0 + SHAFT_HW + 0.2);
     box(rw, SURF, D, g, W / 2 - rw / 2, SURF / 2, -D / 2).receiveShadow = true;
-    box(W, SURF, BACK, g, 0, SURF / 2, -D - BACK / 2).receiveShadow = true;
-    // grass blades in one batch
-    const blade = keep(new THREE.ConeGeometry(0.07, 1, 3));
-    blade.translate(0, 0.5, 0);
-    const n = 650;
-    const inst = new THREE.InstancedMesh(blade, keep(new THREE.MeshStandardMaterial({ roughness: 0.9, flatShading: true })), n);
+    box(W, SURF, BACK + 0.05, g, 0, SURF / 2, -D - BACK / 2 - 0.025).receiveShadow = true;
+    // grass in one batch, taller toward the back so ants on the surface wade through it
+    const n = coarse ? 700 : 1300;
+    const inst = new THREE.InstancedMesh(bladeGeo, grassMat, n);
     const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), e = new THREE.Euler(), cl = new THREE.Color();
     for (let i = 0; i < n; i++) {
       let x = rr(-W / 2 + 0.3, W / 2 - 0.3);
       const z = rr(-D - BACK + 0.3, -0.2);
       if (Math.abs(x - SX0) < 2.6 && z > -4.5) x += x > SX0 ? 2.6 : -2.6;
-      e.set(rr(-0.25, 0.25), rnd() * 3, rr(-0.25, 0.25));
+      e.set(rr(-0.15, 0.15), rnd() * 6.28, rr(-0.12, 0.12));
       q.setFromEuler(e);
-      m4.compose(new THREE.Vector3(x, SURF, z), q, new THREE.Vector3(1, rr(0.35, 0.95), 1));
+      const h = rr(0.7, 1.6) + (-z / (D + BACK)) * rr(0.5, 1.8), w = rr(0.12, 0.22);
+      m4.compose(new THREE.Vector3(x, SURF - 0.02, z), q, new THREE.Vector3(w, h, w * 1.5));
       inst.setMatrixAt(i, m4);
-      inst.setColorAt(i, cl.set(pick(['#7FAA48', '#6F9A3E', '#8DB255', '#5E8735', '#A3BE5C'])));
+      inst.setColorAt(i, cl.set(pick(['#FFFFFF', '#F2F7E0', '#E6F0C8', '#FFF6D8'])));
     }
-    inst.castShadow = true;
+    inst.castShadow = !coarse;
+    inst.receiveShadow = true;
     scene.add(inst);
+    // flowers overhead: colour comes from life
+    const FLOWERS: [string, string][] = [['#FFD23F', '#E39B12'], ['#F6B6D2', '#F7E9A6'], ['#FF6B4F', '#2B1D13'], ['#FBF7EE', '#F2B92B']];
+    const petal = keep(new THREE.SphereGeometry(1, 10, 6).scale(0.6, 0.1, 0.26).translate(0.6, 0, 0));
+    const heartG = keep(new THREE.SphereGeometry(0.3, 12, 8).scale(1, 0.55, 1));
+    for (const [x, z] of [[-19, -7], [-9.5, -12], [6, -10.5], [14, -4.5], [21.5, -11], [-23, -3.5]]) {
+      const h = rr(3.5, 6.5), [pc, hc] = pick(FLOWERS);
+      const stem = new THREE.Mesh(keep(new THREE.CylinderGeometry(0.06, 0.08, h, 5).translate(0, h / 2, 0)), mat('#4F8A35'));
+      stem.position.set(x, SURF, z);
+      stem.castShadow = true;
+      scene.add(stem);
+      for (let k = 0; k < 7; k++) {
+        const p = new THREE.Mesh(petal, mat(pc, { side: THREE.DoubleSide, roughness: 0.55, flatShading: false }));
+        p.position.set(x, SURF + h, z);
+        p.rotation.set(0, (k / 7) * 6.28, 0.2);
+        p.castShadow = true;
+        scene.add(p);
+      }
+      const heart = new THREE.Mesh(heartG, mat(hc, { flatShading: false }));
+      heart.position.set(x, SURF + h, z);
+      scene.add(heart);
+    }
     const stone = keep(new THREE.IcosahedronGeometry(1, 0));
     for (let i = 0; i < 26; i++) {
-      const p = new THREE.Mesh(stone, mat(pick(['#9C8B78', '#7F7060', '#B5A48E'])));
+      const p = new THREE.Mesh(stone, mat(pick(['#C9BBA8', '#A79A8C', '#E2D6C4', '#B98A6A'])));
       p.position.set(rr(-W / 2 + 1, W / 2 - 1), SURF + 0.1, rr(-D - BACK + 1, -0.6));
       const s = rr(0.2, 0.55);
       p.scale.set(s, s * 0.6, s);
@@ -165,24 +291,24 @@ export async function createNestScene(
     ls.quadraticCurveTo(-2.4, -0.6, 0, -2.6);
     const lg = keep(new THREE.ExtrudeGeometry(ls, { depth: 0.08, bevelEnabled: false }));
     lg.rotateX(-Math.PI / 2);
-    const leaf = new THREE.Mesh(lg, mat('#9BBF54'));
+    const leaf = new THREE.Mesh(lg, mat('#E0A33A'));
     leaf.position.set(19, SURF + 0.02, -6);
     leaf.rotation.y = 0.9;
     leaf.castShadow = leaf.receiveShadow = true;
     scene.add(leaf);
-    const twig = new THREE.Mesh(keep(new THREE.CylinderGeometry(0.16, 0.2, 9, 6)), mat('#6E4A2C'));
+    const twig = new THREE.Mesh(keep(new THREE.CylinderGeometry(0.16, 0.2, 9, 6)), mat('#7A5234'));
     twig.rotation.set(Math.PI / 2, 0, 1.1);
     twig.position.set(-12, SURF + 0.18, -9);
     twig.castShadow = true;
     scene.add(twig);
-    const stem = new THREE.Mesh(keep(new THREE.CylinderGeometry(0.35, 0.45, 2.2, 8)), mat('#EDE3CF'));
+    const stem = new THREE.Mesh(keep(new THREE.CylinderGeometry(0.35, 0.45, 2.2, 8)), mat('#F3EBDB'));
     stem.position.set(-21, SURF + 1.1, -11);
-    const cap = new THREE.Mesh(keep(new THREE.SphereGeometry(1.5, 10, 6, 0, Math.PI * 2, 0, Math.PI / 2)), mat('#B0503A'));
+    const cap = new THREE.Mesh(keep(new THREE.SphereGeometry(1.5, 10, 6, 0, Math.PI * 2, 0, Math.PI / 2)), mat('#D0492E'));
     cap.position.set(-21, SURF + 2.1, -11);
     cap.scale.y = 0.7;
     stem.castShadow = cap.castShadow = true;
     scene.add(stem, cap);
-    // roots hanging into the top of the face
+    // pale roots hanging into the top of the face
     for (const x0 of [-22, -5.5, 11, 23]) {
       const pts: THREE.Vector3[] = [];
       let x = x0;
@@ -190,21 +316,27 @@ export async function createNestScene(
         x += rr(-0.25, 0.25);
         pts.push(new THREE.Vector3(x, y, 0.06));
       }
-      scene.add(new THREE.Mesh(keep(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 16, 0.07, 4)), mat('#7A5A3A')));
+      scene.add(new THREE.Mesh(keep(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 16, 0.07, 4)), mat('#E9D9B8')));
     }
   }
-  // the entrance: a ring of spoil around the shaft (tap it to send a party), and the alarm ring for raids
-  const mound = new THREE.Mesh(keep(new THREE.TorusGeometry(1.25, 0.55, 6, 14)), mat('#7A5C40'));
-  mound.rotation.x = Math.PI / 2;
-  mound.scale.z = 0.9;
-  mound.position.set(SX0, SURF + 0.05, -D / 2 - 0.2);
-  mound.castShadow = true;
+  // the entrance: a mound of sandy spoil around the shaft (tap it to send a party), and the alarm ring for raids
+  const moundProfile = (d: number) => (d < 0.62 ? -0.05 + 0.85 * THREE.MathUtils.smoothstep(d, 0.3, 0.62) : 0.8 * Math.exp(-(((d - 0.62) / 1.05) ** 2)));
+  const moundPts: THREE.Vector2[] = [];
+  for (let d = 0.3; d <= 2.8; d += 0.1) moundPts.push(new THREE.Vector2(d * 0.85, moundProfile(d) * 0.95));
+  const mound = new THREE.Mesh(keep(new THREE.LatheGeometry(moundPts, 28)), mat('#C8A06A', { roughness: 1 }));
+  mound.position.set(SX0, SURF - 0.05, -D / 2 - 0.2);
+  mound.castShadow = mound.receiveShadow = true;
   scene.add(mound);
-  const hole = new THREE.Mesh(keep(new THREE.CircleGeometry(0.8, 14)), mat('#140E0A'));
+  const spoil = new THREE.Mesh(keep(new THREE.ConeGeometry(1, 1, 12, 3)), mat('#B5653A', { roughness: 1 }));
+  spoil.position.set(SX0 + 3.4, SURF, -D / 2 - 1.4);
+  spoil.scale.set(1.1, 0.5, 0.9);
+  spoil.castShadow = true;
+  scene.add(spoil);
+  const hole = new THREE.Mesh(keep(new THREE.CircleGeometry(0.3, 14)), mat('#140E0A'));
   hole.rotation.x = -Math.PI / 2;
-  hole.position.set(SX0, SURF + 0.02, -D / 2 - 0.2);
+  hole.position.set(SX0, SURF - 0.02, -D / 2 - 0.2);
   scene.add(hole);
-  const alarm = new THREE.Mesh(keep(new THREE.TorusGeometry(2.2, 0.09, 6, 32)), keep(new THREE.MeshBasicMaterial({ color: '#E2685A', transparent: true, opacity: 0 })));
+  const alarm = new THREE.Mesh(keep(new THREE.TorusGeometry(2.6, 0.09, 6, 32)), keep(new THREE.MeshBasicMaterial({ color: '#E2685A', transparent: true, opacity: 0 })));
   alarm.rotation.x = Math.PI / 2;
   alarm.position.set(SX0, SURF + 0.15, -D / 2 - 0.2);
   scene.add(alarm);
@@ -240,7 +372,7 @@ export async function createNestScene(
     queen_chamber: ['#FFB36B', 2.5], honeypot_gallery: ['#FFCF5A', 2], leaf_garden: ['#E8F0D0', 1.5],
     pheromone_chamber: ['#C59BFF', 2.5], nectar_cellar: ['#FFCF5A', 1.2],
   };
-  let hourShown = -1, nightK = 0;
+  let hourShown = -1, nightK = 0, artGlow = 0.6;
   function applySky(hour: number) {
     hourShown = hour;
     const s = skyFor(hour);
@@ -253,79 +385,111 @@ export async function createNestScene(
     sun.intensity = L(2.6, 0.75);
     sun.color.set('#FFF1D6').lerp(new THREE.Color('#AFC2F0'), s.night);
     (stars.material as THREE.PointsMaterial).opacity = s.night * 0.9;
+    // chitin and grass glow warm against the day, cool and faint at night
+    antUniforms.uRim.value.setRGB(L(0.55, 0.1), L(0.38, 0.13), L(0.12, 0.3));
+    grassU.uRim.value.setRGB(L(0.28, 0.04), L(0.36, 0.07), L(0.05, 0.14));
+    grassU.uGlow.value = L(0.22, 0.02);
+    backWallMat.emissiveIntensity = L(0.42, 1.25);
+    wallMat.emissiveIntensity = L(0.15, 0.6);
+    artGlow = L(0.6, 1.1);
+    for (const m of artMats) m.emissiveIntensity = artGlow;
     host.style.background = s.sky;
   }
 
-  // ---------- art: chamber pictures and ant cards from the 2D art set ----------
+  // ---------- art: chamber pictures from the 2D art set, and the real 3D ants ----------
   const roomTex = {} as Record<ChamberId, THREE.CanvasTexture>;
-  for (const id of CHAMBER_IDS) roomTex[id] = tex(roomPics[id]);
-  const plane = keep(new THREE.PlaneGeometry(1, 1));
-  const antGeo = {} as Record<Caste, THREE.PlaneGeometry>;
-  const antMats = new Map<string, THREE.MeshLambertMaterial>();
-  for (const c of Object.keys(CASTES) as Caste[]) {
-    const [, vy, vw, vh] = CASTES[c].vb;
-    const g = keep(new THREE.PlaneGeometry(1, vh / vw));
-    g.translate(0, (vh / vw) * (0.5 - (FOOT_Y - vy) / vh), 0); // origin under the feet
-    antGeo[c] = g;
-  }
-  const antFrames = {} as Record<Caste, THREE.CanvasTexture[]>;
-  for (const c of Object.keys(CASTES) as Caste[]) antFrames[c] = antPics[c].map(tex);
-  const antMat = (c: Caste, frame: number, tint: string) => {
-    const key = `${c}|${frame}|${tint}`;
-    if (!antMats.has(key)) antMats.set(key, keep(new THREE.MeshLambertMaterial({ map: antFrames[c][frame], color: tint, transparent: true, alphaTest: 0.35, side: THREE.DoubleSide })));
-    return antMats.get(key)!;
+  // the 2D pictures sit on near-black soil; in 3D that soil becomes warm clay lit from the middle of the hollow
+  const warmed = (src: HTMLCanvasElement) => {
+    const c = document.createElement('canvas');
+    c.width = src.width;
+    c.height = src.height;
+    const g = c.getContext('2d')!;
+    g.drawImage(src, 0, 0);
+    const img = g.getImageData(0, 0, c.width, c.height), px = img.data;
+    const cx = (HOLLOW.cx / VIEW.w) * c.width, cy = (HOLLOW.cy / VIEW.h) * c.height;
+    const rx = (HOLLOW.rx / VIEW.w) * c.width, ry = (HOLLOW.ry / VIEW.h) * c.height;
+    for (let y = 0; y < c.height; y++) {
+      for (let x = 0; x < c.width; x++) {
+        const i = (y * c.width + x) * 4;
+        if (!px[i + 3]) continue;
+        const l = (0.3 * px[i] + 0.59 * px[i + 1] + 0.11 * px[i + 2]) / 255;
+        const k = 1 - THREE.MathUtils.smoothstep(l, 0.06, 0.2);
+        if (k <= 0) continue;
+        const f = Math.max(0, 1 - Math.hypot((x - cx) / rx, (y - cy) / ry)) ** 0.7;
+        const tr = 92 + 70 * f, tg = 48 + 40 * f, tb = 28 + 20 * f;
+        px[i] += (tr - px[i]) * k * 0.9;
+        px[i + 1] += (tg - px[i + 1]) * k * 0.9;
+        px[i + 2] += (tb - px[i + 2]) * k * 0.9;
+      }
+    }
+    g.putImageData(img, 0, 0);
+    return c;
   };
-
-  interface Card {
-    mesh: THREE.Mesh;
-    caste: Caste;
-    tint: string;
-    load: THREE.Mesh | null;
-  }
-  const cardGroup = new THREE.Group();
-  scene.add(cardGroup);
-  function makeCard(caste: Caste, tint = '#FFFFFF'): Card {
-    const mesh = new THREE.Mesh(antGeo[caste], antMat(caste, 1, tint));
-    cardGroup.add(mesh);
-    return { mesh, caste, tint, load: null };
-  }
-  function dropCard(c: Card) {
-    cardGroup.remove(c.mesh);
-  }
-  /** Place a card with its feet at p, heading along (dx, dy) in the plane of the face; left-goers are mirrored, not flipped. */
-  function placeCard(c: Card, p: P3, dx: number, dy: number, frame: number) {
-    const len = ANT_LEN[c.caste];
-    const left = dx < -0.001;
-    c.mesh.position.set(p.x, p.y, p.z);
-    c.mesh.rotation.set(0, 0, left ? Math.atan2(-dy, -dx) : Math.atan2(dy, dx));
-    c.mesh.scale.set(left ? -len : len, len, 1);
-    c.mesh.material = antMat(c.caste, frame % WALK_SWINGS.length, c.tint);
-    c.mesh.visible = true;
-  }
-  function setLoad(c: Card, color: string | null) {
-    if (!color) {
-      if (c.load) c.load.visible = false;
-      return;
-    }
-    if (!c.load) {
-      c.load = new THREE.Mesh(plane, new THREE.MeshLambertMaterial({ color, side: THREE.DoubleSide }));
-      c.load.scale.set(0.24, 0.16, 1);
-      c.load.position.set(0.5, 0.28, 0.01);
-      c.mesh.add(c.load);
-    }
-    (c.load.material as THREE.MeshLambertMaterial).color.set(color);
-    c.load.visible = true;
+  for (const id of CHAMBER_IDS) roomTex[id] = tex(warmed(roomPics[id]));
+  const plane = keep(new THREE.PlaneGeometry(1, 1));
+  // one drawn ant per ant, up to these caps (docs/art/sunlit-microcosm.md, decision 4); the tags give true numbers
+  const CAP = coarse ? 0.5 : 1;
+  const ants = createAnts(scene, {
+    worker: Math.round(900 * CAP), soldier: Math.round(500 * CAP), queen: 2, alate: 8,
+    army: Math.round(1300 * CAP), army_major: Math.round(330 * CAP),
+  }, !coarse);
+  disposables.push(ants);
+  const SWARM_CAP = Math.round(1500 * CAP), PARTY_CAP = Math.round(300 * CAP);
+  const LOAD: Record<ResourceId, CargoKind> = { foliage: 'leaf', protein: 'chunk', nectar: 'drop' };
+  /** What a worker carries down to each store. */
+  const STORE: Partial<Record<ChamberId, { kind: CargoKind; color: string }>> = {
+    granary: { kind: 'leaf', color: '#8DCB4A' }, leaf_garden: { kind: 'leaf', color: '#A6D83A' },
+    larder: { kind: 'chunk', color: '#C4473A' }, hunting_grounds: { kind: 'chunk', color: '#D06A6A' },
+    nectar_cellar: { kind: 'drop', color: '#F2B93B' }, honeypot_gallery: { kind: 'drop', color: '#F2B93B' },
+    nursery: { kind: 'drop', color: '#FBF6EA' }, brood_hall: { kind: 'drop', color: '#FBF6EA' },
+  };
+  /** Draw one ant with its feet at p, heading along (dx, dy) in the plane of the face (climbing in the shaft). */
+  function antAt(caste: Caste, p: P3, dx: number, dy: number, moving: boolean, o: AntOpts = {}) {
+    ants.ant(caste, p.x, p.y, p.z, {
+      scale: ANT_LEN[caste], yaw: dx < -0.001 ? Math.PI : 0, pitch: Math.atan2(dy, Math.abs(dx) || 0.0001),
+      step: moving && !reduced ? 15 : 0, ...o,
+    });
   }
 
   // ---------- the carved face and everything that depends on the layout ----------
-  const frontMat = keep(new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.95, flatShading: true }));
-  const sideMat = keep(new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.95, flatShading: true, color: '#8F8274' }));
-  const strata = (y: number) => {
-    const t = Math.min(1, -y / H);
-    const a = new THREE.Color('#6B4F37'), b = new THREE.Color('#4A3726'), c = new THREE.Color('#33261A');
-    const col = t < 0.45 ? a.lerp(b, t / 0.45) : b.lerp(c, (t - 0.45) / 0.55);
-    return col.multiplyScalar(1 + 0.07 * Math.sin(y * 1.9) + 0.04 * Math.sin(y * 5.3 + 1));
+  const frontMat = keep(new THREE.MeshStandardMaterial({ map: faceTex, roughness: 0.95 }));
+  // the walls of the hollows and tunnels: warm clay, lit a little from inside
+  const wallMat = keep(new THREE.MeshStandardMaterial({ color: '#9A5C38', roughness: 1, emissive: '#5A2A0E', emissiveIntensity: 0.15 }));
+  // the back walls of the hollows glow with what each chamber holds; brighter at night
+  const GLOW_PX = 20;
+  const glowCanvas = document.createElement('canvas');
+  glowCanvas.width = W * GLOW_PX;
+  glowCanvas.height = H * GLOW_PX;
+  const glowTex = tex(glowCanvas);
+  const backWallMat = keep(new THREE.MeshStandardMaterial({ color: '#5A3020', roughness: 1, emissive: '#ffffff', emissiveMap: glowTex, emissiveIntensity: 0.42 }));
+  const backWall = new THREE.Mesh(keep(new THREE.PlaneGeometry(W, H)), backWallMat);
+  backWall.position.set(0, -H / 2, -D + 0.02);
+  backWall.receiveShadow = true;
+  scene.add(backWall);
+  const GLOW_RGB: Partial<Record<ChamberId, string>> = {
+    pheromone_chamber: '185,140,255', nectar_cellar: '255,200,80', honeypot_gallery: '255,200,80', aphid_pasture: '190,230,120',
   };
+  const GLOW_HEX: Partial<Record<ChamberId, string>> = {
+    pheromone_chamber: '#C9A6FF', nectar_cellar: '#FFD070', honeypot_gallery: '#FFD070', aphid_pasture: '#D2EE90',
+  };
+  const artMats: THREE.MeshLambertMaterial[] = [];
+  function paintGlow(list: Room[]) {
+    const g = glowCanvas.getContext('2d')!;
+    g.fillStyle = '#000';
+    g.fillRect(0, 0, glowCanvas.width, glowCanvas.height);
+    for (const r of list) {
+      const cx = (r.x + W / 2) * GLOW_PX, cy = -r.y * GLOW_PX, rad = r.rx * GLOW_PX * 1.3;
+      const col = GLOW_RGB[r.id] ?? '255,170,80';
+      const gr = g.createRadialGradient(cx, cy, 0, cx, cy, rad);
+      gr.addColorStop(0, `rgba(${col},0.95)`);
+      gr.addColorStop(1, `rgba(${col},0)`);
+      g.fillStyle = gr;
+      g.beginPath();
+      g.ellipse(cx, cy, rad, rad * 0.7, 0, 0, 7);
+      g.fill();
+    }
+    glowTex.needsUpdate = true;
+  }
   const layoutGroup = new THREE.Group();
   scene.add(layoutGroup);
   const layoutDisposables: { dispose(): void }[] = [];
@@ -335,7 +499,7 @@ export async function createNestScene(
   let ghosts: Room[] = [];
 
   interface Walker {
-    card: Card;
+    caste: Caste;
     to: ChamberId | 'guard';
     z: number;
     pts: P3[];
@@ -395,14 +559,8 @@ export async function createNestScene(
     }
     const geo = new THREE.ExtrudeGeometry(shape, { depth: D, bevelEnabled: false, curveSegments: 2 });
     geo.translate(0, 0, -D);
-    const pos = geo.attributes.position, cols = new Float32Array(pos.count * 3);
-    for (let i = 0; i < pos.count; i++) {
-      const c = strata(pos.getY(i));
-      cols.set([c.r, c.g, c.b], i * 3);
-    }
-    geo.setAttribute('color', new THREE.BufferAttribute(cols, 3));
     layoutDisposables.push(geo);
-    const face = new THREE.Mesh(geo, [frontMat, sideMat]);
+    const face = new THREE.Mesh(geo, [frontMat, wallMat]);
     face.castShadow = face.receiveShadow = true;
     layoutGroup.add(face);
 
@@ -410,12 +568,16 @@ export async function createNestScene(
     const hit = new THREE.MeshBasicMaterial({ visible: false });
     layoutDisposables.push(hit);
     taps = [];
+    artMats.length = 0;
     for (const r of rooms) {
       const sx = r.rx / HOLLOW.rx, sy = r.ry / HOLLOW.ry;
-      const art = new THREE.Mesh(plane, new THREE.MeshLambertMaterial({ map: roomTex[r.id], transparent: true, alphaTest: 0.05 }));
-      layoutDisposables.push(art.material as THREE.Material);
+      // lit from inside with the chamber's own glow, so the hollows read warm rather than black
+      const artMat = new THREE.MeshLambertMaterial({ map: roomTex[r.id], transparent: true, alphaTest: 0.05, emissive: GLOW_HEX[r.id] ?? '#FFB070', emissiveMap: roomTex[r.id], emissiveIntensity: artGlow });
+      artMats.push(artMat);
+      const art = new THREE.Mesh(plane, artMat);
+      layoutDisposables.push(artMat);
       art.scale.set(VIEW.w * sx, VIEW.h * sy, 1);
-      art.position.set(r.x - (HOLLOW.cx - VIEW.w / 2) * sx, r.y + (HOLLOW.cy - VIEW.h / 2) * sy, -D + 0.03);
+      art.position.set(r.x - (HOLLOW.cx - VIEW.w / 2) * sx, r.y + (HOLLOW.cy - VIEW.h / 2) * sy, -D + 0.06);
       art.receiveShadow = true;
       layoutGroup.add(art);
       const disc = new THREE.Mesh(plane, hit);
@@ -446,6 +608,7 @@ export async function createNestScene(
       taps.push(disc);
     }
     taps.push(mound);
+    paintGlow(rooms);
 
     // glows in the chambers that have them, brighter at night
     for (const g of glows) scene.remove(g.l);
@@ -463,17 +626,17 @@ export async function createNestScene(
     const want = Math.max(6, l.workers), wantSoldiers = l.soldiers;
     const targets = rooms.map((r) => r.id);
     const workers = walkers.filter((w) => w.to !== 'guard'), guards = walkers.filter((w) => w.to === 'guard');
-    while (workers.length > want) dropCard(workers.pop()!.card);
-    while (guards.length > wantSoldiers) dropCard(guards.pop()!.card);
+    workers.length = Math.min(workers.length, want);
+    guards.length = Math.min(guards.length, wantSoldiers);
     const r2 = seeded(42);
     while (workers.length < want) {
-      const z = ZS + (r2() - 0.5) * 0.9;
-      workers.push({ card: makeCard('worker'), to: targets[workers.length % targets.length], z, pts: [], lens: [], total: 0, d: 0, dir: r2() < 0.5 ? 1 : -1, speed: 1.6 + r2(), pause: 0 });
+      const z = ZS + (r2() - 0.5) * 1.5;
+      workers.push({ caste: 'worker', to: targets[workers.length % targets.length], z, pts: [], lens: [], total: 0, d: 0, dir: r2() < 0.5 ? 1 : -1, speed: 1.6 + r2(), pause: 0 });
       workers[workers.length - 1].d = r2() * 40;
     }
     while (guards.length < wantSoldiers) {
-      const z = ZS + (r2() - 0.5) * 0.9;
-      guards.push({ card: makeCard('soldier'), to: 'guard', z, pts: [], lens: [], total: 0, d: r2() * 4, dir: 1, speed: 0.6 + r2() * 0.4, pause: 0 });
+      const z = ZS + (r2() - 0.5) * 1.2;
+      guards.push({ caste: 'soldier', to: 'guard', z, pts: [], lens: [], total: 0, d: r2() * 4, dir: 1, speed: 0.6 + r2() * 0.4, pause: 0 });
     }
     walkers = [...workers, ...guards];
     for (const w of walkers) {
@@ -507,56 +670,63 @@ export async function createNestScene(
   const esc = (s: string) => s.replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[c]!);
 
   // ---------- surface parties and diggers (from the server's missions, incoming and build job) ----------
-  const partyCards = new Map<string, Card[]>();
-  const diggerCards: Card[] = [];
+  // A party is drawn at its real size up to a cap: a column a few ants wide that streams on and off the
+  // block's edges; an army-ant swarm is a wide, jostling river. The label gives the true number.
   let clock = 0;
+  const hash = (i: number, k: number) => {
+    const x = Math.sin(i * 12.9898 + k * 78.233) * 43758.5453;
+    return x - Math.floor(x);
+  };
+  const scoutColor = '#D9705F';
 
   function drawParties(d: NestData) {
     const c = d.colony, st = d.state;
-    const live = new Set<string>();
     let raid = false;
-    if (c && st) {
-      for (const p of surfaceParties(W, SX0 + W / 2, c, st, d.now) as SurfaceParty[]) {
-        live.add(p.key);
-        // army ants are drawn red already; other colonies' soldiers and scouts are tinted
-        const tint = p.type === 'swarm' ? '#FFFFFF' : p.kind === 'raid' ? '#FF7A68' : p.kind === 'scout' ? '#FFB7AA' : '#FFFFFF';
-        let cards = partyCards.get(p.key);
-        if (!cards || cards.length !== p.n || cards[0].tint !== tint) {
-          cards?.forEach(dropCard);
-          cards = Array.from({ length: p.n }, (_, i) => makeCard(partyCaste(p, i), tint));
-          partyCards.set(p.key, cards);
-        }
-        // the 2D nest starts parties just off its edges; here they enter and leave at the block's edges
-        const x0 = ((p.x - W / 2) * (W / 2 - 0.6)) / (W / 2 + 8);
-        const loads = p.cargo ? (Object.keys(CARGO) as ResourceId[]).filter((r) => (p.cargo![r] ?? 0) > 0).map((r) => CARGO[r]) : [];
-        const z = -D / 2 - 0.4 - (p.lane % 3) * 0.7;
-        cards.forEach((card, i) => {
-          const x = x0 - p.heading * i * (p.type === 'swarm' ? 0.95 : 1.15);
-          const frame = reduced ? 1 : Math.floor(clock * 9) + i * 2;
-          placeCard(card, { x, y: SURF, z }, p.heading, 0, frame);
-          card.mesh.visible = Math.abs(x) < W / 2 - 0.2;
-          setLoad(card, loads.length ? loads[i % loads.length] : null);
-        });
-        if (p.kind === 'raid') raid = true;
-        label(`party-${p.key}`, `nest-trip n3-trip ${p.kind}`, x0, SURF + 1.6, z, `${esc(partyLabel(p))} · ${fmtDuration(p.endAt - d.now)}`);
-      }
+    if (!c || !st) {
+      alarm.material.opacity = 0;
+      return;
     }
-    for (const [k, cards] of partyCards) if (!live.has(k)) { cards.forEach(dropCard); partyCards.delete(k); }
+    for (const p of surfaceParties(W, SX0 + W / 2, c, st, d.now) as SurfaceParty[]) {
+      const swarm = p.type === 'swarm';
+      const n = Math.min(swarm ? SWARM_CAP : PARTY_CAP, Math.max(p.n, p.units));
+      // other colonies' soldiers are raider red; army ants keep their own crimson
+      const color = swarm ? undefined : p.kind === 'raid' ? CHITIN.raider : p.kind === 'scout' ? scoutColor : undefined;
+      // the 2D nest starts parties just off its edges; here they enter and leave at the block's edges
+      const x0 = ((p.x - W / 2) * (W / 2 - 0.6)) / (W / 2 + 8);
+      const loads = p.cargo ? (Object.keys(CARGO) as ResourceId[]).filter((r) => (p.cargo![r] ?? 0) > 0) : [];
+      const lanes = Math.min(swarm ? 7 : 4, Math.max(1, Math.round(Math.sqrt(n / (swarm ? 6 : 12)))));
+      const gapX = swarm ? 0.5 : 0.8, gapZ = swarm ? 0.42 : 0.5;
+      const z0 = -D / 2 - 0.3 - (p.lane % 3) * 1.1;
+      const yaw = p.heading < 0 ? Math.PI : 0;
+      for (let i = 0; i < n; i++) {
+        const row = Math.floor(i / lanes), lane = i % lanes;
+        // a little jostle: no two ants in step, swarms weave more
+        const wob = reduced ? 0 : Math.sin(clock * (swarm ? 3.1 : 1.7) + i * 1.37) * (swarm ? 0.18 : 0.07);
+        const x = x0 - p.heading * (row * gapX + hash(i, 1) * gapX * 0.6);
+        if (Math.abs(x) > W / 2 - 0.3) continue;
+        const z = z0 - lane * gapZ - hash(i, 2) * 0.2 + wob;
+        const cargo = loads.length ? { kind: LOAD[loads[i % loads.length]], color: CARGO[loads[i % loads.length]] } : null;
+        const caste = partyCaste(p, i);
+        ants.ant(caste, x, SURF, z, { scale: ANT_LEN[caste], yaw: yaw + wob * 0.8, step: reduced ? 0 : swarm ? 19 : 15, color, cargo });
+      }
+      if (p.kind === 'raid') raid = true;
+      label(`party-${p.key}`, `nest-trip n3-trip ${p.kind}`, x0, SURF + 1.6, z0,
+        `${esc(partyLabel(p))} · ${p.units.toLocaleString()} · ${fmtDuration(p.endAt - d.now)}`);
+    }
     alarm.material.opacity = raid ? (reduced ? 0.7 : 0.45 + 0.4 * Math.sin(clock * 7)) : 0;
   }
 
   function drawDiggers(d: NestData) {
     const job = d.colony?.buildJob;
     const r = job ? rooms.find((x) => x.id === job.chamber) : null;
-    const want = r ? 3 : 0;
-    while (diggerCards.length > want) dropCard(diggerCards.pop()!);
-    while (diggerCards.length < want) diggerCards.push(makeCard('worker'));
     if (!r) return;
-    diggerCards.forEach((card, i) => {
-      const a = Math.PI * (0.25 + i * 0.25);
-      const p = { x: r.x + Math.cos(a) * r.rx * 0.82, y: r.y + Math.sin(a) * r.ry * 0.7 - 0.35, z: ZS + (i - 1) * 0.35 };
-      placeCard(card, p, Math.cos(a), Math.sin(a), reduced ? 1 : Math.floor(clock * 8) + i);
-    });
+    for (let i = 0; i < 4; i++) {
+      // diggers work along the far wall of the hollow, nose to the soil, taking turns
+      const a = Math.PI * (0.2 + i * 0.2);
+      const p = { x: r.x + Math.cos(a) * r.rx * 0.82, y: r.y + Math.sin(a) * r.ry * 0.7 - 0.35, z: ZS + (i - 1.5) * 0.45 };
+      const busy = reduced ? false : Math.sin(clock * 4 + i * 1.7) > -0.3;
+      antAt('worker', p, Math.cos(a), Math.sin(a), busy, { cargo: i % 2 ? { kind: 'chunk', color: '#B5653A' } : null });
+    }
   }
 
   // ---------- camera: a gentle orbit, plus zoom toward the cursor (docs/12-ui-nest-view.md, "The 3D slab") ----------
@@ -703,6 +873,9 @@ export async function createNestScene(
     }
     placeCamera();
 
+    antUniforms.uTime.value = clock;
+    grassU.uTime.value = clock;
+    ants.begin();
     for (const w of walkers) {
       if (w.pause > 0) w.pause -= mdt;
       else {
@@ -711,10 +884,13 @@ export async function createNestScene(
         if (w.d <= 0) { w.d = 0; w.dir = 1; w.pause = w.to === 'guard' ? 0.5 : 0.3; }
       }
       const s = sample(w, w.d);
-      placeCard(w.card, s.p, s.dx * w.dir, s.dy * w.dir, reduced || w.pause > 0 ? 1 : walkFrame(w.d, 1));
+      // workers carry food down to the stores and come back up empty
+      const load = w.to !== 'guard' && w.dir === 1 ? STORE[w.to] ?? null : null;
+      antAt(w.caste, s.p, s.dx * w.dir, s.dy * w.dir, w.pause <= 0, { cargo: load });
     }
     drawParties(d);
     drawDiggers(d);
+    ants.end();
     const researching = !!d.state?.player.researchJob;
     for (const g of glows) {
       const pulse = g.id === 'pheromone_chamber' && researching && !reduced ? 1 + 0.6 * Math.sin(clock * 3) : 1;

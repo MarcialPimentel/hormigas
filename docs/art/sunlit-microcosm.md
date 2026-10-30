@@ -147,7 +147,7 @@ Image generator → Meshy or Tripo (low poly) → `.glb` → drop it in the chat
 | `13-tech.md` client | Three.js on the Colony screen only | One Three.js world shared by Colony and Missions |
 | `00-vision.md` non-goals | Not a per-ant simulation | Unchanged |
 
-These change, with the decision log, in the same pull request as the first approved work.
+The first build (colour and real ants in the slab) updated `18-art-direction.md` (§ Decisions, § In 3D, § Scale), `12-ui-nest-view.md` (the 3D slab) and `20-swarms.md` (how players see it). The rest change with the build that brings them in: the 3D patch (`11-world.md`, `12-ui-nest-view.md` raid scene, `13-tech.md`, `art/3d-exploration.md`).
 
 ## Plan
 
