@@ -386,8 +386,36 @@ export async function createPatchScene(
   const holeGeo = keep(new THREE.CircleGeometry(0.22, 12));
   const bareGeo = keep(new THREE.CircleGeometry(2.6, 28));
   const bareMat = keep(new THREE.MeshStandardMaterial({ color: '#B89A6A', roughness: 1, transparent: true, opacity: 0.75, depthWrite: false }));
-    const emptyRing = keep(new THREE.RingGeometry(0.7, 0.78, 32));
-  const emptyMat = keep(new THREE.MeshBasicMaterial({ color: '#2B1D13', transparent: true, opacity: 0.25, depthWrite: false }));
+  // a dotted circle on the ground where you can act but nothing stands: empty spots and the wilds.
+  // Drawn over the grass (no depth test), so you can always see where to tap.
+  const dottedTex = (() => {
+    const c = document.createElement('canvas');
+    c.width = c.height = 256;
+    const g = c.getContext('2d')!;
+    g.lineCap = 'round';
+    // 16 bold round dots, light with a dark edge, so they survive being drawn small
+    g.setLineDash([0.1, (2 * Math.PI * 104) / 16]);
+    g.beginPath();
+    g.arc(128, 128, 104, 0, Math.PI * 2);
+    g.strokeStyle = 'rgba(43, 29, 19, 0.6)';
+    g.lineWidth = 30;
+    g.stroke();
+    g.strokeStyle = 'rgba(255, 249, 232, 1)';
+    g.lineWidth = 21;
+    g.stroke();
+    g.setLineDash([]);
+    g.beginPath();
+    g.arc(128, 128, 96, 0, Math.PI * 2);
+    g.fillStyle = 'rgba(255, 249, 232, 0.16)';
+    g.fill();
+    const t = keep(new THREE.CanvasTexture(c));
+    t.colorSpace = THREE.SRGBColorSpace;
+    t.anisotropy = 4;
+    return t;
+  })();
+  const dottedGeo = keep(new THREE.PlaneGeometry(1, 1));
+  let openRings: { spot: number; mesh: THREE.Mesh; mat: THREE.MeshBasicMaterial }[] = [];
+  let hoverSpot: number | null = null;
   let taps: THREE.Mesh[] = [];
   let shown: { region: number; patch: number; spots: Spot[] } | null = null;
   const plumes: { line: THREE.Mesh; base: THREE.Vector3; phase: number }[] = [];
@@ -551,14 +579,19 @@ export async function createPatchScene(
       spotGroup.add(t);
       taps.push(t);
     }
-    // a hint of the empty spots: a faint ring where a colony could go
-    for (let n = 1; n < WILDS_SPOT; n++) {
-      if (spots.some((s) => s.spot === n)) continue;
+    // empty spots (where a colony could go) and the wilds (where foragers go): a dotted circle to tap
+    openRings = [];
+    for (let n = 1; n <= WILDS_SPOT; n++) {
+      if (spots.find((s) => s.spot === n)?.colony) continue;
       const { x, z } = spotPos(n);
-      const r = new THREE.Mesh(emptyRing, emptyMat);
-      r.rotation.x = -Math.PI / 2;
-      r.position.set(x, gH(x, z) + 0.04, z);
-      spotGroup.add(r);
+      const mat = sk(new THREE.MeshBasicMaterial({ map: dottedTex, transparent: true, opacity: 0.75, depthWrite: false, depthTest: false }));
+      const ring = new THREE.Mesh(dottedGeo, mat);
+      ring.rotation.x = -Math.PI / 2;
+      ring.scale.setScalar(n === WILDS_SPOT ? 4.6 : 3.2);
+      ring.position.set(x, gH(x, z) + 0.06, z);
+      ring.renderOrder = 2;
+      spotGroup.add(ring);
+      openRings.push({ spot: n, mesh: ring, mat });
     }
     applySelected();
     if (pendingReplay && inView(pendingReplay.target)) {
@@ -975,6 +1008,15 @@ export async function createPatchScene(
   function spotLabels() {
     if (!shown) return;
     const close = view.dist < homeDist * 0.6;
+    // the open spots: brighter under the pointer, which also names them; the wilds are always named
+    for (const o of openRings) {
+      const hot = o.spot === hoverSpot || o.spot === selected;
+      o.mat.opacity = hot ? 1 : reduced ? 0.8 : 0.72 + 0.12 * Math.sin(clock * 1.6 + o.spot);
+      const { x, z } = spotPos(o.spot);
+      const y = gH(x, z) + 1.2;
+      if (o.spot === WILDS_SPOT) label('open-wilds', 'p3-label open', x, y + 0.6, z, '<span>The wilds</span>');
+      else if (hot) label(`open-${o.spot}`, 'p3-label open', x, y, z, `<span>Spot ${o.spot} · empty</span>`);
+    }
     for (const s of shown.spots) {
       const c = s.colony;
       if (!c) continue;
@@ -1105,7 +1147,11 @@ export async function createPatchScene(
       return;
     }
     if (!drag) {
-      if (e.pointerType === 'mouse') canvas.classList.toggle('pointing', !!pickAt(e));
+      if (e.pointerType === 'mouse') {
+        const o = pickAt(e);
+        canvas.classList.toggle('pointing', !!o);
+        hoverSpot = (o?.userData.spot as number | undefined) ?? null;
+      }
       return;
     }
     const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
@@ -1131,6 +1177,11 @@ export async function createPatchScene(
     drag = null;
   };
   const onCtx = (e: Event) => e.preventDefault();
+  const onLeave = () => {
+    hoverSpot = null;
+    canvas.classList.remove('pointing');
+  };
+  canvas.addEventListener('pointerleave', onLeave);
   canvas.addEventListener('pointerdown', onDown);
   canvas.addEventListener('pointermove', onMove);
   canvas.addEventListener('pointerup', onUp);
@@ -1287,6 +1338,7 @@ export async function createPatchScene(
       canvas.removeEventListener('pointerup', onUp);
       canvas.removeEventListener('pointercancel', onUp);
       canvas.removeEventListener('contextmenu', onCtx);
+      canvas.removeEventListener('pointerleave', onLeave);
       canvas.removeEventListener('dblclick', reset);
       for (const el of labelEls.values()) el.remove();
       for (const t of trails.values()) {
