@@ -21,3 +21,4 @@ export * from './discovery';
 export * from './diplomacy';
 export * from './blockers';
 export * from './missions';
+export * from './digPlan';
