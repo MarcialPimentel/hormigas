@@ -8,13 +8,14 @@ import { useGame } from '../../game';
 import { useMotion } from '../../motion';
 import { createGardenScene, type GardenScene } from './garden';
 
-export function Garden3D({ region, patch, onPick, onFail, onBack, onGrid }: {
+export function Garden3D({ region, patch, onPick, onFail, onBack, onGrid, inset }: {
   region: number;
   patch: number;
   onPick: (region: number, patch: number) => void;
   onFail: () => void;
   onBack: () => void;
   onGrid: () => void;
+  inset?: { left: number; right: number; top: number; bottom: number };
 }) {
   const { state, now } = useGame();
   const host = useRef<HTMLDivElement>(null);
@@ -34,6 +35,7 @@ export function Garden3D({ region, patch, onPick, onFail, onBack, onGrid }: {
         if (dead) return s.dispose();
         sceneRef.current = s;
         s.setOnScale(setScale);
+        if (insetRef.current) s.setInset(insetRef.current);
         s.setCurrent(region, patch);
         // every region's patches: where colonies live, never who or how strong
         for (let r = 1; r <= WORLD.regions; r++)
@@ -49,6 +51,13 @@ export function Garden3D({ region, patch, onPick, onFail, onBack, onGrid }: {
   }, []);
   useEffect(() => sceneRef.current?.setReduced(reduced), [reduced]);
   useEffect(() => sceneRef.current?.setCurrent(region, patch), [region, patch]);
+  const insetRef = useRef(inset);
+  insetRef.current = inset;
+  const insetKey = JSON.stringify(inset ?? null);
+  useEffect(() => {
+    if (inset) sceneRef.current?.setInset(inset);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [insetKey]);
 
   return (
     <div className="patch3d garden" ref={host}>

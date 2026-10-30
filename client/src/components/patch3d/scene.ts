@@ -27,6 +27,10 @@ export interface PatchScene {
   setReduced(r: boolean): void;
   /** Act out a battle report's data where it was fought (once that patch is shown). False if it has nothing to show. */
   playBattle(data: unknown): boolean;
+  /** Room at the edges that floating cards cover, in CSS pixels: the patch is framed in what's left. */
+  setInset(i: { left: number; right: number; top: number; bottom: number }): void;
+  /** Fly the camera to a party's column ('m12' for mission 12, 'i7' for incoming 7), if it's on this patch. */
+  focusParty(key: string): boolean;
   /** Drop the camera to ant height beside your own mound (or the middle of the patch). */
   antsEye(): void;
   resetView(): void;
@@ -581,7 +585,7 @@ export async function createPatchScene(
   }, !coarse);
   disposables.push(ants);
   const SWARM_CAP = Math.round(1500 * CAP), PARTY_CAP = Math.round(300 * CAP);
-  interface Trail { key: string; mesh: THREE.Mesh; pts: THREE.Vector3[]; lens: number[]; total: number }
+  interface Trail { key: string; mesh: THREE.Mesh; pts: THREE.Vector3[]; lens: number[]; total: number; lead?: THREE.Vector3 }
   const trails = new Map<string, Trail>();
   const trailGroup = new THREE.Group();
   scene.add(trailGroup);
@@ -752,6 +756,7 @@ export async function createPatchScene(
         });
       }
       along(t, Math.max(0, lead));
+      t.lead = (t.lead ?? new THREE.Vector3()).copy(at);
       const time = c.endsAt ? ` · ${fmtDuration(Math.max(0, c.endsAt - d.now))}` : '';
       label(`party-${c.key}`, `nest-trip p3-trip ${c.tone}`, at.x, at.y + 1.4, at.z, `${esc(c.label)} · ${c.units.toLocaleString()}${time}`);
     }
@@ -988,6 +993,7 @@ export async function createPatchScene(
   let homeDist = 60;
   const MIN_DIST = 3;
   const TANH = Math.tan(THREE.MathUtils.degToRad(20));
+  let inset = { left: 0, right: 0, top: 0, bottom: 0 };
   const pitchFor = (dist: number) => THREE.MathUtils.lerp(0.1, 0.78, smooth(MIN_DIST, homeDist, dist));
   function fit() {
     const w = host.clientWidth, h = host.clientHeight;
@@ -995,11 +1001,19 @@ export async function createPatchScene(
     if (w < 2 || h < 2) return;
     sized = [w, h];
     renderer.setSize(w, h, false);
-    camera.aspect = w / h;
+    // frame the patch in the part of the view the floating cards leave free, then widen back to the whole canvas
+    const fw = Math.max(200, w - inset.left - inset.right), fh = Math.max(200, h - inset.top - inset.bottom);
+    camera.aspect = fw / fh;
+    if (inset.left || inset.right || inset.top || inset.bottom) camera.setViewOffset(fw, fh, -inset.left, -inset.top, w, h);
+    else camera.clearViewOffset();
     camera.updateProjectionMatrix();
     // the whole patch, left to right, in view
     const wasHome = goal.dist >= homeDist * 0.999;
     homeDist = Math.max((HALF_W + 5) / (TANH * camera.aspect), 18 / TANH);
+    // the haze stays behind the patch however far back the whole-patch view has to stand
+    const fog = scene.fog as THREE.Fog;
+    fog.near = Math.max(70, homeDist * 0.85);
+    fog.far = Math.max(190, homeDist * 2);
     if (wasHome || goal.dist > homeDist) goal.dist = homeDist;
     goal.pitch = pitchFor(goal.dist);
   }
@@ -1231,6 +1245,21 @@ export async function createPatchScene(
       const ok = playBattle(data);
       still();
       return ok;
+    },
+    setInset(i) {
+      inset = i;
+      fit();
+      still();
+    },
+    focusParty(key) {
+      const t = trails.get(key);
+      if (!t) return false;
+      // frame the head of the column from a middle height, close enough to see the ants
+      const p = t.lead ?? t.pts[Math.floor(t.pts.length / 2)];
+      Object.assign(goal, { tx: p.x, tz: p.z + 3, dist: Math.min(homeDist, 30) });
+      clampGoal();
+      still();
+      return true;
     },
     antsEye() {
       const d = get();

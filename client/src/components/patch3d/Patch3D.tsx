@@ -2,13 +2,16 @@
 // shown, so Three.js never reaches players on the drawn patch. Tapping a spot picks it, exactly like the drawn
 // patch: the spot card under it does the rest. If WebGL can't start, the parent falls back to the drawn patch.
 import { useEffect, useRef, useState } from 'react';
+import { WILDS_SPOT } from '@hormigas/shared';
 import { api } from '../../api';
 import { useGame } from '../../game';
 import { useMotion } from '../../motion';
 import type { Spot } from '../Patch';
 import { createPatchScene, type PatchScene } from './scene';
 
-export function Patch3D({ region, patch, spots, selected, onPick, onFail, replay, onRise, onNest }: {
+export type Inset = { left: number; right: number; top: number; bottom: number };
+
+export function Patch3D({ region, patch, spots, selected, onPick, onFail, replay, onRise, onNest, inset, focus }: {
   region: number;
   patch: number;
   spots: Spot[] | null;
@@ -21,6 +24,10 @@ export function Patch3D({ region, patch, spots, selected, onPick, onFail, replay
   onRise?: () => void;
   /** down into your own nest (the Colony screen) */
   onNest?: () => void;
+  /** the room floating cards cover (the war room on computers) */
+  inset?: Inset;
+  /** fly to this party's column ('m12', 'i7'); `n` changes to ask again */
+  focus?: { key: string; n: number } | null;
 }) {
   const { colony, state, now } = useGame();
   const host = useRef<HTMLDivElement>(null);
@@ -50,6 +57,7 @@ export function Patch3D({ region, patch, spots, selected, onPick, onFail, replay
         s.setSpots(l.region, l.patch, l.spots);
         s.setSelected(l.selected);
         s.setOnScale(setScale);
+        if (insetRef.current) s.setInset(insetRef.current);
         setReady(true);
       })
       .catch(() => !dead && onFail());
@@ -63,6 +71,22 @@ export function Patch3D({ region, patch, spots, selected, onPick, onFail, replay
   useEffect(() => sceneRef.current?.setReduced(reduced), [reduced]);
   useEffect(() => sceneRef.current?.setSpots(region, patch, spots), [region, patch, spots]);
   useEffect(() => sceneRef.current?.setSelected(selected), [selected]);
+  const insetRef = useRef(inset);
+  insetRef.current = inset;
+  const insetKey = JSON.stringify(inset ?? null);
+  useEffect(() => {
+    if (inset) sceneRef.current?.setInset(inset);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [insetKey]);
+  // a party may only appear on the patch once the map and state have caught up: try for a few seconds
+  useEffect(() => {
+    if (!focus || !ready) return;
+    let tries = 0;
+    const t = window.setInterval(() => {
+      if (sceneRef.current?.focusParty(focus.key) || ++tries > 12) window.clearInterval(t);
+    }, 250);
+    return () => window.clearInterval(t);
+  }, [focus, ready]);
 
   // Replay from a report: as soon as the scene is up (it waits for the battle's patch to load)
   useEffect(() => {
@@ -132,7 +156,7 @@ export function Patch3D({ region, patch, spots, selected, onPick, onFail, replay
       <div className="sr-only">
         {(spots ?? []).map((s) => (
           <button key={s.spot} type="button" aria-pressed={selected === s.spot} onClick={() => onPick(s.spot)}>
-            {s.colony ? `${s.colony.name}${s.colony.mine ? ', your colony' : ''}` : `Spot ${s.spot}, empty`}
+            {s.colony ? `${s.colony.name}${s.colony.mine ? ', your colony' : ''}` : s.spot === WILDS_SPOT ? 'The wilds' : `Spot ${s.spot}, empty`}
           </button>
         ))}
       </div>

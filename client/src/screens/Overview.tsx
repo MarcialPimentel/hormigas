@@ -18,6 +18,8 @@ import { ActivityList } from '../components/Activity';
 import { QuestCard } from '../components/QuestCard';
 import { AwayCard } from '../components/AwayCard';
 
+import { UnderWay } from '../components/UnderWay';
+
 const NestHome = lazy(() => import('../components/NestHome').then((m) => ({ default: m.NestHome })));
 
 /** Wide enough for the left nav (styles.css, 900px): the nest fills the screen and the cards float over it. */
@@ -127,6 +129,20 @@ export function Overview({ go }: { go: (screen: string, params?: any) => void })
       <ActivityList go={go} />
     </Panel>
   );
+  // the way up to the war room: what's out there right now, one tap from the full view
+  const out = (state.missions?.length ?? 0) + (state.incoming?.length ?? 0);
+  const underWay = (
+    <Panel
+      title="Under way"
+      actions={
+        <button className="btn small primary" onClick={() => go('missions')} title="The patch and every mission, full screen">
+          Open the war room
+        </button>
+      }
+    >
+      {out > 0 ? <UnderWay compact limit={4} onFocus={() => go('missions')} /> : <p className="muted small">Nothing out. Send ants from the war room.</p>}
+    </Panel>
+  );
 
   // On a computer the colony is the screen: the nest fills it and these cards float in its sky and corners.
   if (wide) {
@@ -141,6 +157,7 @@ export function Overview({ go }: { go: (screen: string, params?: any) => void })
         <div className="float-col">
           <div className="float-top" ref={frame.top[1]}>
             <AwayCard go={go} />
+            {underWay}
             {happening}
           </div>
           <div className="float-bottom" ref={frame.bottom}>
@@ -160,6 +177,7 @@ export function Overview({ go }: { go: (screen: string, params?: any) => void })
       <QuestCard nav={go} />
       <Panel>{nameCard}</Panel>
 
+      {underWay}
       {happening}
 
       <Panel title="Production">

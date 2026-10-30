@@ -11,6 +11,7 @@ _Current as of Build 11 (2026-10-30)._
 - Tap or click everything; the tabs are Colony, Chambers, Brood Hall, Research, Missions, Allies, Reports and Rankings ([12-ui-nest-view](12-ui-nest-view.md)).
 - **3D nest (computers):** drag to turn it; scroll, pinch or the + and − buttons to zoom. Tap a chamber to open it.
 - **3D Patch (computers, Missions):** drag to move, scroll or pinch to zoom (the camera drops toward ant height), right-drag or shift-drag to turn, double-click for the whole patch. **Ant's-eye view** jumps down beside your mound. Tap a mound or scent to open its card. A battle report's **Replay on the patch** plays the fight there.
+- **The war room (computers, Missions):** tap a spot, then Raid, Scout or Forage to open the Deploy card; **Under way** on the right shows every mission's progress; click one to fly to it. From Colony: **Open the war room**, or **↑ Up to the patch** on the nest.
 - **The Garden (computers, Missions → World):** keep scrolling out from a patch to rise to it; drag to move, scroll to zoom, tap a light to dive into that patch. **Region grid** picks a patch by number; **↓ Your nest** (on the patch) goes down to the Colony screen.
 - **Phones** get the 2D nest and the drawn patch; everything else is the same. On a computer, **2D view** / **3D view** switches either.
 

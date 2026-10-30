@@ -111,6 +111,10 @@ export function Nest3D({ nav, onFail, onSwitch, fill, inset }: { nav: Nav; onFai
         <button type="button" className="nest-motion nest-switch" onClick={onSwitch} title="Show the flat 2D nest instead">
           2D view
         </button>
+        {/* the scale ladder: up out of the entrance to the patch, where every mission walks */}
+        <button type="button" className="nest-motion nest-up" onClick={() => nav('missions')} title="Up to the patch: every mission, full screen">
+          ↑ Up to the patch
+        </button>
         <p className="n3-hint">
           {!fill
             ? 'Drag to turn the nest · tap a chamber · tap the entrance to send a party'
