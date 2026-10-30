@@ -68,7 +68,7 @@ export function Nest3D({ nav, onFail, onSwitch, fill, inset }: { nav: Nav; onFai
   // what the slab is carved from: built chambers, ones you could dig next, how many ants there are
   const research = state?.player.research ?? {};
   const totalUnits = colony ? Object.values(colony.units).reduce((a, b) => a + (b ?? 0), 0) : 0;
-  const soldiers = colony ? (colony.units.minor_soldier ?? 0) + (colony.units.major_soldier ?? 0) : 0;
+  const soldiers = colony ? (colony.units.minor_soldier ?? 0) + (colony.units.major_soldier ?? 0) + (colony.units.acid_sprayer ?? 0) + (colony.units.trap_jaw ?? 0) : 0;
   const layout: Layout | null = colony
     ? {
         chambers: Object.fromEntries(CHAMBER_IDS.map((id) => [id, lvl(colony.chambers, id)])),

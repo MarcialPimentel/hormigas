@@ -36,6 +36,9 @@ export const CASTE_IDS = [
   'minor_soldier',
   'scout',
   'major_soldier',
+  // Build 10: the counter triangle and siege (docs/05-castes-units.md)
+  'acid_sprayer',
+  'trap_jaw',
   'hauler',
   'winged_queen',
   'carrion_beetle',
@@ -48,7 +51,7 @@ export const CASTE_IDS = [
 ] as const;
 export type CasteId = (typeof CASTE_IDS)[number];
 
-export const DEFENSE_IDS = ['soil_wall', 'pit_trap', 'acid_sentry'] as const;
+export const DEFENSE_IDS = ['soil_wall', 'pit_trap', 'acid_sentry', 'narrow_tunnel'] as const;
 export type DefenseId = (typeof DEFENSE_IDS)[number];
 
 export const RESEARCH_IDS = [
@@ -126,6 +129,8 @@ export interface CasteDef extends CombatStats {
   unlock: Requirements;
   canHaulCorpses?: boolean;
   corpsesOnly?: boolean;
+  /** Castes this one beats by sheer numbers at equal cost, not by frenzy (shown as a counter; docs/05-castes-units.md). */
+  outnumbers?: string[];
   /** Lives only in NPC colonies (termites, spiders): never raised by players. */
   npcOnly?: boolean;
 }
@@ -135,6 +140,10 @@ export interface DefenseDef extends CombatStats {
   cost: Resources;
   max?: number;
   unlock: Requirements;
+  /** Soil Wall: its guard soaks shots aimed at the colony's other defenses (docs/06-defense.md). */
+  shield?: boolean;
+  /** Narrow Tunnel: not in the fight; for its first `rounds` rounds only `sharePct`% of the attackers get to fight. */
+  chokepoint?: { rounds: number; sharePct: number };
 }
 /**
  * Research effect keys that hold a number. Code reads them only through researchSum / researchFactor

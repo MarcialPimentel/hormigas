@@ -68,6 +68,10 @@
   },
   "combat": {
     "maxRounds": 6,
+    "retreatOptions": {
+      "_note": "The fall-back order a raider picks (docs/08-combat.md): after a round in which the raiders have lost at least this percent of their army's worth (Foliage + Protein + Nectar cost), they break off and go home. 0 = fight to the end. It counts as the defender holding.",
+      "pcts": [0, 25, 50]
+    },
     "glanceThresholdPctOfGuard": 1,
     "collapseBelowHealthPct": 70,
     "collapseChance": "1 - currentHealth / maxHealth",

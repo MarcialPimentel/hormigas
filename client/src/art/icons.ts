@@ -74,6 +74,11 @@ const CHAMBER: Record<ChamberId, () => string> = {
 // ---------- units ----------
 
 const MAJOR = { base: '#8e4f28', light: '#cf9566', shade: '#5e3218', far: '#4a2712' };
+// Formica wood ants: rusty red head and thorax, dark gaster
+const FORMICA = { base: '#9a4a2c', light: '#d58a62', shade: '#62301c', far: '#4a2414' };
+const TRAPJAW = { base: '#6e4a2a', light: '#b8885a', shade: '#46301a', far: '#36240f' };
+const ACID_DROPS = (x: number, y: number) =>
+  `<g fill="#c8d44a" stroke="#6f7a1a" stroke-width="0.8"><circle cx="${x}" cy="${y}" r="2.6"/><circle cx="${x - 5}" cy="${y - 6}" r="2.1"/><circle cx="${x - 8}" cy="${y - 13}" r="1.7"/><circle cx="${x - 2}" cy="${y - 10}" r="1.4"/></g>`;
 const BULLET = { base: '#3a2420', light: '#8a5a48', shade: '#24140f', far: '#1a0e0a', ink: '#0f0806' };
 
 const UNIT: Record<CasteId, () => string> = {
@@ -86,6 +91,13 @@ const UNIT: Record<CasteId, () => string> = {
     ground() + ant('worker', 30, 49, 54, { load: '#8db255' }) +
     `<g transform="rotate(-18 40 18)"><ellipse cx="40" cy="18" rx="15" ry="7" fill="#8db255" stroke="${INK}" stroke-width="1.6"/><path d="M26,18 L54,18" stroke="#5f7d36" stroke-width="1.2"/></g><path d="M44,32 L41,25" stroke="${INK}" stroke-width="1.4"/>`,
   winged_queen: () => ground() + ant('alate', 32, 49, 66),
+  // Build 10 (docs/05-castes-units.md): a formicine soldier spraying acid from its gaster (left), and a
+  // trap-jaw with its long jaws locked open at 180 degrees, ready to snap
+  acid_sprayer: () => ground() + ant('soldier', 36, 49, 58, { palette: FORMICA }) + ACID_DROPS(12, 34),
+  trap_jaw: () =>
+    ground() + ant('worker', 28, 49, 56, { palette: TRAPJAW }) +
+    `<g stroke="${INK}" stroke-width="2.2" stroke-linecap="round" fill="none"><path d="M51,33 L62,27"/><path d="M51,36 L62,41"/></g>` +
+    `<g stroke="${TRAPJAW.light}" stroke-width="1" stroke-linecap="round" fill="none"><path d="M52,33 L61,28"/><path d="M52,36 L61,40"/></g>`,
   carrion_beetle: () =>
     ground() +
     `<g stroke="${INK}" stroke-width="1.6" stroke-linecap="round" fill="none"><path d="M20,42 l-4,8 M30,44 l0,7 M40,42 l4,8"/><path d="M49,32 l6,-6 M51,35 l8,-3"/></g>` +
@@ -147,6 +159,11 @@ const DEFENSE: Record<DefenseId, () => string> = {
     `<path d="M18,30 L32,52 L46,30" fill="#a8885a"/><path d="M22,36 l2,1 M38,38 l2,-1 M28,44 l2,1 M10,40 l2,0 M52,44 l2,0" stroke="#7a5c40" stroke-width="1.4"/>` +
     `<path d="M18,30 L32,52 L46,30" fill="none" stroke="${INK}" stroke-width="2" stroke-linejoin="round"/>` +
     ant('worker', 22, 36, 18, {}, false).replace('<g transform="', '<g transform="rotate(48 22 36) '),
+  narrow_tunnel: () =>
+    `<rect x="2" y="8" width="60" height="50" rx="6" fill="#7a5c40"/>` +
+    `<path d="M2,26 C14,26 20,30 26,32 C30,33 34,33 38,32 C44,30 50,26 62,26 L62,44 C50,44 44,40 38,38 C34,37 30,37 26,38 C20,40 14,44 2,44Z" fill="#1c140e"/>` +
+    `<path d="M26,32 C30,33 34,33 38,32 M26,38 C30,37 34,37 38,38" stroke="#c8a77e" stroke-width="1.6" fill="none"/>` +
+    ant('soldier', 46, 41, 22) + ant('worker', 14, 41, 18),
   acid_sentry: () =>
     ground() + ant('worker', 38, 49, 54) +
     `<g fill="#c8d44a" stroke="#6f7a1a" stroke-width="0.8"><circle cx="14" cy="34" r="2.6"/><circle cx="9" cy="28" r="2.1"/><circle cx="6" cy="21" r="1.7"/><circle cx="12" cy="24" r="1.4"/></g>`,

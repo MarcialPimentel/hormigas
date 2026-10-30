@@ -61,7 +61,7 @@ Terrain still picks the species. Where two live on the same terrain, a new nest 
 | Terrain | Species | How it fights | Counter |
 |---|---|---|---|
 | Sandy Soil, Sunny Meadow | **Honeypot Ants** | Workers and Minor Soldiers guarding a store with **2.5× the Nectar** (60% of the Foliage and Protein) | Easy to beat. Bring Workers to carry the Nectar home |
-| Creek Bank, Rotting Log | **Trap-jaw Ants** | No Workers, just a few Major Soldiers behind pit traps | Numbers: swarm them with Minor Soldiers |
+| Creek Bank, Rotting Log | **Trap-jaw Ants** | No Workers, just a few Major Soldiers behind pit traps (from level 3) | Swarm them with Minor Soldiers; bring a few Trap-jaw Ants for the pits (Build 10) |
 
 They follow every wild-nest rule (levels 1–6, 24 h regrowth, gentle raids back).
 
@@ -113,20 +113,22 @@ The armies are the fair armies from [17-wild-nests](17-wild-nests.md#tuning-chec
 
 | Level | Fair army | Honeypot | Trap-jaw |
 |---|---|---|---|
-| 1 | 8 Minor | 100% / 25% | 100% / 39% |
-| 2 | 20 Minor | 100% / 28% | 100% / 32% |
-| 3 | 20 Minor + 12 Major | 100% / 26% | 100% / 33% |
-| 4 | 80 Minor + 10 Major | 100% / 32% | 100% / 36% |
-| 5 | 150 Minor + 40 Major | 100% / 31% | 100% / 35% |
-| 6 | 250 Minor + 100 Major | 100% / 33% | 100% / 37% |
+| 1 | 8 Minor | 100% / 24% | 100% / 34% |
+| 2 | 20 Minor | 100% / 29% | 100% / 27% |
+| 3 | 20 Minor + 12 Major | 100% / 25% | 100% / 34% |
+| 4 | 80 Minor + 10 Major | 100% / 30% | 100% / 38% |
+| 5 | 150 Minor + 40 Major | 100% / 29% | 100% / 32% |
+| 6 | 250 Minor + 100 Major | 100% / 31% | 100% / 34% |
 
 | Target | Army | Result | Half that army |
 |---|---|---|---|
-| Termite mound, tier 1 | 120 Minor + 40 Major (around day 10) | 100% / 39% | 0% (wiped out) |
-| Termite mound, tier 2 | 250 Minor + 110 Major | 100% / 29% | 0% |
-| Termite mound, tier 3 | 450 Minor + 220 Major | 100% / 32% | 0% |
-| Spider den, tier 1 | 250 Minor + 100 Major (day 30) | 100% / 20% | 0%, loses 56% |
-| Spider den, tier 2 | 450 Minor + 220 Major | 100% / 23% | 0%, loses 62% |
+| Termite mound, tier 1 | 120 Minor + 40 Major (around day 10) | 100% / 43% | 0% (wiped out) |
+| Termite mound, tier 2 | 250 Minor + 110 Major | 100% / 37% | 0% |
+| Termite mound, tier 3 | 450 Minor + 220 Major | 100% / 37% | 0% |
+| Spider den, tier 1 | 250 Minor + 100 Major (day 30) | 100% / 21% | 0%, loses 59% |
+| Spider den, tier 2 | 450 Minor + 220 Major | 100% / 25% | 0%, loses 63% |
+
+Re-checked for Build 10 (Pit Traps catch Minors, the Soil Wall shields): tier 1 mounds have 2 Pit Traps instead of 4, and early Trap-jaw nests (levels 1–2) have no pits.
 
 - A day-14 army (150 Minor + 40 Major) never beats the tier-1 spider and loses 57% of itself.
 - A day-30 army never beats tier 2.

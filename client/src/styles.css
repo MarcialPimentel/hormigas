@@ -261,7 +261,7 @@ input:focus, textarea:focus { border-color: var(--honey-ink); outline: none; }
 .stats .wide { flex-basis: 100%; }
 .stats dt { color: var(--muted); }
 .stats dd { margin: 0; font-weight: 700; }
-.count-form { display: flex; gap: 0.4rem; align-items: center; flex-wrap: nowrap; }
+.count-form { display: flex; gap: 0.4rem; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
 .count-form input { width: 6.5rem; text-align: right; padding: 0.45rem 0.55rem; }
 .queue { display: grid; gap: 0.4rem; }
 .queue-item { display: flex; justify-content: space-between; gap: 0.75rem; flex-wrap: wrap; padding: 0.5rem 0.75rem; background: var(--soil); border-radius: var(--r-sm); }
@@ -438,6 +438,9 @@ pre.report-body { white-space: pre-wrap; overflow-x: auto; }
 
 /* ---------- combat ---------- */
 .preview { margin-top: 1rem; padding: 0.75rem; border: 1px solid var(--seam); border-radius: var(--r-sm); display: grid; gap: 0.5rem; }
+/* who counters what, in battle previews and reports (Build 10) */
+.counter-hint { margin: 0; padding: 0.35rem 0.6rem; border-left: 3px solid var(--danger); background: var(--soil); border-radius: 0 var(--r-sm) var(--r-sm) 0; }
+.counter-hints { display: grid; gap: 0.35rem; margin: 0.5rem 0; }
 .preview-head { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem; }
 .odds { display: flex; height: 10px; border-radius: 999px; overflow: hidden; background: var(--soil); }
 .odds .win { background: var(--leaf); }

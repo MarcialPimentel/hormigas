@@ -23,6 +23,7 @@ import {
   noSlotsMessage,
   returnLegMs,
   MISSION_SPEED,
+  RETREAT_PCTS,
   MISSION_TYPES,
   presentUnits,
   speedForReturnIn,
@@ -82,6 +83,7 @@ export function Missions({ draft }: { draft?: MissionDraft }) {
   const [units, setUnits] = useState<Record<string, string>>({});
   const [cargo, setCargo] = useState<Record<string, string>>({});
   const [speedPct, setSpeedPct] = useState(100);
+  const [retreatPct, setRetreatPct] = useState(0);
   const [returnBy, setReturnBy] = useState('');
   const [manual, setManual] = useState(false);
   const formRef = useRef<HTMLDivElement>(null);
@@ -183,7 +185,7 @@ export function Missions({ draft }: { draft?: MissionDraft }) {
 
   async function send() {
     const ok = await act(
-      () => api.post('/api/missions', { colonyId: colony!.id, type, target, units: chosen, cargo: cargoAllowed ? cargoAmounts : undefined, speedPct }),
+      () => api.post('/api/missions', { colonyId: colony!.id, type, target, units: chosen, cargo: cargoAllowed ? cargoAmounts : undefined, speedPct, ...(type === 'raid' ? { retreatPct } : {}) }),
       `${MISSION_LABEL[type]} mission sent.`,
     );
     if (ok) {
@@ -336,7 +338,23 @@ export function Missions({ draft }: { draft?: MissionDraft }) {
           <p className="muted small">Slower missions use less Nectar. Use "back no earlier than" to keep your army safely away while you're offline.</p>
         </fieldset>
 
-        {type === 'raid' && !unscouted && <BattlePreview target={target} units={chosen} />}
+        {type === 'raid' && (
+          <fieldset className="field">
+            <legend>Fall back</legend>
+            <div className="tabs" role="radiogroup" aria-label="Fall back">
+              {RETREAT_PCTS.map((p) => (
+                <button key={p} role="radio" aria-checked={retreatPct === p} className={retreatPct === p ? 'on' : ''} onClick={() => setRetreatPct(p)}>
+                  {p === 0 ? 'Fight to the end' : `After ${p}% losses`}
+                </button>
+              ))}
+            </div>
+            <p className="muted small">
+              Raiding ants break off when a fight goes badly. Falling back saves the rest of your army, but brings home no loot.
+            </p>
+          </fieldset>
+        )}
+
+        {type === 'raid' && !unscouted && <BattlePreview target={target} units={chosen} retreatPct={retreatPct} />}
 
         <dl className="summary">
           <div><dt>Distance</dt><dd>{valid ? fmtNum(dist) : '—'}</dd></div>
