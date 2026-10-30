@@ -596,8 +596,20 @@ pre.report-body { white-space: pre-wrap; overflow-x: auto; }
 
 /* ---------- research tech tree (client/src/components/ResearchTree.tsx; docs/18-art-direction.md) ---------- */
 .tt-wrap { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0.9rem; }
-.content:has(.tt-wrap) { max-width: 1240px; } /* the tree gets the width of a big screen */
 @media (min-width: 760px) { .tt-wrap { grid-template-columns: minmax(0, 1fr) 280px; align-items: start; } }
+@media (min-width: 1280px) { .tt-wrap { grid-template-columns: minmax(0, 1fr) 320px; } }
+/* on a computer the tree fills the screen below the resource bar, like the nest on the Colony screen;
+   the tree box scrolls inside, the page itself doesn't */
+@media (min-width: 900px) {
+  .app:has(.tt-wrap) { height: 100vh; grid-template-rows: auto auto minmax(0, 1fr); }
+  .content:has(.tt-wrap) { max-width: none; min-height: 0; padding-bottom: 1.25rem; display: flex; flex-direction: column; }
+  .content:has(.tt-wrap) > .stack { flex: 1; min-height: 520px; grid-template-rows: auto minmax(0, 1fr); }
+  .content:has(.tt-wrap) > .stack > .panel:has(.tt-wrap) { display: flex; flex-direction: column; min-height: 0; }
+  .content:has(.tt-wrap) .tt-wrap { flex: 1; min-height: 0; align-items: stretch; }
+  .content:has(.tt-wrap) .tt-main { display: flex; flex-direction: column; min-height: 0; }
+  .content:has(.tt-wrap) .tt-scroll { flex: 1; max-height: none; }
+  .content:has(.tt-wrap) .tt-card { position: static; align-self: start; max-height: 100%; overflow: auto; }
+}
 .tt-main { min-width: 0; }
 .tt-scroll { overflow: auto; max-height: min(72vh, 660px); border: 1px solid var(--seam); border-radius: var(--r-sm); background: var(--soil); overscroll-behavior: contain; }
 .tt-heads { position: sticky; top: 0; z-index: 3; height: 26px; background: var(--soil); border-bottom: 1px solid var(--seam); }
