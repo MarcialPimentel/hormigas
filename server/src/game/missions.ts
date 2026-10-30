@@ -13,6 +13,8 @@ import {
   missionUnitProblem,
   noSlotsMessage,
   isValidSpeedPct,
+  isValidRetreatPct,
+  RETREAT_PCTS,
   recallReturnAt,
   returnLegMs,
   MISSION_TYPES,
@@ -56,6 +58,8 @@ export interface Mission {
   units: UnitCounts;
   cargo: Resources;
   speedPct: number;
+  /** Raids: the fall-back order, in percent of the army's worth lost (0 = fight to the end; docs/08-combat.md). */
+  retreatPct: number;
   fuel: number;
   departAt: number;
   arriveAt: number;
@@ -80,6 +84,7 @@ function fromRow(r: any): Mission {
     units: r.units,
     cargo: r.cargo,
     speedPct: r.speed_pct,
+    retreatPct: r.retreat_pct ?? 0,
     fuel: r.fuel,
     departAt: r.depart_at,
     arriveAt: r.arrive_at,
@@ -158,6 +163,8 @@ export interface SendInput {
   units: Record<string, unknown>;
   cargo?: Record<string, unknown>;
   speedPct?: number;
+  /** Raids only: fall back after losing this percent of the army's worth (one of RETREAT_PCTS). */
+  retreatPct?: number;
 }
 
 function parseUnits(raw: Record<string, unknown>, home: UnitCounts): UnitCounts {
@@ -205,6 +212,8 @@ export async function sendMission(q: Tx, playerId: number, input: SendInput): Pr
   const cargo = fixed.allowsCargo ? parseCargo(input.cargo) : res();
   const speedPct = Number(input.speedPct ?? 100);
   if (!isValidSpeedPct(speedPct)) throw new GameError('bad_speed', 'Speed must be 10%–100% in steps of 10.');
+  const retreatPct = type === 'raid' ? Number(input.retreatPct ?? 0) : 0;
+  if (!isValidRetreatPct(retreatPct)) throw new GameError('bad_retreat', `Fall back after ${RETREAT_PCTS.filter((p) => p > 0).join('% or ')}% losses, or fight to the end.`);
 
   const world = await getWorld(q);
   const targetColony = target.spot === WILDS_SPOT ? null : await colonyAt(q, world.id, target.region, target.patch, target.spot);
@@ -231,7 +240,7 @@ export async function sendMission(q: Tx, playerId: number, input: SendInput): Pr
   await saveColony(q, colony);
 
   return launchMission(q, {
-    worldId: world.id, playerId, type, origin: colony, target, targetColony, units, cargo, speedPct, fuel,
+    worldId: world.id, playerId, type, origin: colony, target, targetColony, units, cargo, speedPct, retreatPct, fuel,
     departAt: t, arriveAt: t + secs * 1000, senderName: player.username,
   });
 }
@@ -241,7 +250,7 @@ export async function launchMission(
   q: Tx,
   o: {
     worldId: number; playerId: number; type: MissionType; origin: Colony; target: Coords; targetColony: Colony | null;
-    units: UnitCounts; cargo: Resources; speedPct: number; fuel: number; departAt: number; arriveAt: number;
+    units: UnitCounts; cargo: Resources; speedPct: number; retreatPct?: number; fuel: number; departAt: number; arriveAt: number;
     /** shown to the target in "incoming" notices */
     senderName: string;
   },
@@ -249,10 +258,10 @@ export async function launchMission(
   const { origin, target } = o;
   const r = await q.query(
     `INSERT INTO missions (world_id, player_id, type, origin_colony_id, origin_region, origin_patch, origin_spot,
-       target_region, target_patch, target_spot, target_colony_id, units, cargo, speed_pct, fuel, depart_at, arrive_at, status, created_at)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,'outbound',$16) RETURNING *`,
+       target_region, target_patch, target_spot, target_colony_id, units, cargo, speed_pct, fuel, depart_at, arrive_at, status, created_at, retreat_pct)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,'outbound',$16,$18) RETURNING *`,
     [o.worldId, o.playerId, o.type, origin.id, origin.region, origin.patch, origin.spot, target.region, target.patch, target.spot,
-      o.targetColony?.id ?? null, JSON.stringify(o.units), JSON.stringify(o.cargo), o.speedPct, o.fuel, o.departAt, o.arriveAt],
+      o.targetColony?.id ?? null, JSON.stringify(o.units), JSON.stringify(o.cargo), o.speedPct, o.fuel, o.departAt, o.arriveAt, o.retreatPct ?? 0],
   );
   const m = fromRow(r.rows[0]);
   m.arriveEventId = await schedule(q, o.worldId, 'mission_arrive', o.arriveAt, { missionId: m.id });
@@ -483,6 +492,7 @@ export function missionView(m: Mission) {
     units: m.units,
     cargo: m.cargo,
     speedPct: m.speedPct,
+    retreatPct: m.retreatPct,
     fuel: m.fuel,
     departAt: m.departAt,
     arriveAt: m.arriveAt,
