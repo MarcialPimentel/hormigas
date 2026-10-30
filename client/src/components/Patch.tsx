@@ -609,6 +609,8 @@ export interface Stage {
   deploy: ReactNode | null;
   focus: PartyFocus | null;
   inset: { left: number; right: number; top: number; bottom: number };
+  /** the order being written in Deploy, drawn on the patch */
+  order?: { from: Coords; to: Coords; label: string } | null;
 }
 
 export function PatchView({ start, selected, onAct, replay, go: nav, pm: given, stage }: {
@@ -714,6 +716,7 @@ export function PatchView({ start, selected, onAct, replay, go: nav, pm: given, 
               onNest={onNest}
               inset={stage.inset}
               focus={stage.focus}
+              order={stage.order ?? null}
             />
           </Suspense>
         )}

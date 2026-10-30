@@ -29,6 +29,8 @@ export interface PatchScene {
   playBattle(data: unknown): boolean;
   /** Room at the edges that floating cards cover, in CSS pixels: the patch is framed in what's left. */
   setInset(i: { left: number; right: number; top: number; bottom: number }): void;
+  /** The order being written in Deploy: a dotted route from the sending colony to the target, tagged From and To. */
+  setOrder(o: { from: { region: number; patch: number; spot: number }; to: { region: number; patch: number; spot: number }; label: string } | null): void;
   /** Fly the camera to a party's column ('m12' for mission 12, 'i7' for incoming 7), if it's on this patch. */
   focusParty(key: string): boolean;
   /** Drop the camera to ant height beside your own mound (or the middle of the patch). */
@@ -594,6 +596,7 @@ export async function createPatchScene(
       openRings.push({ spot: n, mesh: ring, mat });
     }
     applySelected();
+    buildOrder();
     if (pendingReplay && inView(pendingReplay.target)) {
       startReplay(pendingReplay);
       pendingReplay = null;
@@ -968,6 +971,65 @@ export async function createPatchScene(
     bugs.instanceMatrix.needsUpdate = true;
   }
 
+  // ---------- the order being written: From, To, and a dotted route that marches the way the ants will go ----------
+  type C3 = { region: number; patch: number; spot: number };
+  let order: { from: C3; to: C3; label: string } | null = null;
+  const ORDER_DOTS = 160;
+  const orderDots = new THREE.InstancedMesh(
+    keep(new THREE.CircleGeometry(0.17, 10).rotateX(-Math.PI / 2)),
+    keep(new THREE.MeshBasicMaterial({ color: '#FFC93C', transparent: true, opacity: 0.95, depthTest: false, depthWrite: false })),
+    ORDER_DOTS,
+  );
+  orderDots.renderOrder = 3;
+  orderDots.frustumCulled = false;
+  orderDots.count = 0;
+  scene.add(orderDots);
+  let orderPath: { pts: THREE.Vector3[]; lens: number[]; total: number } | null = null;
+  function buildOrder() {
+    orderPath = null;
+    if (!order || (!inView(order.from) && !inView(order.to))) return;
+    const a = endAt(order.from, order.to), b = endAt(order.to, order.from);
+    const dx = b.x - a.x, dz = b.z - a.z, len = Math.hypot(dx, dz);
+    if (len < 0.5) return;
+    const cx = (a.x + b.x) / 2 - (dz / len) * len * 0.12, cz = (a.z + b.z) / 2 + (dx / len) * len * 0.12;
+    const pts: THREE.Vector3[] = [];
+    const n = Math.max(12, Math.round(len * 1.5));
+    for (let i = 0; i <= n; i++) {
+      const t = i / n, u = 1 - t;
+      const x = u * u * a.x + 2 * u * t * cx + t * t * b.x, z = u * u * a.z + 2 * u * t * cz + t * t * b.z;
+      pts.push(new THREE.Vector3(x, gH(x, z) + 0.08, z));
+    }
+    const lens = [0];
+    for (let i = 1; i < pts.length; i++) lens.push(lens[i - 1] + pts[i].distanceTo(pts[i - 1]));
+    orderPath = { pts, lens, total: lens[lens.length - 1] };
+  }
+  const om = new THREE.Matrix4(), oq = new THREE.Quaternion(), os = new THREE.Vector3(1, 1, 1), op = new THREE.Vector3();
+  function drawOrder() {
+    if (!orderPath || !order) {
+      orderDots.count = 0;
+      return;
+    }
+    const { pts, lens, total } = orderPath;
+    const gap = 0.75, shift = reduced ? 0 : (clock * 1.4) % gap;
+    let n = 0;
+    for (let d = shift; d < total && n < ORDER_DOTS; d += gap) {
+      let i = 1;
+      while (i < lens.length - 1 && lens[i] < d) i++;
+      const k = (d - lens[i - 1]) / ((lens[i] - lens[i - 1]) || 1);
+      op.lerpVectors(pts[i - 1], pts[i], k);
+      orderDots.setMatrixAt(n++, om.compose(op, oq, os));
+    }
+    orderDots.count = n;
+    orderDots.instanceMatrix.needsUpdate = true;
+    const tag = (c: C3, key: string, html: string) => {
+      if (!inView(c)) return;
+      const { x, z } = spotPos(c.spot);
+      label(key, 'p3-label order', x, gH(x, z) + 2.4, z, html);
+    };
+    tag(order.from, 'order-from', '<b>From</b>');
+    tag(order.to, 'order-to', `<b>To</b> · ${esc(order.label)}`);
+  }
+
   // ---------- labels (HTML over the canvas) ----------
   const labelEls = new Map<string, HTMLDivElement>();
   const seen = new Set<string>();
@@ -1255,6 +1317,7 @@ export async function createPatchScene(
     drawColumns(d);
     drawReplay(dt);
     ants.end();
+    drawOrder();
     for (const [key, el] of labelEls) if (!seen.has(key)) { el.remove(); labelEls.delete(key); }
     const st = scaleText();
     if (st !== scaleShown) {
@@ -1300,6 +1363,11 @@ export async function createPatchScene(
     setInset(i) {
       inset = i;
       fit();
+      still();
+    },
+    setOrder(o) {
+      order = o;
+      buildOrder();
       still();
     },
     focusParty(key) {
