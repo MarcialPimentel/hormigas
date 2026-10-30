@@ -183,8 +183,9 @@ export function surfaceParties(w: number, entranceX: number, c: ServerColony, st
     const edge = fromLeft ? -8 : w + 8;
     const k = i.departAt ? clamp01((now - i.departAt) / (i.arriveAt - i.departAt)) : 0.5;
     const x = lerp(edge, entranceX + 12 * (fromLeft ? -1 : 1), k);
-    // an army-ant swarm (docs/20-swarms.md) walks in like a raid: army ants, and a much longer column
-    const kind = i.type === 'raid' || i.type === 'swarm' ? 'raid' : i.type === 'scout' ? 'scout' : 'delivery';
+    // an army-ant swarm (docs/20-swarms.md) walks in like a raid: army ants, and a much longer column;
+    // scouts from a truce partner or supercolony mate are visitors, not enemy red
+    const kind = i.type === 'raid' || i.type === 'swarm' ? 'raid' : i.type === 'scout' && i.hostile ? 'scout' : 'delivery';
     const n = i.type === 'swarm' ? Math.min(30, Math.max(6, Math.ceil(i.unitCount / 3))) : kind === 'raid' ? Math.min(10, Math.max(3, Math.ceil(i.unitCount / 6))) : 2;
     out.push({
       key: `i${i.id}`, x, lane: lane++, heading: fromLeft ? 1 : -1, kind,

@@ -24,7 +24,7 @@ Swarms from the wilds ([20-swarms](20-swarms.md)) never come during new-colony p
 - A strong player can be raided by anyone weaker (no reverse protection).
 
 ## Truces and supercolonies
-See [23-supercolonies](23-supercolonies.md). Raids are refused between players with a truce, between members of the same supercolony, and while a truce's 24 h notice or a leaver's 3-day scent fade is running. A raid already on its way when such a pact starts turns back on arrival without a fight. Scouting is never blocked.
+See [23-supercolonies](23-supercolonies.md). Raids are refused between players with a truce, between members of the same supercolony, and while a truce's 24 h notice or a leaver's 3-day scent fade is running. A raid already on its way when such a pact starts turns back on arrival without a fight. Scouting is never blocked, but a pact partner's scouts are visitors: never caught, always reported.
 
 ## Bash limit
 - Max **4 successful raids per 24 h** against the same colony from the same attacker.

@@ -10,6 +10,7 @@ import { api } from '../api';
 import { useGame } from '../game';
 import { fmtAgo, fmtCoords, fmtDuration, fmtNum } from '../format';
 import { Trip } from './ui';
+import { incomingName } from '../incoming';
 import { ENABLED_MISSIONS, MISSION_LABEL, type MissionType } from '../nav';
 
 const can = (t: MissionType) => ENABLED_MISSIONS.includes(t);
@@ -124,7 +125,7 @@ function Movements({ at, home }: { at: Coords; home: Coords }) {
   }
   for (const i of theirs) {
     const toHere = same(at, home);
-    const what = i.type === 'swarm' ? 'Army ant swarm' : i.type === 'raid' ? 'Raid' : i.type === 'scout' ? 'Scouts' : i.type === 'hold' ? 'Allied soldiers' : 'Delivery';
+    const what = incomingName(i);
     rows.push(
       <li key={`i${i.id}`} className={i.hostile ? 'danger' : ''}>
         <Trip departAt={i.departAt} arriveAt={i.arriveAt} status="outbound" incoming hostile={i.hostile} />
