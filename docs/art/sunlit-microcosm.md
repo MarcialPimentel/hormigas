@@ -160,10 +160,10 @@ These change, with the decision log, in the same pull request as the first appro
 ## Decisions needed
 
 1. ~~Structure: A (scale ladder), B (two separate 3D views) or C (hero moments only)?~~ **Decided 2026-10-30: A, the scale ladder** (Garden → Patch → Nest → Chamber, one camera, zoom out to rise a rung).
-2. Look: retire the brown strata for the sunlit microcosm palette?
-3. Ants: real 3D ants from one model, instanced, replacing the flat cards in 3D?
-4. Counts: armies and swarms at real size (capped, true number on the tag) instead of 1 per 3, max 30?
-5. First build: colour and real ants in the slab (recommended), or straight to the 3D patch?
+2. ~~Look: retire the brown strata for the sunlit microcosm palette?~~ **Decided 2026-10-30: yes**, the sunlit microcosm palette.
+3. ~~Ants: real 3D ants from one model, instanced, replacing the flat cards in 3D?~~ **Decided 2026-10-30: yes**, real instanced 3D ants (phones keep 2D for now).
+4. ~~Counts: armies and swarms at real size (capped, true number on the tag) instead of 1 per 3, max 30?~~ **Decided 2026-10-30: real count, capped**, true number on the tag.
+5. ~~First build: colour and real ants in the slab, or straight to the 3D patch?~~ **Decided 2026-10-30: colour and real ants in the slab.**
 6. Allies: teal for supercolony lights and threads?
 7. Hero art: Claude builds the master ant in Blender (Blender open with the connector), or start from a concept image in Meshy or Tripo?
 
