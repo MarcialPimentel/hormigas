@@ -82,7 +82,7 @@ They follow every wild-nest rule (levels 1–6, 24 h regrowth, gentle raids back
 
 ### Aphid herds
 - **Scout it first.** Then send a **Tend aphids** mission with any ants. When they arrive they **stay with the herd** (the mission ends there, like Relocate), and the herd is yours while they're there.
-- **Honeydew:** a tended herd makes Nectar: 10, 20, 35, 60, 100 and 160 per hour at levels 1–6. That's roughly a third of an engaged player's own Nectar at that stage. It piles up in the herd, up to **12 hours' worth**.
+- **Honeydew:** a tended herd makes Nectar: 10, 20, 35, 60, 100 and 160 per hour at levels 1–6, times the gathering multiplier (×2 now, so 20 to 320; [03-economy](03-economy.md#production)). That's roughly a third of an engaged player's own Nectar at that stage. It piles up in the herd, up to **12 hours' worth**.
 - **Delivery:** every **6 hours** your tenders carry the honeydew home to the colony that sent them. Nothing ticks: it's one scheduled event per herd.
 - **One herd per colony.** More colonies, more herds (and more to defend).
 - **Send more tenders** any time from the same colony. **Call tenders home** from the herd's card: they walk home carrying what honeydew they can, and the herd is left untended.

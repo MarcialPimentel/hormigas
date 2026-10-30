@@ -14,6 +14,7 @@
 ## Production
 - Each production chamber produces per hour: `base × L × 1.1^L × terrainMod`.
 - The Queen's Chamber gives a small free base income (+60 Foliage, +30 Protein /h) so a colony is never fully stalled.
+- **Gathering multiplier (×2 since 2026-10-30).** Everything a colony gathers itself is multiplied by `gathering.multiplier` in `formulas.json`: base income, producing chambers, Gardener Minims, forage finds and aphid herd Nectar. So the base income is really +120 Foliage, +60 Protein /h. The numbers in this doc and in the data files are before the multiplier. Storage, raid loot, wild-nest stores and quest rewards are not multiplied, and neither are build, brood or research times, so a richer colony is soon held back by its diggers and its storage instead. Raised from 1 after playtest feedback that gathering felt slow; it's the current baseline, reviewed after this playtest.
 - Production is calculated on demand by the server (see [13-tech](13-tech.md)), never ticked.
 
 ## Workforce (the "energy" constraint)
