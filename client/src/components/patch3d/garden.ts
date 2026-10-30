@@ -26,6 +26,7 @@ export interface GardenScene {
   /** The patch being looked at (a ring marks it). */
   setCurrent(region: number, patch: number): void;
   setReduced(r: boolean): void;
+  setInset(i: { left: number; right: number; top: number; bottom: number }): void;
   resetView(): void;
   setOnScale(fn: (text: string) => void): void;
   dispose(): void;
@@ -334,6 +335,7 @@ export async function createGardenScene(
 
   // ---------- camera ----------
   const TANH = Math.tan(THREE.MathUtils.degToRad(20));
+  let inset = { left: 0, right: 0, top: 0, bottom: 0 };
   const view = { tx: 0, tz: -4, dist: 100, yaw: 0 }, goal = { ...view };
   let homeDist = 100;
   const MIN_DIST = 12;
@@ -343,7 +345,11 @@ export async function createGardenScene(
     if (w < 2 || h < 2) return;
     sized = [w, h];
     renderer.setSize(w, h, false);
-    camera.aspect = w / h;
+    // frame the patch in the part of the view the floating cards leave free, then widen back to the whole canvas
+    const fw = Math.max(200, w - inset.left - inset.right), fh = Math.max(200, h - inset.top - inset.bottom);
+    camera.aspect = fw / fh;
+    if (inset.left || inset.right || inset.top || inset.bottom) camera.setViewOffset(fw, fh, -inset.left, -inset.top, w, h);
+    else camera.clearViewOffset();
     camera.updateProjectionMatrix();
     const wasHome = goal.dist >= homeDist * 0.999;
     homeDist = Math.max(48 / (TANH * camera.aspect), 34 / TANH);
@@ -524,6 +530,11 @@ export async function createGardenScene(
     },
     setReduced(r) {
       reduced = r;
+    },
+    setInset(i) {
+      inset = i;
+      fit();
+      still();
     },
     resetView() {
       reset();

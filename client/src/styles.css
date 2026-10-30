@@ -493,6 +493,8 @@ pre.report-body { white-space: pre-wrap; overflow-x: auto; }
 .nest-motion { position: absolute; left: 10px; top: 6px; font: inherit; font-size: 0.75rem; color: #efe4d2; background: rgba(35, 26, 20, 0.8); border: 1px solid transparent; padding: 2px 8px; border-radius: 999px; cursor: pointer; }
 .nest-motion:hover, .nest-motion:focus-visible { border-color: var(--honey); }
 .nest-switch { left: auto; right: 10px; }
+.nest-up { left: 50%; transform: translateX(-50%); background: rgba(232, 178, 58, 0.95); color: #2b1d13; font-weight: 700; }
+.nest.fill .nest-up { top: 10px; bottom: auto; }
 
 /* ---------- 3D patch (components/patch3d) ---------- */
 .patch3d { container-type: inline-size; position: relative; min-width: 0; height: clamp(380px, 46vw, 560px); border-radius: var(--r-sm); overflow: hidden; background: #B8DCEA; }
@@ -740,6 +742,53 @@ pre.report-body { white-space: pre-wrap; overflow-x: auto; }
 .res-foliage .res-cap > span { background: var(--leaf); }
 .res-protein .res-cap > span { background: var(--protein); }
 .res-nectar .res-cap > span { background: var(--honey); }
+
+/* ---------- the Missions war room on a computer: the 3D patch or Garden fills the screen, cards float over it ---------- */
+@media (min-width: 900px) {
+  .app:has(.war-room) { height: 100vh; grid-template-rows: auto auto minmax(0, 1fr); }
+  .content:has(.war-room) { max-width: none; padding: 0; min-height: 0; }
+}
+.war-room { --cards-w: 340px; --float-shadow: 0 6px 18px rgba(20, 14, 9, 0.22); position: relative; height: 100%; min-height: 560px; overflow: hidden; }
+.war-room > .patch3d { position: absolute; inset: 0; height: auto; border-radius: 0; }
+.war-room .p3-tools { top: auto; bottom: 12px; left: 14px; right: auto; max-width: calc(100% - var(--cards-w) - 60px); }
+.war-room .p3-scale { right: auto; left: 14px; bottom: 52px; }
+.war-room .p3-hint { display: none; }
+.war-left { position: absolute; left: 14px; top: 12px; bottom: 88px; z-index: 3; width: 420px; max-width: calc(100% - var(--cards-w) - 60px); display: flex; flex-direction: column; gap: 0.6rem; pointer-events: none; }
+.war-left > * { pointer-events: auto; box-shadow: var(--float-shadow); }
+.war-place { align-self: flex-start; max-width: 100%; background: var(--wall); border: 1px solid var(--seam); border-radius: var(--r-md); padding: 0.55rem 0.85rem 0.6rem; display: grid; gap: 0.25rem; }
+.war-place h1 { font-size: 1.2rem; margin: 0; }
+.war-place p { margin: 0; }
+.war-place-actions { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: 0.15rem; }
+.war-left .world-picker { background: var(--wall); border: 1px solid var(--seam); border-radius: var(--r-md); padding: 0.6rem; overflow: auto; }
+.deploy { min-height: 0; overflow-y: auto; border-radius: var(--r-md); scrollbar-width: thin; }
+.deploy .panel { margin: 0; border-color: var(--honey); }
+.deploy .panel-head h2 { font-size: 1.05rem; }
+.war-col .spot-card { box-shadow: var(--float-shadow); background: var(--wall); opacity: 1; }
+.war-col .panel { padding: 0.7rem 0.85rem; }
+.war-col .panel-head { margin-bottom: 0.4rem; }
+.war-col h2 { font-size: 1.05rem; }
+
+/* everything under way: progress bars out, the arrival tick, home */
+.underway { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.55rem; }
+.underway li { display: grid; gap: 0.2rem; padding: 0.45rem 0.55rem; border-radius: 8px; background: rgba(232, 178, 58, 0.08); border: 1px solid var(--seam); }
+.underway li.hostile { background: rgba(226, 104, 90, 0.12); border-color: var(--danger); }
+.underway li.friend { background: rgba(63, 194, 184, 0.1); }
+.uw-head { display: flex; justify-content: space-between; align-items: baseline; gap: 0.5rem; }
+.uw-title { font-weight: 700; text-align: left; }
+.underway li.hostile .uw-title { color: var(--danger); }
+.uw-time { font-size: 0.8rem; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.uw-sub { margin: 0; font-size: 0.78rem; color: var(--muted); display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; }
+.uw-recall { margin-left: auto; padding: 0 0.5rem; }
+.underway.compact li { padding: 0.35rem 0.5rem; }
+.mbar { position: relative; display: block; height: 8px; border-radius: 999px; background: rgba(128, 110, 90, 0.22); overflow: visible; }
+.mbar-fill { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 999px; background: var(--honey); transition: width 1s linear; }
+.mbar.hostile .mbar-fill { background: var(--danger); }
+.mbar.friend .mbar-fill { background: #3FC2B8; }
+.mbar-tick { position: absolute; left: 50%; top: -3px; bottom: -3px; width: 2px; margin-left: -1px; background: currentColor; opacity: 0.45; }
+.mbar-pin { position: absolute; top: 50%; width: 12px; height: 12px; margin: -6px 0 0 -6px; border-radius: 50%; background: var(--wall); border: 2px solid var(--honey); transition: left 1s linear; }
+.mbar.hostile .mbar-pin { border-color: var(--danger); }
+.mbar.friend .mbar-pin { border-color: #3FC2B8; }
+@media (prefers-reduced-motion: reduce) { .mbar-fill, .mbar-pin { transition: none; } }
 
 /* ---------- the Colony screen on a computer: the nest fills the screen, cards float in its sky and corners ---------- */
 @media (min-width: 900px) {

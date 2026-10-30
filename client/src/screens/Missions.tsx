@@ -22,7 +22,6 @@ import {
   missionUnitProblem,
   missionUnitsAllowed,
   noSlotsMessage,
-  returnLegMs,
   MISSION_SPEED,
   RETREAT_PCTS,
   MISSION_TYPES,
@@ -38,11 +37,12 @@ import { api } from '../api';
 import { useGame } from '../game';
 import { fmtClock, fmtCoords, fmtDuration, fmtFull, fmtNum } from '../format';
 import { RESOURCE_LABEL } from '../describe';
-import { Countdown, Empty, Panel, ResDot, Trip } from '../components/ui';
+import { Empty, Panel, ResDot } from '../components/ui';
 import { ENABLED_MISSIONS, MISSION_HELP, MISSION_LABEL, type MissionType } from '../nav';
 import { BattlePreview } from '../components/BattlePreview';
 import { ForageOdds } from '../components/ForageOdds';
-import { PatchView, isScent, type Spot } from '../components/Patch';
+import { PatchView, isScent, usePatchMode, type PartyFocus, type Spot } from '../components/Patch';
+import { UnderWay, type FocusParty } from '../components/UnderWay';
 
 export interface MissionDraft {
   type?: MissionType;
@@ -79,23 +79,111 @@ function targetName(spot: Spot | null | undefined, at: Coords, home: Coords): st
   return spot.colony.name;
 }
 
+/** Wide enough for the left nav (styles.css, 900px): the patch fills the screen and the cards float over it. */
+const WIDE = '(min-width: 900px)';
+function useWide() {
+  const [wide, setWide] = useState(() => typeof matchMedia !== 'undefined' && matchMedia(WIDE).matches);
+  useEffect(() => {
+    const m = matchMedia(WIDE);
+    const on = () => setWide(m.matches);
+    m.addEventListener('change', on);
+    return () => m.removeEventListener('change', on);
+  }, []);
+  return wide;
+}
+
+/**
+ * The Missions screen. On a computer with the 3D patch it's the war room (docs/11-world.md): the patch or the
+ * Garden fills the screen; where you are floats top left, everything under way and the picked spot down the
+ * right, and picking an action on a spot opens the Deploy card. Otherwise the patch, the form and the list stack.
+ */
 export function Missions({ draft, go }: { draft?: MissionDraft; go?: (screen: string) => void }) {
-  const { colony, state, act, now } = useGame();
+  const { colony, state } = useGame();
   const [type, setType] = useState<MissionType>(draft?.type && ENABLED_MISSIONS.includes(draft.type) ? draft.type : 'transport');
   const [target, setTarget] = useState<Coords>(draft?.target ?? colony?.coords ?? { region: 1, patch: 1, spot: 1 });
+  const [deploy, setDeploy] = useState(!!draft?.type);
+  const [focus, setFocus] = useState<PartyFocus | null>(null);
+  const formRef = useRef<HTMLDivElement>(null);
+  const wide = useWide();
+  const pm = usePatchMode(draft?.replay);
+  const staged = wide && pm.show3d;
+
+  useEffect(() => {
+    if (draft?.type && ENABLED_MISSIONS.includes(draft.type)) {
+      setType(draft.type);
+      setDeploy(true);
+    }
+    if (draft?.target) setTarget(draft.target);
+  }, [draft]);
+
+  if (!colony || !state) return null;
+  function pick(t: MissionType, at: Coords) {
+    setType(t);
+    setTarget(at);
+    setDeploy(true);
+    if (!staged) formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+  const onFocus: FocusParty = (key, at, alsoAt) => setFocus((f) => ({ key, at, alsoAt, n: (f?.n ?? 0) + 1 }));
+  const start = draft?.view ?? (draft?.target ? { region: draft.target.region, patch: draft.target.patch } : undefined);
+  const form = (
+    <SendMission
+      type={type}
+      setType={setType}
+      target={target}
+      setTarget={setTarget}
+      onClose={staged ? () => setDeploy(false) : undefined}
+      onSent={staged ? () => setDeploy(false) : undefined}
+    />
+  );
+  const underWay = (
+    <Panel title="Under way">
+      <UnderWay onFocus={onFocus} />
+    </Panel>
+  );
+
+  if (staged)
+    return (
+      <PatchView
+        start={start}
+        selected={target}
+        onAct={pick}
+        replay={draft?.replay}
+        go={go}
+        pm={pm}
+        stage={{ side: underWay, deploy: deploy ? <div className="deploy">{form}</div> : null, focus, inset: { left: deploy ? 300 : 16, right: 200, top: 80, bottom: 40 } }}
+      />
+    );
+  return (
+    <div className="stack">
+      <Panel title="Missions">
+        <PatchView start={start} selected={target} onAct={pick} replay={draft?.replay} go={go} pm={pm} />
+      </Panel>
+      <div ref={formRef} className="scroll-anchor" />
+      {form}
+      {underWay}
+    </div>
+  );
+}
+
+/**
+ * The mission form: type, target, units, cargo, speed, fall-back, and Send. In the war room it's the Deploy card
+ * that opens over the patch when you pick an action on a spot (`onClose` set); on phones it sits under the patch.
+ */
+function SendMission({ type, setType, target, setTarget, onClose, onSent }: {
+  type: MissionType;
+  setType: (t: MissionType) => void;
+  target: Coords;
+  setTarget: (c: Coords) => void;
+  onClose?: () => void;
+  onSent?: () => void;
+}) {
+  const { colony, state, act, now } = useGame();
   const [units, setUnits] = useState<Record<string, string>>({});
   const [cargo, setCargo] = useState<Record<string, string>>({});
   const [speedPct, setSpeedPct] = useState(100);
   const [retreatPct, setRetreatPct] = useState(0);
   const [returnBy, setReturnBy] = useState('');
   const [manual, setManual] = useState(false);
-  const formRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (draft?.type && ENABLED_MISSIONS.includes(draft.type)) setType(draft.type);
-    if (draft?.target) setTarget(draft.target);
-  }, [draft]);
-
   const chosen: UnitCounts = useMemo(() => {
     const u: UnitCounts = {};
     for (const [k, v] of Object.entries(units)) {
@@ -195,24 +283,24 @@ export function Missions({ draft, go }: { draft?: MissionDraft; go?: (screen: st
       setUnits({});
       setCargo({});
       setReturnBy('');
+      onSent?.();
     }
   }
 
-  function pick(t: MissionType, at: Coords) {
-    setType(t);
-    setTarget(at);
-    setManual(false);
-    formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }
-
   return (
-    <div className="stack">
-      <Panel title="Missions">
-        <PatchView start={draft?.view ?? (draft?.target ? { region: draft.target.region, patch: draft.target.patch } : undefined)} selected={target} onAct={pick} replay={draft?.replay} go={go} />
-      </Panel>
-
-      <div ref={formRef} className="scroll-anchor" />
-      <Panel title="Send a mission" actions={<span className="muted">{used}/{max} {pool === 'forage' ? 'forage parties from this colony' : 'slots'} in use</span>}>
+      <Panel
+        title={onClose ? `Deploy: ${MISSION_LABEL[type]} → ${targetName(targetSpot, target, colony.coords)}` : 'Send a mission'}
+        actions={
+          <>
+            <span className="muted small">{used}/{max} {pool === 'forage' ? 'forage parties' : 'slots'} in use</span>
+            {onClose && (
+              <button className="btn ghost small" onClick={onClose} aria-label="Close the deploy card">
+                ✕
+              </button>
+            )}
+          </>
+        }
+      >
         <div className="seg" role="radiogroup" aria-label="Mission type">
           {ENABLED_MISSIONS.filter((t) => t !== 'hold' || state.player.supercolony || type === 'hold').map((t) => (
             <button
@@ -244,7 +332,7 @@ export function Missions({ draft, go }: { draft?: MissionDraft; go?: (screen: st
               {manual ? 'Done' : 'Enter coordinates'}
             </button>
           </div>
-          <p className="muted small">Pick a target by tapping it on the patch above.</p>
+          <p className="muted small">Pick a target by tapping it on the patch{onClose ? '' : ' above'}.</p>
           {manual && (
             <div className="coords-input">
               {(['region', 'patch', 'spot'] as const).map((k) => (
@@ -381,61 +469,6 @@ export function Missions({ draft, go }: { draft?: MissionDraft; go?: (screen: st
           Send {MISSION_LABEL[type].toLowerCase()} to {valid ? fmtCoords(target) : '…'}
         </button>
       </Panel>
-
-      <Panel title="Missions under way">
-        <MissionList />
-      </Panel>
-    </div>
-  );
-}
-
-export function MissionList() {
-  const { state, act, now } = useGame();
-  const missions: any[] = state?.missions ?? [];
-  if (missions.length === 0) return <Empty>No missions out.</Empty>;
-  return (
-    <ul className="missions">
-      {missions.map((m) => {
-        const out = m.status === 'outbound';
-        const count = Object.values(m.units as Record<string, number>).reduce((a, b) => a + b, 0);
-        if (m.status === 'holding')
-          return (
-            <li key={m.id}>
-              <div>
-                <strong>Holding position</strong> at {fmtCoords(m.target)}
-                <span className="muted small"> · {fmtFull(count)} units, fighting in every battle there</span>
-              </div>
-              <div className="mission-time">
-                <Trip departAt={m.departAt} arriveAt={m.arriveAt} returnAt={m.returnAt} status="holding" />
-                <span className="muted small">Back {fmtDuration(returnLegMs(m.departAt, m.arriveAt))} after recall</span>
-                <button className="btn ghost small" onClick={() => act(() => api.post(`/api/missions/${m.id}/recall`), 'Soldiers called home.')}>
-                  Recall
-                </button>
-              </div>
-            </li>
-          );
-        return (
-          <li key={m.id}>
-            <div>
-              <strong>{MISSION_LABEL[m.type as MissionType] ?? m.type}</strong> {out ? '→' : '←'} {fmtCoords(m.target)}
-              <span className="muted small">
-                {' '}· {fmtFull(count)} units{m.result?.recalled ? ' · recalled' : m.result?.sentHome ? ' · sent home: the shared scent is fading' : m.result?.turnedBack ? ' · turned back' : ''}{m.result?.calledHome ? ` · called home with ${fmtFull(m.result.carried ?? 0)} Nectar` : ''}
-              </span>
-            </div>
-            <div className="mission-time">
-              <Trip departAt={m.departAt} arriveAt={m.arriveAt} returnAt={m.returnAt} status={m.status} cargo={m.cargo} />
-              <span className="muted small">{out ? 'Arrives' : 'Home'}</span>
-              <Countdown endAt={out ? m.arriveAt : m.returnAt} />
-              {out && now < m.arriveAt && (
-                <button className="btn ghost small" onClick={() => act(() => api.post(`/api/missions/${m.id}/recall`), 'Mission recalled.')}>
-                  Recall
-                </button>
-              )}
-            </div>
-          </li>
-        );
-      })}
-    </ul>
   );
 }
 

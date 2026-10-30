@@ -561,16 +561,8 @@ function WorldPicker({ region, patch, onGo }: { region: number; patch: number; o
  * A patch you can look around and act from. Opens on your own patch; "World" opens the region grid to look further.
  * `selected` highlights the current mission target when it's in view.
  */
-export function PatchView({ start, selected, onAct, replay, go: nav }: { start?: { region: number; patch: number }; selected?: Coords; onAct: (type: MissionType, at: Coords) => void; replay?: unknown; go?: (screen: string) => void }) {
-  const { colony, state } = useGame();
-  const [region, setRegion] = useState(start?.region ?? colony?.coords.region ?? 1);
-  const [patch, setPatch] = useState(start?.patch ?? colony?.coords.patch ?? 1);
-  const [spots, setSpots] = useState<Spot[] | null>(null);
-  const [sel, setSel] = useState<number | null>(null);
-  const [world, setWorld] = useState(false);
-  const [error, setError] = useState('');
-  const [jumping, setJumping] = useState(false);
-  // a replay asks for the 3D patch, whatever the saved choice
+/** Which patch view to show, 3D or drawn: saved per browser; a replay asks for 3D; falls back if WebGL fails. */
+export function usePatchMode(replay?: unknown) {
   const [mode, setMode] = useState<PatchMode>(() => (replay && finePointer() ? '3d' : savedMode()));
   const [failed3d, setFailed3d] = useState(false);
   const choose = (m: PatchMode) => {
@@ -581,7 +573,43 @@ export function PatchView({ start, selected, onAct, replay, go: nav }: { start?:
     }
     setMode(m);
   };
-  const show3d = mode === '3d' && !failed3d;
+  return { mode, choose, failed3d, setFailed3d, show3d: mode === '3d' && !failed3d };
+}
+export type PatchMode3 = ReturnType<typeof usePatchMode>;
+/** Show a party's column: on the patch where one of its ends is (`at`, or `alsoAt` if that's the one in view). */
+export interface PartyFocus {
+  key: string;
+  at: Coords;
+  alsoAt?: Coords;
+  n: number;
+}
+/** The war room: the 3D view fills the screen and these float over it (Missions on a computer). */
+export interface Stage {
+  side: ReactNode;
+  deploy: ReactNode | null;
+  focus: PartyFocus | null;
+  inset: { left: number; right: number; top: number; bottom: number };
+}
+
+export function PatchView({ start, selected, onAct, replay, go: nav, pm: given, stage }: {
+  start?: { region: number; patch: number };
+  selected?: Coords;
+  onAct: (type: MissionType, at: Coords) => void;
+  replay?: unknown;
+  go?: (screen: string) => void;
+  pm?: PatchMode3;
+  stage?: Stage;
+}) {
+  const { colony, state } = useGame();
+  const own = usePatchMode(replay);
+  const { choose, failed3d, setFailed3d, show3d } = given ?? own;
+  const [region, setRegion] = useState(start?.region ?? colony?.coords.region ?? 1);
+  const [patch, setPatch] = useState(start?.patch ?? colony?.coords.patch ?? 1);
+  const [spots, setSpots] = useState<Spot[] | null>(null);
+  const [sel, setSel] = useState<number | null>(null);
+  const [world, setWorld] = useState(false);
+  const [error, setError] = useState('');
+  const [jumping, setJumping] = useState(false);
   // in 3D, World opens the Garden; its Region grid button (and 2D mode) shows the grid
   const [grid, setGrid] = useState(false);
   const garden = show3d && world && !grid;
@@ -601,6 +629,16 @@ export function PatchView({ start, selected, onAct, replay, go: nav }: { start?:
       live = false;
     };
   }, [region, patch, state?.serverNow]);
+
+  // a row in Under way was clicked: go to a patch where its column walks, and out of the Garden
+  useEffect(() => {
+    const f = stage?.focus;
+    if (!f) return;
+    setWorld(false);
+    const inView = (c?: Coords) => !!c && c.region === region && c.patch === patch;
+    if (!inView(f.at) && !inView(f.alsoAt)) go(f.at.region, f.at.patch);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stage?.focus?.n]);
 
   if (!colony) return null;
   function go(r: number, p: number) {
@@ -624,6 +662,83 @@ export function PatchView({ start, selected, onAct, replay, go: nav }: { start?:
   const picked = spots?.find((s) => s.spot === (sel ?? inView)) ?? fallback ?? spots?.find((s) => s.spot === WILDS_SPOT);
   const others = (spots ?? []).filter((s) => s.colony && s.colony.kind === 'player' && !s.colony.mine).length;
   const scents = (spots ?? []).filter((s) => isScent(s.colony)).length;
+
+  const onRise = () => (setWorld(true), setGrid(false));
+  const onNest = nav ? () => nav('nest') : undefined;
+  if (stage && show3d)
+    return (
+      <div className="war-room">
+        {garden ? (
+          <Suspense fallback={<div className="patch3d loading">Looking over the garden…</div>}>
+            <Garden3D
+              region={region}
+              patch={patch}
+              onPick={(r, p) => (go(r, p), setWorld(false))}
+              onFail={() => setFailed3d(true)}
+              onBack={() => setWorld(false)}
+              onGrid={() => setGrid(true)}
+              inset={stage.inset}
+            />
+          </Suspense>
+        ) : (
+          <Suspense fallback={<div className="patch3d loading">Sniffing out the patch…</div>}>
+            <Patch3D
+              region={region}
+              patch={patch}
+              spots={spots}
+              selected={picked?.spot ?? null}
+              onPick={setSel}
+              onFail={() => setFailed3d(true)}
+              replay={replay}
+              onRise={onRise}
+              onNest={onNest}
+              inset={stage.inset}
+              focus={stage.focus}
+            />
+          </Suspense>
+        )}
+        <div className="war-left">
+          <div className="war-place">
+            <h1>
+              {garden ? 'The whole garden' : `${regionName(region)} · Patch ${patch}`}
+              {!garden && here && <span className="muted small"> · your patch</span>}
+            </h1>
+            {!garden && spots && (
+              <p className="muted small">
+                {others === 0 ? 'No other players here' : `${others} other ${others === 1 ? 'player' : 'players'}`}
+                {scents > 0 ? ` · ${scents} ${scents === 1 ? 'scent' : 'scents'} to scout` : ''}
+              </p>
+            )}
+            <div className="war-place-actions">
+              <button className="btn ghost small" onClick={() => nearest(-1)} disabled={jumping} title="The nearest colony before this patch">
+                ‹ Nearest
+              </button>
+              <button className="btn ghost small" onClick={() => nearest(1)} disabled={jumping} title="The nearest colony after this patch">
+                Nearest ›
+              </button>
+              {!here && (
+                <button className="btn ghost small" onClick={() => (go(colony.coords.region, colony.coords.patch), setWorld(false))}>
+                  My patch
+                </button>
+              )}
+              <button className={`btn small${world ? ' on' : ' ghost'}`} aria-expanded={world} onClick={() => (setWorld(!world), setGrid(false))}>
+                {world ? 'Back to the patch' : 'Garden'}
+              </button>
+              <button className="btn ghost small" onClick={() => choose('2d')} title="Show the flat drawn patch instead">
+                2D view
+              </button>
+            </div>
+            {error && <p className="form-error">{error}</p>}
+          </div>
+          {world && grid && <WorldPicker region={region} patch={patch} onGo={(r, p) => (go(r, p), setWorld(false), setGrid(false))} />}
+          {stage.deploy}
+        </div>
+        <div className="float-col war-col">
+          <div className="float-top">{stage.side}</div>
+          <div className="float-bottom">{!garden && spots && picked && <SpotCard s={picked} at={{ region, patch, spot: picked.spot }} onAct={onAct} />}</div>
+        </div>
+      </div>
+    );
 
   return (
     <div className="patch-view">
@@ -668,7 +783,7 @@ export function PatchView({ start, selected, onAct, replay, go: nav }: { start?:
           </Suspense>
         ) : show3d ? (
           <Suspense fallback={<div className="patch3d loading">Sniffing out the patch…</div>}>
-            <Patch3D region={region} patch={patch} spots={spots} selected={picked?.spot ?? null} onPick={setSel} onFail={() => setFailed3d(true)} replay={replay} onRise={() => (setWorld(true), setGrid(false))} onNest={nav ? () => nav('nest') : undefined} />
+            <Patch3D region={region} patch={patch} spots={spots} selected={picked?.spot ?? null} onPick={setSel} onFail={() => setFailed3d(true)} replay={replay} onRise={onRise} onNest={onNest} />
           </Suspense>
         ) : (
         <div className="patch-scroll">
