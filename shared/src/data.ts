@@ -233,6 +233,8 @@ export const TERRAIN = terrainJson.terrain as unknown as Record<TerrainId, Terra
 export const STARTING_TERRAIN = terrainJson.startingTerrain as TerrainId;
 export const WILDS_SPOT = terrainJson.wildsSpot;
 export const FORMULAS = formulasJson;
+/** Multiplies everything a colony gathers itself: production, forage finds, aphid herds (formulas.json "gathering"). */
+export const GATHER_MULTIPLIER: number = FORMULAS.gathering.multiplier;
 /** Wild nests (docs/17-wild-nests.md). Typed in nests.ts. */
 export const NPC_DATA = npcJson;
 /** Small random events inside the nest (docs/04-colony.md). Typed in nestEvents.ts. */

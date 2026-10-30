@@ -8,6 +8,7 @@ import {
   RESOURCE_IDS,
   TERRAIN,
   FORMULAS,
+  GATHER_MULTIPLIER,
   type ChamberId,
   type ResearchId,
   type ResearchNumberEffect,
@@ -162,7 +163,7 @@ export function chamberOutputPerHour(
   if (def.effect.type !== 'produce' || !def.effect.resource) return null;
   const r = def.effect.resource;
   const terrainPct = (TERRAIN[terrain].mods[`${r}Pct` as 'foliagePct'] ?? 0) / 100;
-  const amount = (def.effect.base ?? 0) * growth(level) * (1 + terrainPct) * researchFactor(research, PRODUCTION_PCT[r]) * workforceRatio * worldSpeed;
+  const amount = (def.effect.base ?? 0) * growth(level) * (1 + terrainPct) * researchFactor(research, PRODUCTION_PCT[r]) * workforceRatio * GATHER_MULTIPLIER * worldSpeed;
   return { resource: r, amount };
 }
 
@@ -185,15 +186,15 @@ export function gardenerFoliagePerHour(chambers: ChamberLevels, terrain: Terrain
 }
 
 /**
- * Resources produced per hour by a colony (base income + every producing chamber) × world speed.
+ * Resources produced per hour by a colony (base income + every producing chamber) × gathering multiplier × world speed.
  * With `units`, Gardener Minims at home add their share to the Leaf Gardens.
  */
 export function productionPerHour(chambers: ChamberLevels, terrain: TerrainId, worldSpeed = 1, research?: ResearchLevels, units?: UnitCounts): Resources {
-  const out = res(
+  const out = scale(res(
     RESOURCES_DATA.baseIncomePerHour.foliage,
     RESOURCES_DATA.baseIncomePerHour.protein,
     RESOURCES_DATA.baseIncomePerHour.nectar,
-  );
+  ), GATHER_MULTIPLIER);
   const { ratio } = workforce(chambers);
   for (const id of CHAMBER_IDS) {
     const made = chamberOutputPerHour(id, lvl(chambers, id), terrain, research, 1, ratio);

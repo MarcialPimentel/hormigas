@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { FastifyInstance } from 'fastify';
-import { chamberCost, productionPerHour } from '@hormigas/shared';
+import { chamberCost, productionPerHour, GATHER_MULTIPLIER } from '@hormigas/shared';
 import { setupTest, teardownTest, newPlayer, setColony, calmWildNests, type Client } from './helpers';
 
 let app: FastifyInstance;
@@ -129,7 +129,7 @@ describe('balance pass', () => {
     await setColony(s.colony.id, { foliage: 0, protein: 0, nectar: 0, last_updated: clock.t });
     await clock.advance(3600_000);
     const after = await q.get('/api/state');
-    expect(after.colony.resources.foliage).toBeCloseTo(60 * s.world.speed, 3);
+    expect(after.colony.resources.foliage).toBeCloseTo(60 * GATHER_MULTIPLIER * s.world.speed, 3);
   });
 
   it('unaffordable builds explain what is missing', async () => {

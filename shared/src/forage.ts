@@ -1,5 +1,5 @@
 // Forage expeditions. Spec: docs/09-missions.md
-import { FORMULAS, type ResourceId, type Resources } from './data';
+import { FORMULAS, GATHER_MULTIPLIER, type ResourceId, type Resources } from './data';
 import { researchSum, type ResearchLevels } from './economy';
 import { res } from './resources';
 import { randInt, type Rng } from './rng';
@@ -81,11 +81,14 @@ export function forageOddsSummary(luck: number) {
   };
 }
 
-/** Max resources a single expedition can find, so huge cargo fleets don't break the economy. */
-export const forageFindCap = (playerPoints: number, luck: number) => {
+/** The find cap before the gathering multiplier. */
+const baseFindCap = (playerPoints: number, luck: number) => {
   const c = F.findCap;
-  return Math.round((c.base + c.perPoint * playerPoints) * (1 + (c.luckPctPerLevel / 100) * luck));
+  return (c.base + c.perPoint * playerPoints) * (1 + (c.luckPctPerLevel / 100) * luck);
 };
+
+/** Max resources a single expedition can find, so huge cargo fleets don't break the economy. */
+export const forageFindCap = (playerPoints: number, luck: number) => Math.round(baseFindCap(playerPoints, luck) * GATHER_MULTIPLIER);
 
 export interface ForageResult {
   outcome: ForageOutcome;
@@ -113,13 +116,16 @@ export function resolveForage(
   opts: { cargo: number; playerPoints: number; luck: number; /** a player's first expedition always finds food */ firstTrip?: boolean },
 ): ForageResult {
   const outcome: ForageOutcome = opts.firstTrip ? F.firstTripOutcome : rollForageOutcome(rng, opts.luck);
-  const cap = Math.min(opts.cargo, forageFindCap(opts.playerPoints, opts.luck));
+  // the roll is on the party's load before the gathering multiplier; the multiplier then fills it up,
+  // so small parties come home fuller and big ones can reach the higher find cap, but never more than they carry
+  const cap = Math.min(opts.cargo, baseFindCap(opts.playerPoints, opts.luck));
+  const most = Math.min(opts.cargo, forageFindCap(opts.playerPoints, opts.luck));
   const def = F.results[outcome] ?? {};
   let found = res();
   // a first trip is a good one (docs/09-missions.md): it uses firstTripCargoPct when the outcome has one
   const range = (opts.firstTrip && def.firstTripCargoPct) || def.cargoPct;
   if (range && def.mixPct) {
-    const amount = cap * (range[0] / 100 + rng() * ((range[1] - range[0]) / 100));
+    const amount = Math.min(most, cap * (range[0] / 100 + rng() * ((range[1] - range[0]) / 100)) * GATHER_MULTIPLIER);
     const mix = def.mixPct;
     found = res(Math.floor(amount * (mix.foliage / 100)), Math.floor(amount * (mix.protein / 100)), Math.floor(amount * (mix.nectar / 100)));
   }

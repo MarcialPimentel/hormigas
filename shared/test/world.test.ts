@@ -3,6 +3,7 @@ import {
   distance, travelSeconds, missionFuel, groupSpeed, groupCargo, missionSlots, speedForReturnIn,
   scoutDetail, terrainForSpot, validCoords, canRaid, lateFoundingMultiplier, NEW_PLAYER_PROTECTION_MS,
   INACTIVE_AFTER_MS, computePoints, rollForageOutcome, resolveForage, forageWeights, forageOdds, forageOddsSummary, createRng, FORAGE_OUTCOMES,
+  forageFindCap, GATHER_MULTIPLIER, FORMULAS,
 } from '../src';
 
 describe('map', () => {
@@ -131,6 +132,27 @@ describe('forage', () => {
     for (let i = 0; i < 200; i++) {
       const r = resolveForage(rng, { cargo: 500, playerPoints: 1000, luck: 0 });
       expect(r.found.foliage + r.found.protein + r.found.nectar).toBeLessThanOrEqual(500);
+    }
+  });
+  it('the gathering multiplier raises the find cap and fills small parties fuller, never past cargo', () => {
+    expect(forageFindCap(0, 0)).toBe(Math.round(FORMULAS.forage.findCap.base * GATHER_MULTIPLIER));
+    // a big party is held by the find cap, which the multiplier raised
+    const rng = createRng(5);
+    let most = 0;
+    for (let i = 0; i < 500; i++) {
+      const r = resolveForage(rng, { cargo: 100_000, playerPoints: 0, luck: 0 });
+      const got = r.found.foliage + r.found.protein + r.found.nectar;
+      expect(got).toBeLessThanOrEqual(forageFindCap(0, 0));
+      most = Math.max(most, got);
+    }
+    if (GATHER_MULTIPLIER > 1) expect(most).toBeGreaterThan(FORMULAS.forage.findCap.base);
+    // a small party's food cache (40–100% of its load) comes home fuller, up to what it can carry
+    const small = createRng(9);
+    for (let i = 0; i < 100; i++) {
+      const r = resolveForage(small, { cargo: 1000, playerPoints: 0, luck: 0, firstTrip: true });
+      const got = r.found.foliage + r.found.protein + r.found.nectar;
+      expect(got).toBeLessThanOrEqual(1000);
+      expect(got).toBeGreaterThanOrEqual(Math.min(1000, 700 * GATHER_MULTIPLIER) - 3);
     }
   });
 });
