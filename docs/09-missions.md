@@ -6,7 +6,8 @@
 ## General rules
 - Missions travel between coordinates; travel time depends on distance and the **slowest** unit.
 - Every mission consumes **Nectar** (fuel) up front.
-- Number of simultaneous missions is limited by **mission slots** (base 2, + Colony Mind research).
+- Number of simultaneous missions is limited by **mission slots** (base 2, + Colony Mind research). Mission slots are shared by all of a player's colonies.
+- **Forage slots belong to each colony** (Marz, 30 Oct 2026): every colony can have **1** forage party out, plus 1 more every 2 levels of Foraging Instinct. A party uses a slot of the colony that sent it. Each new colony opens up its own patch's wilds instead of sharing one slot with the others. Numbers: `formulas.json` → `missions.baseForageSlots`, `research.json` → Foraging Instinct.
 - Missions can be **recalled** while outbound; they turn around immediately.
 
 ## Mission types

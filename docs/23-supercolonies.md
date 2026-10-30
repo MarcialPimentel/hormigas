@@ -68,7 +68,12 @@ Four new tables, read and written only through `server/src/game/diplomacy.ts`:
 
 ### Notes for stage B
 - **Joint Raid:** missions from several members that wait at a muster point and arrive together, fought as one attacker with per-owner groups. `simulateBattle` already supports per-owner groups on the defending side (`allies`); the attacking side needs the same. Bosses from #67 are the natural targets.
-- **Trade trails:** standing deliveries along a trail, first between your own colonies, then between members. Rates come from #65.
+- **Trade trails** (design from Marz, 30 Oct 2026, tracked in [#98](https://github.com/MarcialPimentel/hormigas/issues/98)), modelled on Civilization's trade routes:
+  - **Capacity:** one trail per colony, plus more from research.
+  - **Caravan:** Workers or Haulers walk the trail and are away from home while it runs. A trail lasts about 3 days, then is renewed. Deliveries every ~6 h as one scheduled event (like aphid herds).
+  - **Yield follows the destination's colony type (terrain):** Sunny Meadow sends Foliage, Rotting Log Protein, Creek Bank Nectar. Sandy Soil and Grassland are open. The amount grows with the destination's production chambers and the trail's length.
+  - **Own colonies first** (a smaller yield), then players you've met with a truce. Both sides gain on a player trail, and supercolony members get a bonus.
+  - **Open:** whether caravans can be plundered by players without a truce.
 - **Declared wars** (lifting the bash limit between enemies, [10-pvp-rules](10-pvp-rules.md)) are not built.
 
 ## Launch on the live world (migration 010)

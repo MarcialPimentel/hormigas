@@ -40,7 +40,7 @@ export const RESEARCH_BLURB: Record<string, string> = {
   raiding_columns: 'March in long columns like army ants. Winning raids carry off +5% more of unprotected stores per level (up to 65%).',
   nest_plugging: 'Big-headed doorkeepers plug the entrances. +25% protected storage per level.',
   // Harvest
-  foraging_instinct: 'Better luck on forage expeditions. +1 forage slot every 2 levels.',
+  foraging_instinct: 'Better luck on forage expeditions. +1 forage slot in every colony every 2 levels.',
   group_hunting: 'Recruit nestmates to bring down big prey. +5% Protein from Hunting Grounds per level.',
   aphid_husbandry: 'Tend and guard aphid herds. +5% Nectar from Aphid Pastures per level.',
   fungus_farming: 'Grow fungus on chewed leaves, like leafcutter ants. +5% Foliage from Leaf Gardens per level.',

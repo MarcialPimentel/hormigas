@@ -17,7 +17,7 @@ Since Build 6 research is a **tree**: research can need other research (not only
 | **Formic Acid** | Jaws | Pher 4, Mandibles 3, Chitin 2 | Defenses +10% attack, guard, health per level |
 | **Raiding Columns** | Jaws | Pher 5, Mandibles 5, Guard Formation 3, Pheromone Trails 4 | Winning raids take +5% of unprotected stores per level (max 3) |
 | **Nest Plugging** | Jaws | Pher 5, Chitin 4, Guard Formation 4 | +25% protected storage per level |
-| **Foraging Instinct** | Harvest | Pher 3 | +1 forage slot every 2 levels; better forage outcomes |
+| **Foraging Instinct** | Harvest | Pher 3 | +1 forage slot **in each colony** every 2 levels; better forage outcomes |
 | **Group Hunting** | Harvest | Pher 3, Mandibles 1, Pheromone Trails 2 | +5% Protein from Hunting Grounds per level |
 | **Aphid Husbandry** | Harvest | Pher 3 | +5% Nectar from Aphid Pastures per level |
 | **Fungus Farming** | Harvest | Pher 3, Aphid Husbandry 2 | +5% Foliage from Leaf Gardens per level |

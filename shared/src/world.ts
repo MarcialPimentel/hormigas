@@ -89,6 +89,7 @@ export const missionSlots = (research: ResearchLevels): number =>
 export const maxColonies = (research: ResearchLevels): number =>
   FORMULAS.colonies.base + Math.ceil(researchSum(research, 'coloniesPer2Levels') / 2);
 
+/** Forage parties each colony can have out at once (per colony, docs/09-missions.md). */
 export const forageSlots = (research: ResearchLevels): number =>
   FORMULAS.missions.baseForageSlots + Math.floor(researchSum(research, 'forageSlotsPer2Levels') / 2);
 
