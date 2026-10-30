@@ -1,6 +1,6 @@
 // A close look inside one chamber (docs/12-ui-nest-view.md): the chamber's art (docs/18-art-direction.md,
 // client/src/art/chambers.ts) at full size, with workers walking its floor and stores tinted by how full they are.
-// Every ant has a name: hover it (or tap it on a phone) to see who it is.
+// Every ant has a name: hover it, click it to keep the name up, or tap it on a phone.
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent } from 'react';
 import { CHAMBERS, lvl, storageCapacity, type ChamberId, type ResourceId } from '@hormigas/shared';
 import { useGame } from '../game';
@@ -42,6 +42,8 @@ export function ChamberCloseUp({ id, onClose, onOpenChambers }: { id: ChamberId;
   const art = useMemo(() => chamberBody(id, `cu-${id}`), [id]);
   const box = useRef<HTMLDivElement>(null);
   const [named, setNamed] = useState<{ el: Element; caste: Caste; key: string } | null>(null);
+  // clicked with a mouse: the name stays until another click
+  const [pinned, setPinned] = useState(false);
   const [tagAt, setTagAt] = useState<{ x: number; y: number } | null>(null);
   const hideTimer = useRef<number | undefined>(undefined);
 
@@ -66,18 +68,24 @@ export function ChamberCloseUp({ id, onClose, onOpenChambers }: { id: ChamberId;
   };
   // mouse: name while hovering; touch and pen: tap to show the name for a moment
   const onPointerOver = (e: ReactPointerEvent) => {
-    if (e.pointerType !== 'mouse') return;
+    if (e.pointerType !== 'mouse' || pinned) return;
     const a = antAt(e);
     if (a) setNamed(a);
   };
   const onPointerOut = (e: ReactPointerEvent) => {
-    if (e.pointerType !== 'mouse' || !named) return;
+    if (e.pointerType !== 'mouse' || !named || pinned) return;
     const to = e.relatedTarget as Element | null;
     if (!to || !named.el.contains(to)) setNamed(null);
   };
   const onPointerDown = (e: ReactPointerEvent) => {
-    if (e.pointerType === 'mouse') return;
     const a = antAt(e);
+    if (e.pointerType === 'mouse') {
+      // click an ant to keep her name up; click her again, or anywhere else, to let go
+      const same = pinned && a && named && a.key === named.key;
+      setPinned(!!a && !same);
+      setNamed(same ? null : a);
+      return;
+    }
     window.clearTimeout(hideTimer.current);
     setNamed(a);
     if (a) hideTimer.current = window.setTimeout(() => setNamed(null), 2500);

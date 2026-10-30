@@ -833,6 +833,29 @@ pre.report-body { white-space: pre-wrap; overflow-x: auto; }
 .float-col .quest { padding: 0.75rem 0.85rem; gap: 0.5rem; background: linear-gradient(rgba(232, 178, 58, 0.1), rgba(232, 178, 58, 0.1)), var(--wall); }
 .float-col .quest-main { flex-basis: 100%; }
 
+/* inside a chamber of the 3D nest (docs/12-ui-nest-view.md, "Inside a chamber"): the floating cards step aside */
+.colony-stage:has(.nest.inside) .float-name, .colony-stage:has(.nest.inside) .float-col { opacity: 0; visibility: hidden; transition: opacity 0.3s, visibility 0s 0.3s; }
+.float-name, .float-col { transition: opacity 0.4s 0.5s; }
+.n3-inside-bar { position: absolute; left: 50%; top: 12px; transform: translateX(-50%); z-index: 3; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: center; max-width: calc(100% - 20px); }
+.n3-inside-bar .closeup-title { font-size: 1.05rem; padding: 4px 14px; }
+.n3-inside-bar .muted { color: #c9b89f; font-weight: 400; }
+.n3-inside-store { font-size: 0.8rem; color: #efe4d2; background: rgba(35, 26, 20, 0.8); padding: 3px 10px; border-radius: 999px; }
+.nest.inside .n3-hint { display: block; }
+/* an ant's name card: a little field-guide label on paper, over her head (in-world colours in both themes) */
+.n3-antcard {
+  position: absolute; transform: translate(-50%, calc(-100% - 4px));
+  display: flex; flex-direction: column; align-items: center; gap: 0;
+  padding: 3px 11px 4px; border-radius: 6px; white-space: nowrap;
+  background: rgba(247, 244, 234, 0.94); color: #2b1d13; border: 1px solid #2b1d13;
+  box-shadow: 0 3px 10px rgba(20, 12, 6, 0.35);
+}
+.n3-antcard::after { content: ''; position: absolute; left: 50%; bottom: -5px; width: 8px; height: 8px; background: inherit; border: inherit; border-width: 0 1px 1px 0; transform: translateX(-50%) rotate(45deg); }
+.n3-antcard strong { font-family: var(--font-display); font-size: 0.95rem; line-height: 1.2; }
+.n3-antcard span { font-size: 0.68rem; color: #5e4a36; text-transform: uppercase; letter-spacing: 0.06em; }
+.n3-antcard em { font-size: 0.78rem; color: #3d5a1e; font-style: italic; margin-top: 1px; }
+.n3-antcard.pinned { border-color: #b07a12; box-shadow: 0 0 0 2px rgba(232, 178, 58, 0.55), 0 4px 12px rgba(20, 12, 6, 0.4); }
+.n3-antcard.pinned strong { font-size: 1.05rem; }
+
 /* the nest's own buttons move out of the cards' way */
 .nest.fill .nest-motion { top: auto; bottom: 10px; }
 .nest.fill .nest-switch { left: 10px; right: auto; bottom: 38px; }

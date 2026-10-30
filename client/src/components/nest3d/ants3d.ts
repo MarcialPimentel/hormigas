@@ -9,8 +9,10 @@ const V3 = (x: number, y: number, z: number) => new THREE.Vector3(x, y, z);
 const UP = V3(0, 1, 0);
 const clamp = (x: number, a: number, b: number) => Math.max(a, Math.min(b, x));
 
+// how finely the shapes are cut: 1 for crowds, 2 for the few ants seen up close in a chamber
+let fine = 1;
 function ell(sx: number, sy: number, sz: number, x: number, y: number, z: number, rz = 0) {
-  const g = new THREE.SphereGeometry(1, 9, 6);
+  const g = new THREE.SphereGeometry(1, 9 * fine, 6 * fine);
   g.scale(sx, sy, sz);
   g.rotateZ(rz);
   g.translate(x, y, z);
@@ -18,7 +20,7 @@ function ell(sx: number, sy: number, sz: number, x: number, y: number, z: number
 }
 function seg(a: THREE.Vector3, b: THREE.Vector3, r: number, r2 = r * 0.75) {
   const d = new THREE.Vector3().subVectors(b, a);
-  const g = new THREE.CylinderGeometry(r2, r, d.length(), 5, 1, true);
+  const g = new THREE.CylinderGeometry(r2, r, d.length(), fine > 1 ? 8 : 5, 1, true);
   g.applyQuaternion(new THREE.Quaternion().setFromUnitVectors(UP, d.normalize()));
   const m = a.clone().add(b).multiplyScalar(0.5);
   g.translate(m.x, m.y, m.z);
@@ -59,7 +61,15 @@ interface Shape {
   sickle?: boolean;
 }
 /** Gaster, petiole, mesosoma, head, mandibles, elbowed antennae, six legs. Faces +x, feet at y = 0, about 0.9 long. */
-export function antGeometry(o: Shape = {}) {
+export function antGeometry(o: Shape = {}, detail = 1) {
+  fine = detail;
+  try {
+    return antParts(o);
+  } finally {
+    fine = 1;
+  }
+}
+function antParts(o: Shape) {
   const head = o.head ?? 1, gas = o.gaster ?? 1, jaw = o.jaw ?? 1, slim = o.slim ?? 1, legK = o.legs ?? 1;
   const parts: { g: THREE.BufferGeometry; lf?: LegFn }[] = [];
   const body = (g: THREE.BufferGeometry) => parts.push({ g });
@@ -218,13 +228,13 @@ export interface AntOpts {
  * Every ant in the nest scene: one pool per caste plus one per kind of load. Call `begin()`, then `ant()` for
  * each ant this frame, then `end()`. Pools are sized to the caps, so a busy frame simply draws the first `cap`.
  */
-export function createAnts(parent: THREE.Object3D, caps: Partial<Record<Caste, number>>, shadows: boolean) {
+export function createAnts(parent: THREE.Object3D, caps: Partial<Record<Caste, number>>, shadows: boolean, detail = 1) {
   let s = 7;
   const seed = () => ((s = (s * 1664525 + 1013904223) >>> 0) / 4294967296);
   const mat = antMaterial();
   const pools = {} as Record<Caste, Pool>;
   for (const c of Object.keys(SHAPES) as Caste[]) {
-    const geo = antGeometry(SHAPES[c]);
+    const geo = antGeometry(SHAPES[c], detail);
     pools[c] = new Pool(geo, mat, caps[c] ?? 8, seed);
     geo.dispose();
     pools[c].mesh.castShadow = shadows;

@@ -33,9 +33,10 @@ Feedback is read on the admin-only **Feedback** screen. Admins are players with 
 ## The 3D slab (computers)
 On computers the nest is a block of earth cut open at the front, like an ant farm on a plinth (approved from [art/3d-exploration.md](art/3d-exploration.md)). Built with Three.js in `client/src/components/nest3d/`, loaded only when shown.
 - **Everything is 3D, and the chambers show what they hold.** Hollows and tunnels are carved into a face painted in coloured soil horizons; each hollow's back wall is lit warm from inside, and the hollow holds its contents in 3D (`nest3d/contents.ts`): stores heap up as they fill (empty stores are bare), brood follows the unit queue, research motes drift only while research runs, and the rest grows with level. The 2D chamber pictures no longer hang on the back walls, since their drawn piles would contradict the real amounts. Ants are real 3D ants, one per ant up to a cap, walking at different depths and carrying loads down to the stores. Look and numbers: [18-art-direction.md](18-art-direction.md) § In 3D. This slab is the Nest level of the scale ladder ([art/sunlit-microcosm.md](art/sunlit-microcosm.md)).
-- **Gentle orbit, and zoom on the Colony screen:** drag to turn (about ±30°) and, with a mouse, tilt a little. Where the nest fills the screen, scroll (or pinch on a trackpad, or the + and − buttons) zooms up to 3.5× toward the cursor; zoomed in, dragging moves around the nest instead of turning it, and it can't leave the block. **Whole nest** (or double-click) goes back to the full view. Still no inside views. Zoom came in with the full-screen Colony screen (Marz, 2026-10-29); it was left out at first to keep the whole colony in sight.
+- **Gentle orbit, and zoom on the Colony screen:** drag to turn (about ±30°) and, with a mouse, tilt a little. Where the nest fills the screen, scroll (or pinch on a trackpad, or the + and − buttons) zooms up to 3.5× toward the cursor; zoomed in, dragging moves around the nest instead of turning it, and it can't leave the block. **Whole nest** (or double-click on the soil) goes back to the full view. Zoom came in with the full-screen Colony screen (Marz, 2026-10-29); it was left out at first to keep the whole colony in sight. Still no free camera through the tunnels; the one way inside is diving into a chamber (below).
 - **Same information as the 2D nest:** chamber names, levels and tags; dashed outlines for chambers you could dig next; surface parties with timers; raiders in red with the entrance ringing; diggers on the rim; the Pheromone Chamber glowing with drifting motes while research runs; a sky by the player's clock, with chambers glowing at night.
-- **Taps:** a chamber opens its sheet (no Look inside); the entrance opens Missions.
+- **Taps:** a chamber opens its sheet, whose **Look inside** dives into the chamber (so does double-clicking a built chamber); the entrance opens Missions.
+- **The queen** sits in the middle of her chamber, facing her eggs, always.
 - **Which nest:** 3D on computers, 2D on phones. A button in the corner switches (saved per browser). Without WebGL the 2D nest shows. Motion off draws a still slab, refreshed about once a second.
 
 ## Nest View (2D, phones)
@@ -74,10 +75,19 @@ Tapping a chamber (built or not yet dug) opens its sheet: on a computer as a car
 - The next level: what it gives, its cost and dig time, and **Dig it / Dig deeper**. When something is in the way the button is disabled and the reason shows beside it (diggers busy, not enough food, no space). Same rules as the Chambers screen; both use `client/src/chamberPlan.ts`.
 - **Look inside** (the close-up), **All chambers** (the Chambers screen), **Close** (or Esc, or tap the chamber again).
 
-## Chamber close-up
-Tapping a built chamber opens a close look inside it, filling the nest view:
+## Inside a chamber (3D)
+Players asked to get back into the chambers and watch the ants work, and they prefer 3D (Marz, 2026-10-30). In the 3D nest, **Look inside** on a built chamber's card (or a double-click on the chamber) dives the camera into that hollow in about a second. This is the Chamber rung of the scale ladder ([art/sunlit-microcosm.md](art/sunlit-microcosm.md)). Built in `client/src/components/nest3d/crew.ts` and `scene.ts`.
+- **The view:** the hollow fills the screen, framed on its floor (higher in the Honeypot Gallery, Aphid Pasture and Pheromone Chamber, where things hang or float), with a warm lantern light. The floating cards step aside; a bar at the top gives the chamber's name and level, what a store holds, and **← Back to the nest**. Dragging still turns the view a little.
+- **A crew at work:** 3 ants, plus one per two levels, up to 10 and never more than the colony has, each doing that chamber's job: hauliers bring leaf bits, prey or nectar in from the tunnel and come back empty; others stack the leaf pile, cut up prey, skim the honey pool, feed the honeypots, chew leaves into mulch, lick eggs clean, feed larvae, move cocoons, groom and feed the queen, carry her eggs off, collect honeydew, dig and haul spoil, or lay scent trails. They walk over the heaps, which rise and fall with the stores. Stores (Granary, Larder, Nectar Cellar, Honeypot Gallery, Queen's Chamber) from level 2 have a soldier at the door if the colony has soldiers. The queen is in hers.
+- **Meet an ant:** point at one for her name and caste. Click (or tap) her and she stops, turns to you and rears up; her card stays with her name, caste and job, e.g. "Reina Inmaculada · Queen · Laying eggs". Click her again, another ant, or Esc to let go. Names are the same as in the 2D close-up (same chamber, same ant).
+- **Leaving:** **← Back to the nest**, Esc, or scrolling out rises back to the whole nest, with the chamber's card open.
+- **Honest:** the crew is choreography, like the walkers in the tunnels. What the chamber holds comes from the server's numbers (the 3D contents); the crew only shows the kind of work done there.
+- With motion reduced, the crew stands still at their work; clicking still names them.
+
+## Chamber close-up (2D)
+On the 2D nest (phones, and the 2D view on computers), the sheet's **Look inside** opens a close look inside the chamber, filling the nest view:
 - The chamber's full art (soil wall, roots, tunnel mouth, contents and its signature detail) with workers walking its floor. Stores get a wash of their food colour that rises as they fill, and show the amount.
-- Every ant has a name: hover it (tap on phones) for a tag with its name and caste. See [18-art-direction.md](18-art-direction.md), "Names".
+- Every ant has a name: hover it, click it to keep the tag up, or tap it on a phone, for a tag with its name and caste. See [18-art-direction.md](18-art-direction.md), "Names".
 - **Upgrade** and **Back** (or Esc) return to the nest, with the chamber's sheet open.
 - With motion reduced, the ants stand still along their beat.
 

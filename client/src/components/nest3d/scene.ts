@@ -4,7 +4,7 @@
 // their true numbers up to a cap (ants3d.ts); each hollow holds what the chamber holds, in 3D (contents.ts).
 // Like the 2D nest, it only shows what the server says; nothing here decides anything.
 import * as THREE from 'three';
-import { CHAMBERS, CHAMBER_IDS, lvl, type ChamberId, type ResourceId } from '@hormigas/shared';
+import { CHAMBERS, CHAMBER_IDS, lvl, storageCapacity, type ChamberId, type ResourceId } from '@hormigas/shared';
 import type { ServerColony, ServerState } from '../../game';
 import type { Caste } from '../../art/ants';
 import { partyCaste, surfaceParties, type SurfaceParty } from '../nestScene';
@@ -13,6 +13,8 @@ import { fmtDuration } from '../../format';
 import { BACK, D, H, SHAFT_HW, W, ZS, carve, pathTo, room, shaftX, type P3, type Room } from './slab';
 import { CHITIN, antUniforms, createAnts, type AntOpts, type CargoKind } from './ants3d';
 import { createContents } from './contents';
+import { QUEEN_STOP, createCrew, crewFor, heapAt, stopAt, type Crew, type CrewPose } from './crew';
+import { CASTE_LABEL, antName } from '../../art/antNames';
 
 export interface NestData {
   colony: ServerColony | null;
@@ -47,6 +49,10 @@ export interface NestScene {
   setOnZoom(fn: (z: number) => void): void;
   /** Where a chamber is on screen (CSS pixels in the host), and about how wide its hollow is; null if it isn't drawn. */
   where(id: ChamberId): { x: number; y: number; rx: number } | null;
+  /** Dive into a built chamber to meet the ants at work there, or (null) rise back to the whole nest. */
+  focus(id: ChamberId | null): void;
+  /** Let go of the ant being looked at. */
+  release(): void;
   dispose(): void;
 }
 
@@ -55,6 +61,10 @@ const SX0 = shaftX(0);
 const ANT_LEN: Record<Caste, number> = { worker: 1, soldier: 1.15, queen: 1.6, alate: 1.4, army: 1, army_major: 1.3 };
 const CARGO: Record<ResourceId, string> = { foliage: '#8DB255', protein: '#D06A6A', nectar: '#E8B23A' };
 const SHORT: Partial<Record<ChamberId, string>> = { queen_chamber: 'Queen' };
+/** Inside a chamber, how far below its middle the camera aims (share of its half-height): low for work on the
+ * floor, higher where things hang from the ceiling or float in the middle. */
+const AIM: Partial<Record<ChamberId, number>> = { honeypot_gallery: 0.05, aphid_pasture: 0.3, pheromone_chamber: 0.35 };
+const STORE_RES: Partial<Record<ChamberId, ResourceId>> = { granary: 'foliage', larder: 'protein', nectar_cellar: 'nectar' };
 
 function seeded(seed: number) {
   let s = seed >>> 0 || 1;
@@ -73,7 +83,16 @@ export async function createNestScene(
   host: HTMLElement,
   labelsEl: HTMLElement,
   get: () => NestData,
-  cb: { onChamber: (id: ChamberId) => void; onEntrance: () => void },
+  cb: {
+    onChamber: (id: ChamberId) => void;
+    onEntrance: () => void;
+    /** double-click on a built chamber: dive in */
+    onLookInside?: (id: ChamberId) => void;
+    /** inside a chamber, zooming out asks to leave */
+    onLeave?: () => void;
+    /** inside a chamber: the ant picked (for screen readers), or null */
+    onAnt?: (a: { name: string; caste: string; job: string } | null) => void;
+  },
   initiallyReduced: boolean,
 ): Promise<NestScene> {
   const canvas = document.createElement('canvas');
@@ -402,6 +421,9 @@ export async function createNestScene(
     army: Math.round(1300 * CAP), army_major: Math.round(330 * CAP),
   }, !coarse);
   disposables.push(ants);
+  // the few ants met up close inside a chamber (crew.ts), cut finer than the crowds, and the queen in her chamber
+  const closeAnts = createAnts(scene, { worker: 12, soldier: 2, queen: 1, alate: 1, army: 1, army_major: 1 }, !coarse, 2);
+  disposables.push(closeAnts);
   const SWARM_CAP = Math.round(1500 * CAP), PARTY_CAP = Math.round(300 * CAP);
   const LOAD: Record<ResourceId, CargoKind> = { foliage: 'leaf', protein: 'chunk', nectar: 'drop' };
   /** What a worker carries down to each store. */
@@ -499,10 +521,12 @@ export async function createNestScene(
   }
 
   let layoutKey = '';
+  let lastLayout: Layout | null = null;
   function setLayout(l: Layout) {
     const key = JSON.stringify(l);
     if (key === layoutKey) return;
     layoutKey = key;
+    lastLayout = l;
     for (const d of layoutDisposables.splice(0)) d.dispose();
     layoutGroup.clear();
     rooms = CHAMBER_IDS.filter((id) => (l.chambers[id] ?? 0) > 0 || id === 'queen_chamber').map((id) => room(id, l.chambers[id] ?? 1));
@@ -600,6 +624,8 @@ export async function createNestScene(
       if (w.to !== 'guard' && !targets.includes(w.to)) w.to = targets[Math.floor(r2() * targets.length)];
       routeFor(w);
     }
+    // the chamber we're inside may have grown or gone: rebuild its crew
+    if (inside) startCrew(inside.id);
   }
 
   // ---------- labels (HTML over the canvas) ----------
@@ -686,6 +712,100 @@ export async function createNestScene(
     }
   }
 
+  // ---------- inside a chamber (docs/12-ui-nest-view.md, "Inside a chamber") ----------
+  // The camera dives into one hollow, where a small crew does the chamber's work (crew.ts). Point at an ant for her
+  // name; click her and she stops, looks up, and her card stays. The queen always sits in her chamber.
+  let inside: { id: ChamberId; r: Room; crew: Crew } | null = null;
+  /** 0 = the whole nest, 1 = inside; eased, so the dive takes about a second */
+  let fk = 0, fGoal = 0;
+  let poses: CrewPose[] = [];
+  let held = -1, hover = -1;
+  const lantern = new THREE.PointLight('#FFD7A0', 0, 11, 1.6);
+  scene.add(lantern);
+  function startCrew(id: ChamberId) {
+    const r = rooms.find((x) => x.id === id);
+    if (!r) return;
+    const level = lastLayout?.chambers[id] ?? 1;
+    const members = crewFor(r, level, Math.max(1, lastLayout?.workers ?? 1), lastLayout?.soldiers ?? 0);
+    const keep = inside?.id === id ? inside.crew : null;
+    // the crew walks over the heap, which rises and falls with the store
+    const heap = (x: number) => {
+      const c = get().colony, res = STORE_RES[id];
+      const cap = c && res ? storageCapacity(c.chambers, c.research)[res] : 0;
+      return heapAt(r, x, c && res && cap > 0 ? c.resources[res] / cap : 1);
+    };
+    inside = { id, r, crew: keep && keep.members.length === members.length ? keep : createCrew(r, members, id.length * 97 + level, heap) };
+    poses = inside.crew.step(0, held);
+  }
+  function antInfo(i: number) {
+    const m = inside?.crew.members[i], c = get().colony;
+    if (!m || !c || !inside) return null;
+    return { name: antName(`${c.id}:${inside.id}:${m.key}`, m.caste), caste: CASTE_LABEL[m.caste], job: m.job };
+  }
+  function setHeld(i: number) {
+    if (i === held) return;
+    held = i;
+    cb.onAnt?.(i >= 0 ? antInfo(i) : null);
+  }
+  /** A crew ant, drawn: she turns toward you and rears up a little when you're looking at her. */
+  function drawCrewAnt(caste: Caste, p: CrewPose, looked: boolean) {
+    const base = p.facing < 0 ? Math.PI : 0;
+    // looked at, she turns to you; standing still, she stands three-quarters on, so her head and legs show
+    const yaw = looked ? base - p.facing * 1.0 : p.pose === 'still' && !p.moving ? base - p.facing * 0.5 : base;
+    const pitch = looked ? 0.42 : p.pose === 'up' ? 0.4 : p.pose === 'work' ? p.slope - 0.22 : p.slope;
+    // busy ants keep their legs and jaws going a little; walkers stride
+    const busy = !reduced && !looked && p.pose === 'work';
+    closeAnts.ant(caste, p.x, p.y + (p.pose === 'up' && !looked ? 0.05 : 0), p.z, {
+      scale: ANT_LEN[caste], yaw, pitch, step: reduced || looked ? 0 : p.moving ? 15 : busy ? 3 : 0, cargo: p.carry ?? null,
+    });
+  }
+  const queenSpot = () => stopAt(queen, QUEEN_STOP);
+  function drawInside(dt: number) {
+    closeAnts.begin();
+    if (inside) {
+      poses = inside.crew.step(dt, held);
+      inside.crew.members.forEach((m, i) => drawCrewAnt(m.caste, poses[i], i === held));
+    }
+    // the queen is always home, in the middle of her chamber, facing her eggs
+    if (inside?.id !== 'queen_chamber') {
+      const q = queenSpot();
+      closeAnts.ant('queen', q.x, q.y, q.z, { scale: ANT_LEN.queen, yaw: -0.5, step: 0 });
+    }
+    closeAnts.end();
+  }
+  /** Which crew ant is under the pointer (CSS pixels in the canvas), if any: the nearest one within reach. */
+  function crewAt(cx: number, cy: number) {
+    if (!inside || fk < 0.9) return -1;
+    let best = -1, bestD = Infinity;
+    inside.crew.members.forEach((m, i) => {
+      const p = poses[i];
+      if (!p) return;
+      const len = ANT_LEN[m.caste];
+      const a = toScreen3(p.x, p.y + 0.18 * len, p.z), b = toScreen3(p.x + 0.5 * len, p.y + 0.18 * len, p.z);
+      const reach = Math.max(22, Math.abs(b.x - a.x) * 1.15);
+      const d = Math.hypot(a.x - cx, a.y - cy);
+      if (d < reach && d < bestD) {
+        best = i;
+        bestD = d;
+      }
+    });
+    return best;
+  }
+  const pv3 = new THREE.Vector3();
+  const toScreen3 = (x: number, y: number, z: number) => {
+    pv3.set(x, y, z).project(camera);
+    return { x: ((pv3.x + 1) / 2) * host.clientWidth, y: ((1 - pv3.y) / 2) * host.clientHeight };
+  };
+  function drawAntCard() {
+    const i = held >= 0 ? held : hover;
+    const p = poses[i], info = antInfo(i);
+    if (!inside || fk < 0.9 || !p || !info) return;
+    const len = ANT_LEN[inside.crew.members[i].caste];
+    const pinned = i === held;
+    label('ant-card', `n3-antcard${pinned ? ' pinned' : ''}`, p.x, p.y + 0.62 * len, p.z,
+      `<strong>${esc(info.name)}</strong><span>${esc(info.caste)}</span>${pinned ? `<em>${esc(info.job)}</em>` : ''}`);
+  }
+
   // ---------- camera: a gentle orbit, plus zoom toward the cursor (docs/12-ui-nest-view.md, "The 3D slab") ----------
   const home = new THREE.Vector3(0, -13.5, -3);
   const target = home.clone();
@@ -699,22 +819,39 @@ export async function createNestScene(
     renderer.setSize(w, h, false);
     // frame the block in the part of the view the cards leave free, then widen the picture back out to the whole canvas
     const fw = Math.max(200, w - inset.left - inset.right), fh = Math.max(200, h - inset.top - inset.bottom);
-    camera.aspect = fw / fh;
-    if (inset.left || inset.right || inset.top || inset.bottom) camera.setViewOffset(fw, fh, -inset.left, -inset.top, w, h);
-    else camera.clearViewOffset();
-    camera.updateProjectionMatrix();
     const halfH = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
     // whole block in view: its width (plus a margin) or its height, whichever needs more room
-    dist = Math.max((W / 2 + 5) / (halfH * camera.aspect), (H / 2 + 4) / halfH) * 1.02;
+    dist = Math.max((W / 2 + 5) / (halfH * (fw / fh)), (H / 2 + 4) / halfH) * 1.02;
+    // inside a chamber the cards step aside, so the frame eases out to the whole view
+    const k = 1 - fk * fk * (3 - 2 * fk);
+    const L = inset.left * k, T = inset.top * k, gw = Math.max(200, w - L - inset.right * k), gh = Math.max(200, h - T - inset.bottom * k);
+    camera.aspect = gw / gh;
+    if (L || T || gw !== w || gh !== h) camera.setViewOffset(gw, gh, -L, -T, w, h);
+    else camera.clearViewOffset();
+    camera.updateProjectionMatrix();
   }
   const ro = new ResizeObserver(fit);
   ro.observe(host);
   fit();
+  const camA = new THREE.Vector3(), camB = new THREE.Vector3(), tgtB = new THREE.Vector3();
   function placeCamera() {
     const cp = Math.cos(view.pitch);
     target.set(home.x + zm.x, home.y + zm.y, home.z);
     const dd = dist / zm.z;
     camera.position.set(target.x + dd * cp * Math.sin(view.yaw), target.y + dd * Math.sin(view.pitch), target.z + dd * cp * Math.cos(view.yaw));
+    if (inside && fk > 0) {
+      // inside a chamber: close in front of its hollow, a little above the floor, still turning a little with a drag
+      const r = inside.r, e = fk * fk * (3 - 2 * fk);
+      const halfH = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)), aspect = host.clientWidth / Math.max(1, host.clientHeight);
+      // framed on the floor, where the work is: the walls just past the edges, the dome above cut short
+      const fd = Math.max((r.rx * 0.82) / (halfH * aspect), (r.ry * 0.8) / halfH);
+      const yaw = 0.1 + (view.yaw - 0.3) * 0.5, pitch = 0.16 + (view.pitch - 0.16) * 0.5;
+      tgtB.set(r.x, r.y - r.ry * (AIM[r.id] ?? 0.6), -D / 2);
+      camB.set(tgtB.x + fd * Math.cos(pitch) * Math.sin(yaw), tgtB.y + fd * Math.sin(pitch), tgtB.z + fd * Math.cos(pitch) * Math.cos(yaw));
+      camA.copy(camera.position);
+      camera.position.lerpVectors(camA, camB, e);
+      target.lerp(tgtB, e);
+    }
     camera.lookAt(target);
   }
 
@@ -757,6 +894,11 @@ export async function createNestScene(
     // only where the nest fills the screen; elsewhere the wheel scrolls the page as usual
     if (!host.classList.contains('fill')) return;
     e.preventDefault();
+    // inside a chamber, zooming out rises back to the whole nest
+    if (fGoal === 1) {
+      if (e.deltaY > 0) cb.onLeave?.();
+      return;
+    }
     const r = canvas.getBoundingClientRect();
     // trackpad pinches arrive as ctrl+wheel with small steps
     zoomAt(Math.exp(-e.deltaY * (e.ctrlKey ? 0.012 : 0.0015)), e.clientX - r.left, e.clientY - r.top);
@@ -770,10 +912,16 @@ export async function createNestScene(
   };
   const onMove = (e: PointerEvent) => {
     if (!drag) {
-      if (e.pointerType === 'mouse') canvas.classList.toggle('pointing', !!pickAt(e));
+      if (e.pointerType !== 'mouse') return;
+      if (fGoal === 1) {
+        const r = canvas.getBoundingClientRect();
+        hover = crewAt(e.clientX - r.left, e.clientY - r.top);
+        canvas.classList.toggle('pointing', hover >= 0);
+        if (reduced) step(0);
+      } else canvas.classList.toggle('pointing', !!pickAt(e));
       return;
     }
-    if (zGoal.z > 1.02) {
+    if (zGoal.z > 1.02 && fGoal === 0) {
       // zoomed in: dragging moves around the nest
       const u = unitsPerPx();
       zGoal.x -= (e.clientX - drag.x) * u;
@@ -787,7 +935,13 @@ export async function createNestScene(
     drag.y = e.clientY;
   };
   const onUp = (e: PointerEvent) => {
-    if (drag && Math.hypot(e.clientX - drag.sx, e.clientY - drag.sy) < 8 && performance.now() - drag.t < 500) {
+    if (drag && Math.hypot(e.clientX - drag.sx, e.clientY - drag.sy) < 8 && performance.now() - drag.t < 500 && fGoal === 1) {
+      // inside: tap an ant to meet her (tap her again, or anywhere else, to let her go)
+      const r = canvas.getBoundingClientRect();
+      const i = crewAt(e.clientX - r.left, e.clientY - r.top);
+      setHeld(i === held ? -1 : i);
+      if (reduced) step(0);
+    } else if (drag && Math.hypot(e.clientX - drag.sx, e.clientY - drag.sy) < 8 && performance.now() - drag.t < 500) {
       const o = pickAt(e);
       if (o === mound) cb.onEntrance();
       else if (o?.userData.tap) cb.onChamber(o.userData.tap as ChamberId);
@@ -798,11 +952,22 @@ export async function createNestScene(
   canvas.addEventListener('pointermove', onMove);
   canvas.addEventListener('pointerup', onUp);
   canvas.addEventListener('pointercancel', () => (drag = null));
+  const onLeaveCanvas = () => {
+    hover = -1;
+  };
+  canvas.addEventListener('pointerleave', onLeaveCanvas);
   const resetView = () => {
     Object.assign(goal, { yaw: 0.3, pitch: 0.16 });
     Object.assign(zGoal, { z: 1, x: 0, y: 0 });
   };
-  const onDbl = resetView;
+  // double-click a built chamber to dive in; anywhere else, back to the whole nest
+  const onDbl = (e: MouseEvent) => {
+    if (fGoal === 1) return;
+    const o = pickAt(e as PointerEvent);
+    const id = o?.userData.tap as ChamberId | undefined;
+    if (id && rooms.some((r) => r.id === id) && cb.onLookInside) cb.onLookInside(id);
+    else resetView();
+  };
   canvas.addEventListener('dblclick', onDbl);
 
   // ---------- loop ----------
@@ -823,6 +988,11 @@ export async function createNestScene(
     zm.z += (zGoal.z - zm.z) * ease;
     zm.x += (zGoal.x - zm.x) * ease;
     zm.y += (zGoal.y - zm.y) * ease;
+    if (fk !== fGoal) {
+      fk = reduced ? fGoal : fGoal > fk ? Math.min(fGoal, fk + dt * 1.1) : Math.max(fGoal, fk - dt * 1.3);
+      fit();
+      if (fk === 0 && fGoal === 0) inside = null;
+    }
     const zr = Math.round(zGoal.z * 100) / 100;
     if (zr !== zoomShown) {
       zoomShown = zr;
@@ -848,6 +1018,12 @@ export async function createNestScene(
     drawParties(d);
     drawDiggers(d);
     ants.end();
+    drawInside(mdt);
+    if (inside) {
+      const e = fk * fk * (3 - 2 * fk);
+      lantern.position.set(inside.r.x - 0.6, inside.r.y + inside.r.ry * 0.55, -0.35);
+      lantern.intensity = 5 * e;
+    } else lantern.intensity = 0;
     const researching = !!d.state?.player.researchJob;
     contents.update(d.colony, researching, clock);
     for (const g of glows) {
@@ -865,6 +1041,9 @@ export async function createNestScene(
           `<span>${esc(name)}${level ? ` ${level}` : ''}</span>${tag ? `<span class="nest-tag ${tag.tone}">${esc(tag.text)}</span>` : ''}`);
       }
     }
+    // inside a chamber, the nest's own labels make way for the name of the ant you're looking at
+    if (fk > 0.4) seen.clear();
+    drawAntCard();
     dropUnseenLabels();
     renderer.render(scene, camera);
   }
@@ -915,6 +1094,24 @@ export async function createNestScene(
       fit();
       if (reduced) step(0);
     },
+    focus(id: ChamberId | null) {
+      if (id) {
+        if (!rooms.some((r) => r.id === id)) return;
+        held = hover = -1;
+        startCrew(id);
+        fGoal = 1;
+      } else {
+        fGoal = 0;
+        setHeld(-1);
+        hover = -1;
+      }
+      canvas.classList.remove('pointing');
+      still();
+    },
+    release() {
+      setHeld(-1);
+      still();
+    },
     where(id: ChamberId) {
       const r = rooms.find((x) => x.id === id) ?? ghosts.find((x) => x.id === id);
       if (!r) return null;
@@ -929,6 +1126,7 @@ export async function createNestScene(
       canvas.removeEventListener('pointermove', onMove);
       canvas.removeEventListener('pointerup', onUp);
       canvas.removeEventListener('dblclick', onDbl);
+      canvas.removeEventListener('pointerleave', onLeaveCanvas);
       canvas.removeEventListener('wheel', onWheel);
       for (const el of labelEls.values()) el.remove();
       contents.dispose();
