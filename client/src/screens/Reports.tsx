@@ -5,6 +5,7 @@ import { useGame } from '../game';
 import { fmtClock, fmtCoords, fmtFull } from '../format';
 import { RESOURCE_LABEL } from '../describe';
 import { Empty, Panel, ResDot } from '../components/ui';
+import type { Nav } from '../nav';
 import { BattleReport } from '../components/BattleReport';
 import { ForageOdds } from '../components/ForageOdds';
 
@@ -70,7 +71,7 @@ function WildsReport({ d }: { d: any }) {
   );
 }
 
-function ReportBody({ r }: { r: Report }) {
+function ReportBody({ r, go }: { r: Report; go?: Nav }) {
   const d = r.data;
   switch (r.type) {
     case 'scout':
@@ -171,7 +172,7 @@ function ReportBody({ r }: { r: Report }) {
         </div>
       );
     case 'battle':
-      return <BattleReport data={d} />;
+      return <BattleReport data={d} onReplay={go && d.rounds?.length && d.target ? () => go('missions', { view: { region: d.target.region, patch: d.target.patch }, replay: d }) : undefined} />;
     case 'herd':
       return d.turnedBack ? (
         <p className="report-body">Your tenders turned back from {d.herd} ({fmtCoords(d.coords)}): {d.why} They are walking home.</p>
@@ -249,7 +250,7 @@ function ReportBody({ r }: { r: Report }) {
   }
 }
 
-export function Reports() {
+export function Reports({ go }: { go?: Nav }) {
   const { refresh } = useGame();
   const [reports, setReports] = useState<Report[] | null>(null);
   const [open, setOpen] = useState<number | null>(null);
@@ -293,7 +294,7 @@ export function Reports() {
               </button>
               {open === r.id && (
                 <div className="report-open">
-                  <ReportBody r={r} />
+                  <ReportBody r={r} go={go} />
                   <button
                     className="btn ghost small"
                     onClick={async () => {

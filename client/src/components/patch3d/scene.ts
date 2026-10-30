@@ -13,6 +13,7 @@ import { fmtDuration } from '../../format';
 import { CHITIN, antUniforms, createAnts, type CargoKind } from '../nest3d/ants3d';
 import { leftOf } from '../nestScene';
 import type { Spot, SpotColony } from '../Patch';
+import { TIMING, drawnFor, momentAt, planBattle, replayLength, type BattlePlan } from './battle';
 
 export interface PatchData {
   colony: ServerColony | null;
@@ -24,6 +25,8 @@ export interface PatchScene {
   setSpots(region: number, patch: number, spots: Spot[] | null): void;
   setSelected(spot: number | null): void;
   setReduced(r: boolean): void;
+  /** Act out a battle report's data where it was fought (once that patch is shown). False if it has nothing to show. */
+  playBattle(data: unknown): boolean;
   /** Drop the camera to ant height beside your own mound (or the middle of the patch). */
   antsEye(): void;
   resetView(): void;
@@ -65,6 +68,7 @@ const hash = (i: number, k: number) => {
   return x - Math.floor(x);
 };
 const smooth = (a: number, b: number, x: number) => THREE.MathUtils.smoothstep(x, a, b);
+const Y_AXIS = new THREE.Vector3(0, 1, 0);
 
 /** Gentle ground, with a dip where the creek runs. */
 const CREEK_X = (() => {
@@ -378,8 +382,7 @@ export async function createPatchScene(
   const holeGeo = keep(new THREE.CircleGeometry(0.22, 12));
   const bareGeo = keep(new THREE.CircleGeometry(2.6, 28));
   const bareMat = keep(new THREE.MeshStandardMaterial({ color: '#B89A6A', roughness: 1, transparent: true, opacity: 0.75, depthWrite: false }));
-  const bitGeo = keep(new THREE.DodecahedronGeometry(0.09));
-  const emptyRing = keep(new THREE.RingGeometry(0.7, 0.78, 32));
+    const emptyRing = keep(new THREE.RingGeometry(0.7, 0.78, 32));
   const emptyMat = keep(new THREE.MeshBasicMaterial({ color: '#2B1D13', transparent: true, opacity: 0.25, depthWrite: false }));
   let taps: THREE.Mesh[] = [];
   let shown: { region: number; patch: number; spots: Spot[] } | null = null;
@@ -511,6 +514,7 @@ export async function createPatchScene(
   }
 
   let spotsKey = '';
+  const dead: { x: number; z: number; yaw: number; caste: Caste; color: string }[] = [];
   function setSpots(region: number, patch: number, spots: Spot[] | null) {
     // the map is fetched again every few seconds: rebuild only when something on it changed
     const key = JSON.stringify([region, patch, spots]);
@@ -521,6 +525,7 @@ export async function createPatchScene(
     plumes.length = 0;
     taps = [];
     shown = spots ? { region, patch, spots } : null;
+    dead.length = 0;
     if (!spots) return;
     for (const s of spots) {
       const { x, z } = spotPos(s.spot);
@@ -530,12 +535,10 @@ export async function createPatchScene(
       else if (c && isSiteSpot(s.spot)) addSite(c, x, z);
       else if (c) addMound(x, z, c.mine ? '#C8A06A' : c.kind === 'wild' ? '#8C6A48' : '#B08A5C', flagColor(c), c.mine ? 1.45 : 1.25);
       if (s.corpses > 0) {
-        // the dead of an old fight, lying where they fell (protein for whoever hauls them)
-        for (let i = 0; i < Math.min(14, 3 + Math.round(Math.log2(s.corpses + 1))); i++) {
-          const b = new THREE.Mesh(bitGeo, mat('#8E2E22', { flatShading: true }));
-          const a = hash(s.spot, i) * 6.28, r = 1.6 + hash(i, s.spot) * 1.2;
-          b.position.set(x + Math.cos(a) * r, gH(x + Math.cos(a) * r, z + Math.sin(a) * r) + 0.06, z + Math.sin(a) * r);
-          spotGroup.add(b);
+        // the dead of an old fight, on their backs where they fell (protein for whoever hauls them)
+        for (let i = 0; i < Math.min(60, 4 + Math.round(Math.log2(s.corpses + 1) * 3)); i++) {
+          const a = hash(s.spot, i) * 6.28, r = 1.4 + hash(i, s.spot) * 2;
+          dead.push({ x: x + Math.cos(a) * r, z: z + Math.sin(a) * r, yaw: hash(i, 21) * 6.28, caste: hash(i, 22) < 0.5 ? 'soldier' : 'worker', color: hash(i, 23) < 0.5 ? '#8E4A2E' : '#6E3A22' });
         }
       }
       const t = new THREE.Mesh(tapGeo, hitMat);
@@ -554,6 +557,10 @@ export async function createPatchScene(
       spotGroup.add(r);
     }
     applySelected();
+    if (pendingReplay && inView(pendingReplay.target)) {
+      startReplay(pendingReplay);
+      pendingReplay = null;
+    }
   }
   let selected: number | null = null;
   function applySelected() {
@@ -702,7 +709,26 @@ export async function createPatchScene(
       const lanes = Math.min(swarm ? 9 : 4, Math.max(1, Math.round(Math.sqrt(c.n / (swarm ? 5 : 12)))));
       const gap = swarm ? 0.3 : 0.46;
       const lead = c.k * t.total;
-      for (let i = 0; i < c.n; i++) {
+      if (swarm) {
+        // an army-ant swarm is a fan: a wide front that thins into the column behind it (docs/20-swarms.md)
+        for (let i = 0; i < c.n; i++) {
+          const dep = Math.min(32, -Math.log(1 - 0.995 * hash(i, 11)) * 5.2);
+          const dd = lead - dep;
+          if (dd < 0) continue;
+          along(t, dd);
+          const half = 5.6 * Math.exp(-dep / 5) + 0.55;
+          const wob = reduced ? 0 : Math.sin(clock * 3.3 + i * 1.37) * 0.14;
+          const tl = Math.hypot(dir.x, dir.z) || 1, nx = -dir.z / tl, nz = dir.x / tl;
+          const side = (hash(i, 12) * 2 - 1) * half + wob;
+          const x = at.x + nx * side, z = at.z + nz * side;
+          const caste = c.caste(i);
+          ants.ant(caste, x, gH(x, z), z, {
+            scale: (ANT / 0.9) * (caste === 'army_major' ? 1.3 : 1),
+            yaw: Math.atan2(-dir.z, dir.x) + wob * 2 + (hash(i, 13) - 0.5) * 0.6, step: reduced ? 0 : 19,
+          });
+        }
+        flushAhead(t, lead);
+      } else for (let i = 0; i < c.n; i++) {
         const row = Math.floor(i / lanes), lane = i % lanes;
         // holding parties mill about the spot; others string out behind their leader, the rest still in the nest
         let dd = lead - row * gap - hash(i, 3) * gap * 0.7;
@@ -736,6 +762,172 @@ export async function createPatchScene(
       (t.mesh.material as THREE.Material).dispose();
       trails.delete(k);
     }
+  }
+
+  // ---------- battles: a report acted out where it was fought (the live clash, and Replay from a report) ----------
+  // The server fought it already; this only shows its numbers: each side's ants, the front line, the dead
+  // falling on their backs round by round, then the winners pressing on or the losers walking away.
+  const BATTLE_CAP = Math.round(320 * CAP);
+  interface Replay { plan: BattlePlan; t: number; startedAt: number; at: { x: number; z: number }; dx: number; dz: number; na: number; nd: number }
+  let replay: Replay | null = null;
+  let pendingReplay: BattlePlan | null = null;
+  const ease = (k: number) => (k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2);
+  const DUST = 90;
+  const dustPos = new Float32Array(DUST * 3), dustLife = new Float32Array(DUST).fill(1);
+  const dustGeo = keep(new THREE.BufferGeometry());
+  dustGeo.setAttribute('position', new THREE.BufferAttribute(dustPos, 3));
+  const dustTex = (() => {
+    const c = document.createElement('canvas');
+    c.width = c.height = 64;
+    const g = c.getContext('2d')!;
+    const gr = g.createRadialGradient(32, 32, 0, 32, 32, 32);
+    gr.addColorStop(0, 'rgba(255,255,255,1)');
+    gr.addColorStop(1, 'rgba(255,255,255,0)');
+    g.fillStyle = gr;
+    g.fillRect(0, 0, 64, 64);
+    return keep(new THREE.CanvasTexture(c));
+  })();
+  const dust = new THREE.Points(dustGeo, keep(new THREE.PointsMaterial({ map: dustTex, color: '#D8C29A', size: 1.8, transparent: true, opacity: 0.32, depthWrite: false })));
+  dust.visible = false;
+  scene.add(dust);
+
+  function startReplay(plan: BattlePlan) {
+    const at = spotPos(plan.target.spot);
+    const from = plan.origin && !(plan.origin.region === plan.target.region && plan.origin.patch === plan.target.patch && plan.origin.spot === plan.target.spot)
+      ? endAt(plan.origin, plan.target)
+      : { x: at.x + 20, z: at.z };
+    let dx = from.x - at.x, dz = from.z - at.z;
+    const l = Math.hypot(dx, dz) || 1;
+    dx /= l;
+    dz /= l;
+    // timed by the real clock, so a slow frame rate doesn't stretch the fight
+    replay = { plan, t: reduced ? replayLength(plan) : 0, startedAt: performance.now(), at, dx, dz, na: Math.min(BATTLE_CAP, Math.max(1, plan.attacker.start)), nd: Math.min(BATTLE_CAP, Math.max(1, plan.defender.start)) };
+    dustLife.fill(1);
+    // frame the fight: close enough to see ants, far enough to see both sides
+    Object.assign(goal, { tx: at.x + dx * 3, tz: at.z + dz * 3 + 1, dist: Math.min(homeDist, 22) });
+    clampGoal();
+  }
+  function playBattle(data: unknown) {
+    const plan = planBattle(data);
+    if (!plan) return false;
+    if (inView(plan.target)) startReplay(plan);
+    else pendingReplay = plan; // the patch it was fought on is still loading
+    return true;
+  }
+
+  const ATT_MINE = CHITIN.worker, ENEMY = CHITIN.raider, THEIRS = '#A85A3A';
+  function drawReplay(dt: number) {
+    if (!replay) {
+      dust.visible = false;
+      return;
+    }
+    const r = replay, p = r.plan;
+    r.t = reduced ? replayLength(p) : (performance.now() - r.startedAt) / 1000;
+    const m = momentAt(p, r.t);
+    if (m.phase === 'done' && r.t > replayLength(p) + TIMING.linger) {
+      replay = null;
+      dust.visible = false;
+      return;
+    }
+    const aliveA = drawnFor(m.attackers, p.attacker.start, r.na), aliveD = drawnFor(m.defenders, p.defender.start, r.nd);
+    // the front line sits between the mound and the attackers; lateral runs across it
+    const fx = r.at.x + r.dx * 2.8, fz = r.at.z + r.dz * 2.8, nx = -r.dz, nz = r.dx;
+    const attackersWon = p.winner === 'attacker' && p.fellBackAfter == null;
+    const attackersLeave = !attackersWon && p.winner !== 'draw';
+    const ko = m.phase === 'outcome' || m.phase === 'done' ? ease(Math.min(1, m.k)) : 0;
+    const youAttack = p.perspective === 'attacker';
+    const attColor = p.attacker.swarm ? undefined : youAttack ? ATT_MINE : ENEMY;
+    const defColor = p.defender.wild || youAttack ? (youAttack ? THEIRS : ENEMY) : undefined;
+    const faceIn = Math.atan2(r.dz, -r.dx), faceOut = Math.atan2(-r.dz, r.dx);
+    const fighting = m.phase === 'fight';
+    const sideAnts = (n: number, alive: number, attacker: boolean) => {
+      const side = attacker ? p.attacker : p.defender;
+      const wide = side.swarm ? 5.2 : 3.2;
+      for (let j = 0; j < n; j++) {
+        // the last ants in the list stand at the front, so they fall first
+        const u = 1 - (j + 0.5) / n;
+        const dep = -Math.log(1 - 0.99 * u) * (side.swarm ? 1.8 : 1.3);
+        const lat = (hash(j, attacker ? 7 : 8) * 2 - 1) * (wide * Math.exp(-dep / 4) + 0.6);
+        const dead = j >= alive;
+        let off = 0, yaw = attacker ? faceIn : faceOut;
+        if (!dead) {
+          if (m.phase === 'approach') off = (1 - ease(m.k)) * (attacker ? 9 : -(2.8 + dep));
+          if (attacker && attackersWon) off = -ko * 3.5;
+          if (attacker && attackersLeave) {
+            off = ko * 9;
+            yaw = faceOut;
+          }
+          if (!attacker && attackersWon) off = -ko * (2.8 + dep); // survivors pull back into the nest
+        }
+        const along = (attacker ? 1 : -1) * (0.3 + dep) + off;
+        const lunge = fighting && !dead && dep < 1.5 && !reduced ? Math.sin(clock * 9 + j) * 0.12 * (attacker ? -1 : 1) : 0;
+        const x = fx + r.dx * (along + lunge) + nx * lat, z = fz + r.dz * (along + lunge) + nz * lat;
+        // defenders who made it back inside disappear down the entrance
+        if (!attacker && !dead && attackersWon && ko > 0.85) continue;
+        const caste: Caste = side.swarm ? (j % 5 === 2 ? 'army_major' : 'army') : hash(j, 9) < side.soldiers ? 'soldier' : 'worker';
+        ants.ant(caste, x, gH(x, z), z, {
+          scale: (ANT / 0.9) * (caste === 'soldier' ? 1.15 : caste === 'army_major' ? 1.3 : 1),
+          yaw: yaw + (dead ? hash(j, 10) * 2 - 1 : lunge * 2), flip: dead,
+          step: dead || reduced ? 0 : 17, color: attacker ? attColor : defColor,
+        });
+      }
+    };
+    sideAnts(r.na, aliveA, true);
+    sideAnts(r.nd, aliveD, false);
+    // dust over the front line while they fight
+    dust.visible = fighting && !reduced;
+    if (dust.visible) {
+      for (let i = 0; i < DUST; i++) {
+        dustLife[i] += dt * (0.6 + hash(i, 1) * 0.6);
+        if (dustLife[i] >= 1) {
+          dustLife[i] = 0;
+          const lat = (hash(i, Math.floor(performance.now() / 300)) * 2 - 1) * 4.5;
+          const fwd = (hash(i, 31) - 0.5) * 1.6;
+          dustPos[i * 3] = fx + nx * lat + r.dx * fwd;
+          dustPos[i * 3 + 2] = fz + nz * lat + r.dz * fwd;
+          dustPos[i * 3 + 1] = gH(fx, fz) + 0.1;
+        }
+        dustPos[i * 3 + 1] += dt * 0.25;
+      }
+      dustGeo.attributes.position.needsUpdate = true;
+    }
+    const n = (x: number) => Math.max(0, Math.round(x)).toLocaleString();
+    const text =
+      m.phase === 'approach' ? `${p.attacker.name} attacks ${p.defender.name}`
+        : m.phase === 'fight' ? `Round ${m.round} of ${p.rounds} · ${p.attacker.name} ${n(m.attackers)} · ${p.defender.name} ${n(m.defenders)}`
+          : p.fellBackAfter != null ? `The raiders fell back · ${p.defender.name} held`
+            : p.winner === 'attacker' ? `${p.attacker.name} broke through`
+              : p.winner === 'defender' ? `${p.defender.name} held`
+                : 'A draw: both sides still standing';
+    label('battle', 'nest-trip p3-trip raid', fx, gH(fx, fz) + 2.6, fz, esc(text));
+  }
+
+  // ---------- an army-ant swarm flushes the small things ahead of it ----------
+  const BUGS = 34;
+  const bugs = new THREE.InstancedMesh(keep(new THREE.SphereGeometry(1, 8, 6).scale(0.16, 0.07, 0.07)), mat('#8A84BC', { roughness: 0.4 }), BUGS);
+  bugs.frustumCulled = false;
+  bugs.count = 0;
+  scene.add(bugs);
+  const bm = new THREE.Matrix4(), bq = new THREE.Quaternion(), bs = new THREE.Vector3(1, 1, 1), bp = new THREE.Vector3();
+  /** Springtails and beetles hopping away ahead of the swarm's front, along its trail. */
+  function flushAhead(t: Trail, lead: number) {
+    let n = 0;
+    for (let b = 0; b < BUGS && lead < t.total - 0.5; b++) {
+      const cyc = reduced ? hash(b, 2) : (clock * (0.35 + hash(b, 3) * 0.3) + hash(b, 4)) % 1;
+      const ahead = 1.2 + cyc * 7 + hash(b, 5) * 2;
+      if (lead + ahead > t.total) continue;
+      along(t, lead + ahead);
+      const tl = Math.hypot(dir.x, dir.z) || 1;
+      const lat = (hash(b, 1) * 2 - 1) * (4 + cyc * 5);
+      const x = at.x + (-dir.z / tl) * lat, z = at.z + (dir.x / tl) * lat;
+      // short ballistic hops
+      const hop = Math.abs(Math.sin(cyc * Math.PI * 4)) * 0.7;
+      bq.setFromAxisAngle(Y_AXIS, Math.atan2(-dir.z, dir.x));
+      bm.compose(bp.set(x, gH(x, z) + 0.06 + hop, z), bq, bs);
+      bugs.setMatrixAt(n++, bm);
+    }
+    bugs.count = Math.max(bugs.count, n);
+    bugs.instanceMatrix.needsUpdate = true;
   }
 
   // ---------- labels (HTML over the canvas) ----------
@@ -978,7 +1170,10 @@ export async function createPatchScene(
     placed.length = 0;
     spotLabels();
     ants.begin();
+    bugs.count = 0;
+    for (const c of dead) ants.ant(c.caste, c.x, gH(c.x, c.z), c.z, { scale: ANT / 0.9, yaw: c.yaw, flip: true, color: c.color });
     drawColumns(d);
+    drawReplay(dt);
     ants.end();
     for (const [key, el] of labelEls) if (!seen.has(key)) { el.remove(); labelEls.delete(key); }
     const st = scaleText();
@@ -1016,6 +1211,11 @@ export async function createPatchScene(
     },
     setReduced(r) {
       reduced = r;
+    },
+    playBattle(data) {
+      const ok = playBattle(data);
+      still();
+      return ok;
     },
     antsEye() {
       const d = get();

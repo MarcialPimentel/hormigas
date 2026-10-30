@@ -50,6 +50,8 @@ Loot is taken evenly across resource types where possible (fill cargo by thirds,
 ## Battle report
 Every battle produces a readable report: forces, round summaries, losses, loot, corpse field size.
 
+**Watching it** (computers): the report's round-by-round counts are enough to act the battle out on the 3D Patch, where it was fought. **Replay on the patch** in the report opens Missions at that patch and plays it; a raid or swarm that lands on a patch you're watching plays by itself. The replay draws up to about 320 ants a side, each standing for its share of the real army, and loses them round by round to the report's exact numbers ([18-art-direction](18-art-direction.md) § In 3D). It shows the server's result; it decides nothing.
+
 ## In-game battle preview
 Before sending a raid on a scouted target, the UI runs the **same combat code** client-side and shows an estimated outcome range (e.g., "Win: 80%, Expected loot ~12k, Expected losses ~3k").
 This is a core fairness goal: players should never need an external simulator.
