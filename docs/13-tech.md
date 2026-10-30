@@ -2,12 +2,12 @@
 
 **Version:** 0.1
 
-## Stack (proposed)
+## Stack
 | Layer | Choice |
 |---|---|
 | Language | **TypeScript** everywhere |
 | Client | Vite + React; **Three.js** for the 3D nest (computers, lazy-loaded), **PixiJS** for the 2D nest (phones, fallback) |
-| Server | Node.js + Fastify (or Express) |
+| Server | Node.js + Fastify |
 | Database | PostgreSQL |
 | Realtime | WebSockets (raid incoming, mission updates) |
 | Repo | Monorepo: `/shared`, `/server`, `/client`, `/docs` |
@@ -60,7 +60,7 @@ known_colonies(player_id, colony_id, via, first_at, discovered_at, smelled_at)  
 - One account per person (terms of service); detect obvious multi-accounting later.
 
 ## Hosting
-- One small DigitalOcean droplet running Docker Compose: Caddy (HTTPS) → the Hormigas container → Postgres on the same box. Live at https://hormigas.marz.gg. Details in [DEPLOY.md](DEPLOY.md).
+- One small cloud server running Docker Compose: Caddy (HTTPS) → the Hormigas container → Postgres on the same box. Live at https://hormigas.marz.gg. Details in [DEPLOY.md](DEPLOY.md).
 - Exactly one server instance. The event worker runs in-process with the API.
 - Compute-don't-tick keeps load proportional to *player actions*, not player count.
 

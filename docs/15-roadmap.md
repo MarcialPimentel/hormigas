@@ -2,6 +2,27 @@
 
 **Version:** 0.1
 
+## Build status
+_Current as of Build 11 (2026-10-30)._ Hormigas has no GitHub milestones: each build is a GitHub issue and/or PR. What shipped in each build: [CHANGELOG](../CHANGELOG.md).
+
+| Build | What it delivers | Status |
+|---|---|---|
+| M1–M8 | The MVP foundations: rules package, server, client, research, map, combat, forage, PvP rules | done |
+| 1 | Playtest fixes ([#28](https://github.com/MarcialPimentel/hormigas/issues/28)) | done |
+| 2 | Wild nests ([#29](https://github.com/MarcialPimentel/hormigas/issues/29)) | done |
+| 3 | The colony comes alive ([#30](https://github.com/MarcialPimentel/hormigas/issues/30)) | done |
+| 4 | More colonies ([#58](https://github.com/MarcialPimentel/hormigas/pull/58)) | done |
+| 5 | Raids from the wild: army-ant swarms ([#62](https://github.com/MarcialPimentel/hormigas/pull/62)) | done |
+| 6 | The tech tree ([#63](https://github.com/MarcialPimentel/hormigas/pull/63)) | done |
+| 7 | Scents and neighbours ([#66](https://github.com/MarcialPimentel/hormigas/issues/66)) | done |
+| 8 | Protein sink ([#65](https://github.com/MarcialPimentel/hormigas/issues/65); PR [#70](https://github.com/MarcialPimentel/hormigas/pull/70) is titled "Build 7") | done |
+| — | Alliances, stage A ([#68](https://github.com/MarcialPimentel/hormigas/issues/68)) | done |
+| 9 | More wild things ([#67](https://github.com/MarcialPimentel/hormigas/issues/67)) | done |
+| 10 | Castes with a purpose ([#80](https://github.com/MarcialPimentel/hormigas/issues/80)) | done |
+| 11 | The full roster ([#83](https://github.com/MarcialPimentel/hormigas/issues/83)) | **current** (live) |
+| 12 | Reasons to come back: daily colony tasks, Diapause, Field Journal | next (no issue yet) |
+| v1 | Supercolonies stage B, joint raids on spider dens, more defenses | later |
+
 ## Guiding rule
 Keep the MVP **brutally small**. Its only job is to answer: *is the core loop fun?*
 
@@ -30,8 +51,8 @@ Keep the MVP **brutally small**. Its only job is to answer: *is the core loop fu
 - Accounts & login
 - Compute-don't-tick economy + event queue
 - Combat + battle reports + in-game battle preview
-- Overview, Chambers, Brood Hall, Research, Missions, Reports, Rankings
-- Simple schematic Nest View
+- Colony (home, the nest), Chambers, Brood Hall, Research, Missions, Allies, Reports, Rankings
+- The nest: a 3D slab on computers, a 2D nest on phones (shipped instead of the planned simple schematic Nest View)
 - Browser notifications + tab badges
 - Onboarding quest chain
 - In-game feedback button (playtest signal)
@@ -65,7 +86,7 @@ Keep the MVP **brutally small**. Its only job is to answer: *is the core loop fu
 - **Seasons:** world lifecycle (spring founding → winter end) with fresh worlds.
 - Player trading / market.
 - Achievements and cosmetics.
-- Illustrated nest art.
+- ~~Illustrated nest art~~ (shipped: field-guide art for ants, chambers and pictures, and the 3D nest; [18-art-direction](18-art-direction.md)).
 
 ## Open Questions
 - Is Aphid Pasture needed in MVP, or can Nectar come only from foraging at first?
