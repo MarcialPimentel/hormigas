@@ -12,7 +12,7 @@
   "species": {
     "pavement": {
       "name": "Pavement Ants", "nest": "Pavement Ant Nest", "terrains": ["sunny_meadow", "creek_bank"],
-      "style": "Swarm: many Workers and Minor Soldiers. Major Soldiers cut through them.",
+      "style": "Swarm: many Workers and Minor Soldiers. Acid Sprayers mow them down.",
       "levels": [
         {"units": {"worker": 2, "minor_soldier": 2}, "defenses": {}},
         {"units": {"worker": 4, "minor_soldier": 5}, "defenses": {}},
@@ -24,7 +24,7 @@
     },
     "fire": {
       "name": "Fire Ants", "nest": "Fire Ant Mound", "terrains": ["sandy_soil"],
-      "style": "Aggressive: few but strong soldiers, Acid Sentries later. Send cheap Minor Soldiers, not Majors, into the acid.",
+      "style": "Aggressive: few but strong Major Soldiers, Acid Sentries later. A swarm of Minor Soldiers pulls the Majors down; keep your own Majors out of the acid.",
       "levels": [
         {"units": {"minor_soldier": 3}, "defenses": {}},
         {"units": {"minor_soldier": 6}, "defenses": {}},
@@ -36,12 +36,12 @@
     },
     "carpenter": {
       "name": "Carpenter Ants", "nest": "Carpenter Ant Gallery", "terrains": ["rotting_log"],
-      "style": "Fortress: walls and pit traps, few soldiers. Bring numbers; the defenses rebuild.",
+      "style": "Fortress: walls and pit traps, few soldiers. The pits swallow small ants: bring Trap-jaw Ants to break the defenses, or Major Soldiers. The defenses rebuild.",
       "levels": [
-        {"units": {"worker": 2, "minor_soldier": 1}, "defenses": {"pit_trap": 1}},
-        {"units": {"worker": 3, "minor_soldier": 2}, "defenses": {"pit_trap": 2}},
+        {"units": {"worker": 2, "minor_soldier": 2}, "defenses": {}},
+        {"units": {"worker": 3, "minor_soldier": 2}, "defenses": {"pit_trap": 1}},
         {"units": {"minor_soldier": 5, "major_soldier": 1}, "defenses": {"pit_trap": 4}},
-        {"units": {"minor_soldier": 8, "major_soldier": 4}, "defenses": {"pit_trap": 6, "soil_wall": 1}},
+        {"units": {"minor_soldier": 8, "major_soldier": 4}, "defenses": {"pit_trap": 4, "soil_wall": 1}},
         {"units": {"minor_soldier": 15, "major_soldier": 12}, "defenses": {"pit_trap": 10, "soil_wall": 1, "acid_sentry": 2}},
         {"units": {"minor_soldier": 25, "major_soldier": 30}, "defenses": {"pit_trap": 20, "soil_wall": 1, "acid_sentry": 4}}
       ]
@@ -62,10 +62,10 @@
     },
     "trapjaw": {
       "name": "Trap-jaw Ants", "nest": "Trap-jaw Ant Nest", "terrains": ["creek_bank", "rotting_log"],
-      "style": "Ambushers: no Workers, just a few heavily armed Major Soldiers behind pit traps. Numbers win: swarm them with Minor Soldiers.",
+      "style": "Ambushers: no Workers, just a few heavily armed big-jawed soldiers behind pit traps. Swarm them with Minor Soldiers, and bring a few Trap-jaw Ants for the pits.",
       "levels": [
-        {"units": {"minor_soldier": 2}, "defenses": {"pit_trap": 1}},
-        {"units": {"minor_soldier": 3, "major_soldier": 1}, "defenses": {"pit_trap": 1}},
+        {"units": {"minor_soldier": 3}, "defenses": {}},
+        {"units": {"minor_soldier": 4, "major_soldier": 1}, "defenses": {}},
         {"units": {"major_soldier": 6}, "defenses": {"pit_trap": 2}},
         {"units": {"major_soldier": 14}, "defenses": {"pit_trap": 4}},
         {"units": {"major_soldier": 32}, "defenses": {"pit_trap": 6, "acid_sentry": 1}},
@@ -79,7 +79,7 @@
       "regrowHours": 72,
       "raids": false,
       "levels": [
-        {"minPoints": 0,    "units": {"termite_worker": 60,  "termite_soldier": 40},  "defenses": {"soil_wall": 1, "pit_trap": 4},  "stock": {"foliage": 40000,  "protein": 20000, "nectar": 3000}},
+        {"minPoints": 0,    "units": {"termite_worker": 60,  "termite_soldier": 40},  "defenses": {"soil_wall": 1, "pit_trap": 2},  "stock": {"foliage": 40000,  "protein": 20000, "nectar": 3000}},
         {"minPoints": 600,  "units": {"termite_worker": 120, "termite_soldier": 85},  "defenses": {"soil_wall": 1, "pit_trap": 8, "acid_sentry": 1},  "stock": {"foliage": 70000,  "protein": 35000, "nectar": 5000}},
         {"minPoints": 1500, "units": {"termite_worker": 200, "termite_soldier": 180}, "defenses": {"soil_wall": 1, "pit_trap": 14, "acid_sentry": 3}, "stock": {"foliage": 120000, "protein": 60000, "nectar": 9000}}
       ]
