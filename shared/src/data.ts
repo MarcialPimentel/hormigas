@@ -44,6 +44,8 @@ export const CASTE_IDS = [
   'slave_maker',
   'desert_ant',
   'gardener_minim',
+  // the middle carrier between Worker and Hauler (docs/05-castes-units.md)
+  'media_worker',
   'hauler',
   'winged_queen',
   // allies (Symbiosis): other insects living with the colony, raised like castes
