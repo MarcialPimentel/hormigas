@@ -4,3 +4,6 @@ coverage/
 .env
 *.log
 .DS_Store
+
+# Claude Code worktrees (one folder per parallel session)
+.claude/worktrees/
