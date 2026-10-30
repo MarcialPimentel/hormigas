@@ -1,6 +1,9 @@
 // Loading, saving and advancing colonies & players.
 import {
   canAfford,
+  chamberCost,
+  plannedLevel,
+  type DigPlan,
   explainShortfall,
   nestAt,
   nestUnitsAt,
@@ -20,6 +23,7 @@ import {
 import type { Q } from './db';
 import { notFound, forbidden, GameError } from './errors';
 import { cachedWorldSpeed } from './world';
+import { rescheduleEvent, schedule } from './events';
 
 export interface BuildJob {
   chamber: ChamberId;
@@ -28,6 +32,11 @@ export interface BuildJob {
   endAt: number;
   cost: Resources;
   eventId: number;
+}
+
+/** The dig plan as the server keeps it: the shared plan plus the pending `dig_plan` event that checks it. */
+export interface ServerDigPlan extends DigPlan {
+  eventId: number | null;
 }
 
 export interface Colony extends ColonyState {
@@ -40,6 +49,8 @@ export interface Colony extends ColonyState {
   spot: number;
   baseSpace: number;
   buildJob: BuildJob | null;
+  /** Chambers lined up behind the dig in progress (docs/04-colony.md). Null when nothing is planned. */
+  digPlan: ServerDigPlan | null;
   createdAt: number;
   /** Set for wild things (NPC colonies: nests, mounds, dens, aphid herds), null for player colonies. */
   npc: NpcState | null;
@@ -47,7 +58,7 @@ export interface Colony extends ColonyState {
 
 // owner_research: the owner's research, read along with the colony because production and storage depend on it.
 // Read-only here: saveColony never writes it (research is saved on the player row).
-const COLS = 'id, world_id, player_id, name, region, patch, spot, terrain, base_space, foliage, protein, nectar, last_updated, chambers, units, defenses, build_job, unit_queue, digest_job, created_at, npc, (SELECT p.research FROM players p WHERE p.id = colonies.player_id) AS owner_research';
+const COLS = 'id, world_id, player_id, name, region, patch, spot, terrain, base_space, foliage, protein, nectar, last_updated, chambers, units, defenses, build_job, dig_plan, unit_queue, digest_job, created_at, npc, (SELECT p.research FROM players p WHERE p.id = colonies.player_id) AS owner_research';
 
 function fromRow(r: any): Colony {
   return {
@@ -66,6 +77,7 @@ function fromRow(r: any): Colony {
     units: r.units,
     defenses: r.defenses,
     buildJob: r.build_job,
+    digPlan: r.dig_plan ?? null,
     unitQueue: r.unit_queue,
     digestJob: r.digest_job ?? null,
     createdAt: r.created_at,
@@ -109,15 +121,34 @@ export async function colonyAt(q: Q, worldId: number, region: number, patch: num
   return r.rows[0] ? fromRow(r.rows[0]) : null;
 }
 
+/**
+ * Look at the first planned dig again now, instead of at its scheduled time: resources arrived early
+ * (a forage party, a refund, a gift), or what it was waiting for was cancelled.
+ */
+export async function wakeDigPlan(q: Q, c: Colony) {
+  const plan = c.digPlan;
+  if (!plan?.chambers.length || c.buildJob) return;
+  const at = c.lastUpdated;
+  if (plan.eventId) await rescheduleEvent(q, plan.eventId, at);
+  else plan.eventId = await schedule(q, c.worldId, 'dig_plan', at, { colonyId: c.id });
+  plan.checkAt = at;
+  plan.waiting = 'ready';
+}
+
 export async function saveColony(q: Q, c: Colony) {
+  // A planned dig waiting for resources starts as soon as the stores can pay, however they filled up.
+  const plan = c.digPlan;
+  if (plan?.chambers.length && !c.buildJob && plan.waiting === 'resources' && canAfford(c.resources, chamberCost(plan.chambers[0], plannedLevel(c, 0))))
+    await wakeDigPlan(q, c);
   await q.query(
     `UPDATE colonies SET name=$2, foliage=$3, protein=$4, nectar=$5, last_updated=$6, chambers=$7, units=$8, defenses=$9,
-       build_job=$10, unit_queue=$11, npc=$12, digest_job=$13 WHERE id=$1`,
+       build_job=$10, unit_queue=$11, npc=$12, digest_job=$13, dig_plan=$14 WHERE id=$1`,
     [
       c.id, c.name, c.resources.foliage, c.resources.protein, c.resources.nectar, c.lastUpdated,
       JSON.stringify(c.chambers), JSON.stringify(c.units), JSON.stringify(c.defenses),
       c.buildJob ? JSON.stringify(c.buildJob) : null, JSON.stringify(c.unitQueue), c.npc ? JSON.stringify(c.npc) : null,
       c.digestJob ? JSON.stringify(c.digestJob) : null,
+      c.digPlan?.chambers.length ? JSON.stringify(c.digPlan) : null,
     ],
   );
 }

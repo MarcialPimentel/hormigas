@@ -30,7 +30,14 @@
 | **Honeypot Gallery** | Protected storage | Queen L4 |
 
 ## Build rules
-- One chamber construction per colony at a time (queue of 1 in MVP).
+- One chamber construction per colony at a time.
+- **Dig plan** (from Queen's Chamber 4): while a dig is under way, you can plan **one** more behind it. Numbers in [`data/formulas.json`](data/formulas.json) (`digPlan`).
+  - A planned dig costs nothing until it starts. It starts, and is paid for, the moment the diggers are free and the stores can pay, offline too. If they can't pay yet, it waits, and the Chambers screen says what for and for how long.
+  - Planning the same chamber again counts the dig in progress (Leaf Garden 12 under way → plan Leaf Garden 13). Space is reserved for both.
+  - A planned Brood Hall waits for the units being raised; a planned Pheromone Chamber waits for the research.
+  - Cancelling the dig in progress moves the planned dig up. Removing a planned dig refunds nothing, because nothing was paid.
+  - Refused at planning time: no dig in progress (dig it now instead), plan already full, chamber locked, no space, or a cost bigger than storage.
+  - Why one slot, unlocked mid-game, paid at start: it covers a night's sleep or a workday (pillar 1) without letting anyone plan a week ahead, so check-ins still matter ([01-core-loop](01-core-loop.md)). Early digs take minutes and the game is meant to be hands-on then. Paying at start means the plan can't hide resources from raids, and full storage still nudges you to come back. Never sold ([14-monetization](14-monetization.md)).
 - Brood Hall can't produce units while it is itself being upgraded.
 - Pheromone Chamber can't research while being upgraded.
 - Cancelling refunds 100% in MVP (tune later).
@@ -60,5 +67,5 @@ Small, rare surprises inside the nest, so a check-in isn't always exactly what y
 - About +4% income over a day. Not power, and the same for everyone (pillar 3).
 
 ## Open Questions
-- Should chamber queue grow (e.g., a research unlocks queue of 2)? Must never be sold for money.
+- ~~Should the chamber queue grow?~~ Decided 2026-10-30: a dig plan of one, unlocked by Queen's Chamber 4, paid when it starts (see Build rules). A second slot later, through research, only if playtests show one isn't enough. Never sold.
 - Do we want a visible penalty for destroyed chambers? Proposal: no — chambers can't be destroyed in v0.1.

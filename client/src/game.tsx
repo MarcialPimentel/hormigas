@@ -9,6 +9,7 @@ import {
   syncColony,
   type ChamberId,
   type ColonyState,
+  type DigPlan,
   type ResearchId,
 } from '@hormigas/shared';
 import { api, ApiError } from './api';
@@ -22,6 +23,8 @@ export interface ServerColony extends ColonyState {
   coords: { region: number; patch: number; spot: number };
   baseSpace: number;
   buildJob: null | { chamber: string; level: number; startAt: number; endAt: number; cost: any };
+  /** Chambers lined up behind the dig in progress, paid for when each starts (docs/04-colony.md). */
+  digPlan: null | DigPlan;
 }
 
 export interface ServerState {
@@ -88,6 +91,7 @@ const storedColony = () => {
 function upcomingTimers(s: ServerState): number[] {
   const out: number[] = [];
   if (s.colony?.buildJob) out.push(s.colony.buildJob.endAt);
+  if (s.colony?.digPlan?.checkAt) out.push(s.colony.digPlan.checkAt);
   if (s.player.researchJob) out.push(s.player.researchJob.endAt);
   const qe = s.colony ? queueEndsAt(s.colony.unitQueue) : null;
   if (qe) out.push(qe);

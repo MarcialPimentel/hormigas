@@ -2,6 +2,9 @@
 
 _Current as of Build 11 (2026-10-30)._ Newest first. One entry per build, in players' words, built from the merged PRs. Smaller PRs merged between builds are listed with the nearest build.
 
+## Next build (unreleased)
+- The dig plan: from Queen's Chamber 4, plan the next chamber while one is being dug. It starts on its own the moment the dig ends and the stores can pay, even while you're away, and costs nothing until then.
+
 ## Build 11: The full roster — 2026-10-30
 - Four new ants: the Supermajor (tramples through ranks), the Slave-maker (carries the dead home after a won raid), the Desert Ant (luckier forage parties) and the Gardener Minim (more Leaf Garden output) ([#84](https://github.com/MarcialPimentel/hormigas/pull/84)).
 - Allies through the Symbiosis research, raised like ants: Carrion Beetle, Assassin Bug, Bullet Ant and Rhinoceros Beetle ([#84](https://github.com/MarcialPimentel/hormigas/pull/84)).
@@ -9,6 +12,7 @@ _Current as of Build 11 (2026-10-30)._ Newest first. One entry per build, in pla
 - On computers the research tree fills the screen ([#86](https://github.com/MarcialPimentel/hormigas/pull/86)).
 - On computers, the Missions screen shows your patch in 3D: mounds with flags, scents, wild sites, and every party walking its scent trail at its real size; zoom down to ant height, or jump there with Ant's-eye view ([#92](https://github.com/MarcialPimentel/hormigas/pull/92)).
 - The 3D nest is sunlit: coloured soil layers, chambers lit from inside, and real 3D ants walking the tunnels at their real numbers, capped ([#90](https://github.com/MarcialPimentel/hormigas/pull/90)).
+- Living chambers in the 3D nest: stores heap up as they fill, brood follows the queue, research motes drift while research runs, and the rest grows with level ([#95](https://github.com/MarcialPimentel/hormigas/pull/95)).
 
 ## Build 10: Castes with a purpose — 2026-10-30
 - A counter triangle: Minor Soldiers beat Majors, Majors beat the new Acid Sprayer, Sprayers beat Minors ([#81](https://github.com/MarcialPimentel/hormigas/pull/81)).
