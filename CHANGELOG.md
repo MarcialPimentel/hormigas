@@ -11,6 +11,7 @@ _Current as of Build 11 (2026-10-30)._ Newest first. One entry per build, in pla
 - Six instinct researches, one per fighting caste, and a second counter layer shown as Strong vs / Weak vs in the Brood Hall ([#84](https://github.com/MarcialPimentel/hormigas/pull/84)).
 - On computers the research tree fills the screen ([#86](https://github.com/MarcialPimentel/hormigas/pull/86)).
 - On computers, the Missions screen shows your patch in 3D: mounds with flags, scents, wild sites, and every party walking its scent trail at its real size; zoom down to ant height, or jump there with Ant's-eye view ([#92](https://github.com/MarcialPimentel/hormigas/pull/92)).
+- On the 3D patch, an army-ant swarm comes on as a fan-shaped front with insects fleeing ahead of it, and battles play out where they were fought: live when a raid or swarm lands while you watch, or from any battle report with **Replay on the patch** ([#96](https://github.com/MarcialPimentel/hormigas/pull/96)).
 - The 3D nest is sunlit: coloured soil layers, chambers lit from inside, and real 3D ants walking the tunnels at their real numbers, capped ([#90](https://github.com/MarcialPimentel/hormigas/pull/90)).
 - Living chambers in the 3D nest: stores heap up as they fill, brood follows the queue, research motes drift while research runs, and the rest grows with level ([#95](https://github.com/MarcialPimentel/hormigas/pull/95)).
 

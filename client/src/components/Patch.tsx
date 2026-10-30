@@ -560,7 +560,7 @@ function WorldPicker({ region, patch, onGo }: { region: number; patch: number; o
  * A patch you can look around and act from. Opens on your own patch; "World" opens the region grid to look further.
  * `selected` highlights the current mission target when it's in view.
  */
-export function PatchView({ start, selected, onAct }: { start?: { region: number; patch: number }; selected?: Coords; onAct: (type: MissionType, at: Coords) => void }) {
+export function PatchView({ start, selected, onAct, replay }: { start?: { region: number; patch: number }; selected?: Coords; onAct: (type: MissionType, at: Coords) => void; replay?: unknown }) {
   const { colony, state } = useGame();
   const [region, setRegion] = useState(start?.region ?? colony?.coords.region ?? 1);
   const [patch, setPatch] = useState(start?.patch ?? colony?.coords.patch ?? 1);
@@ -569,7 +569,8 @@ export function PatchView({ start, selected, onAct }: { start?: { region: number
   const [world, setWorld] = useState(false);
   const [error, setError] = useState('');
   const [jumping, setJumping] = useState(false);
-  const [mode, setMode] = useState<PatchMode>(savedMode);
+  // a replay asks for the 3D patch, whatever the saved choice
+  const [mode, setMode] = useState<PatchMode>(() => (replay && finePointer() ? '3d' : savedMode()));
   const [failed3d, setFailed3d] = useState(false);
   const choose = (m: PatchMode) => {
     try {
@@ -652,7 +653,7 @@ export function PatchView({ start, selected, onAct }: { start?: { region: number
         </button>
         {show3d ? (
           <Suspense fallback={<div className="patch3d loading">Sniffing out the patch…</div>}>
-            <Patch3D region={region} patch={patch} spots={spots} selected={picked?.spot ?? null} onPick={setSel} onFail={() => setFailed3d(true)} />
+            <Patch3D region={region} patch={patch} spots={spots} selected={picked?.spot ?? null} onPick={setSel} onFail={() => setFailed3d(true)} replay={replay} />
           </Suspense>
         ) : (
         <div className="patch-scroll">

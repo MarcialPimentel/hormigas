@@ -2,6 +2,9 @@ import { addCounts, counterHintText, counterHints, type UnitCounts } from '@horm
 import { fmtCoords, fmtFull } from '../format';
 import { Counts, ResLine } from '../screens/Reports';
 
+// The replay plays on the 3D patch, which is for computers (a fine pointer and WebGL).
+const canReplay = () => typeof matchMedia !== 'undefined' && matchMedia('(pointer: fine)').matches;
+
 const bonus = (b: Record<string, number>) => {
   const parts = [
     b.mandibles ? `+${b.mandibles * 10}% attack` : '',
@@ -11,7 +14,8 @@ const bonus = (b: Record<string, number>) => {
   return parts.length ? parts.join(', ') : 'no bonuses';
 };
 
-export function BattleReport({ data }: { data: any }) {
+/** `onReplay`: act the battle out on the 3D patch (computers). */
+export function BattleReport({ data, onReplay }: { data: any; onReplay?: () => void }) {
   // a raid that met a truce or a shared scent on the way (docs/23-supercolonies.md)
   if (data.turnedBack)
     return <p className="report-body">Your soldiers reached {data.colony} ({fmtCoords(data.target)}) and turned back without a fight. {data.why} They are on their way home.</p>;
@@ -31,6 +35,13 @@ export function BattleReport({ data }: { data: any }) {
   return (
     <div className="report-body battle">
       <p className={`outcome ${youWon ? 'good' : data.winner === 'draw' ? '' : 'bad'}`}>{outcome}</p>
+      {onReplay && canReplay() && (
+        <p>
+          <button type="button" className="btn small" onClick={onReplay}>
+            Replay on the patch
+          </button>
+        </p>
+      )}
       <div className="sides">
         <section>
           <h4>Attacker: {data.attacker.name}</h4>

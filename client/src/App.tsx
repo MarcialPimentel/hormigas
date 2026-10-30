@@ -71,7 +71,7 @@ export function App() {
     { id: 'research', label: 'Research', icon: ICONS.research, render: () => <Research /> },
     { id: 'missions', label: 'Missions', icon: ICONS.missions, render: () => <Missions draft={params} />, badge: (state.incoming ?? []).filter((i: any) => i.hostile).length },
     { id: 'allies', label: 'Allies', icon: ICONS.allies, render: (n) => <Allies go={n} />, badge: state.player.pendingDiplomacy },
-    { id: 'reports', label: 'Reports', icon: ICONS.reports, render: () => <Reports />, badge: state.unreadReports },
+    { id: 'reports', label: 'Reports', icon: ICONS.reports, render: (n) => <Reports go={n} />, badge: state.unreadReports },
     { id: 'rankings', label: 'Rankings', icon: ICONS.ranks, render: () => <Rankings /> },
   ];
   if (isAdmin) screens.push({ id: 'feedback', label: 'Feedback', icon: ICONS.feedback, render: () => <FeedbackAdmin onCount={onFeedbackCount} />, badge: openFeedback });

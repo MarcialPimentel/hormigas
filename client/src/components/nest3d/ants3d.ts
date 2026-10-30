@@ -153,7 +153,7 @@ export type CargoKind = 'leaf' | 'chunk' | 'drop';
 
 const _m = new THREE.Matrix4(), _m2 = new THREE.Matrix4(), _q = new THREE.Quaternion(), _q2 = new THREE.Quaternion();
 const _p = new THREE.Vector3(), _s = new THREE.Vector3(), _c = new THREE.Color();
-const Y = V3(0, 1, 0), Z = V3(0, 0, 1);
+const X = V3(1, 0, 0), Y = V3(0, 1, 0), Z = V3(0, 0, 1);
 const CARGO_AT = new THREE.Matrix4().compose(V3(0.4, 0.22, 0), new THREE.Quaternion().setFromEuler(new THREE.Euler(0.5, 0.3, 0.25)), V3(1, 1, 1));
 
 /** One caste's ants: fill it each frame with `put`, between `begin` and `end`. Unused instances aren't drawn. */
@@ -210,6 +210,8 @@ export interface AntOpts {
   step?: number;
   color?: string | THREE.Color;
   cargo?: { kind: CargoKind; color: string } | null;
+  /** dead: on its back, legs in the air */
+  flip?: boolean;
 }
 
 /**
@@ -254,10 +256,11 @@ export function createAnts(parent: THREE.Object3D, caps: Partial<Record<Caste, n
     ant(caste: Caste, x: number, y: number, z: number, o: AntOpts = {}) {
       _q.setFromAxisAngle(Y, o.yaw ?? 0);
       if (o.pitch) _q.multiply(_q2.setFromAxisAngle(Z, o.pitch));
-      _m.compose(_p.set(x, y, z), _q, _s.setScalar(o.scale ?? 1));
+      if (o.flip) _q.multiply(_q2.setFromAxisAngle(X, Math.PI));
+      _m.compose(_p.set(x, y + (o.flip ? 0.24 * (o.scale ?? 1) : 0), z), _q, _s.setScalar(o.scale ?? 1));
       col.set(o.color ?? CHITIN[caste as keyof typeof CHITIN] ?? CHITIN.worker);
       if (!pools[caste].put(_m, col, o.step ?? 0)) return;
-      const c = o.cargo;
+      const c = o.flip ? null : o.cargo;
       if (c && loadUsed[c.kind] < loadCap) {
         const im = loads[c.kind], i = loadUsed[c.kind]++;
         im.setMatrixAt(i, _m2.multiplyMatrices(_m, CARGO_AT));

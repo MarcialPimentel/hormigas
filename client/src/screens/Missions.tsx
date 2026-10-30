@@ -49,6 +49,8 @@ export interface MissionDraft {
   target?: Coords;
   /** a patch to show (defaults to the target's patch, then your own) */
   view?: { region: number; patch: number };
+  /** a battle report's data to replay on the 3D patch */
+  replay?: unknown;
 }
 
 /** What's at the target spot, as this player knows it (scent or known colony), for the form's summary and checks. */
@@ -206,7 +208,7 @@ export function Missions({ draft }: { draft?: MissionDraft }) {
   return (
     <div className="stack">
       <Panel title="Missions">
-        <PatchView start={draft?.view ?? (draft?.target ? { region: draft.target.region, patch: draft.target.patch } : undefined)} selected={target} onAct={pick} />
+        <PatchView start={draft?.view ?? (draft?.target ? { region: draft.target.region, patch: draft.target.patch } : undefined)} selected={target} onAct={pick} replay={draft?.replay} />
       </Panel>
 
       <div ref={formRef} className="scroll-anchor" />
