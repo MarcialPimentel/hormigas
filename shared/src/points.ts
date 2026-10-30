@@ -2,7 +2,7 @@
 import { CHAMBER_IDS, FORMULAS, RESEARCH_IDS, type Resources } from './data';
 
 const PER_POINT = FORMULAS.points.resourcesPerPoint;
-import { chamberCost, researchCost, lvl, type ChamberLevels, type DefenseCounts, type ResearchLevels, type UnitCounts } from './economy';
+import { chamberCost, researchBaseCost, lvl, type ChamberLevels, type DefenseCounts, type ResearchLevels, type UnitCounts } from './economy';
 import { defensesValue, unitsValue } from './combat';
 import { total } from './resources';
 
@@ -14,7 +14,7 @@ export function chamberSpent(chambers: ChamberLevels): number {
 
 export function researchSpent(research: ResearchLevels): number {
   let sum = 0;
-  for (const id of RESEARCH_IDS) for (let l = 1; l <= lvl(research, id); l++) sum += total(researchCost(id, l));
+  for (const id of RESEARCH_IDS) for (let l = 1; l <= lvl(research, id); l++) sum += total(researchBaseCost(id, l)); // before the Nectar → Protein swap, so points don't jump
   return sum;
 }
 

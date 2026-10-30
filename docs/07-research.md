@@ -6,6 +6,15 @@
 ## Concept
 Research represents the colony evolving new instincts. It happens in the **Pheromone Chamber** and is **account-wide** (all colonies benefit). One research at a time per account.
 
+## Protein in research
+**Research pays half of its Nectar in Protein,** at 3 Protein for each Nectar (Marz, 30 Oct 2026; `formulas.json` → `cost.researchNectarToProtein`).
+- **Example:** Colony Mind 1 was 0 Foliage / 400 Protein / 600 Nectar; it now costs 0 / 1,300 / 300.
+- **Why:** battles leave lots of Protein (corpses, [08-combat](08-combat.md#why-corpses-are-protein-and-why-loot-is-the-main-profit-marz-30-oct-2026)), while Nectar is the bottleneck. Research now soaks up Protein and frees Nectar for missions and castes. Overall, research costs shift from about 35% Foliage / 41% Protein / 24% Nectar to about 28 / 62 / 10.
+- **The data stays as designed.** `research.json` keeps each research's original costs. The swap is one rule in the cost formula, easy to tune or undo.
+- **Research time doesn't change:** it's still worked out from the original Foliage + Protein, so the extra Protein doesn't slow research down.
+- **Points don't change either:** research counts at its original cost, so nobody's points (and wild-nest levels) jumped when this shipped.
+- A research already running when this shipped keeps what it paid; cancelling it refunds exactly that.
+
 ## The tech tree
 Since Build 6 research is a **tree**: research can need other research (not only a Pheromone Chamber level), it is grouped into four branches (Jaws, Harvest, Nest, Scent), and some research has a highest level. Full design, the new research and the reasoning: [21-tech-tree.md](21-tech-tree.md).
 

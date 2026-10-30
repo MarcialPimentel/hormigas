@@ -1,4 +1,4 @@
-import { addCounts, counterHintText, counterHints, type UnitCounts } from '@hormigas/shared';
+import { add, addCounts, counterHintText, counterHints, defensesValue, res, subCounts, total, unitsValue, type Resources, type UnitCounts } from '@hormigas/shared';
 import { fmtCoords, fmtFull } from '../format';
 import { Counts, ResLine } from '../screens/Reports';
 
@@ -124,6 +124,41 @@ export function BattleReport({ data, onReplay }: { data: any; onReplay?: () => v
           The fallen left <strong>{fmtFull(data.corpses)} Protein</strong> in corpses at {fmtCoords(data.target)}. Anyone can haul them — be quick.
         </p>
       )}
+      {!asAlly && <NetResult data={data} youAttacked={youAttacked} />}
     </div>
+  );
+}
+
+const signed = (n: number) => `${n >= 0 ? '+' : '−'}${fmtFull(Math.abs(n))}`;
+
+/**
+ * What the fight was worth to you, counted in what it costs to raise what you lost (docs/08-combat.md).
+ * Raiders: loot (and corpses carried) against the ants they lost, plus the corpses still on the field.
+ * Defenders: the ants, rebuilt-for-nothing defenses and food the raid cost.
+ */
+function NetResult({ data, youAttacked }: { data: any; youAttacked: boolean }) {
+  if (youAttacked) {
+    const lost: Resources = unitsValue(data.attacker?.lost ?? {});
+    const gained: Resources = add(data.loot ?? res(), res(0, data.corpsesCarried ?? 0, 0));
+    const net = total(gained) - total(lost);
+    return (
+      <div className="net-result">
+        <p className="small">
+          <strong>Net result:</strong> lost <ResLine r={lost} /> · carried home <ResLine r={gained} /> ·{' '}
+          <strong className={net >= 0 ? 'ok' : 'warn'}>{signed(net)}</strong>
+          {data.corpses > 0 && <> ({signed(net + data.corpses)} if you haul the {fmtFull(data.corpses)} Protein in corpses)</>}
+        </p>
+      </div>
+    );
+  }
+  const d = data.defender ?? {};
+  const defensesLost = subCounts(d.defensesDestroyed ?? {}, d.defensesRebuilt ?? {});
+  const lost = add(add(unitsValue(d.lost ?? {}), defensesValue(defensesLost)), data.loot ?? res());
+  if (total(lost) <= 0) return null;
+  return (
+    <p className="small net-result">
+      <strong>The fight cost you:</strong> <ResLine r={lost} /> ({fmtFull(total(lost))}, counting ants and defenses lost and food taken)
+      {data.corpses > 0 && <>. The {fmtFull(data.corpses)} Protein in corpses at your door is yours to haul if you're quick</>}.
+    </p>
   );
 }

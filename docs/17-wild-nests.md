@@ -44,7 +44,7 @@ Different species make scouting matter: the right army depends on what lives nex
 ### Raiding a nest
 - Nests have **no new-colony or strength protection**. The **bash limit** (4 wins per 24 h per attacker) still applies.
 - **Raiding a nest does not end your own new-colony protection.** It's PvE practice, not PvP.
-- Combat, loot (50% of the store, limited by cargo), corpses and defense rebuild work exactly as against a player. Minor Soldiers carry little, so players learn to bring Workers or Haulers for loot.
+- Combat, loot (**75%** of the store since 30 Oct 2026, limited by cargo; players give up 50%, [08-combat](08-combat.md)), corpses and defense rebuild work exactly as against a player. Minor Soldiers carry little, so players learn to bring Workers or Haulers for loot.
 - **The store is shared.** Everyone in the patch raids the same nest, so it's a race, not a private farm.
 - Nests can't receive transports.
 

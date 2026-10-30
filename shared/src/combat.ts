@@ -361,8 +361,12 @@ export function corpseProtein(...lost: UnitCounts[]): number {
 export const RETREAT_PCTS: readonly number[] = C.retreatOptions.pcts;
 export const isValidRetreatPct = (pct: number): boolean => RETREAT_PCTS.includes(pct);
 
-/** Share of unprotected stores a winning raid can take, in percent: 50, plus Raiding Columns. */
-export const lootPct = (attackerResearch?: ResearchLevels): number => C.lootPctOfUnprotected + researchSum(attackerResearch, 'lootPct');
+/**
+ * Share of unprotected stores a winning raid can take, in percent: 50 from players (75 from wild nests,
+ * termite mounds and spider dens), plus Raiding Columns, never more than everything.
+ */
+export const lootPct = (attackerResearch?: ResearchLevels, wild = false): number =>
+  Math.min(100, (wild ? C.lootPctOfWild : C.lootPctOfUnprotected) + researchSum(attackerResearch, 'lootPct'));
 
 /** Amount of each resource raiders could take: lootPct of what's above the protected amount. */
 export function lootable(resources: Resources, protectedEach: number, pct: number = C.lootPctOfUnprotected): Resources {
@@ -411,7 +415,11 @@ export interface BattlePreview {
 export function previewBattle(
   attacker: CombatSide,
   defender: CombatSide,
-  opts: { runs?: number; seed?: number; defenderResources?: Resources; protectedEach?: number; cargoOf?: (u: UnitCounts) => number } = {},
+  opts: {
+    runs?: number; seed?: number; defenderResources?: Resources; protectedEach?: number; cargoOf?: (u: UnitCounts) => number;
+    /** the target is a wild nest, mound or den: it gives up more loot (lootPctOfWild) */
+    wild?: boolean;
+  } = {},
 ): BattlePreview {
   const totalEntities =
     Object.values(attacker.units).reduce((a, b) => a + (b ?? 0), 0) +
@@ -432,7 +440,7 @@ export function previewBattle(
     lossA += la.foliage + la.protein + la.nectar;
     lossD += ld.foliage + ld.protein + ld.nectar;
     if (r.winner === 'attacker' && opts.defenderResources && opts.cargoOf) {
-      const l = fillCargo(lootable(opts.defenderResources, opts.protectedEach ?? 0, lootPct(attacker.research)), opts.cargoOf(r.attackerSurvivors));
+      const l = fillCargo(lootable(opts.defenderResources, opts.protectedEach ?? 0, lootPct(attacker.research, opts.wild)), opts.cargoOf(r.attackerSurvivors));
       loot += l.foliage + l.protein + l.nectar;
     }
   }

@@ -27,7 +27,7 @@ Research bonuses (Mandibles, Chitin, Guard Formation, and each caste's instinct)
 ## Outcome
 | Result | Effect |
 |---|---|
-| **Attacker wins** | Loots up to **50%** of the defender's *unprotected* resources, limited by cargo |
+| **Attacker wins** | Loots up to **50%** of a player's *unprotected* resources (**75%** of a wild nest's, termite mound's or spider den's store), limited by cargo. Raiding Columns adds to both, never past 100% |
 | **Draw** | No loot; both sides retreat with survivors |
 | **Defender wins** | No loot |
 | **Raiders fell back** | Counts as the defender holding: no loot, the surviving raiders walk home |
@@ -47,8 +47,23 @@ Loot is taken evenly across resource types where possible (fill cargo by thirds,
 - Anyone can send Workers (or v1 Carrion Beetles) to haul corpses. Defenders often get there first.
 - Corpse fields decay: −10% per hour after 24 h (encourages quick hauling, prevents permanent clutter).
 
+### Why corpses are Protein, and why loot is the main profit (Marz, 30 Oct 2026)
+Corpses are the ant version of OGame's debris field. They are all Protein because ants eat the dead (pillar 4), and only 30% comes back, so war shrinks the world economy instead of growing it.
+
+That made sense when fights were rare. With wild nests, swarms, mounds and nest raids, players fight constantly, so most of a fight's value arrived as Protein, behind a second trip, while Nectar stayed short. A won raid could read as a loss: one playtest raid lost 7,000 worth of ants for 6,000 of loot, profitable only once 4,215 Protein of corpses was hauled.
+
+So:
+- **Corpses stay Protein** (the identity is worth keeping).
+- **Loot becomes the main profit from wild things:** wild nests, termite mounds and spider dens give up **75%** of their store (`formulas.json` → `combat.lootPctOfWild`). Players and aphid herds stay at 50%.
+- **Research takes more Protein** ([07-research](07-research.md#protein-in-research)), so the Protein from corpses has somewhere to go.
+- **The battle report shows the net result** (below).
+
 ## Battle report
 Every battle produces a readable report: forces, round summaries, losses, loot, corpse field size.
+
+It ends with a **net result**, counted in what it costs to raise what was lost:
+- **For the raider:** "lost X · carried home Y · ±Z", plus what it comes to if you haul the corpses.
+- **For the defender:** what the fight cost, counting ants, defenses that didn't rebuild and food taken, plus a reminder that the corpses at its door are its to haul.
 
 **Watching it** (computers): the report's round-by-round counts are enough to act the battle out on the 3D Patch, where it was fought. **Replay on the patch** in the report opens Missions at that patch and plays it; a raid or swarm that lands on a patch you're watching plays by itself. The replay draws up to about 320 ants a side, each standing for its share of the real army, and loses them round by round to the report's exact numbers ([18-art-direction](18-art-direction.md) § In 3D). It shows the server's result; it decides nothing.
 

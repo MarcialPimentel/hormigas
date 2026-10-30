@@ -24,7 +24,7 @@ Re-run `npm run sim` after any change to `docs/data/`. If the pacing test fails,
 | | ~1.5 h | Brood Hall | Raising castes and defenses |
 | | ~2.3 h | First castes, first forage | Missions, the map, the wild nest next door |
 | | ~3.7 h | First raid on the wild nest, all founding tasks done | Combat, loot and corpses, learned safely |
-| **Growth** | ~10 h | Major Soldiers | Real raiding power |
+| **Growth** | ~13 h | Major Soldiers | Real raiding power (since research pays more in Protein, 30 Oct 2026; the sim's player doesn't fight, so it gets no corpse Protein, and real players are a little faster) |
 | | ~16 h | Queen's Chamber 4 | Honeypot Gallery, Excavation Works |
 | | ~18 h | Honeypot Gallery | A raid shield — well before the 72 h new-colony protection ends |
 | | ~33 h | Queen's Chamber 5 | |

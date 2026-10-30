@@ -82,8 +82,20 @@ export function chamberCost(id: ChamberId, level: number): Resources {
   return scale(def.baseCost, Math.pow(def.costFactor, level - 1)) as Resources;
 }
 
-export function researchCost(id: ResearchId, level: number): Resources {
+/** Research cost before the Nectar → Protein swap: the data's baseCost, doubled per level. Research time and points come from this. */
+export function researchBaseCost(id: ResearchId, level: number): Resources {
   return scale(RESEARCH[id].baseCost, Math.pow(FORMULAS.cost.researchCostFactor, level - 1));
+}
+
+/**
+ * What a research level costs. Part of its Nectar is paid in Protein instead (researchNectarToProtein):
+ * Protein piles up from battles while Nectar is the bottleneck (docs/07-research.md).
+ */
+export function researchCost(id: ResearchId, level: number): Resources {
+  const c = researchBaseCost(id, level);
+  const { share, proteinPerNectar } = FORMULAS.cost.researchNectarToProtein;
+  const swapped = Math.floor(c.nectar * share);
+  return { foliage: c.foliage, protein: c.protein + swapped * proteinPerNectar, nectar: c.nectar - swapped };
 }
 
 export interface TimeContext {
@@ -111,7 +123,8 @@ export function chamberBuildSeconds(
 }
 
 export function researchSeconds(id: ResearchId, level: number, ctx: TimeContext & { pheromone: number }): number {
-  const c = researchCost(id, level);
+  // time comes from the cost before the Nectar → Protein swap, so the swap doesn't slow research down
+  const c = researchBaseCost(id, level);
   const t = ((c.foliage + c.protein) / (FORMULAS.buildTime.researchDivisor * (1 + ctx.pheromone)) / ctx.worldSpeed) * (ctx.timeMultiplier ?? 1) * researchFactor(ctx.research, 'researchTimePct');
   return Math.max(FORMULAS.buildTime.minimumSeconds, Math.round(t));
 }
