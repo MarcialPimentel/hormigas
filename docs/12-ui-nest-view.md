@@ -10,8 +10,7 @@
 ## Screens (MVP)
 | Screen | Purpose |
 |---|---|
-| **Overview** | Colony summary: resources, workforce, active timers, incoming/outgoing missions |
-| **Nest View** | Schematic nest (below); tap a chamber to open it |
+| **Colony** (home) | The nest fills the screen (3D slab on computers, 2D nest on phones; below) with cards floating over it: resources, workforce, "Happening now" (active timers, incoming/outgoing missions), the founding task. Tap a chamber to open it. Overview and Nest View were merged into this one screen ([#44](https://github.com/MarcialPimentel/hormigas/pull/44), [#75](https://github.com/MarcialPimentel/hormigas/pull/75)) |
 | **Chambers** | List view of all chambers, costs, upgrade buttons |
 | **Brood Hall** | Raise castes and defenses |
 | **Research** | Instinct tree |
@@ -111,7 +110,7 @@ The game should *show* the colony at work, not only list timers. (Build 3 used d
   - Construction / research complete
   - Storage full
 - **Tab title badges:** `(1) Raid incoming! – Hormigas`.
-- In-game notification list on the Overview.
+- In-game: the **Happening now** list on the Colony screen shows what's under way and what's coming at you. There is no separate notification list or Notifications panel (removed after playtest feedback, [#60](https://github.com/MarcialPimentel/hormigas/pull/60)).
 
 ## Open Questions
 - Should a raid landing on the nest have its own scene (a fight at the entrance, corpses on the surface)? Planned for a later build.
