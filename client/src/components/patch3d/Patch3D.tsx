@@ -168,7 +168,7 @@ export function Patch3D({ region, patch, spots, selected, onPick, onFail, replay
           </button>
         ))}
       </div>
-      <p className="p3-hint" aria-hidden="true">Drag to move · scroll to zoom (out past the patch to rise to the garden) · right-drag to turn · tap a mound</p>
+      <p className="p3-hint" aria-hidden="true">Drag or WASD to move · scroll to zoom (out past the patch to rise to the garden) · right-drag or Q/E to turn · tap a mound</p>
     </div>
   );
 }

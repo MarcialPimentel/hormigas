@@ -8,6 +8,7 @@
 import * as THREE from 'three';
 import { WORLD } from '@hormigas/shared';
 import type { ServerState } from '../../game';
+import { moveKeys } from './keys';
 
 export interface GardenPatch {
   patch: number;
@@ -367,6 +368,17 @@ export async function createGardenScene(
     goal.tx = THREE.MathUtils.clamp(goal.tx, -45, 45);
     goal.tz = THREE.MathUtils.clamp(goal.tz, -38, 26);
   };
+  // keys: WASD or the arrows slide over the garden, Shift for faster (the garden doesn't turn)
+  const keys = moveKeys({ turn: false, listening: () => visible && !document.hidden && host.clientWidth > 1 });
+  function keyMove(dt: number) {
+    if (!keys.active()) return;
+    const { right, forward, fast } = keys.read();
+    const h = Math.max(200, host.clientHeight);
+    const px = 0.7 * h * dt * (fast ? 2.5 : 1), u = (2 * goal.dist * TANH) / h;
+    goal.tx += right * px * u;
+    goal.tz -= (forward * px * u) / Math.max(0.4, Math.sin(pitchFor(goal.dist)));
+    clampGoal();
+  }
 
   // pointer: drag to move, wheel to zoom, tap a light to dive into that patch
   const ray = new THREE.Raycaster(), ndc = new THREE.Vector2(), plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), hit = new THREE.Vector3();
@@ -468,6 +480,7 @@ export async function createGardenScene(
     if (host.clientWidth !== sized[0] || host.clientHeight !== sized[1]) fit();
     const hour = new Date(d.now).getHours();
     if (hour !== hourShown) applySky(hour);
+    keyMove(dt);
     const k = reduced ? 1 : Math.min(1, dt * 8);
     view.tx += (goal.tx - view.tx) * k;
     view.tz += (goal.tz - view.tz) * k;
@@ -506,7 +519,7 @@ export async function createGardenScene(
     const dt = Math.min(0.05, (t - last) / 1000);
     last = t;
     if (!visible || document.hidden) return;
-    if (reduced) {
+    if (reduced && !keys.active()) {
       sinceStill += dt;
       if (sinceStill < 1) return;
       sinceStill = 0;
@@ -548,6 +561,7 @@ export async function createGardenScene(
       cancelAnimationFrame(raf);
       ro.disconnect();
       io.disconnect();
+      keys.dispose();
       canvas.removeEventListener('wheel', onWheel);
       canvas.removeEventListener('pointerdown', onDown);
       canvas.removeEventListener('pointermove', onMove);

@@ -43,6 +43,7 @@ From the 3D direction proposal, [art/sunlit-microcosm.md](art/sunlit-microcosm.m
 6. **Allies are teal** (30 Oct): supercolony mates' flags, lights and threads are teal `#2F9C95`, so honey = you, teal = allies, red = hostile or wild, with no overlap.
 7. **Hero art: Claude builds the master ant in Blender** (30 Oct), with Blender open and its MCP add-on connected, after the Patch, swarm and Garden builds.
 8. **The rest lands as separate PRs** (30 Oct), each its own playtest: A the 3D Patch, B swarms and battles on the patch (replays read the per-round counts battle reports already save), C the Garden and the zoom between levels, D living chambers in the nest.
+9. **Grass gets out of the way while you move** (30 Oct): on the zoomed-out patch the grass turns see-through (to about a fifth) while the camera moves, and grows back half a second after it stops; at ant height it stays solid, since there it's the point. Still views keep the lush look. WASD / arrow keys move the camera on the patch and in the Garden, Q/E turn it on the patch.
 
 ## Palette
 Ants are lighter than the soil so they read on it. Colours sit alongside the UI palette in `client/src/styles.css`, which has a dark (soil) and a light (field-guide paper) theme following the device; the nest itself looks the same in both.
