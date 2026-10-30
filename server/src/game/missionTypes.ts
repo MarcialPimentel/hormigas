@@ -27,6 +27,7 @@ import {
   regrowHours,
   speciesKind,
   type CasteId,
+  blocksRaids,
 } from '@hormigas/shared';
 import type { Tx } from '../db';
 import type { ArrivalOutcome, Mission } from './missions';
@@ -39,7 +40,7 @@ import { defineMission, garrisonUnits } from './missions';
 import { addReport } from './reports';
 import { refreshPointsAfterCommit } from './points';
 import { discover, requireKnown, smelledBy } from './discovery';
-import { areAllies } from './diplomacy';
+import { areAllies, relationOf } from './diplomacy';
 import { DIPLOMACY_MESSAGES } from '@hormigas/shared';
 
 defineMission('transport', {
@@ -133,8 +134,10 @@ defineMission('scout', {
     const theirs = scoutLevel(defender.research);
     const detail = scoutDetail(yours, theirs, scouts);
     const homeUnits = Object.values(target.units).reduce((a, b) => a + (b ?? 0), 0);
-    const chance = scoutDetectionChance(homeUnits, scouts, yours, theirs, researchSum(attacker.research, 'scoutStealth'));
-    const caught = createRng(randomSeed())() < chance;
+    // a truce or a shared scent: the hosts know who's looking and let them be (docs/23-supercolonies.md)
+    const pact = defender.isNpc ? null : (await relationOf(q, defender.id, attacker.id, at))?.relation ?? null;
+    const chance = blocksRaids(pact) ? 0 : scoutDetectionChance(homeUnits, scouts, yours, theirs, researchSum(attacker.research, 'scoutStealth'));
+    const caught = chance > 0 && createRng(randomSeed())() < chance;
 
     const nest = nestStateOf(target);
     const data: any = {
@@ -146,6 +149,7 @@ defineMission('scout', {
       detail,
       detectionChance: chance,
       caught,
+      ...(pact ? { pact } : {}),
       resources: target.resources,
       protectedEach: protectedAmount(target.chambers, defender.research),
     };
@@ -174,8 +178,9 @@ defineMission('scout', {
     await addReport(q, m.worldId, m.playerId, 'scout', `Scout report: ${target.name} (${coordsKey(m.target)})`, data, at);
     if (!defender.isNpc) await addReport(
       q, m.worldId, defender.id, 'scouted',
-      caught ? `Your colony killed ${scouts} enemy ${scouts === 1 ? 'scout' : 'scouts'}` : `Enemy scouts spotted near ${target.name}`,
-      { colony: target.name, from: attacker.username, origin: m.origin, scouts, caught },
+      pact ? `${attacker.username}'s scouts visited ${target.name}`
+        : caught ? `Your colony killed ${scouts} enemy ${scouts === 1 ? 'scout' : 'scouts'}` : `Enemy scouts spotted near ${target.name}`,
+      { colony: target.name, from: attacker.username, origin: m.origin, scouts, caught, ...(pact ? { pact } : {}) },
       at,
     );
     if (caught) {

@@ -1,5 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
-import { CASTES, CHAMBERS, DEFENSES, RESEARCH, RESOURCE_IDS } from '@hormigas/shared';
+import { CASTES, CHAMBERS, DEFENSES, RESEARCH, RESOURCE_IDS, type Relation } from '@hormigas/shared';
+
+/** "Because of …": why a pact partner's scouts are let be (docs/23-supercolonies.md). */
+const PACT_PHRASE: Record<Relation, string> = { truce: 'your truce', truce_ending: 'your truce (still in its notice)', ally: 'your shared supercolony scent', fading: 'your shared scent (still fading)' };
 import { api } from '../api';
 import { useGame } from '../game';
 import { fmtClock, fmtCoords, fmtFull } from '../format';
@@ -101,6 +104,7 @@ function ReportBody({ r, go }: { r: Report; go?: Nav }) {
               <>{d.colony} ({fmtCoords(d.coords)}), owned by {d.owner}.{' '}</>
             )}
             {d.caught ? <strong className="warn">Your scouts were caught after reporting back what they saw.</strong> : null}
+            {d.pact ? <span className="muted">Because of {PACT_PHRASE[d.pact as Relation]}, they let your scouts go home safely, and they know you looked.</span> : null}
           </p>
           {d.raidArrivesAt ? (
             <p className="warn small">Your raid hadn't arrived yet when your scouts looked (it lands at {fmtClock(d.raidArrivesAt)}). Scouts are faster than soldiers, so this is the colony before the fight.</p>
@@ -138,6 +142,7 @@ function ReportBody({ r, go }: { r: Report; go?: Nav }) {
       return (
         <p className="report-body">
           {d.scouts} {d.scouts === 1 ? 'scout' : 'scouts'} from {d.from} ({fmtCoords(d.origin)}) {d.caught ? 'were caught and killed near' : 'looked over'} {d.colony}.
+          {d.pact ? ` Because of ${PACT_PHRASE[d.pact as Relation]}, your ants let them look and go home.` : ''}
         </p>
       );
     case 'transport':

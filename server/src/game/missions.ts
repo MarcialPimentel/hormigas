@@ -34,9 +34,11 @@ import {
   type Coords,
   type Resources,
   type UnitCounts,
+  blocksRaids,
 } from '@hormigas/shared';
 import type { Q, Tx } from '../db';
 import { now } from '../clock';
+import { relationOf, relationsOf } from './diplomacy';
 import { GameError, notFound, forbidden } from '../errors';
 import { advance, colonyAt, getPlayer, lockColony, lockOwnColony, saveColony, type Colony, type Player } from '../colony';
 import { cancelEvent, onEvent, schedule, type GameEvent } from '../events';
@@ -268,8 +270,10 @@ export async function launchMission(
   await saveMission(q, m);
   // warn whoever is on the receiving end: the colony's owner, or the ants tending a herd (docs/24-npcs.md)
   const warned = isHerdState(o.targetColony?.npc) ? o.targetColony!.npc.tender?.playerId : o.targetColony?.playerId;
-  if (o.targetColony && warned && warned !== o.playerId)
-    notify(warned, { type: 'incoming', missionType: o.type, from: o.senderName, arriveAt: o.arriveAt, colony: o.targetColony.name });
+  if (o.targetColony && warned && warned !== o.playerId) {
+    const pact = (await relationOf(q, warned, o.playerId))?.relation ?? null;
+    notify(warned, { type: 'incoming', missionType: o.type, from: o.senderName, arriveAt: o.arriveAt, colony: o.targetColony.name, pact });
+  }
   return m;
 }
 
@@ -505,7 +509,7 @@ export function missionView(m: Mission) {
 /** Hostile or friendly missions heading to the player's colonies (attacker's units hidden unless scouts). */
 export async function incomingMissions(q: Q, playerId: number) {
   const r = await q.query(
-    `SELECT m.id, m.type, m.depart_at, m.arrive_at, m.target_colony_id, m.origin_region, m.origin_patch, m.origin_spot, m.units,
+    `SELECT m.id, m.type, m.player_id, m.depart_at, m.arrive_at, m.target_colony_id, m.origin_region, m.origin_patch, m.origin_spot, m.units,
             CASE WHEN m.type = 'swarm' THEN $2 WHEN p.is_npc THEN o.name ELSE p.username END AS username, p.is_npc,
             c.npc->>'kind' = 'herd' AS at_herd, c.region AS t_region, c.patch AS t_patch, c.spot AS t_spot
        FROM missions m JOIN colonies c ON c.id = m.target_colony_id JOIN players p ON p.id = m.player_id
@@ -513,20 +517,27 @@ export async function incomingMissions(q: Q, playerId: number) {
       WHERE (c.player_id = $1 OR (c.npc->'tender'->>'playerId')::int = $1) AND m.player_id <> $1 AND m.status = 'outbound' ORDER BY m.arrive_at`,
     [playerId, SWARM.name],
   );
-  return r.rows.map((row: any) => ({
-    id: row.id,
-    type: row.type,
-    /** when it set off, so the nest view can show how far along it is */
-    departAt: row.depart_at,
-    arriveAt: row.arrive_at,
-    targetColonyId: row.target_colony_id,
-    origin: { region: row.origin_region, patch: row.origin_patch, spot: row.origin_spot },
-    from: row.username,
-    /** a wild nest, not a player */
-    wild: row.is_npc,
-    hostile: row.type === 'raid' || row.type === 'scout' || row.type === 'swarm',
-    /** aimed at the ants you keep at an aphid herd, not at a colony (docs/24-npcs.md) */
-    herd: row.at_herd ? { region: row.t_region, patch: row.t_patch, spot: row.t_spot } : null,
-    unitCount: Object.values(row.units as Record<string, number>).reduce((a, b) => a + b, 0),
-  }));
+  // a truce or a shared scent with the sender: their scouts are visitors, and their raids turn back (docs/23-supercolonies.md)
+  const pacts = await relationsOf(q, playerId, [...new Set(r.rows.filter((row: any) => !row.is_npc).map((row: any) => Number(row.player_id)))]);
+  return r.rows.map((row: any) => {
+    const pact = row.is_npc ? null : pacts.get(Number(row.player_id))?.relation ?? null;
+    return {
+      id: row.id,
+      type: row.type,
+      /** when it set off, so the nest view can show how far along it is */
+      departAt: row.depart_at,
+      arriveAt: row.arrive_at,
+      targetColonyId: row.target_colony_id,
+      origin: { region: row.origin_region, patch: row.origin_patch, spot: row.origin_spot },
+      from: row.username,
+      /** a wild nest, not a player */
+      wild: row.is_npc,
+      /** your pact with the sender, if any: truce, truce_ending, ally or fading */
+      pact,
+      hostile: row.type === 'swarm' || ((row.type === 'raid' || row.type === 'scout') && !blocksRaids(pact)),
+      /** aimed at the ants you keep at an aphid herd, not at a colony (docs/24-npcs.md) */
+      herd: row.at_herd ? { region: row.t_region, patch: row.t_patch, spot: row.t_spot } : null,
+      unitCount: Object.values(row.units as Record<string, number>).reduce((a, b) => a + b, 0),
+    };
+  });
 }

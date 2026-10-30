@@ -41,6 +41,9 @@ export interface RelationInfo {
   until?: number;
 }
 
+/** A relation in a word or two, for tags and lists. */
+export const RELATION_NAMES: Record<Relation, string> = { ally: 'Supercolony mate', fading: 'Scent fading', truce: 'Truce', truce_ending: 'Truce ending' };
+
 /** Relations that stop raids. All of them do: that's the point of a slow break-up. */
 export const blocksRaids = (r: Relation | null | undefined) => r != null;
 

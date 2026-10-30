@@ -15,6 +15,7 @@ import {
 import { api, ApiError } from './api';
 import { pushNotification, setTitleBadge } from './notify';
 import { emitMoment } from './moments';
+import { incomingAlert } from './incoming';
 import { useAway, type AwaySummary } from './away';
 
 export interface ServerColony extends ColonyState {
@@ -206,11 +207,10 @@ export function GameProvider({ children }: { children: ReactNode }) {
           if (!pushNotification(msg.report.title, undefined, `report-${msg.report.id}`) && document.visibilityState === 'visible') toast('ok', msg.report.title);
           if (msg.report.type === 'nest_event' && msg.report.kind) emitMoment({ kind: 'nest_event', event: msg.report.kind });
         }
-        if (msg.type === 'incoming' && (msg.missionType === 'raid' || msg.missionType === 'scout' || msg.missionType === 'swarm')) {
-          const text =
-            msg.missionType === 'swarm' ? `An army ant swarm is heading for ${msg.colony}!` : msg.missionType === 'raid' ? `Raid incoming from ${msg.from}!` : `Enemy scouts heading for ${msg.colony}`;
-          if (!pushNotification(text, `Arrives ${new Date(msg.arriveAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`, 'incoming'))
-            toast('error', text);
+        const alert = msg.type === 'incoming' ? incomingAlert(msg) : null;
+        if (alert) {
+          if (!pushNotification(alert, `Arrives ${new Date(msg.arriveAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`, 'incoming'))
+            toast(msg.pact ? 'ok' : 'error', alert);
         }
       };
       ws.onclose = () => {

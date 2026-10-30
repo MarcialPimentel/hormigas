@@ -113,6 +113,33 @@ describe('truces', () => {
     await a.post(`/api/truces/${id}/end`);
     await clock.advance(truceNoticeMs(speed) + 60_000);
   });
+
+  it("a truce partner's scouts aren't enemies: never killed, always reported as a visit", async () => {
+    await a.post('/api/truces', { playerId: idb });
+    const id = (await b.get('/api/diplomacy')).truces[0].id;
+    await b.post(`/api/truces/${id}/accept`);
+    // so many ants at home that any other scout is certain to be caught
+    await setColony(ca.id, { units: { ...ARMY, minor_soldier: 1_000_000 }, last_updated: clock.t });
+    const sent = await b.post('/api/missions', { colonyId: cb.id, type: 'scout', target: ca.coords, units: { scout: 1 } });
+    expect(sent.error).toBeUndefined();
+    const coming = (await a.get('/api/state')).incoming.find((i: any) => i.id === sent.mission.id);
+    expect(coming).toMatchObject({ type: 'scout', pact: 'truce', hostile: false });
+    await clock.advance(sent.mission.arriveAt - clock.t + 10);
+    expect((await b.get('/api/reports')).reports.find((r: any) => r.type === 'scout').data).toMatchObject({ caught: false, pact: 'truce' });
+    expect((await a.get('/api/reports')).reports.find((r: any) => r.type === 'scouted')).toMatchObject({ title: `bee's scouts visited ${ca.name}`, data: { caught: false, pact: 'truce' } });
+    await clock.advance(sent.mission.arriveAt - sent.mission.departAt + 10);
+    expect((await b.get('/api/state')).colony.units.scout).toBe(ARMY.scout);
+
+    // once the truce has run out, the same scouts are enemies again
+    await a.post(`/api/truces/${id}/end`);
+    await clock.advance(truceNoticeMs(speed) + 60_000);
+    await setColony(ca.id, { units: { ...ARMY, minor_soldier: 1_000_000 }, last_updated: clock.t });
+    const again = await b.post('/api/missions', { colonyId: cb.id, type: 'scout', target: ca.coords, units: { scout: 1 } });
+    expect((await a.get('/api/state')).incoming.find((i: any) => i.id === again.mission.id)).toMatchObject({ pact: null, hostile: true });
+    await clock.advance(again.mission.arriveAt - clock.t + 10);
+    expect((await a.get('/api/reports')).reports.find((r: any) => r.type === 'scouted')).toMatchObject({ title: 'Your colony killed 1 enemy scout' });
+    await rearm();
+  });
 });
 
 describe('supercolonies', () => {
