@@ -611,6 +611,8 @@ export interface Stage {
   inset: { left: number; right: number; top: number; bottom: number };
   /** the order being written in Deploy, drawn on the patch */
   order?: { from: Coords; to: Coords; label: string } | null;
+  /** open Deploy without picking a spot first */
+  onDeploy?: () => void;
 }
 
 export function PatchView({ start, selected, onAct, replay, go: nav, pm: given, stage }: {
@@ -733,6 +735,11 @@ export function PatchView({ start, selected, onAct, replay, go: nav, pm: given, 
               </p>
             )}
             <div className="war-place-actions">
+              {stage.onDeploy && !stage.deploy && (
+                <button className="btn small primary" onClick={stage.onDeploy} title="Open the mission card: pick who goes, and where">
+                  Send ants…
+                </button>
+              )}
               <button className="btn ghost small" onClick={() => nearest(-1)} disabled={jumping} title="The nearest colony before this patch">
                 ‹ Nearest
               </button>

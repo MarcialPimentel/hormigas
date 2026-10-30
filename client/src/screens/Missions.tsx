@@ -150,7 +150,7 @@ export function Missions({ draft, go }: { draft?: MissionDraft; go?: (screen: st
         replay={draft?.replay}
         go={go}
         pm={pm}
-        stage={{ side: underWay, deploy: deploy ? <div className="deploy">{form}</div> : null, focus, order: deploy ? { from: colony.coords, to: target, label: MISSION_LABEL[type] } : null, inset: { left: deploy ? 300 : 16, right: 200, top: 80, bottom: 40 } }}
+        stage={{ side: underWay, deploy: deploy ? <div className="deploy">{form}</div> : null, focus, order: deploy ? { from: colony.coords, to: target, label: MISSION_LABEL[type] } : null, onDeploy: () => setDeploy(true), inset: { left: deploy ? 300 : 16, right: 200, top: 80, bottom: 40 } }}
       />
     );
   return (
