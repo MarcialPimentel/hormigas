@@ -13,6 +13,7 @@ import { fmtDuration } from '../../format';
 import { CHITIN, antUniforms, createAnts, type CargoKind } from '../nest3d/ants3d';
 import { leftOf } from '../nestScene';
 import type { Spot, SpotColony } from '../Patch';
+import { moveKeys } from './keys';
 import { TIMING, drawnFor, momentAt, planBattle, replayLength, type BattlePlan } from './battle';
 
 export interface PatchData {
@@ -206,7 +207,8 @@ export async function createPatchScene(
   }
 
   // ---------- grass: instanced blades, swaying in the shader, lit from behind ----------
-  const grassU = { uTime: { value: 0 }, uWind: { value: 0.1 }, uGlow: { value: 0.22 }, uRim: { value: new THREE.Color(0.28, 0.36, 0.05) } };
+  // uFade: 0 solid, 1 see-through (while you move around the zoomed-out patch, so the ants show)
+  const grassU = { uTime: { value: 0 }, uWind: { value: 0.1 }, uGlow: { value: 0.22 }, uRim: { value: new THREE.Color(0.28, 0.36, 0.05) }, uFade: { value: 0 } };
   const bladeGeo = (() => {
     const g = keep(new THREE.PlaneGeometry(1, 1, 1, 5));
     const p = g.attributes.position, col: number[] = [];
@@ -221,8 +223,11 @@ export async function createPatchScene(
     g.computeVertexNormals();
     return g;
   })();
+  // two looks of the same grass: solid, and see-through (blended, writing no depth so ants and trails show behind it)
   const grassMat = keep(new THREE.MeshStandardMaterial({ vertexColors: true, side: THREE.DoubleSide, roughness: 0.72 }));
-  grassMat.onBeforeCompile = (sh) => {
+  const grassSeeThrough = keep(new THREE.MeshStandardMaterial({ vertexColors: true, side: THREE.DoubleSide, roughness: 0.72, transparent: true, depthWrite: false }));
+  const GRASS_MIN_OPACITY = 0.18;
+  const grassShader = (see: boolean) => (sh: Parameters<THREE.Material['onBeforeCompile']>[0]) => {
     Object.assign(sh.uniforms, grassU);
     sh.vertexShader = 'uniform float uTime;\nuniform float uWind;\n' + sh.vertexShader.replace('#include <begin_vertex>', `
       vec3 transformed = vec3(position);
@@ -230,12 +235,18 @@ export async function createPatchScene(
       float bend = position.y * position.y * uWind;
       transformed.x += sin(wp) * bend;
       transformed.z += (0.5 + 0.5 * cos(wp * 0.73)) * bend * 0.6;`);
-    sh.fragmentShader = 'uniform vec3 uRim;\nuniform float uGlow;\n' + sh.fragmentShader.replace('#include <dithering_fragment>', `
+    sh.fragmentShader = 'uniform vec3 uRim;\nuniform float uGlow;\nuniform float uFade;\n' + sh.fragmentShader.replace('#include <dithering_fragment>', `
       gl_FragColor.rgb += vColor * uGlow;
       float rimG = 1.0 - abs(dot(normalize(normal), normalize(vViewPosition)));
       gl_FragColor.rgb += uRim * rimG * rimG;
+      ${see ? `gl_FragColor.a *= 1.0 - uFade * ${(1 - GRASS_MIN_OPACITY).toFixed(2)};` : ''}
       #include <dithering_fragment>`);
   };
+  grassMat.onBeforeCompile = grassShader(false);
+  grassSeeThrough.onBeforeCompile = grassShader(true);
+  grassSeeThrough.customProgramCacheKey = () => 'grass-see-through';
+  grassMat.customProgramCacheKey = () => 'grass-solid';
+  let grassInst: THREE.InstancedMesh | null = null;
   const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), e = new THREE.Euler(), v3 = new THREE.Vector3(), s3 = new THREE.Vector3(), cl = new THREE.Color();
   /** Blades are kept off the spots' centres so mounds and sites stay clear. */
   const nearSpot = (x: number, z: number, r: number) => {
@@ -262,7 +273,7 @@ export async function createPatchScene(
       const h = (far ? rr(2.5, 6) : rr(0.6, 1.9) * tall) * (z < -HALF_D ? 1.5 : 1);
       blades.push({ x, z, h, w: rr(0.1, 0.2), tint: t === 'sandy_soil' ? '#E8E2B0' : t === 'wilds' ? '#D2E2B0' : pick(['#FFFFFF', '#F2F7E0', '#E6F0C8', '#FFF6D8']) });
     }
-    const inst = new THREE.InstancedMesh(bladeGeo, grassMat, blades.length);
+    const inst = (grassInst = new THREE.InstancedMesh(bladeGeo, grassMat, blades.length));
     blades.forEach((b, i) => {
       q.setFromEuler(e.set(rr(-0.15, 0.15), rnd() * 6.28, rr(-0.12, 0.12)));
       m4.compose(v3.set(b.x, gH(b.x, b.z) - 0.02, b.z), q, s3.set(b.w, b.h, b.w * 1.5));
@@ -1148,6 +1159,40 @@ export async function createPatchScene(
     goal.pitch = pitchFor(goal.dist);
   };
 
+  // keys: WASD or the arrows slide across the patch the way the camera faces, Q/E turn, Shift for faster
+  const keys = moveKeys({ turn: true, listening: () => visible && !document.hidden && host.clientWidth > 1 });
+  function keyMove(dt: number) {
+    if (!keys.active()) return;
+    const { right, forward, turn, fast } = keys.read();
+    const sp = fast ? 2.5 : 1;
+    // the same as dragging the ground, about two thirds of the view's height a second
+    const h = Math.max(200, host.clientHeight);
+    const px = 0.7 * h * dt * sp, u = (2 * goal.dist * TANH) / h;
+    const dx = -right * px, dy = forward * px;
+    const c = Math.cos(goal.yaw), s = Math.sin(goal.yaw);
+    goal.tx -= (dx * c + dy * s) * u;
+    goal.tz -= ((-dx * s + dy * c) * u) / Math.max(0.35, Math.sin(goal.pitch));
+    goal.yaw += turn * 1.6 * sp * dt;
+    clampGoal();
+  }
+
+  // grass: see-through while the camera moves over the zoomed-out patch, so the columns show; it grows back
+  // half a second after the camera settles. At ant height the grass stays solid: there, it's the point.
+  let grassFade = 0, settled = 1;
+  const lastCam = new THREE.Vector3().copy(camera.position);
+  function fadeGrass(dt: number) {
+    const moved = camera.position.distanceTo(lastCam) > view.dist * 0.0004;
+    lastCam.copy(camera.position);
+    settled = moved || keys.active() ? 0 : settled + dt;
+    const high = smooth(12, homeDist * 0.5, view.dist);
+    const want = settled < 0.5 ? high : 0;
+    grassFade = reduced ? want : want > grassFade ? Math.min(want, grassFade + dt * 6) : Math.max(want, grassFade - dt * 2.5);
+    grassU.uFade.value = grassFade;
+    if (!grassInst) return;
+    grassInst.material = grassFade > 0.01 ? grassSeeThrough : grassMat;
+    grassInst.castShadow = !coarse && grassFade < 0.5;
+  }
+
   // pointer: drag to move across the patch (or turn, with the right button or shift), wheel or pinch to zoom, tap a spot
   const ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
   const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), hit = new THREE.Vector3();
@@ -1300,6 +1345,7 @@ export async function createPatchScene(
     if (host.clientWidth !== sized[0] || host.clientHeight !== sized[1]) fit();
     const hour = new Date(d.now).getHours();
     if (hour !== hourShown) applySky(hour);
+    keyMove(dt);
     const k = reduced ? 1 : Math.min(1, dt * 8);
     view.tx += (goal.tx - view.tx) * k;
     view.tz += (goal.tz - view.tz) * k;
@@ -1307,6 +1353,7 @@ export async function createPatchScene(
     view.dist += (goal.dist - view.dist) * k;
     view.pitch = pitchFor(view.dist);
     placeCamera();
+    fadeGrass(dt);
     for (const p of plumes) {
       p.line.position.set(p.base.x + (reduced ? 0 : Math.sin(clock * 0.9 + p.phase) * 0.12), p.base.y, p.base.z);
       p.line.rotation.y = reduced ? 0 : Math.sin(clock * 0.5 + p.phase) * 0.4;
@@ -1334,8 +1381,8 @@ export async function createPatchScene(
     const dt = Math.min(0.05, (t - last) / 1000);
     last = t;
     if (!visible || document.hidden) return;
-    if (reduced) {
-      // still: draw about once a second so columns and timers stay current
+    // still: draw about once a second so columns and timers stay current (but every frame while a key moves the view)
+    if (reduced && !keys.active()) {
       sinceStill += dt;
       if (sinceStill < 1) return;
       sinceStill = 0;
@@ -1412,6 +1459,7 @@ export async function createPatchScene(
       cancelAnimationFrame(raf);
       ro.disconnect();
       io.disconnect();
+      keys.dispose();
       canvas.removeEventListener('wheel', onWheel);
       canvas.removeEventListener('pointerdown', onDown);
       canvas.removeEventListener('pointermove', onMove);

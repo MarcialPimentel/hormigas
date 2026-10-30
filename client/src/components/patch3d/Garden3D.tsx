@@ -76,7 +76,7 @@ export function Garden3D({ region, patch, onPick, onFail, onBack, onGrid, inset 
           {scale}
         </div>
       )}
-      <p className="p3-hint" aria-hidden="true">Each light is a patch where colonies live · honey is you, teal your supercolony · tap one to go there</p>
+      <p className="p3-hint" aria-hidden="true">Each light is a patch where colonies live · honey is you, teal your supercolony · tap one to go there · drag or WASD to move</p>
     </div>
   );
 }
