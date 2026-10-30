@@ -37,20 +37,6 @@ import { fmtDuration, fmtFull, fmtNum } from '../format';
 import { Cost, Countdown, Panel, Pic } from '../components/ui';
 import { whyShort } from '../describe';
 
-export const CASTE_BLURB: Record<string, string> = {
-  worker: 'Cheap all-rounders. Carry loot and haul corpses.',
-  minor_soldier: 'Fast and cheap. In numbers they swarm and pull down Major Soldiers, as Pheidole minors gang up on big intruders.',
-  scout: 'Spies on other colonies. Nearly useless in a fight.',
-  major_soldier: 'Big-headed and armoured. Crush Acid Sprayers and Trap-jaw Ants, but drown under a swarm of Minor Soldiers.',
-  acid_sprayer: 'Formica soldiers spray formic acid over a crowd. They mow down Minor Soldiers and Workers, but die fast to Major Soldiers.',
-  trap_jaw: 'Jaws locked open at 180°, snapping shut faster than anything in nature. They tear apart defenses, but are fragile against ants: send them with an escort.',
-  hauler: 'Big carriers for loot, transports and corpses.',
-  winged_queen: 'Flies off to found a new colony. Tap an empty spot in Missions and send her with a Found colony mission.',
-  soil_wall: 'One per colony. Its huge guard soaks up blows aimed at your other defenses, round after round.',
-  pit_trap: 'An antlion-style pit: cheap, Foliage only, and small ants that rush in tumble down it. Deadly to Minor Soldiers and Workers.',
-  acid_sentry: 'Formic acid emplacement. Strong, and dangerous to Major Soldiers.',
-  narrow_tunnel: 'One per colony. Raiders squeeze in a few at a time: in the first round only half of them can fight. It is never destroyed.',
-};
 
 const FEED = FORMULAS.brood.feeding;
 const FEED_TEXT: Record<Feeding, string> = {
@@ -192,7 +178,7 @@ export function Brood() {
                       {queued[id] ? ` · ${fmtFull(queued[id])} queued` : ''}
                     </span>
                   </div>
-                  <p className="blurb">{CASTE_BLURB[id]}</p>
+                  <p className="blurb">{def.blurb}</p>
                   <Stats id={id} def={def} />
                 </div>
                 <div className="row-side">
