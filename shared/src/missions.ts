@@ -107,15 +107,30 @@ export function missionUnitProblem(type: MissionType, units: UnitCounts): { code
   return bad ? def.unitError ?? { code: 'bad_units', message: 'Those units can’t go on this mission.', short: 'Wrong units for this mission.' } : null;
 }
 
-/** Slots in one pool: how many missions use it and how many there are. */
-export function missionSlotUsage(missions: { type: string }[], pool: MissionSlot, research: ResearchLevels): { used: number; max: number } {
-  const used = missions.filter((m) => (MISSION_TYPES[m.type as MissionType]?.slot ?? 'mission') === pool).length;
+/**
+ * Slots in one pool: how many missions use it and how many there are.
+ * Mission slots are shared by all of a player's colonies. Forage slots belong to each colony
+ * (docs/09-missions.md): pass the sending colony's id so only its own forage parties count.
+ */
+export function missionSlotUsage(
+  missions: { type: string; originColonyId?: number }[],
+  pool: MissionSlot,
+  research: ResearchLevels,
+  colonyId?: number,
+): { used: number; max: number } {
+  const used = missions.filter(
+    (m) =>
+      (MISSION_TYPES[m.type as MissionType]?.slot ?? 'mission') === pool &&
+      (pool !== 'forage' || colonyId === undefined || m.originColonyId === colonyId),
+  ).length;
   return { used, max: pool === 'forage' ? forageSlots(research) : missionSlots(research) };
 }
 
 /** What to say when every slot in a pool is taken. */
 export const noSlotsMessage = (pool: MissionSlot, max: number): string =>
-  pool === 'forage' ? 'All forage parties are already out.' : `All ${max} mission slots are in use. Research Colony Mind for more.`;
+  pool === 'forage'
+    ? `All ${max === 1 ? 'this colony’s forage parties are' : `${max} of this colony’s forage parties are`} already out. Each colony forages on its own; Foraging Instinct adds more.`
+    : `All ${max} mission slots are in use. Research Colony Mind for more.`;
 
 // ---------- speed and timing ----------
 

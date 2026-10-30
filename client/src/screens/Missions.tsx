@@ -125,7 +125,7 @@ export function Missions({ draft }: { draft?: MissionDraft }) {
   const fuel = speed > 0 && valid ? missionFuel(chosen, dist, speedPct) : 0;
   const pool = rules.slot;
   const missions: any[] = state.missions ?? [];
-  const { used, max } = missionSlotUsage(missions, pool, research);
+  const { used, max } = missionSlotUsage(missions, pool, research, colony.id);
 
   const problems: string[] = [];
   if (!valid) problems.push(wildsOk ? 'Pick a real patch.' : 'Pick a real colony spot (spots 1–12).');
@@ -212,7 +212,7 @@ export function Missions({ draft }: { draft?: MissionDraft }) {
       </Panel>
 
       <div ref={formRef} className="scroll-anchor" />
-      <Panel title="Send a mission" actions={<span className="muted">{used}/{max} {pool === 'forage' ? 'forage parties' : 'slots'} in use</span>}>
+      <Panel title="Send a mission" actions={<span className="muted">{used}/{max} {pool === 'forage' ? 'forage parties from this colony' : 'slots'} in use</span>}>
         <div className="seg" role="radiogroup" aria-label="Mission type">
           {ENABLED_MISSIONS.filter((t) => t !== 'hold' || state.player.supercolony || type === 'hold').map((t) => (
             <button

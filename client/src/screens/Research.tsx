@@ -47,7 +47,7 @@ export const RESEARCH_BLURB: Record<string, string> = {
   crushing_heads: 'Supermajors grow heavier heads. +5% attack and health per level, for Supermajors only. Needs Chitin 3 and Guard Formation 2, like the Supermajor.',
   propaganda_glands: 'Slave-makers spray chemicals that set defenders on each other. +5% attack and health per level, for Slave-makers only.',
   // Harvest
-  foraging_instinct: 'Better luck on forage expeditions. +1 forage slot every 2 levels. Level 2 unlocks the Desert Ant.',
+  foraging_instinct: 'Better luck on forage expeditions. +1 forage slot in every colony every 2 levels. Level 2 unlocks the Desert Ant.',
   group_hunting: 'Recruit nestmates to bring down big prey. +5% Protein from Hunting Grounds per level.',
   aphid_husbandry: 'Tend and guard aphid herds. +5% Nectar from Aphid Pastures per level.',
   fungus_farming: 'Grow fungus on chewed leaves, like leafcutter ants. +5% Foliage from Leaf Gardens per level. Level 1 unlocks the Gardener Minim.',

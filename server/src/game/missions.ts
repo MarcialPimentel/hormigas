@@ -221,7 +221,7 @@ export async function sendMission(q: Tx, playerId: number, input: SendInput): Pr
 
   // slots
   const active = await activeMissions(q, playerId);
-  const { used, max } = missionSlotUsage(active, fixed.slot, player.research);
+  const { used, max } = missionSlotUsage(active, fixed.slot, player.research, colony.id);
   if (used >= max) throw new GameError('no_slots', noSlotsMessage(fixed.slot, max));
 
   const origin = { region: colony.region, patch: colony.patch, spot: colony.spot };
