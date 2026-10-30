@@ -103,6 +103,11 @@ export function BattleReport({ data }: { data: any }) {
           Loot carried off: <ResLine r={data.loot} />
         </p>
       )}
+      {data.corpsesCarried > 0 && (
+        <p className="small">
+          The raiders' Slave-makers carried <strong>{fmtFull(data.corpsesCarried)} Protein</strong> of the dead straight home.
+        </p>
+      )}
       {data.corpses > 0 && (
         <p className="small">
           The fallen left <strong>{fmtFull(data.corpses)} Protein</strong> in corpses at {fmtCoords(data.target)}. Anyone can haul them — be quick.

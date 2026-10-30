@@ -10,6 +10,7 @@ import {
   raidBlockMessage,
   distance,
   forageFindCap,
+  partyForageLuck,
   maxColonies,
   colonyCapMessage,
   groupCargo,
@@ -277,8 +278,8 @@ export function Missions({ draft }: { draft?: MissionDraft }) {
             {state.player.firstForage && (
               <p className="first-forage small">Your first forage party is sure to come back with food.</p>
             )}
-            <ForageOdds luck={lvl(research, 'foraging_instinct')} />
-            <ForageCap capacity={capacity} findCap={forageFindCap(state.player.points.total, lvl(research, 'foraging_instinct'))} />
+            <ForageOdds luck={partyForageLuck(research, chosen)} />
+            <ForageCap capacity={capacity} findCap={forageFindCap(state.player.points.total, partyForageLuck(research, chosen))} />
           </fieldset>
         )}
 

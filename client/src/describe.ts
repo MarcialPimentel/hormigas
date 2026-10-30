@@ -75,6 +75,6 @@ export function chamberEffect(
 }
 
 /** Plain-language reason a colony can't pay `cost`, or '' if it can. */
-export function whyShort(colony: { chambers: any; terrain: TerrainId; resources: Resources; research?: ResearchLevels }, cost: Resources, worldSpeed: number): string {
-  return explainShortfall(shortfalls(cost, colony.resources, storageCapacity(colony.chambers, colony.research), productionPerHour(colony.chambers, colony.terrain, worldSpeed, colony.research)));
+export function whyShort(colony: { chambers: any; terrain: TerrainId; resources: Resources; research?: ResearchLevels; units?: Partial<Record<string, number>> }, cost: Resources, worldSpeed: number): string {
+  return explainShortfall(shortfalls(cost, colony.resources, storageCapacity(colony.chambers, colony.research), productionPerHour(colony.chambers, colony.terrain, worldSpeed, colony.research, colony.units)));
 }
