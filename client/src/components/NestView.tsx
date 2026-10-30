@@ -102,7 +102,7 @@ export function NestView({ nav, onSwitch3d, fill }: { nav: Nav; onSwitch3d?: () 
   const chambersKey = JSON.stringify(colony?.chambers ?? {});
   const buildKey = colony?.buildJob ? `${colony.buildJob.chamber}:${colony.buildJob.startAt}:${colony.buildJob.endAt}` : '';
   const totalUnits = colony ? Object.values(colony.units).reduce((a, b) => a + (b ?? 0), 0) : 0;
-  const soldiers = colony ? (colony.units.minor_soldier ?? 0) + (colony.units.major_soldier ?? 0) : 0;
+  const soldiers = colony ? (colony.units.minor_soldier ?? 0) + (colony.units.major_soldier ?? 0) + (colony.units.acid_sprayer ?? 0) + (colony.units.trap_jaw ?? 0) : 0;
   const antBucket = `${Math.min(60, Math.ceil(totalUnits / 3))}:${Math.min(18, Math.ceil(soldiers / 4))}`;
 
   // (re)build the scene
