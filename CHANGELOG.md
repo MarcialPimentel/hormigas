@@ -8,6 +8,7 @@ _Current as of Build 11 (2026-10-30)._ Newest first. One entry per build, in pla
 - Six instinct researches, one per fighting caste, and a second counter layer shown as Strong vs / Weak vs in the Brood Hall ([#84](https://github.com/MarcialPimentel/hormigas/pull/84)).
 - On computers the research tree fills the screen ([#86](https://github.com/MarcialPimentel/hormigas/pull/86)).
 - The 3D nest is sunlit: coloured soil layers, chambers lit from inside, and real 3D ants walking the tunnels at their real numbers, capped ([#90](https://github.com/MarcialPimentel/hormigas/pull/90)).
+- Living chambers in the 3D nest: stores heap up as they fill, brood follows the queue, research motes drift while research runs, and the rest grows with level ([#95](https://github.com/MarcialPimentel/hormigas/pull/95)).
 
 ## Build 10: Castes with a purpose — 2026-10-30
 - A counter triangle: Minor Soldiers beat Majors, Majors beat the new Acid Sprayer, Sprayers beat Minors ([#81](https://github.com/MarcialPimentel/hormigas/pull/81)).
