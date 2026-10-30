@@ -24,6 +24,14 @@ const F = FORMULAS.forage as typeof FORMULAS.forage & {
 /** A player's forage luck: the forageLuck effect of Foraging Instinct. */
 export const forageLuck = (research: ResearchLevels | undefined): number => researchSum(research, 'forageLuck');
 
+/** Desert Ants in a party (Build 11): every antsPerLuck of them count as one more luck level, up to maxLuck. */
+export const desertAntLuck = (units: Partial<Record<string, number>> | undefined): number =>
+  Math.min(FORMULAS.desertAnts.maxLuck, Math.floor((units?.desert_ant ?? 0) / FORMULAS.desertAnts.antsPerLuck));
+
+/** A forage party's luck: Foraging Instinct plus the Desert Ants it brings. */
+export const partyForageLuck = (research: ResearchLevels | undefined, units?: Partial<Record<string, number>>): number =>
+  forageLuck(research) + desertAntLuck(units);
+
 /**
  * Outcome weights after forage luck: each level moves shiftPerLevel points from bad outcomes to good ones,
  * but never removes all the risk (each bad outcome keeps keepPct of its weight).

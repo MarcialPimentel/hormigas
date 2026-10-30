@@ -39,10 +39,18 @@ export const CASTE_IDS = [
   // Build 10: the counter triangle and siege (docs/05-castes-units.md)
   'acid_sprayer',
   'trap_jaw',
+  // Build 11: the full roster (docs/05-castes-units.md)
+  'supermajor',
+  'slave_maker',
+  'desert_ant',
+  'gardener_minim',
   'hauler',
   'winged_queen',
+  // allies (Symbiosis): other insects living with the colony, raised like castes
   'carrion_beetle',
+  'assassin_bug',
   'bullet_ant',
+  'rhino_beetle',
   // NPC-only (docs/24-npcs.md)
   'termite_worker',
   'termite_soldier',
@@ -82,6 +90,13 @@ export const RESEARCH_IDS = [
   'scent_reading',
   'tandem_running',
   'chemical_mimicry',
+  // Instincts (Build 11): each sharpens one caste (Jaws branch)
+  'swarm_raiding',
+  'armoured_heads',
+  'acid_glands',
+  'snap_reflex',
+  'crushing_heads',
+  'propaganda_glands',
 ] as const;
 export type ResearchId = (typeof RESEARCH_IDS)[number];
 
@@ -136,8 +151,14 @@ export interface CasteDef extends CombatStats {
   unlock: Requirements;
   canHaulCorpses?: boolean;
   corpsesOnly?: boolean;
+  /** Slave-maker: corpses (Protein) each one carries home straight from a won raid. */
+  corpseCargo?: number;
+  /** Trample: when a bite kills, the damage left over carries on into up to this many more enemies (big units; docs/08-combat.md). */
+  trample?: number;
   /** Castes this one beats by sheer numbers at equal cost, not by frenzy (shown as a counter; docs/05-castes-units.md). */
   outnumbers?: string[];
+  /** Castes this one beats by sheer toughness and trample (big units), not by frenzy. Shown as a counter like outnumbers. */
+  overpowers?: string[];
   /** Lives only in NPC colonies (termites, spiders): never raised by players. */
   npcOnly?: boolean;
 }
@@ -159,8 +180,8 @@ export interface DefenseDef extends CombatStats {
  * (economy.ts), so a key works whichever research gives it, and levels from several research add up.
  */
 export const RESEARCH_NUMBER_EFFECTS = [
-  // combat (combat.ts)
-  'attackPct', 'guardPct', 'healthPct', 'defensePct', 'lootPct',
+  // combat (combat.ts). casteAttackPct / casteHealthPct only boost the research's own `caste` (instincts).
+  'attackPct', 'guardPct', 'healthPct', 'defensePct', 'lootPct', 'casteAttackPct', 'casteHealthPct',
   // economy (economy.ts)
   'foliagePct', 'proteinPct', 'nectarPct', 'storagePct', 'protectedPct', 'buildTimePct', 'unitTimePct', 'researchTimePct', 'space',
   // missions and the map (world.ts, forage.ts)
@@ -184,6 +205,8 @@ export interface ResearchDef {
   maxLevel?: number;
   baseCost: Resources;
   unlock: Requirements;
+  /** Instincts: the one caste this research boosts (its casteAttackPct / casteHealthPct apply only to it). */
+  caste?: CasteId;
   effect: Partial<Record<ResearchNumberEffect, number> & Record<ResearchUnlockFlag, boolean>>;
 }
 export interface TerrainDef {

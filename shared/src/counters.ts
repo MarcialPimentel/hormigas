@@ -14,10 +14,10 @@ const PLAYER_FIGHTERS: FighterId[] = [
 /** Frenzy this high or more counts as a counter. Lower frenzy (×2) is an edge, not a counter. */
 export const COUNTER_MIN_FRENZY = 3;
 
-type Fighter = { frenzy?: Record<string, number>; outnumbers?: string[] };
+type Fighter = { frenzy?: Record<string, number>; outnumbers?: string[]; overpowers?: string[] };
 const statsOf = (id: string): Fighter | undefined => (CASTES as Record<string, Fighter>)[id] ?? (DEFENSES as Record<string, Fighter>)[id];
-/** Does `a` counter `b`: strong frenzy against it, or beats it by numbers. */
-export const counters = (a: string, b: string): boolean => (statsOf(a)?.frenzy?.[b] ?? 1) >= COUNTER_MIN_FRENZY || !!statsOf(a)?.outnumbers?.includes(b);
+/** Does `a` counter `b`: strong frenzy against it, or beats it by numbers (outnumbers) or by toughness (overpowers). */
+export const counters = (a: string, b: string): boolean => (statsOf(a)?.frenzy?.[b] ?? 1) >= COUNTER_MIN_FRENZY || !!statsOf(a)?.outnumbers?.includes(b) || !!statsOf(a)?.overpowers?.includes(b);
 export const fighterName = (id: string): string => (CASTES as Record<string, { name: string }>)[id]?.name ?? (DEFENSES as Record<string, { name: string }>)[id]?.name ?? id;
 const isCaste = (id: string) => CASTE_IDS.includes(id as CasteId);
 

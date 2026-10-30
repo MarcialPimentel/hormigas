@@ -51,6 +51,21 @@ function sumEffect(research: ResearchLevels | undefined, key: ResearchNumberEffe
   return sum;
 }
 
+/**
+ * Instincts (docs/21-tech-tree.md): a percentage effect summed only over research aimed at `caste`
+ * (research.json "caste"), as a fraction. Acid Glands 3 → casteAttackPct 0.3 for Acid Sprayers only.
+ */
+export function casteResearchFraction(research: ResearchLevels | undefined, caste: string, key: 'casteAttackPct' | 'casteHealthPct'): number {
+  if (!research) return 0;
+  let sum = 0;
+  for (const [id, level] of Object.entries(research)) {
+    const def = RESEARCH[id as ResearchId];
+    const v = def?.effect[key];
+    if (def?.caste === caste && typeof v === 'number' && level) sum += (v / 100) * level;
+  }
+  return sum;
+}
+
 /** A percentage research effect as a multiplier: researchSum 15 → 1.15, -30 → 0.7. Never below 0.1. */
 export const researchFactor = (research: ResearchLevels | undefined, key: ResearchNumberEffect): number =>
   Math.max(0.1, 1 + researchSum(research, key) / 100);
@@ -151,8 +166,29 @@ export function chamberOutputPerHour(
   return { resource: r, amount };
 }
 
-/** Resources produced per hour by a colony (base income + every producing chamber) × world speed. */
-export function productionPerHour(chambers: ChamberLevels, terrain: TerrainId, worldSpeed = 1, research?: ResearchLevels): Resources {
+// ---------- Gardener Minims (Build 11, docs/03-economy.md) ----------
+
+/** The caste that tends the fungus garden. */
+export const GARDENER: CasteId = 'gardener_minim';
+const GARDEN = FORMULAS.gardeners;
+
+/** How many Gardener Minims a colony can put to work: perLeafGardenLevel per Leaf Garden level. */
+export const gardenerCap = (chambers: ChamberLevels): number => GARDEN.perLeafGardenLevel * lvl(chambers, 'leaf_garden');
+
+/** Gardener Minims at home that count (capped). */
+export const gardenersCounted = (chambers: ChamberLevels, units?: UnitCounts): number => Math.min(units?.[GARDENER] ?? 0, gardenerCap(chambers));
+
+/** Extra Foliage per hour from ONE counted Gardener Minim: pctEach % of the colony's Leaf Garden output. */
+export function gardenerFoliagePerHour(chambers: ChamberLevels, terrain: TerrainId, worldSpeed = 1, research?: ResearchLevels): number {
+  const made = chamberOutputPerHour('leaf_garden', lvl(chambers, 'leaf_garden'), terrain, research, 1, workforce(chambers).ratio);
+  return ((made?.amount ?? 0) * GARDEN.pctEach) / 100 * worldSpeed;
+}
+
+/**
+ * Resources produced per hour by a colony (base income + every producing chamber) × world speed.
+ * With `units`, Gardener Minims at home add their share to the Leaf Gardens.
+ */
+export function productionPerHour(chambers: ChamberLevels, terrain: TerrainId, worldSpeed = 1, research?: ResearchLevels, units?: UnitCounts): Resources {
   const out = res(
     RESOURCES_DATA.baseIncomePerHour.foliage,
     RESOURCES_DATA.baseIncomePerHour.protein,
@@ -163,7 +199,9 @@ export function productionPerHour(chambers: ChamberLevels, terrain: TerrainId, w
     const made = chamberOutputPerHour(id, lvl(chambers, id), terrain, research, 1, ratio);
     if (made) out[made.resource] += made.amount;
   }
-  return scale(out, worldSpeed);
+  const scaled = scale(out, worldSpeed);
+  scaled.foliage += gardenersCounted(chambers, units) * gardenerFoliagePerHour(chambers, terrain, worldSpeed, research);
+  return scaled;
 }
 
 // ---------- storage ----------
@@ -200,12 +238,14 @@ export function protectedAmount(chambers: ChamberLevels, research?: ResearchLeve
  * Advance resources by `seconds` of production. Production stops at the storage cap,
  * but amounts already above the cap (from raids/missions) are never reduced.
  */
-export function accrue(current: Resources, perHour: Resources, caps: Resources, seconds: number): Resources {
+export function accrue(current: Resources, perHour: Resources, caps: Resources, seconds: number, extra?: Resources): Resources {
   const out = { ...current };
   if (seconds <= 0) return out;
   for (const r of RESOURCE_IDS) {
     if (out[r] >= caps[r]) continue;
-    out[r] = Math.min(caps[r], out[r] + (perHour[r] * seconds) / 3600);
+    // `extra`: production that started part-way through (Gardener Minims hatching). Production only ever
+    // adds, so clamping the total at the cap once is exact.
+    out[r] = Math.min(caps[r], out[r] + (perHour[r] * seconds) / 3600 + (extra?.[r] ?? 0));
   }
   return out;
 }
