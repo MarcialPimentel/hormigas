@@ -20,7 +20,7 @@ _Current as of Build 11 (2026-10-30)._ Hormigas has no GitHub milestones: each b
 | 9 | More wild things ([#67](https://github.com/MarcialPimentel/hormigas/issues/67)) | done |
 | 10 | Castes with a purpose ([#80](https://github.com/MarcialPimentel/hormigas/issues/80)) | done |
 | 11 | The full roster ([#83](https://github.com/MarcialPimentel/hormigas/issues/83)) | **current** (live) |
-| — | Tuning: gathering ×2 ([#107](https://github.com/MarcialPimentel/hormigas/pull/107)) | in review |
+| — | Between builds, live and listed under "Next build (unreleased)" in the CHANGELOG: dig plan ([#94](https://github.com/MarcialPimentel/hormigas/pull/94)), forage slots per colony ([#99](https://github.com/MarcialPimentel/hormigas/pull/99)), gathering ×2 ([#107](https://github.com/MarcialPimentel/hormigas/pull/107)), fights pay in loot ([#111](https://github.com/MarcialPimentel/hormigas/pull/111)), meeting the ants in the 3D nest ([#108](https://github.com/MarcialPimentel/hormigas/pull/108), [#110](https://github.com/MarcialPimentel/hormigas/pull/110)), grass that clears from view ([#109](https://github.com/MarcialPimentel/hormigas/pull/109), [#112](https://github.com/MarcialPimentel/hormigas/pull/112)) | done (live) |
 | 12 | Reasons to come back: daily colony tasks, Diapause, Field Journal | next (no issue yet) |
 | v1 | Supercolonies stage B, joint raids on spider dens, more defenses | later |
 
@@ -80,7 +80,6 @@ Keep the MVP **brutally small**. Its only job is to answer: *is the core loop fu
 - Joint raids on spider dens (bosses from [24-npcs](24-npcs.md))
 - More defenses (Sticky Resin; the Narrow Tunnel shipped in Build 10)
 - Reasons to come back (next, Build 12): daily colony tasks with no streak penalty, Diapause (vacation mode), a Field Journal of achievements and titles
-- Vacation mode
 
 ## Later ideas
 - **Species as classes:** Leafcutters (economy), Army Ants (nomadic raiders), Honeypot ants (storage), Weaver ants (defense), Slave-maker ants (steal brood).

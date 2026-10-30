@@ -28,7 +28,7 @@ Pher = Pheromone Chamber level in the colony doing the research. Costs are level
 | Research | Needs | Effect per level | Cap | The ant behaviour |
 |---|---|---|---|---|
 | **Formic Acid** | Pher 4, Mandibles 3, Chitin 2 | Defenses +10% attack, guard and health | — | Formicine ants spray formic acid from the gaster. |
-| **Raiding Columns** | Pher 5, Mandibles 5, Guard Formation 3, Pheromone Trails 4 | Winning raids take +5% more of unprotected stores (50% → 65%) | 3 | Army ants and slave-making ants raid in long columns. |
+| **Raiding Columns** | Pher 5, Mandibles 5, Guard Formation 3, Pheromone Trails 4 | Winning raids take +5% more loot per level (players' unprotected stores 50% → 65%; wild nests, mounds and dens 75% → 90%) | 3 | Army ants and slave-making ants raid in long columns. |
 | **Nest Plugging** | Pher 5, Chitin 4, Guard Formation 4 | +25% protected storage | — | Turtle and door-head ants (phragmosis) plug the entrance with their heads. |
 | **Group Hunting** | Pher 3, Mandibles 1, Pheromone Trails 2 | +5% Protein from Hunting Grounds | — | Recruitment trails bring nestmates to prey too big for one ant. |
 | **Aphid Husbandry** *(was "later", now playable)* | Pher 3 | +5% Nectar from Aphid Pastures | — | Ants guard and "milk" aphids for honeydew. |
