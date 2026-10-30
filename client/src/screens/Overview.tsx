@@ -4,6 +4,7 @@ import {
   TERRAIN,
   productionPerHour,
   protectedAmount,
+  queueEndsAt,
   spaceMax,
   spaceUsed,
   storageCapacity,
@@ -124,13 +125,16 @@ export function Overview({ go }: { go: (screen: string, params?: any) => void })
       )}
     </div>
   );
-  const happening = (
-    <Panel title="Happening now">
-      <ActivityList go={go} />
-    </Panel>
-  );
   // the way up to the war room: what's out there right now, one tap from the full view
   const out = (state.missions?.length ?? 0) + (state.incoming?.length ?? 0);
+  // digs, research and brood; missions and raids live in Under way, so they aren't listed twice. With parties
+  // out and nothing else going on, the card steps aside rather than nag.
+  const busyAtHome = !!(colony.buildJob || colony.digPlan?.chambers[0] || state.player.researchJob || queueEndsAt(colony.unitQueue) || colony.digestJob);
+  const happening = busyAtHome || out === 0 ? (
+    <Panel title="Happening now">
+      <ActivityList go={go} trips={false} quiet={out > 0} />
+    </Panel>
+  ) : null;
   const underWay = (
     <Panel
       title="Under way"
