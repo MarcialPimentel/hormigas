@@ -1,3 +1,4 @@
+import { addCounts, counterHintText, counterHints, type UnitCounts } from '@hormigas/shared';
 import { fmtCoords, fmtFull } from '../format';
 import { Counts, ResLine } from '../screens/Reports';
 
@@ -17,8 +18,12 @@ export function BattleReport({ data }: { data: any }) {
   const youAttacked = data.perspective === 'attacker';
   const asAlly = data.perspective === 'ally';
   const youWon = (data.winner === 'attacker') === youAttacked && data.winner !== 'draw';
-  const outcome =
-    data.winner === 'draw'
+  const fellBack = data.retreatedAfterRound != null;
+  const outcome = fellBack
+    ? youAttacked
+      ? `Your raiders fell back after round ${data.retreatedAfterRound}, having lost more than ${data.retreatPct}% of their strength. No loot.`
+      : `The raiders fell back after round ${data.retreatedAfterRound}. ${asAlly ? 'Your ally' : 'Your colony'} held.`
+    : data.winner === 'draw'
       ? 'Draw — both sides still standing after six rounds.'
       : youWon
         ? youAttacked ? 'Victory. Your raiders broke the defense.' : asAlly ? 'Your soldiers helped your ally hold.' : 'Your colony held.'
@@ -78,9 +83,29 @@ export function BattleReport({ data }: { data: any }) {
           </tbody>
         </table>
       )}
+      {/* what in the enemy's force struck your castes again and again, and what counters it (docs/05-castes-units.md) */}
+      {(() => {
+        const allyUnits = (data.defender.allies ?? []).reduce((u: UnitCounts, a: any) => addCounts(u, a.units ?? {}), {});
+        const mine: UnitCounts = youAttacked ? data.attacker.lost ?? {} : asAlly ? data.defender.allies?.[data.allyIndex]?.lost ?? {} : data.defender.lost ?? {};
+        const hints = youAttacked
+          ? counterHints(mine, addCounts(data.defender.units ?? {}, allyUnits), data.defender.defenses ?? {})
+          : counterHints(mine, data.attacker.units ?? {});
+        return hints.length > 0 ? (
+          <div className="counter-hints">
+            {hints.map((h) => (
+              <p key={h.lost} className="small counter-hint">{counterHintText(h)}</p>
+            ))}
+          </div>
+        ) : null;
+      })()}
       {data.winner === 'attacker' && (
         <p>
           Loot carried off: <ResLine r={data.loot} />
+        </p>
+      )}
+      {data.corpsesCarried > 0 && (
+        <p className="small">
+          The raiders' Slave-makers carried <strong>{fmtFull(data.corpsesCarried)} Protein</strong> of the dead straight home.
         </p>
       )}
       {data.corpses > 0 && (

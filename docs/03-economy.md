@@ -33,6 +33,11 @@ Real honeypot ants store food in their own bodies. In Hormigas they are the colo
 - Raiders can only take from the unprotected remainder.
 - This is the key fix for the "lost everything overnight" quit moment, while keeping risk for hoarding.
 
+## Gardener Minims (Build 11)
+The tiniest leafcutter workers weed and tend the fungus garden. Each Gardener Minim **at home** adds 0.5% to the colony's Leaf Garden output, counting at most 4 per Leaf Garden level (Leaf Garden 10 → up to 40 minims, +20%). Numbers: `formulas.json` → `gardeners`.
+- Minims away on missions don't count. They fight like Workers, so a raid can kill some (Marz, 30 Oct 2026: yes, but capped).
+- Compute-don't-tick: production uses the minims at home when the colony was last settled, and minims hatching in the Brood Hall while the player is away are paid from the moment they hatch (`syncColony`), so away time is never paid at the wrong rate. A test checks one big jump equals many small steps.
+
 ## Mission fuel
 - Every mission consumes Nectar based on distance, unit count and unit type.
 - Makes Nectar strategically important and turns distance into a real cost.

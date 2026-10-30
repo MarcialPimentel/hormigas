@@ -20,6 +20,10 @@ import {
   digestDeliveredAt,
   digestProteinPerHour,
   DIGEST_RULES,
+  fighterName,
+  strongAgainst,
+  weakAgainst,
+  type FighterId,
   FEEDINGS,
   FORMULAS,
   type Feeding,
@@ -33,17 +37,6 @@ import { fmtDuration, fmtFull, fmtNum } from '../format';
 import { Cost, Countdown, Panel, Pic } from '../components/ui';
 import { whyShort } from '../describe';
 
-export const CASTE_BLURB: Record<string, string> = {
-  worker: 'Cheap all-rounders. Carry loot and haul corpses.',
-  minor_soldier: 'Fast and cheap. Good early raiders and fodder. Shred workers and scouts.',
-  scout: 'Spies on other colonies. Nearly useless in a fight.',
-  major_soldier: 'The colony’s main fighters. Tear through minor soldiers.',
-  hauler: 'Big carriers for loot, transports and corpses.',
-  winged_queen: 'Flies off to found a new colony. Tap an empty spot in Missions and send her with a Found colony mission.',
-  soil_wall: 'One per colony. Huge guard that soaks up blows for the whole defense.',
-  pit_trap: 'Cheap, Foliage-only trap. Good at absorbing an attack.',
-  acid_sentry: 'Formic acid emplacement. Strong, and dangerous to major soldiers.',
-};
 
 const FEED = FORMULAS.brood.feeding;
 const FEED_TEXT: Record<Feeding, string> = {
@@ -55,8 +48,10 @@ const FEED_TEXT: Record<Feeding, string> = {
 const affordableCount = (cost: Resources, have: Resources) =>
   Math.max(0, Math.min(...RESOURCE_IDS.filter((r) => cost[r] > 0).map((r) => Math.floor(have[r] / cost[r]))));
 
-function Stats({ def }: { def: any }) {
-  const frenzy = Object.entries(def.frenzy ?? {}) as [string, number][];
+function Stats({ id, def }: { id: string; def: any }) {
+  if (def.chokepoint) return null; // the tunnel doesn't fight; its blurb says what it does
+  const strong = strongAgainst(id as FighterId);
+  const weak = weakAgainst(id as FighterId);
   return (
     <dl className="stats">
       <div><dt>Attack</dt><dd>{fmtNum(def.attack)}</dd></div>
@@ -64,10 +59,17 @@ function Stats({ def }: { def: any }) {
       <div><dt>Health</dt><dd>{fmtNum(def.health)}</dd></div>
       {'speed' in def && <div><dt>Speed</dt><dd>{fmtNum(def.speed)}</dd></div>}
       {'cargo' in def && def.cargo > 0 && <div><dt>Cargo</dt><dd>{fmtNum(def.cargo)}</dd></div>}
-      {frenzy.length > 0 && (
+      {/* who beats whom, read from the frenzy numbers (docs/05-castes-units.md) */}
+      {strong.length > 0 && (
         <div className="wide">
-          <dt>Frenzy</dt>
-          <dd>{frenzy.map(([t, n]) => `vs ${(CASTES as any)[t]?.name ?? (DEFENSES as any)[t]?.name ?? t} ×${n}`).join(', ')}</dd>
+          <dt>Strong vs</dt>
+          <dd>{strong.map(fighterName).join(', ')}</dd>
+        </div>
+      )}
+      {weak.length > 0 && (
+        <div className="wide">
+          <dt>Weak vs</dt>
+          <dd>{weak.map(fighterName).join(', ')}</dd>
         </div>
       )}
     </dl>
@@ -176,8 +178,8 @@ export function Brood() {
                       {queued[id] ? ` · ${fmtFull(queued[id])} queued` : ''}
                     </span>
                   </div>
-                  <p className="blurb">{CASTE_BLURB[id]}</p>
-                  <Stats def={def} />
+                  <p className="blurb">{def.blurb}</p>
+                  <Stats id={id} def={def} />
                 </div>
                 <div className="row-side">
                   {missing.length || brood === 0 ? (

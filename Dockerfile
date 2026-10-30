@@ -8,7 +8,12 @@ COPY shared/package.json shared/
 COPY server/package.json server/
 COPY client/package.json client/
 RUN npm ci
-COPY . .
+# Only what the client build reads, so changes to docs, art sources or server code
+# don't force a fresh client build (the build cache reuses this step).
+COPY tsconfig.base.json ./
+COPY docs/data docs/data
+COPY shared shared
+COPY client client
 RUN npm run build -w client
 
 FROM node:22-slim

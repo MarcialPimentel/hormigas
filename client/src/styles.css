@@ -241,6 +241,7 @@ input:focus, textarea:focus { border-color: var(--honey-ink); outline: none; }
 .bar > span { display: block; height: 100%; background: var(--honey); transition: width 1s linear; }
 
 .active-job { display: flex; flex-wrap: wrap; gap: 0.5rem 1rem; align-items: center; }
+.active-job + .planned-job { margin-top: 0.6rem; padding-top: 0.6rem; border-top: 1px dashed var(--seam); }
 
 .activity { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
 .activity-link {
@@ -261,7 +262,7 @@ input:focus, textarea:focus { border-color: var(--honey-ink); outline: none; }
 .stats .wide { flex-basis: 100%; }
 .stats dt { color: var(--muted); }
 .stats dd { margin: 0; font-weight: 700; }
-.count-form { display: flex; gap: 0.4rem; align-items: center; flex-wrap: nowrap; }
+.count-form { display: flex; gap: 0.4rem; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
 .count-form input { width: 6.5rem; text-align: right; padding: 0.45rem 0.55rem; }
 .queue { display: grid; gap: 0.4rem; }
 .queue-item { display: flex; justify-content: space-between; gap: 0.75rem; flex-wrap: wrap; padding: 0.5rem 0.75rem; background: var(--soil); border-radius: var(--r-sm); }
@@ -438,6 +439,9 @@ pre.report-body { white-space: pre-wrap; overflow-x: auto; }
 
 /* ---------- combat ---------- */
 .preview { margin-top: 1rem; padding: 0.75rem; border: 1px solid var(--seam); border-radius: var(--r-sm); display: grid; gap: 0.5rem; }
+/* who counters what, in battle previews and reports (Build 10) */
+.counter-hint { margin: 0; padding: 0.35rem 0.6rem; border-left: 3px solid var(--danger); background: var(--soil); border-radius: 0 var(--r-sm) var(--r-sm) 0; }
+.counter-hints { display: grid; gap: 0.35rem; margin: 0.5rem 0; }
 .preview-head { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem; }
 .odds { display: flex; height: 10px; border-radius: 999px; overflow: hidden; background: var(--soil); }
 .odds .win { background: var(--leaf); }
@@ -489,6 +493,31 @@ pre.report-body { white-space: pre-wrap; overflow-x: auto; }
 .nest-motion { position: absolute; left: 10px; top: 6px; font: inherit; font-size: 0.75rem; color: #efe4d2; background: rgba(35, 26, 20, 0.8); border: 1px solid transparent; padding: 2px 8px; border-radius: 999px; cursor: pointer; }
 .nest-motion:hover, .nest-motion:focus-visible { border-color: var(--honey); }
 .nest-switch { left: auto; right: 10px; }
+
+/* ---------- 3D patch (components/patch3d) ---------- */
+.patch3d { container-type: inline-size; position: relative; min-width: 0; height: clamp(380px, 46vw, 560px); border-radius: var(--r-sm); overflow: hidden; background: #B8DCEA; }
+.patch3d.loading { display: grid; place-items: center; color: #2b1d13; font-weight: 700; }
+.patch-row.p3 { align-items: center; }
+.p3-canvas { display: block; width: 100%; height: 100%; touch-action: none; cursor: grab; }
+.p3-canvas.pointing { cursor: pointer; }
+.p3-labels { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+.p3-label {
+  position: absolute; transform: translate(-50%, -100%);
+  display: flex; flex-direction: column; align-items: center; line-height: 1.15;
+  font-size: 0.7rem; font-weight: 700; white-space: nowrap; color: #2b1d13;
+  background: rgba(251, 246, 234, 0.92); border: 1px solid rgba(43, 29, 19, 0.25); border-radius: 999px; padding: 1px 8px;
+}
+.p3-label small { font-weight: 400; font-size: 0.62rem; color: #5a4636; }
+.p3-label.mine { background: #F2C14E; border-color: #2b1d13; }
+.p3-label.ally { background: #BFE6E2; border-color: #2F9C95; }
+.p3-label.wild { border-color: #C4473A; }
+.p3-label.scent { background: rgba(251, 246, 234, 0.7); font-style: italic; font-weight: 400; }
+.p3-trip { transform: translate(-50%, -100%); transition: none; }
+.p3-tools { position: absolute; left: 10px; top: 10px; display: flex; gap: 6px; }
+.p3-scale { position: absolute; right: 10px; bottom: 10px; display: flex; align-items: center; gap: 6px; font-size: 0.72rem; font-weight: 700; color: #2b1d13; background: rgba(251, 246, 234, 0.9); padding: 2px 10px; border-radius: 999px; pointer-events: none; }
+.p3-scale i { display: block; width: 40px; height: 6px; border: 2px solid #2b1d13; border-top: 0; }
+.p3-hint { position: absolute; left: 10px; bottom: 10px; margin: 0; font-size: 0.68rem; color: #efe4d2; background: rgba(35, 26, 20, 0.7); padding: 2px 10px; border-radius: 999px; white-space: nowrap; pointer-events: none; }
+@container (max-width: 680px) { .p3-hint { display: none; } }
 
 /* ---------- 3D nest (components/nest3d) ---------- */
 .nest.n3 { background: #A9CFE0; }
@@ -593,8 +622,20 @@ pre.report-body { white-space: pre-wrap; overflow-x: auto; }
 
 /* ---------- research tech tree (client/src/components/ResearchTree.tsx; docs/18-art-direction.md) ---------- */
 .tt-wrap { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0.9rem; }
-.content:has(.tt-wrap) { max-width: 1240px; } /* the tree gets the width of a big screen */
 @media (min-width: 760px) { .tt-wrap { grid-template-columns: minmax(0, 1fr) 280px; align-items: start; } }
+@media (min-width: 1280px) { .tt-wrap { grid-template-columns: minmax(0, 1fr) 320px; } }
+/* on a computer the tree fills the screen below the resource bar, like the nest on the Colony screen;
+   the tree box scrolls inside, the page itself doesn't */
+@media (min-width: 900px) {
+  .app:has(.tt-wrap) { height: 100vh; grid-template-rows: auto auto minmax(0, 1fr); }
+  .content:has(.tt-wrap) { max-width: none; min-height: 0; padding-bottom: 1.25rem; display: flex; flex-direction: column; }
+  .content:has(.tt-wrap) > .stack { flex: 1; min-height: 520px; grid-template-rows: auto minmax(0, 1fr); }
+  .content:has(.tt-wrap) > .stack > .panel:has(.tt-wrap) { display: flex; flex-direction: column; min-height: 0; }
+  .content:has(.tt-wrap) .tt-wrap { flex: 1; min-height: 0; align-items: stretch; }
+  .content:has(.tt-wrap) .tt-main { display: flex; flex-direction: column; min-height: 0; }
+  .content:has(.tt-wrap) .tt-scroll { flex: 1; max-height: none; }
+  .content:has(.tt-wrap) .tt-card { position: static; align-self: start; max-height: 100%; overflow: auto; }
+}
 .tt-main { min-width: 0; }
 .tt-scroll { overflow: auto; max-height: min(72vh, 660px); border: 1px solid var(--seam); border-radius: var(--r-sm); background: var(--soil); overscroll-behavior: contain; }
 .tt-heads { position: sticky; top: 0; z-index: 3; height: 26px; background: var(--soil); border-bottom: 1px solid var(--seam); }

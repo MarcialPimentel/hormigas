@@ -6,6 +6,8 @@ import {
   corpseDecayFactor,
   corpseFieldAmount,
   corpseProtein,
+  corpseCarry,
+  res,
   createRng,
   fillCargo,
   groupCargo,
@@ -153,7 +155,8 @@ export async function resolveRaid(q: Tx, m: Mission, at: number, opts: { attacke
   const allyPlayers = await Promise.all(garrisons.map((g) => getPlayer(q, g.playerId)));
   const allyStart = garrisons.map((g) => nonZero(g.units));
   const result = simulateBattle(
-    { units: startAttacker, research: attacker.research },
+    // only player raids carry a fall-back order; wild nests and swarms fight to the end
+    { units: startAttacker, research: attacker.research, retreatPct: m.retreatPct ?? 0 },
     { units: startDefender, defenses: target.defenses, research: defender.research, allies: garrisons.map((g, i) => ({ units: allyStart[i], research: allyPlayers[i].research })) },
     rng,
   );
@@ -179,7 +182,10 @@ export async function resolveRaid(q: Tx, m: Mission, at: number, opts: { attacke
   const allies = garrisons.map((g, i) => ({ name: allyPlayers[i].username, units: allyStart[i], lost: nonZero(result.alliesLost[i]) }));
 
   const corpses = corpseProtein(result.attackerLost, result.defenderLost, ...result.alliesLost);
-  await addCorpses(q, m.worldId, m.target, corpses, at);
+  // Slave-makers carry the dead home at once after a won raid; the rest stay on the field (docs/05-castes-units.md)
+  const carried = result.winner === 'attacker' ? Math.min(corpses, corpseCarry(m.units)) : 0;
+  if (carried > 0) m.cargo = { ...(m.cargo ?? res()), protein: (m.cargo?.protein ?? 0) + carried };
+  await addCorpses(q, m.worldId, m.target, corpses - carried, at);
   await q.query('INSERT INTO raid_log (world_id, attacker_id, colony_id, winner, at) VALUES ($1,$2,$3,$4,$5)', [
     m.worldId, attacker.id, target.id, result.winner, at,
   ]);
@@ -187,6 +193,8 @@ export async function resolveRaid(q: Tx, m: Mission, at: number, opts: { attacke
   const data = {
     winner: result.winner,
     seed,
+    ...(m.retreatPct ? { retreatPct: m.retreatPct } : {}),
+    ...(result.retreatedAfterRound != null ? { retreatedAfterRound: result.retreatedAfterRound } : {}),
     at: coordsKey(m.target),
     target: m.target,
     attacker: {
@@ -212,14 +220,15 @@ export async function resolveRaid(q: Tx, m: Mission, at: number, opts: { attacke
     rounds: result.rounds,
     loot,
     corpses,
+    ...(carried > 0 ? { corpsesCarried: carried } : {}),
   };
   m.result = { winner: result.winner, loot, corpses };
-  const verb = result.winner === 'attacker' ? 'won' : result.winner === 'defender' ? 'lost' : 'drew';
+  const verb = result.retreatedAfterRound != null ? 'fell back' : result.winner === 'attacker' ? 'won' : result.winner === 'defender' ? 'lost' : 'drew';
   if (!attacker.isNpc)
     await addReport(q, m.worldId, attacker.id, 'battle', `Raid on ${target.name} (${coordsKey(m.target)}): you ${verb}`, { ...data, perspective: 'attacker' }, at);
   const dverb = herd
     ? result.winner === 'defender' ? 'held: your tenders drove off the raiders' : result.winner === 'attacker' ? 'lost: your tenders were driven off' : 'held (draw)'
-    : result.winner === 'defender' ? 'held' : result.winner === 'attacker' ? 'was raided' : 'held (draw)';
+    : result.retreatedAfterRound != null ? 'held: the raiders fell back' : result.winner === 'defender' ? 'held' : result.winner === 'attacker' ? 'was raided' : 'held (draw)';
   // The defender now recognizes the raiders' scent (one way: they still scout before striking back). Swarms have no home.
   if (!defender.isNpc && m.type === 'raid') await smelledBy(q, defender.id, m.originColonyId, 'raided_you', at);
   if (!defender.isNpc)

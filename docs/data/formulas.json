@@ -37,6 +37,11 @@
     "researchSeconds": "(foliage + protein) / (researchDivisor * (1 + pheromoneChamberLevel)) / worldSpeed",
     "researchDivisor": 1.0
   },
+  "digPlan": {
+    "_note": "The dig plan (docs/04-colony.md): chambers lined up behind the dig in progress. Each starts, and is paid for, when the diggers are free and the colony can afford it. 'slots' is how many can wait in line; 'unlock' is what the colony needs first.",
+    "slots": 1,
+    "unlock": { "queen_chamber": 4 }
+  },
   "distance": {
     "formula": "same spot: sameSpot; same patch: samePatchBase + samePatchPerSpot * |spotA - spotB|; same region: sameRegionBase + sameRegionPerPatch * |patchA - patchB|; otherwise otherRegionPerRegion * |regionA - regionB|",
     "sameSpot": 5,
@@ -68,6 +73,10 @@
   },
   "combat": {
     "maxRounds": 6,
+    "retreatOptions": {
+      "_note": "The fall-back order a raider picks (docs/08-combat.md): after a round in which the raiders have lost at least this percent of their army's worth (Foliage + Protein + Nectar cost), they break off and go home. 0 = fight to the end. It counts as the defender holding.",
+      "pcts": [0, 25, 50]
+    },
     "glanceThresholdPctOfGuard": 1,
     "collapseBelowHealthPct": 70,
     "collapseChance": "1 - currentHealth / maxHealth",
@@ -103,6 +112,16 @@
       "unlockBroodHall": 2,
       "minProtein": 30
     }
+  },
+  "gardeners": {
+    "_note": "Gardener Minims at home (docs/03-economy.md): each adds pctEach % to the colony's Leaf Garden output, counting at most perLeafGardenLevel per Leaf Garden level. Minims on missions don't count.",
+    "pctEach": 0.5,
+    "perLeafGardenLevel": 4
+  },
+  "desertAnts": {
+    "_note": "Desert Ants in a forage party (docs/09-missions.md): every antsPerLuck of them count as one more Foraging Instinct level for that trip (luck and find cap), up to maxLuck.",
+    "antsPerLuck": 5,
+    "maxLuck": 5
   },
   "missions": { "baseSlots": 2, "baseForageSlots": 1 },
   "colonies": { "base": 1 },

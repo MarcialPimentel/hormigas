@@ -6,7 +6,7 @@ import { GameError } from '../errors';
 import { advance, getPlayer, playerColonies, lockOwnColony, saveColony, type Colony } from '../colony';
 import { processDueEvents } from '../events';
 import { getWorld } from '../world';
-import { cancelBuild, startBuild } from '../game/chambers';
+import { cancelBuild, planDig, startBuild, unplanDig } from '../game/chambers';
 import { timeMultiplier } from '../game/boost';
 import { cancelResearch, startResearch } from '../game/research';
 import { enqueueUnits, startDigestion, stopDigestion } from '../game/brood';
@@ -29,6 +29,7 @@ export function colonyView(c: Colony) {
     units: c.units,
     defenses: c.defenses,
     buildJob: c.buildJob,
+    digPlan: c.digPlan?.chambers.length ? { chambers: c.digPlan.chambers, waiting: c.digPlan.waiting ?? null, checkAt: c.digPlan.checkAt ?? null } : null,
     unitQueue: c.unitQueue,
     digestJob: c.digestJob ?? null,
     research: c.research,
@@ -99,6 +100,19 @@ export async function gameRoutes(app: FastifyInstance) {
 
   app.post('/api/colonies/:id/build/cancel', async (req) => {
     const c = await tx((q) => cancelBuild(q, req.playerId, colonyIdParam(req.params)));
+    return { ok: true, colony: colonyView(c) };
+  });
+
+  // the dig plan: line a chamber up behind the dig in progress, or take it out again (docs/04-colony.md)
+  app.post('/api/colonies/:id/plan', async (req) => {
+    const body = (req.body ?? {}) as any;
+    const c = await tx((q) => planDig(q, req.playerId, colonyIdParam(req.params), String(body.chamber ?? '')));
+    return { ok: true, colony: colonyView(c) };
+  });
+
+  app.post('/api/colonies/:id/plan/cancel', async (req) => {
+    const body = (req.body ?? {}) as any;
+    const c = await tx((q) => unplanDig(q, req.playerId, colonyIdParam(req.params), Number(body.index ?? 0)));
     return { ok: true, colony: colonyView(c) };
   });
 

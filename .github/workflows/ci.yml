@@ -31,3 +31,29 @@ jobs:
       - run: npm run typecheck
       - run: npm test
       - run: npm run build
+
+  # Builds the Docker image at the same time as the tests. On PRs it only checks the
+  # Dockerfile still builds. On main it pushes the image tagged with the commit SHA,
+  # and Deploy (deploy.yml) then ships that exact image once this whole run has passed.
+  # Only Deploy moves the :latest tag, so :latest is always a build that passed CI.
+  image:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        if: github.event_name == 'push'
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: ${{ github.event_name == 'push' }}
+          tags: ghcr.io/marcialpimentel/hormigas:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

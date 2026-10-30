@@ -10,8 +10,7 @@
 ## Screens (MVP)
 | Screen | Purpose |
 |---|---|
-| **Overview** | Colony summary: resources, workforce, active timers, incoming/outgoing missions |
-| **Nest View** | Schematic nest (below); tap a chamber to open it |
+| **Colony** (home) | The nest fills the screen (3D slab on computers, 2D nest on phones; below) with cards floating over it: resources, workforce, "Happening now" (active timers, incoming/outgoing missions), the founding task. Tap a chamber to open it. Overview and Nest View were merged into this one screen ([#44](https://github.com/MarcialPimentel/hormigas/pull/44), [#75](https://github.com/MarcialPimentel/hormigas/pull/75)) |
 | **Chambers** | List view of all chambers, costs, upgrade buttons |
 | **Brood Hall** | Raise castes and defenses |
 | **Research** | Instinct tree |
@@ -33,9 +32,9 @@ Feedback is read on the admin-only **Feedback** screen. Admins are players with 
 
 ## The 3D slab (computers)
 On computers the nest is a block of earth cut open at the front, like an ant farm on a plinth (approved from [art/3d-exploration.md](art/3d-exploration.md)). Built with Three.js in `client/src/components/nest3d/`, loaded only when shown.
-- **The block is 3D; everything living in it is the 2D art.** Hollows and tunnels are carved into the face; each chamber's own art (`client/src/art/chambers.ts`) is on its hollow's back wall; ants are the 2D sprites on flat cards, walking at slightly different depths. A paper diorama you can turn; real models can replace the cards later.
+- **Everything is 3D, and the chambers show what they hold.** Hollows and tunnels are carved into a face painted in coloured soil horizons; each hollow's back wall is lit warm from inside, and the hollow holds its contents in 3D (`nest3d/contents.ts`): stores heap up as they fill (empty stores are bare), brood follows the unit queue, research motes drift only while research runs, and the rest grows with level. The 2D chamber pictures no longer hang on the back walls, since their drawn piles would contradict the real amounts. Ants are real 3D ants, one per ant up to a cap, walking at different depths and carrying loads down to the stores. Look and numbers: [18-art-direction.md](18-art-direction.md) § In 3D. This slab is the Nest level of the scale ladder ([art/sunlit-microcosm.md](art/sunlit-microcosm.md)).
 - **Gentle orbit, and zoom on the Colony screen:** drag to turn (about ±30°) and, with a mouse, tilt a little. Where the nest fills the screen, scroll (or pinch on a trackpad, or the + and − buttons) zooms up to 3.5× toward the cursor; zoomed in, dragging moves around the nest instead of turning it, and it can't leave the block. **Whole nest** (or double-click) goes back to the full view. Still no inside views. Zoom came in with the full-screen Colony screen (Marz, 2026-10-29); it was left out at first to keep the whole colony in sight.
-- **Same information as the 2D nest:** chamber names, levels and tags; dashed outlines for chambers you could dig next; surface parties with timers; raiders in red with the entrance ringing; diggers on the rim; the Pheromone Chamber glowing while research runs; a sky by the player's clock, with chambers glowing at night.
+- **Same information as the 2D nest:** chamber names, levels and tags; dashed outlines for chambers you could dig next; surface parties with timers; raiders in red with the entrance ringing; diggers on the rim; the Pheromone Chamber glowing with drifting motes while research runs; a sky by the player's clock, with chambers glowing at night.
 - **Taps:** a chamber opens its sheet (no Look inside); the entrance opens Missions.
 - **Which nest:** 3D on computers, 2D on phones. A button in the corner switches (saved per browser). Without WebGL the 2D nest shows. Motion off draws a still slab, refreshed about once a second.
 
@@ -111,7 +110,7 @@ The game should *show* the colony at work, not only list timers. (Build 3 used d
   - Construction / research complete
   - Storage full
 - **Tab title badges:** `(1) Raid incoming! – Hormigas`.
-- In-game notification list on the Overview.
+- In-game: the **Happening now** list on the Colony screen shows what's under way and what's coming at you. There is no separate notification list or Notifications panel (removed after playtest feedback, [#60](https://github.com/MarcialPimentel/hormigas/pull/60)).
 
 ## Open Questions
 - Should a raid landing on the nest have its own scene (a fight at the entrance, corpses on the surface)? Planned for a later build.

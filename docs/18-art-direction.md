@@ -32,6 +32,18 @@ gaster · petiole · mesosoma · head · mandibles · elbowed antenna · six leg
 
 - **Walking** uses a tripod gait: near front, near hind and far middle legs swing together, against the other three. Legs pivot at the hip in code; no hand-drawn frames.
 
+## Decisions (Marz, 30 Oct 2026)
+From the 3D direction proposal, [art/sunlit-microcosm.md](art/sunlit-microcosm.md):
+1. **Structure: the scale ladder.** Garden → Patch → Nest → Chamber, OGame's galaxy → system → planet as one garden: one camera, zoom out past a level to rise to the next.
+2. **Look: the sunlit microcosm.** Macro-photo light, soil in coloured horizons, colour from life (flowers, stores, beetles). The old brown strata are retired.
+3. **Ants: real 3D ants** from one body plan, instanced, in every 3D view. The 2D sprites stay for the 2D nest (phones, fallback) and the pictures.
+4. **Counts: real size, capped.** One drawn ant per ant up to a cap; above it, the label gives the true number.
+5. **First build:** colour and real ants in the 3D slab (this change). The 3D patch comes next.
+
+6. **Allies are teal** (30 Oct): supercolony mates' flags, lights and threads are teal `#2F9C95`, so honey = you, teal = allies, red = hostile or wild, with no overlap.
+7. **Hero art: Claude builds the master ant in Blender** (30 Oct), with Blender open and its MCP add-on connected, after the Patch, swarm and Garden builds.
+8. **The rest lands as separate PRs** (30 Oct), each its own playtest: A the 3D Patch, B swarms and battles on the patch (battle reports save per-round counts for replays), C the Garden and the zoom between levels, D living chambers in the nest.
+
 ## Palette
 Ants are lighter than the soil so they read on it. Colours sit alongside the UI palette in `client/src/styles.css`, which has a dark (soil) and a light (field-guide paper) theme following the device; the nest itself looks the same in both.
 
@@ -46,7 +58,7 @@ Ants are lighter than the soil so they read on it. Colours sit alongside the UI 
 Resource colours (leaf, protein, honey) stay reserved for cargo and stores, never for ant bodies, so a carried load always stands out.
 
 ## Scale
-An ant needs about 14–18px of length on screen to read as an ant. There are two zoom levels:
+An ant needs about 14–18px of length on screen to read as an ant. In the 2D nest there are two zoom levels (the 3D views follow the scale ladder above):
 - **Whole nest:** sprites at 11px (workers) to 15px (queens). Small, but on phone screens (2× pixels) they read as ants.
 - **Chamber close-up:** tap a chamber to see portraits at 40–70px.
 
@@ -103,14 +115,28 @@ The Research screen has a **Tree / List** switch. Computers open on the tree, ph
 - **Trails are pheromone.** Every `research.<id>` prerequisite is a trail, read from `unlock` in `docs/data/research.json`, never drawn by hand. A trail you've laid is the violet scent-dot line from the Pheromone Chamber art; one still to lay is a dashed soil line. A small pill where it arrives says the level needed. Trails that skip columns run in the gap under the rows, so they never pass behind a research.
 - **Research are the same picture tiles** as the list. Level badge in honey (leaf green at the cap). Greyed with a lock: not reachable yet, or "coming later" (Symbiosis). Honey ring: you can afford it now. Violet glow: being learned.
 - **Hover or focus** a research: the card on the right shows what it does, the next level's cost and time, the Research button (with the same "why not" as the list), what it needs (ticks, or your level against the one needed) and what it leads to. Everything it needs and opens stays lit; the rest fades. **Click** pins the card; names in Needs and Leads to jump there. Esc unpins.
+- **Computers:** the tree fills the screen below the resource bar, edge to edge, like the nest on the Colony screen; the tree box scrolls inside it and the page itself doesn't. The card on the right is 280px wide, 320px on big screens.
 - **Phones:** the same tree, panning sideways; a tap opens the card as a bottom sheet.
 - **Colours:** `--scent` (violet, darker on paper) and `--trail-off` are theme tokens in `client/src/styles.css`; picture tiles stay on their light paper in both themes.
 
 ## Scents on the patch
 A colony you haven't scouted is drawn as a **scent**: three wavy strokes rising from a faint stain on the ground, with no mound, flag or name ([22-discovery](22-discovery.md)). They use the flag colours, so players learn one code: **amber = players' ants, red = wild ants** (honey stays yours). Strokes sway slowly; reduced motion holds them still. The label reads "Ant scent" or "Wild scent", or the colony's name once it has scouted or raided you. Mock-up: [art/scents-mockup.html](art/scents-mockup.html) (made before the build; the real screen is `client/src/components/Patch.tsx`).
 
-## In 3D: 2D art in a 3D block
-The computer nest is a 3D block of earth ([12-ui-nest-view.md](12-ui-nest-view.md), "The 3D slab"), but its life is this 2D art: chamber pictures on the hollows' back walls and ant sprites on flat cards. The look is a paper diorama; the soil strata (`#6B4F37` → `#4A3726` → `#33261A`), hollow (`#1C140E`) and grass (`#6F9A3E`) come from [art/3d-exploration.md](art/3d-exploration.md). Hero models can replace cards one at a time later.
+## In 3D: the sunlit microcosm
+The computer nest is a 3D block of earth ([12-ui-nest-view.md](12-ui-nest-view.md), "The 3D slab") in the look of [art/sunlit-microcosm.md](art/sunlit-microcosm.md):
+- **Soil horizons** on the cut face and sides, top to bottom: litter `#3E2B1E`, topsoil `#7B4A2D`, iron clay `#A9552F`, ochre sand `#D3A05A`, grey-blue gley clay `#7E8E96`, deep subsoil `#5E3C2A`, with pebbles, pale roots and fallen petals painted in. Hollow and tunnel walls are warm clay `#9A5C38`.
+- **Hollows lit from inside.** Each hollow's back wall is plain warm clay lit from the middle, in the chamber's glow (gold for nectar, violet for the Pheromone Chamber, green for aphids, amber for the rest). At night the glow strengthens, so the nest reads like lanterns.
+- **Living chambers** (`client/src/components/nest3d/contents.ts`): each hollow holds what the chamber holds, in 3D, and the amounts are the colony's real numbers. Colour comes from the contents, not the walls.
+  - Stores fill with their resource (the same fill as the "% full" tag): green leaf bits heap up in the **Granary**, red prey chunks in the **Larder** (a whole teal beetle once it's over 40% full), a glossy honey pool that spreads and deepens with drops around it in the **Nectar Cellar**. Piles fill from the bottom up, so an empty store is a bare floor.
+  - Brood follows the unit queue, one piece per ant being raised up to a cap: eggs, curled larvae and cocoons in the **Brood Hall**, and what overflows in the **Nursery**. No queue, no brood.
+  - By level: the pale fungus garden with leaf bits in the **Leaf Garden**, a beetle and prey in the **Hunting Grounds**, the queen's eggs beside her, a root with green aphids in the **Aphid Pasture**, a spoil heap in **Excavation Works**, and hanging honey repletes in the **Honeypot Gallery** (one more per level, swelling as nectar fills).
+  - Violet motes drift in the **Pheromone Chamber** only while research runs.
+  - Everything sizes with the hollow (bigger at higher levels), is still when motion is off, and uses about half the pieces on touch devices.
+  - Why the 2D pictures left the back walls: they have piles and brood drawn in, so an empty Granary still showed leaves and an idle Brood Hall still showed larvae. With the contents in 3D the plain lit wall is cleaner and never contradicts the numbers. The 2D pictures stay in the lists and on the 2D nest.
+- **The surface** has swaying, backlit grass `#2E5E25` → `#BCE35C`, flowers overhead, a red toadstool, an orange leaf and a sandy entrance mound `#C8A06A`.
+- **Real 3D ants** (`client/src/components/nest3d/ants3d.ts`): one body plan (gaster, petiole, mesosoma, head, mandibles, elbowed antennae, six legs) with the castes' proportions, legs swinging in a tripod gait in the shader, a warm rim light on the chitin by day and a cool one at night. Chitin: worker `#D9934A`, soldier `#B5662F`, queen `#A95F2F`, raider `#C4473A`, army ant `#8E2216`, army major `#B23A26`. Loads ride on the ants in resource colours.
+- **The Patch** (Missions screen, computers; `client/src/components/patch3d/`): your patch as a sunlit diorama, the spots in the drawn patch's order left to right. Terrain bands blend into each other (meadow `#A9C450` with flowers, sand `#D9BE84` with pebbles, grassland `#6FA83E`, leaf litter `#8A6A44` under a fallen log with orange bracket fungus, creek bank `#8FB0A0` with a creek and reeds, the wilds `#4F7A36`). Colonies are sandy mounds on cleared ground with flags (honey yours, teal allies, amber others, grey inactive, red wild); unscouted colonies are three swaying scent plumes over a stain; aphids climb a stem, termites build a tower, a spider hides under a silk lid. A marble and a bottle cap lie at true size. Every party walks a faint scent ribbon in its colour. Zooming in lowers the camera to ant height; a scale bar says how much of the garden is in view (1 unit ≈ 14 mm, an ant is 5 mm).
+- **Counts:** the nest shows one ant per ant up to 160 workers and 30 soldiers; a party on the surface shows one per ant up to 300, a swarm up to 1,500 (half on touch devices). The party label gives the true number.
 
 ## Assets
 Chambers come from `client/src/art/chambers.ts`; `npx tsx art/chambers/build.ts` writes each to `art/chambers/<id>.svg` with a `preview.html` sheet (every chamber large, and at nest size). Edit `chambers.ts`, not the SVGs.
@@ -120,4 +146,4 @@ Ants come from one parametric body plan in `client/src/art/ants.ts`, which the g
 ## Open Questions
 - Should ant species vary by player (leafcutter, bullet ant, weaver), or is it one species with cosmetic palettes?
 - Do the surface and grass get the same field-guide treatment, or stay schematic so the nest stays the focus?
-- Larvae, pupae and eggs: drawn as their own sprites, or as simple shapes in the brood chamber?
+- Larvae, pupae and eggs: drawn as their own sprites, or as simple shapes in the brood chamber? (In the 3D nest they are simple 3D shapes, see § In 3D; the 2D nest still uses the chamber pictures.)

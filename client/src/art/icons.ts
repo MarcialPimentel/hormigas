@@ -74,6 +74,16 @@ const CHAMBER: Record<ChamberId, () => string> = {
 // ---------- units ----------
 
 const MAJOR = { base: '#8e4f28', light: '#cf9566', shade: '#5e3218', far: '#4a2712' };
+// Formica wood ants: rusty red head and thorax, dark gaster
+const FORMICA = { base: '#9a4a2c', light: '#d58a62', shade: '#62301c', far: '#4a2414' };
+const TRAPJAW = { base: '#6e4a2a', light: '#b8885a', shade: '#46301a', far: '#36240f' };
+const ACID_DROPS = (x: number, y: number) =>
+  `<g fill="#c8d44a" stroke="#6f7a1a" stroke-width="0.8"><circle cx="${x}" cy="${y}" r="2.6"/><circle cx="${x - 5}" cy="${y - 6}" r="2.1"/><circle cx="${x - 8}" cy="${y - 13}" r="1.7"/><circle cx="${x - 2}" cy="${y - 10}" r="1.4"/></g>`;
+// Build 11 (docs/05-castes-units.md)
+const SUPER = { base: '#7a3418', light: '#c0704a', shade: '#4e1f0c', far: '#3a1708' };
+const POLYERGUS = { base: '#b0402a', light: '#e2836a', shade: '#74251a', far: '#561a12' };
+const DESERT = { base: '#c48a3c', light: '#efc786', shade: '#8a5c22', far: '#6a4418' };
+const MINIM = { base: '#9a6a3c', light: '#d6a676', shade: '#664424', far: '#4e331a' };
 const BULLET = { base: '#3a2420', light: '#8a5a48', shade: '#24140f', far: '#1a0e0a', ink: '#0f0806' };
 
 const UNIT: Record<CasteId, () => string> = {
@@ -86,6 +96,13 @@ const UNIT: Record<CasteId, () => string> = {
     ground() + ant('worker', 30, 49, 54, { load: '#8db255' }) +
     `<g transform="rotate(-18 40 18)"><ellipse cx="40" cy="18" rx="15" ry="7" fill="#8db255" stroke="${INK}" stroke-width="1.6"/><path d="M26,18 L54,18" stroke="#5f7d36" stroke-width="1.2"/></g><path d="M44,32 L41,25" stroke="${INK}" stroke-width="1.4"/>`,
   winged_queen: () => ground() + ant('alate', 32, 49, 66),
+  // Build 10 (docs/05-castes-units.md): a formicine soldier spraying acid from its gaster (left), and a
+  // trap-jaw with its long jaws locked open at 180 degrees, ready to snap
+  acid_sprayer: () => ground() + ant('soldier', 36, 49, 58, { palette: FORMICA }) + ACID_DROPS(12, 34),
+  trap_jaw: () =>
+    ground() + ant('worker', 28, 49, 56, { palette: TRAPJAW }) +
+    `<g stroke="${INK}" stroke-width="2.2" stroke-linecap="round" fill="none"><path d="M51,33 L62,27"/><path d="M51,36 L62,41"/></g>` +
+    `<g stroke="${TRAPJAW.light}" stroke-width="1" stroke-linecap="round" fill="none"><path d="M52,33 L61,28"/><path d="M52,36 L61,40"/></g>`,
   carrion_beetle: () =>
     ground() +
     `<g stroke="${INK}" stroke-width="1.6" stroke-linecap="round" fill="none"><path d="M20,42 l-4,8 M30,44 l0,7 M40,42 l4,8"/><path d="M49,32 l6,-6 M51,35 l8,-3"/></g>` +
@@ -93,6 +110,39 @@ const UNIT: Record<CasteId, () => string> = {
     `<path d="M17,30 Q30,26 43,30 M16,37 Q30,33 44,37" stroke="#e08a2c" stroke-width="3.2" fill="none" stroke-linecap="round"/>` +
     `<circle cx="51" cy="35" r="5.5" fill="#2a2420" stroke="${INK}" stroke-width="2"/><circle cx="59" cy="31.5" r="1.8" fill="#e08a2c"/>` +
     `<path d="M18,30 a16,9 0 0 1 14,-4" stroke="#8a7a70" stroke-width="1.6" fill="none" stroke-linecap="round"/>`,
+  supermajor: () =>
+    ground() + ant('soldier', 31, 52, 70, { palette: SUPER }) +
+    `<path d="M50,24 q6,-2 9,3" stroke="#c0704a" stroke-width="2" fill="none" stroke-linecap="round"/>`,
+  // Polyergus: red raider with thin sickle jaws
+  slave_maker: () =>
+    ground() + ant('soldier', 30, 49, 58, { palette: POLYERGUS }) +
+    `<g stroke="${INK}" stroke-width="1.8" fill="none" stroke-linecap="round"><path d="M52,30 q8,-1 9,6"/><path d="M52,34 q7,3 6,8"/></g>`,
+  // Cataglyphis: long legs, under the sun
+  desert_ant: () =>
+    `<circle cx="50" cy="13" r="7" fill="#f2c14e"/><g stroke="#f2c14e" stroke-width="1.6" stroke-linecap="round"><path d="M50,2 v-0 M39,13 h-3 M61,13 h3 M42,5 l-2,-2 M58,5 l2,-2"/></g>` +
+    `<path d="M4,52 Q32,47 60,52" stroke="#d9b779" stroke-width="3" fill="none" stroke-linecap="round"/>` + ant('worker', 30, 49, 56, { palette: DESERT }),
+  // a tiny gardener on the fungus garden
+  gardener_minim: () => {
+    const r = seeded(21), dots: string[] = [`<path d="M8,52 C12,30 52,30 56,52Z" fill="#cbbfa6"/>`];
+    for (let i = 0; i < 22; i++) dots.push(`<circle cx="${f(12 + r() * 40)}" cy="${f(38 + r() * 13)}" r="${f(1.6 + r() * 1.6)}" fill="${r() < 0.4 ? '#cbbfa6' : '#efe7d6'}"/>`);
+    return dots.join('') + ant('worker', 34, 37, 24, { palette: MINIM });
+  },
+  // a long-beaked predatory bug: narrow head, thick forelegs, folded wings
+  assassin_bug: () =>
+    ground() +
+    `<g stroke="${INK}" stroke-width="1.6" stroke-linecap="round" fill="none"><path d="M22,40 l-6,10 M30,41 l-2,10 M38,40 l4,10"/><path d="M44,36 q6,4 10,12"/></g>` +
+    `<ellipse cx="28" cy="34" rx="16" ry="7" fill="#3a2a22" stroke="${INK}" stroke-width="2"/>` +
+    `<path d="M14,32 Q28,24 40,31" stroke="#c0503a" stroke-width="3" fill="none" stroke-linecap="round"/>` +
+    `<ellipse cx="47" cy="31" rx="6" ry="4" fill="#4a362a" stroke="${INK}" stroke-width="1.8"/><path d="M52,31 L62,36" stroke="${INK}" stroke-width="2.2" stroke-linecap="round"/>` +
+    `<path d="M48,27 l6,-9 M46,27 l2,-10" stroke="${INK}" stroke-width="1.2"/>`,
+  // the giant: a rhinoceros beetle with its horn raised
+  rhino_beetle: () =>
+    ground(56) +
+    `<g stroke="${INK}" stroke-width="2" stroke-linecap="round" fill="none"><path d="M16,46 l-5,9 M26,48 l-1,8 M36,47 l4,9"/></g>` +
+    `<ellipse cx="26" cy="38" rx="20" ry="12" fill="#5a3a22" stroke="${INK}" stroke-width="2.2"/>` +
+    `<path d="M10,32 Q26,24 42,32" stroke="#a87650" stroke-width="2.6" fill="none" stroke-linecap="round"/><path d="M26,27 L26,49" stroke="#3a2414" stroke-width="1.4"/>` +
+    `<ellipse cx="48" cy="37" rx="8" ry="7" fill="#4a2e1a" stroke="${INK}" stroke-width="2"/>` +
+    `<path d="M53,33 Q60,26 58,12 Q55,22 50,30Z" fill="#4a2e1a" stroke="${INK}" stroke-width="1.8" stroke-linejoin="round"/>`,
   bullet_ant: () => ground() + ant('worker', 33, 51, 66, { palette: BULLET }) + `<path d="M6,38 l-4,2 l4,1" fill="${BULLET.base}" stroke="${INK}" stroke-width="1"/>`,
   // NPC-only (docs/24-npcs.md): termites have no waist, spiders have eight legs
   termite_worker: () => ground() + termite(false),
@@ -129,6 +179,12 @@ function spider(cx: number, cy: number, k: number) {
   );
 }
 
+/** An instinct research: the caste it sharpens, with a small "stronger" badge. */
+function instinct(caste: CasteId) {
+  return `<g transform="translate(2 6) scale(0.86)">${UNIT[caste]()}</g>` +
+    `<circle cx="51" cy="13" r="9" fill="#6f9a3e" stroke="${INK}" stroke-width="1.8"/><path d="M46,15 L51,9 L56,15" stroke="#f4f0e4" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`;
+}
+
 // ---------- defenses ----------
 
 const DEFENSE: Record<DefenseId, () => string> = {
@@ -147,6 +203,11 @@ const DEFENSE: Record<DefenseId, () => string> = {
     `<path d="M18,30 L32,52 L46,30" fill="#a8885a"/><path d="M22,36 l2,1 M38,38 l2,-1 M28,44 l2,1 M10,40 l2,0 M52,44 l2,0" stroke="#7a5c40" stroke-width="1.4"/>` +
     `<path d="M18,30 L32,52 L46,30" fill="none" stroke="${INK}" stroke-width="2" stroke-linejoin="round"/>` +
     ant('worker', 22, 36, 18, {}, false).replace('<g transform="', '<g transform="rotate(48 22 36) '),
+  narrow_tunnel: () =>
+    `<rect x="2" y="8" width="60" height="50" rx="6" fill="#7a5c40"/>` +
+    `<path d="M2,26 C14,26 20,30 26,32 C30,33 34,33 38,32 C44,30 50,26 62,26 L62,44 C50,44 44,40 38,38 C34,37 30,37 26,38 C20,40 14,44 2,44Z" fill="#1c140e"/>` +
+    `<path d="M26,32 C30,33 34,33 38,32 M26,38 C30,37 34,37 38,38" stroke="#c8a77e" stroke-width="1.6" fill="none"/>` +
+    ant('soldier', 46, 41, 22) + ant('worker', 14, 41, 18),
   acid_sentry: () =>
     ground() + ant('worker', 38, 49, 54) +
     `<g fill="#c8d44a" stroke="#6f7a1a" stroke-width="0.8"><circle cx="14" cy="34" r="2.6"/><circle cx="9" cy="28" r="2.1"/><circle cx="6" cy="21" r="1.7"/><circle cx="12" cy="24" r="1.4"/></g>`,
@@ -236,6 +297,13 @@ const RESEARCH: Record<ResearchId, () => string> = {
     ant('worker', 20, 49, 30) + ant('worker', 45, 49, 30) +
     `<path d="M54,14 l1.6,4 l4,1.6 l-4,1.6 l-1.6,4 l-1.6,-4 l-4,-1.6 l4,-1.6Z" fill="#e8b23a" stroke="${INK}" stroke-width="1"/>`,
   /** A scout wrapped in a borrowed smell, half hidden. */
+  // Instincts (Build 11): the caste's portrait with a rising mark
+  swarm_raiding: () => instinct('minor_soldier'),
+  armoured_heads: () => instinct('major_soldier'),
+  acid_glands: () => instinct('acid_sprayer'),
+  snap_reflex: () => instinct('trap_jaw'),
+  crushing_heads: () => instinct('supermajor'),
+  propaganda_glands: () => instinct('slave_maker'),
   chemical_mimicry: () =>
     ground() + `<ellipse cx="32" cy="38" rx="27" ry="17" fill="${SCENT}" opacity="0.14"/>` +
     `<g opacity="0.55">${ant('worker', 32, 49, 50)}</g>` +

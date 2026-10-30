@@ -6,6 +6,7 @@ import { now } from './clock';
 /** What each event type carries. The loop itself may add `attempts` and `error` to any payload. */
 export interface EventPayloads {
   build_complete: { colonyId: number };
+  dig_plan: { colonyId: number };
   research_complete: { playerId: number };
   mission_arrive: { missionId: number };
   mission_return: { missionId: number };

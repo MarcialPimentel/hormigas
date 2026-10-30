@@ -2,7 +2,7 @@
 // Three.js never reaches players on the 2D nest. Tapping a chamber opens the same sheet as the 2D nest;
 // tapping the entrance opens Missions. If WebGL can't start, the parent falls back to the 2D nest.
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { CHAMBERS, CHAMBER_IDS, isUnlocked, lvl, type ChamberId } from '@hormigas/shared';
+import { CHAMBERS, CHAMBER_IDS, isUnlocked, lvl, roleCount, type ChamberId } from '@hormigas/shared';
 import { useGame } from '../../game';
 import { setMotionPref, useMotion, type MotionPref } from '../../motion';
 import type { Nav } from '../../nav';
@@ -10,6 +10,7 @@ import { ChamberPopover, ChamberSheet } from '../ChamberSheet';
 import { MAX_ZOOM, createNestScene, type Inset, type Layout, type NestScene } from './scene';
 
 const NEXT_MOTION: Record<MotionPref, MotionPref> = { auto: 'on', on: 'off', off: 'auto' };
+const nearFive = (n: number) => (n <= 20 ? n : Math.round(n / 5) * 5);
 
 /** `fill`: the nest fills its box (the Colony screen on a computer) and `inset` is the room its floating cards cover. */
 export function Nest3D({ nav, onFail, onSwitch, fill, inset }: { nav: Nav; onFail: () => void; onSwitch: () => void; fill?: boolean; inset?: Inset }) {
@@ -68,13 +69,14 @@ export function Nest3D({ nav, onFail, onSwitch, fill, inset }: { nav: Nav; onFai
   // what the slab is carved from: built chambers, ones you could dig next, how many ants there are
   const research = state?.player.research ?? {};
   const totalUnits = colony ? Object.values(colony.units).reduce((a, b) => a + (b ?? 0), 0) : 0;
-  const soldiers = colony ? (colony.units.minor_soldier ?? 0) + (colony.units.major_soldier ?? 0) : 0;
+  const soldiers = colony ? roleCount(colony.units, 'soldier') : 0;
   const layout: Layout | null = colony
     ? {
         chambers: Object.fromEntries(CHAMBER_IDS.map((id) => [id, lvl(colony.chambers, id)])),
         unlocked: CHAMBER_IDS.filter((id) => lvl(colony.chambers, id) === 0 && isUnlocked(CHAMBERS[id].unlock, colony.chambers, research)),
-        workers: Math.min(40, Math.ceil(totalUnits / 3)),
-        soldiers: Math.min(10, Math.ceil(soldiers / 4)),
+        // one drawn ant per ant up to a cap (rounded to fives past 20, so a hatching doesn't re-carve the slab)
+        workers: nearFive(Math.min(160, Math.max(0, totalUnits - soldiers))),
+        soldiers: nearFive(Math.min(30, soldiers)),
       }
     : null;
   const layoutKey = JSON.stringify(layout);

@@ -13,7 +13,7 @@
 ## Mission types
 | Mission | MVP | What it does |
 |---|---|---|
-| **Raid** | ✅ | Attack a colony; loot on win |
+| **Raid** | ✅ | Attack a colony; loot on win. Pick a fall-back order: fight to the end, or break off after 25% or 50% losses ([08-combat](08-combat.md#fall-back-order-build-10)) |
 | **Scout** | ✅ | Send Scouts to gather a report on a colony, or to survey the wilds (below) |
 | **Transport** | ✅ | Move resources to any colony; units return |
 | **Relocate** | ✅ | Move units + resources to one of your own colonies; units stay |
@@ -40,6 +40,8 @@ Sent to the wild edge of a patch (spot 13). Outcome rolled on arrival:
 | Spider ambush | 10% | Loses 10–30% of the party |
 | Rainstorm | 4% | Loses 20–50% of the party |
 | The Boot | 1% | Whole party lost |
+
+**Desert Ants** (Build 11) in a party add luck: every 5 count as one more Foraging Instinct level for that trip, up to +5 (`formulas.json` → `desertAnts`). The forage screen shows the party's luck.
 
 Foraging Instinct research shifts odds toward good outcomes: each level (its `forageLuck` effect) moves 2 points of chance from Nothing, Lost the trail, Spider ambush, Rainstorm and The Boot, in that order, to Food cache (70%) and Dead beetle (30%). Each bad outcome always keeps at least a quarter of its chance. All the forage numbers (chances, luck shift, find cap, how much each find is worth, losses, return times) are in `formulas.json` → `forage`. Every result has short flavor text — this is where the game's personality shows.
 

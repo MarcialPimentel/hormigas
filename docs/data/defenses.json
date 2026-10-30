@@ -1,9 +1,10 @@
 {
   "_version": "0.1",
-  "_note": "Destroyed defenses rebuild with rebuildChance after battle (see formulas.json).",
+  "_note": "blurb: the line shown in the Brood Hall. Destroyed defenses rebuild with rebuildChance after battle (see formulas.json). shield: its guard soaks shots aimed at the other defenses first. chokepoint: a structure, not in the fight; for its first `rounds` rounds only `sharePct`% of the attackers fight. Design: docs/06-defense.md.",
   "defenses": {
-    "soil_wall":   { "name": "Soil Wall",   "mvp": true, "cost": { "foliage": 2000, "protein": 1000, "nectar": 0 },   "attack": 1,   "guard": 2000, "health": 300, "max": 1, "unlock": { "brood_hall": 1 },                              "frenzy": {} },
-    "pit_trap":    { "name": "Pit Trap",    "mvp": true, "cost": { "foliage": 2000, "protein": 0,    "nectar": 0 },   "attack": 80,  "guard": 20,   "health": 200,           "unlock": { "brood_hall": 1 },                              "frenzy": {} },
-    "acid_sentry": { "name": "Acid Sentry", "mvp": true, "cost": { "foliage": 3000, "protein": 1000, "nectar": 200 }, "attack": 250, "guard": 100,  "health": 400,           "unlock": { "brood_hall": 3, "research.mandibles": 2 },      "frenzy": { "major_soldier": 2 } }
+    "soil_wall":   { "name": "Soil Wall", "blurb": "One per colony. Its huge guard soaks up blows aimed at your other defenses, round after round.",   "mvp": true, "cost": { "foliage": 2000, "protein": 1000, "nectar": 0 },   "attack": 1,   "guard": 2000, "health": 300, "max": 1, "unlock": { "brood_hall": 1 },                              "frenzy": {}, "shield": true },
+    "pit_trap":    { "name": "Pit Trap", "blurb": "An antlion-style pit: cheap, Foliage only, and small ants that rush in tumble down it. Deadly to Minor Soldiers and Workers.",    "mvp": true, "cost": { "foliage": 2000, "protein": 0,    "nectar": 0 },   "attack": 80,  "guard": 20,   "health": 200,           "unlock": { "brood_hall": 1 },                              "frenzy": { "minor_soldier": 5, "worker": 4, "acid_sprayer": 3, "scout": 5 } },
+    "acid_sentry": { "name": "Acid Sentry", "blurb": "Formic acid emplacement. Strong, and dangerous to Major Soldiers.", "mvp": true, "cost": { "foliage": 3000, "protein": 1000, "nectar": 200 }, "attack": 250, "guard": 100,  "health": 400,           "unlock": { "brood_hall": 3, "research.mandibles": 2 },      "frenzy": { "major_soldier": 3 } },
+    "narrow_tunnel": { "name": "Narrow Tunnel", "blurb": "One per colony. Raiders squeeze in a few at a time: in the first round only half of them can fight. It is never destroyed.", "mvp": true, "cost": { "foliage": 5000, "protein": 3000, "nectar": 1000 }, "attack": 0, "guard": 0, "health": 0, "max": 1, "unlock": { "brood_hall": 3, "research.tunnel_engineering": 1 }, "frenzy": {}, "chokepoint": { "rounds": 1, "sharePct": 50 } }
   }
 }

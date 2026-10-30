@@ -141,8 +141,10 @@ export interface SurfaceParty {
   lane: number;
   heading: 1 | -1;
   kind: 'ours' | 'raid' | 'scout' | 'delivery';
-  /** ants to draw */
+  /** ants to draw in the 2D nest (a token column) */
   n: number;
+  /** how many ants the party really has: the 3D nest draws this many, up to its cap */
+  units: number;
   /** cargo when coming home */
   cargo: Resources | null;
   type: string;
@@ -171,7 +173,7 @@ export function surfaceParties(w: number, entranceX: number, c: ServerColony, st
     const units = Object.values(m.units as Record<string, number>).reduce((a, b) => a + b, 0);
     out.push({
       key: `m${m.id}`, x, lane: lane++, heading: ob === toLeft ? -1 : 1, kind: 'ours',
-      n: Math.min(8, Math.max(2, Math.ceil(units / 8))), cargo: ob ? null : ((m.cargo ?? {}) as Resources),
+      n: Math.min(8, Math.max(2, Math.ceil(units / 8))), units, cargo: ob ? null : ((m.cargo ?? {}) as Resources),
       type: m.type, outbound: ob, endAt: ob ? m.arriveAt : m.returnAt,
     });
   }
@@ -186,7 +188,7 @@ export function surfaceParties(w: number, entranceX: number, c: ServerColony, st
     const n = i.type === 'swarm' ? Math.min(30, Math.max(6, Math.ceil(i.unitCount / 3))) : kind === 'raid' ? Math.min(10, Math.max(3, Math.ceil(i.unitCount / 6))) : 2;
     out.push({
       key: `i${i.id}`, x, lane: lane++, heading: fromLeft ? 1 : -1, kind,
-      n, cargo: null,
+      n, units: Math.max(n, i.unitCount ?? 0), cargo: null,
       type: i.type, outbound: true, endAt: i.arriveAt,
     });
   }

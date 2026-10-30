@@ -13,7 +13,7 @@ import { antTextures, drawAnt, walkFrame } from './antSprites';
 import { chamberTextures, drawChamber } from './chamberSprites';
 import { ChamberCloseUp } from './ChamberCloseUp';
 import { onMoment } from '../moments';
-import { CHAMBERS, CHAMBER_IDS, isUnlocked, lvl, type ChamberId } from '@hormigas/shared';
+import { CHAMBERS, CHAMBER_IDS, isUnlocked, lvl, roleCount, type ChamberId } from '@hormigas/shared';
 import { useGame } from '../game';
 import type { Nav } from '../nav';
 
@@ -102,7 +102,7 @@ export function NestView({ nav, onSwitch3d, fill }: { nav: Nav; onSwitch3d?: () 
   const chambersKey = JSON.stringify(colony?.chambers ?? {});
   const buildKey = colony?.buildJob ? `${colony.buildJob.chamber}:${colony.buildJob.startAt}:${colony.buildJob.endAt}` : '';
   const totalUnits = colony ? Object.values(colony.units).reduce((a, b) => a + (b ?? 0), 0) : 0;
-  const soldiers = colony ? (colony.units.minor_soldier ?? 0) + (colony.units.major_soldier ?? 0) : 0;
+  const soldiers = colony ? roleCount(colony.units, 'soldier') : 0;
   const antBucket = `${Math.min(60, Math.ceil(totalUnits / 3))}:${Math.min(18, Math.ceil(soldiers / 4))}`;
 
   // (re)build the scene

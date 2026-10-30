@@ -22,10 +22,10 @@ Since Build 6 research is a **tree**: research can need other research (not only
 | **Aphid Husbandry** | Harvest | Pher 3 | +5% Nectar from Aphid Pastures per level |
 | **Fungus Farming** | Harvest | Pher 3, Aphid Husbandry 2 | +5% Foliage from Leaf Gardens per level |
 | **Repletes** | Harvest | Pher 5, Aphid Husbandry 4, Fungus Farming 2 | +10% storage per level |
-| **Brood Science** | Nest | Pher 1 | Major Soldier (1), Hauler (2); max 2 |
+| **Brood Science** | Nest | Pher 1 | Major Soldier and Acid Sprayer (1), Hauler (2); max 2 |
 | **Nurse Workers** | Nest | Pher 3, Brood Science 1 | Units raised 5% faster per level (max 6) |
 | **Deep Digging** | Nest | Pher 4 | +5 space per level in all colonies |
-| **Tunnel Engineering** | Nest | Pher 4, Deep Digging 2 | Chambers dug 5% faster per level (max 6) |
+| **Tunnel Engineering** | Nest | Pher 4, Deep Digging 2 | Chambers dug 5% faster per level (max 6); level 1 also opens the Narrow Tunnel defense |
 | **Nuptial Flight** | Nest | Pher 3 | Unlocks the Winged Queen; +1 colony at levels 1, 3, 5… ([19-colonies](19-colonies.md)) |
 | **Pheromone Trails** | Scent | Pher 1 | +10% unit speed per level |
 | **Colony Mind** | Scent | Pher 1 | +1 mission slot per level |
@@ -33,11 +33,8 @@ Since Build 6 research is a **tree**: research can need other research (not only
 | **Tandem Running** | Scent | Pher 4, Colony Mind 2, Pheromone Trails 2 | Research 5% faster per level (max 6) |
 | **Chemical Mimicry** | Scent | Pher 4, Scent Reading 3 | Each level halves the chance your scouts are spotted (max 3) |
 | **Supercolony** | Nest | Pher 3, Nuptial Flight 1, Colony Mind 1 | Found or join a supercolony (max 1; [23-supercolonies](23-supercolonies.md)) |
-
-## Later research
-| Research | Branch | Needs | Effect |
-|---|---|---|---|
-| **Symbiosis** | Harvest | Pher 5, Aphid Husbandry 3, Chemical Mimicry 1 | Unlocks ally species (beetles, bullet ants) |
+| **Symbiosis** | Harvest | Pher 5, Aphid Husbandry 3, Chemical Mimicry 1 | Allies (max 4): Carrion Beetle (1), Assassin Bug (2), Bullet Ant (3), Rhinoceros Beetle (4). Playable since Build 11 |
+| **Instincts** (6) | Jaws | the same research as their caste | +5% attack and health per level for one caste only, max 10 ([05](05-castes-units.md#instincts-build-11)) |
 
 ## Scouting detail by Scent Reading difference
 `diff = yourScentReading − theirScentReading + (scouts sent − 1) / 2` (rounded down). Scent Reading counts through its `scoutLevel` effect; the 2 and the thresholds below are in `formulas.json` → `scouting.detail`.

@@ -16,11 +16,11 @@ Real ants fight neighboring colonies constantly over food and territory (pillar 
 
 | Terrain | Species | Nest | How it fights | Counter |
 |---|---|---|---|---|
-| Sunny Meadow, Creek Bank | Pavement Ants | Pavement Ant Nest | Swarm of Workers and Minor Soldiers | Major Soldiers (Frenzy vs Minor Soldiers) |
-| Sandy Soil | Fire Ants | Fire Ant Mound | Few, strong soldiers; Acid Sentries from level 4 | Cheap Minor Soldiers; keep Majors away from acid |
-| Rotting Log | Carpenter Ants | Carpenter Ant Gallery | Pit traps and walls, few soldiers | Numbers; expect defenses to rebuild |
+| Sunny Meadow, Creek Bank | Pavement Ants | Pavement Ant Nest | Swarm of Workers and Minor Soldiers | Acid Sprayers (Build 10) |
+| Sandy Soil | Fire Ants | Fire Ant Mound | Few, strong soldiers; Acid Sentries from level 4 | A swarm of Minor Soldiers; keep Majors away from acid |
+| Rotting Log | Carpenter Ants | Carpenter Ant Gallery | Pit traps and walls (from level 2), few soldiers | Trap-jaw Ants or Major Soldiers; the pits swallow Minors (Build 10) |
 | Sandy Soil, Sunny Meadow | Honeypot Ants | Honeypot Ant Nest | Workers and Minor Soldiers guarding a Nectar-rich store | Easy; bring carriers (Build 9, [24-npcs](24-npcs.md)) |
-| Creek Bank, Rotting Log | Trap-jaw Ants | Trap-jaw Ant Nest | No Workers, a few Major Soldiers behind pit traps | Numbers (Build 9) |
+| Creek Bank, Rotting Log | Trap-jaw Ants | Trap-jaw Ant Nest | No Workers, a few Major Soldiers behind pit traps (from level 3) | Minor Soldiers, with a few Trap-jaw Ants for the pits |
 
 Where two species share a terrain, a new nest picks one at random. Existing nests keep theirs.
 
@@ -76,12 +76,14 @@ A fair army at each level wins every time and loses this share of its value:
 
 | Level | Fair army | Pavement | Fire | Carpenter |
 |---|---|---|---|---|
-| 1 | 8 Minor Soldiers | 24% | 35% | 27% |
-| 2 | 20 Minor Soldiers | 24% | 28% | 21% |
-| 3 | 20 Minor + 12 Major | 22% | 24% | 21% |
-| 4 | 80 Minor + 10 Major | 32% | 35% | 22% |
-| 5 | 150 Minor + 40 Major | 29% | 32% | 22% |
-| 6 | 250 Minor + 100 Major | 34% | 36% | 24% |
+| 1 | 8 Minor Soldiers | 25% | 34% | 25% |
+| 2 | 20 Minor Soldiers | 23% | 27% | 29% |
+| 3 | 20 Minor + 12 Major | 22% | 22% | 29% |
+| 4 | 80 Minor + 10 Major | 32% | 30% | 37% |
+| 5 | 150 Minor + 40 Major | 28% | 28% | 29% |
+| 6 | 250 Minor + 100 Major | 32% | 31% | 28% |
+
+Re-checked for Build 10: Pit Traps now catch Minor Soldiers, so carpenter level 1 lost its pit trap (it's the first raid for many players) and levels 2 and 4 have fewer.
 
 An army half that size usually still wins but loses 50–80% of itself, so it pays to come prepared. A third of it loses. `shared/test/nests.test.ts` guards these numbers; re-check after changing `data/npc.json`, castes or combat.
 

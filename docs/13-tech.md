@@ -2,12 +2,12 @@
 
 **Version:** 0.1
 
-## Stack (proposed)
+## Stack
 | Layer | Choice |
 |---|---|
 | Language | **TypeScript** everywhere |
-| Client | Vite + React; **Three.js** for the 3D nest (computers, lazy-loaded), **PixiJS** for the 2D nest (phones, fallback) |
-| Server | Node.js + Fastify (or Express) |
+| Client | Vite + React; **Three.js** for the 3D nest and the 3D Patch on the Missions screen (computers, lazy-loaded; real ants shared from `nest3d/ants3d.ts`), **PixiJS** for the 2D nest (phones, fallback) |
+| Server | Node.js + Fastify |
 | Database | PostgreSQL |
 | Realtime | WebSockets (raid incoming, mission updates) |
 | Repo | Monorepo: `/shared`, `/server`, `/client`, `/docs` |
@@ -29,7 +29,7 @@ Rates are recalculated whenever a chamber, workforce or research changes. When a
 
 ## Event queue
 - Table `events(id, world_id, type, due_at, payload, status)`.
-- Types: `build_complete`, `research_complete`, `units_complete`, `mission_arrive`, `mission_return`, `corpse_decay`.
+- Types: `build_complete`, `dig_plan` (the planned dig's look again when it was waiting), `research_complete`, `units_complete`, `mission_arrive`, `mission_return`, `corpse_decay`.
 - A worker process picks due events **in `due_at` order** and resolves them.
 - When resolving an event that touches a colony, first bring that colony's resources up to the event's `due_at` time (not "now").
 - Ordering matters: if a raid and a build complete at the same second, define a strict order (e.g., builds before battles).
@@ -60,7 +60,7 @@ known_colonies(player_id, colony_id, via, first_at, discovered_at, smelled_at)  
 - One account per person (terms of service); detect obvious multi-accounting later.
 
 ## Hosting
-- One small DigitalOcean droplet running Docker Compose: Caddy (HTTPS) → the Hormigas container → Postgres on the same box. Live at https://hormigas.marz.gg. Details in [DEPLOY.md](DEPLOY.md).
+- One small cloud server running Docker Compose: Caddy (HTTPS) → the Hormigas container → Postgres on the same box. Live at https://hormigas.marz.gg. Details in [DEPLOY.md](DEPLOY.md).
 - Exactly one server instance. The event worker runs in-process with the API.
 - Compute-don't-tick keeps load proportional to *player actions*, not player count.
 

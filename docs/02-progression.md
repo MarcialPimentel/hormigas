@@ -33,7 +33,7 @@ Why exponential: costs rising faster than production is what moves the player fr
 1. Queen's Chamber L1 (start) → Leaf Garden, Hunting Grounds, Nursery
 2. Queen's Chamber L2 → Granary, Larder, Brood Hall (castes: Worker, Minor Soldier, Scout; defenses: Soil Wall, Pit Trap). The Brood Hall costs Nectar, so it can only be built after step 3 — on purpose: Nectar is the first big goal.
 3. Queen's Chamber L3 → Pheromone Chamber (research), Aphid Pasture, Nectar Cellar
-4. Brood Hall L2 + Brood Science → Major Soldier (Brood Science 1), Hauler (Brood Science 2). Brood Hall L3 + Mandibles 2 → Acid Sentry
+4. Brood Hall L2 + Brood Science → Major Soldier and Acid Sprayer (Brood Science 1), Hauler (Brood Science 2). Brood Hall L3 + Mandibles 2 → Acid Sentry and Trap-jaw Ant. Brood Hall L3 + Tunnel Engineering 1 → Narrow Tunnel
 5. Queen's Chamber L4 → Excavation Works, Honeypot Gallery
 6. Pheromone Chamber 3 → research Nuptial Flight; Brood Hall 4 + Nuptial Flight 1 → Winged Queen → second colony ([19-colonies](19-colonies.md))
 

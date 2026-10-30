@@ -2,6 +2,27 @@
 
 **Version:** 0.1
 
+## Build status
+_Current as of Build 11 (2026-10-30)._ Hormigas has no GitHub milestones: each build is a GitHub issue and/or PR. What shipped in each build: [CHANGELOG](../CHANGELOG.md).
+
+| Build | What it delivers | Status |
+|---|---|---|
+| M1–M8 | The MVP foundations: rules package, server, client, research, map, combat, forage, PvP rules | done |
+| 1 | Playtest fixes ([#28](https://github.com/MarcialPimentel/hormigas/issues/28)) | done |
+| 2 | Wild nests ([#29](https://github.com/MarcialPimentel/hormigas/issues/29)) | done |
+| 3 | The colony comes alive ([#30](https://github.com/MarcialPimentel/hormigas/issues/30)) | done |
+| 4 | More colonies ([#58](https://github.com/MarcialPimentel/hormigas/pull/58)) | done |
+| 5 | Raids from the wild: army-ant swarms ([#62](https://github.com/MarcialPimentel/hormigas/pull/62)) | done |
+| 6 | The tech tree ([#63](https://github.com/MarcialPimentel/hormigas/pull/63)) | done |
+| 7 | Scents and neighbours ([#66](https://github.com/MarcialPimentel/hormigas/issues/66)) | done |
+| 8 | Protein sink ([#65](https://github.com/MarcialPimentel/hormigas/issues/65); PR [#70](https://github.com/MarcialPimentel/hormigas/pull/70) is titled "Build 7") | done |
+| — | Alliances, stage A ([#68](https://github.com/MarcialPimentel/hormigas/issues/68)) | done |
+| 9 | More wild things ([#67](https://github.com/MarcialPimentel/hormigas/issues/67)) | done |
+| 10 | Castes with a purpose ([#80](https://github.com/MarcialPimentel/hormigas/issues/80)) | done |
+| 11 | The full roster ([#83](https://github.com/MarcialPimentel/hormigas/issues/83)) | **current** (live) |
+| 12 | Reasons to come back: daily colony tasks, Diapause, Field Journal | next (no issue yet) |
+| v1 | Supercolonies stage B, joint raids on spider dens, more defenses | later |
+
 ## Guiding rule
 Keep the MVP **brutally small**. Its only job is to answer: *is the core loop fun?*
 
@@ -10,7 +31,7 @@ Keep the MVP **brutally small**. Its only job is to answer: *is the core loop fu
 - One world, one species.
 - Chambers: Queen's Chamber, Leaf Garden, Hunting Grounds, Nursery, Granary, Larder, Brood Hall, Pheromone Chamber, Aphid Pasture, Nectar Cellar, Excavation Works, Honeypot Gallery.
 - Castes: Worker, Minor Soldier, Major Soldier, Scout, Hauler, Winged Queen.
-- Defenses: Soil Wall, Pit Trap, Acid Sentry.
+- Castes and defenses since Build 10: Acid Sprayer and Trap-jaw Ant join the castes; Narrow Tunnel joins the defenses.
 - Research: Mandibles, Chitin, Guard Formation, Pheromone Trails, Scent Reading, Colony Mind, Foraging Instinct, Brood Science, Deep Digging, Nuptial Flight; from Build 6 also Formic Acid, Raiding Columns, Nest Plugging, Group Hunting, Aphid Husbandry, Fungus Farming, Repletes, Nurse Workers, Tunnel Engineering, Tandem Running, Chemical Mimicry.
 - Missions: Raid, Scout, Transport, Relocate, Haul Corpses, Forage, Found Colony, Hold Position, Tend Aphids (Build 9).
 - PvP rules: new-colony protection, strength protection, bash limit, Honeypot protection, Late Founding Boost (catch-up).
@@ -22,14 +43,16 @@ Keep the MVP **brutally small**. Its only job is to answer: *is the core loop fu
 - Truces and supercolonies (alliances stage A): meet before you deal; truces with 24 h notice; supercolonies of up to 6 with the Supercolony research; Hold Position; a 3-day scent fade on leaving ([23-supercolonies](23-supercolonies.md)). Moved up from v1.
 - Protein sink (Build 8): feed the brood for faster castes; larval digestion turns Protein into Nectar ([03-economy](03-economy.md), [05-castes-units](05-castes-units.md)).
 - More wild things (Build 9): wild nests in neighbouring patches, Honeypot and Trap-jaw Ants, aphid herds held by tenders (contested Nectar), termite mounds, a spider-den boss; wild scents hint at what they are ([24-npcs](24-npcs.md)). Aphid herding moved up from v1.
+- The full roster (Build 11): Supermajor, Slave-maker, Desert Ant and Gardener Minim; allies through Symbiosis (Carrion Beetle, Assassin Bug, Bullet Ant, Rhinoceros Beetle); trample for big units; one instinct research per fighting caste ([05](05-castes-units.md)).
+- Castes with a purpose (Build 10): a counter triangle (Minor beats Major, Major beats the new Acid Sprayer, Sprayer beats Minor), the Trap-jaw Ant to break defenses, Pit Traps that catch small ants, a Soil Wall that shields, the Narrow Tunnel, a fall-back order on raids, and counter hints in the Brood Hall, battle preview and reports ([05](05-castes-units.md), [06](06-defense.md), [08](08-combat.md)).
 - The colony comes alive (Build 3): the Nest View shows parties, raids, storage, brood, digging and research; while-you-were-away card; small nest events ([12-ui-nest-view](12-ui-nest-view.md), [04-colony](04-colony.md)).
 
 **Systems**
 - Accounts & login
 - Compute-don't-tick economy + event queue
 - Combat + battle reports + in-game battle preview
-- Overview, Chambers, Brood Hall, Research, Missions, Reports, Rankings
-- Simple schematic Nest View
+- Colony (home, the nest), Chambers, Brood Hall, Research, Missions, Allies, Reports, Rankings
+- The nest: a 3D slab on computers, a 2D nest on phones (shipped instead of the planned simple schematic Nest View)
 - Browser notifications + tab badges
 - Onboarding quest chain
 - In-game feedback button (playtest signal)
@@ -52,10 +75,10 @@ Keep the MVP **brutally small**. Its only job is to answer: *is the core loop fu
 
 ## v1 — "A world worth staying in"
 - Supercolonies, stage B: joint raids, trade trails, a members' board (stage A shipped early: truces, supercolonies, hold position)
-- Ally species: Carrion Beetle, Bullet Ant
 - ~~Aphid herding (raidable livestock economy)~~ (moved up: Build 9)
 - Joint raids on spider dens (bosses from [24-npcs](24-npcs.md))
-- More defenses (Narrow Tunnel, Sticky Resin)
+- More defenses (Sticky Resin; the Narrow Tunnel shipped in Build 10)
+- Reasons to come back (next, Build 12): daily colony tasks with no streak penalty, Diapause (vacation mode), a Field Journal of achievements and titles
 - Vacation mode
 
 ## Later ideas
@@ -63,7 +86,7 @@ Keep the MVP **brutally small**. Its only job is to answer: *is the core loop fu
 - **Seasons:** world lifecycle (spring founding → winter end) with fresh worlds.
 - Player trading / market.
 - Achievements and cosmetics.
-- Illustrated nest art.
+- ~~Illustrated nest art~~ (shipped: field-guide art for ants, chambers and pictures, and the 3D nest; [18-art-direction](18-art-direction.md)).
 
 ## Open Questions
 - Is Aphid Pasture needed in MVP, or can Nectar come only from foraging at first?
