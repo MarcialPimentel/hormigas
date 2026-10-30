@@ -11,7 +11,9 @@
   "cost": {
     "chamberFormula": "baseCost * costFactor^(level - 1)   (costFactor per chamber in chambers.json)",
     "researchFormula": "baseCost * researchCostFactor^(level - 1)",
-    "researchCostFactor": 2
+    "researchCostFactor": 2,
+    "_researchNectarToProtein": "Research pays part of its Nectar in Protein (Marz, 30 Oct 2026): share of each research's Nectar cost is replaced by proteinPerNectar Protein each. Protein piles up while Nectar is the bottleneck. Research time still comes from the unswapped cost (docs/07-research.md).",
+    "researchNectarToProtein": { "share": 0.5, "proteinPerNectar": 3 }
   },
   "gathering": {
     "_note": "One dial for everything a colony gathers itself (docs/03-economy.md): base income, producing chambers, Gardener Minims, forage finds (still only what the party can carry) and aphid herd Nectar. Raid loot, wild-nest stores, quest rewards and storage are not affected. Set to 2 on 2026-10-30 after playtest feedback; 1 is the original pace.",
@@ -86,6 +88,8 @@
     "collapseChance": "1 - currentHealth / maxHealth",
     "frenzyRefireChance": "(N - 1) / N",
     "lootPctOfUnprotected": 50,
+    "_lootPctOfWild": "Wild nests, termite mounds and spider dens give up more when beaten, so a won raid pays in loot rather than mostly in corpses (Marz, 30 Oct 2026). Aphid herds and players use lootPctOfUnprotected.",
+    "lootPctOfWild": 75,
     "corpsePctOfDestroyedValue": 30,
     "corpseResource": "protein",
     "corpseDecay": { "startAfterHours": 24, "pctPerHour": 10 },

@@ -868,3 +868,7 @@ pre.report-body { white-space: pre-wrap; overflow-x: auto; }
   background: var(--wall); border-left: 1px solid var(--seam); border-bottom: 1px solid var(--seam); transform: rotate(45deg);
 }
 .sheet-pop[data-side='left']::before { left: auto; right: -6px; transform: rotate(-135deg); }
+
+/* battle report: what the fight was worth (docs/08-combat.md) */
+.net-result { border-top: 1px dotted var(--seam); padding-top: 0.4rem; margin-top: 0.2rem; }
+.net-result .ok { color: var(--leaf-ink); }

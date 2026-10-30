@@ -3,6 +3,10 @@
 _Current as of Build 11 (2026-10-30)._ Newest first. One entry per build, in players' words, built from the merged PRs. Smaller PRs merged between builds are listed with the nearest build.
 
 ## Next build (unreleased)
+- Fights pay in loot: beating a wild nest, termite mound or spider den now carries off 75% of its store, not 50%. Raiding players and aphid herds is unchanged.
+- Battle reports end with the net result: what your losses cost, what you carried home, and what it comes to if you haul the corpses. Defenders see what the fight cost them.
+- Research pays half of its Nectar in Protein (3 Protein per Nectar), so the Protein from battles has a use and Nectar goes further. Research takes no longer than before, and nobody's points change.
+- Forage slots per colony: each colony can have its own forage party out, and Foraging Instinct adds a slot to every colony ([#99](https://github.com/MarcialPimentel/hormigas/pull/99)).
 - Meet the ants: on the 3D nest, scroll in (or double-click a chamber) and glide close enough to watch every chamber's ants at work: hauling leaves in, cutting up prey, feeding the honeypots, licking eggs, grooming the queen. Click any ant and she stops and turns to you, with a card saying her name and what she's doing; scroll out and you're back on the whole nest. The queen now sits in her chamber. In the 2D close-up, clicking an ant keeps her name up ([#108](https://github.com/MarcialPimentel/hormigas/pull/108)).
 - On the 3D patch, the grass turns see-through while you move around zoomed out, so you can see the mounds and columns under it; it grows back once you stop. At ant height it stays solid. **WASD** or the arrow keys now move the camera on the patch and in the Garden, **Q/E** turn it on the patch, and Shift moves faster.
 - Twice the harvest: chambers, base income, Gardener Minims, forage parties and aphid herds all gather twice as much. Storage is the same size, so a Granary or Larder pays off sooner. An engaged player now reaches Nectar in about 1.3 hours instead of 2.4.

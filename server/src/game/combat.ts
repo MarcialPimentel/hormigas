@@ -168,7 +168,9 @@ export async function resolveRaid(q: Tx, m: Mission, at: number, opts: { attacke
 
   let loot = { foliage: 0, protein: 0, nectar: 0 };
   if (result.winner === 'attacker') {
-    loot = fillCargo(lootable(target.resources, protectedAmount(target.chambers, defender.research), lootPct(attacker.research)), groupCargo(m.units));
+    // wild nests, mounds and dens give up more; aphid herds (players' tenders) don't (docs/08-combat.md)
+    const wildTarget = !!target.npc && !herd;
+    loot = fillCargo(lootable(target.resources, protectedAmount(target.chambers, defender.research), lootPct(attacker.research, wildTarget)), groupCargo(m.units));
     target.resources = sub(target.resources, loot);
     m.cargo = loot;
   }
