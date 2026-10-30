@@ -3,18 +3,11 @@ import {
   NEST_SPECIES, NEST_MAX_LEVEL, nestAt, nestUnitsAt, nestLevelFor, nestRaidParty, nestTargets, previewBattle, speciesForTerrain,
   total, unitsValue, maxLevel, regrowHours, nestRaidsBack, speciesOfKind, SPECIES, NPC_DATA,
   herdHoneydewAt, herdLevelFor, herdNectarPerHour, herdStoreCap, wildThingsAround, isSiteSpot, validCoords,
-  type UnitCounts, type NestSpecies, CASTES,
+  type UnitCounts, type NestSpecies, CASTES, FAIR_NEST_ARMIES, FAIR_MOUND_ARMIES, FAIR_DEN_ARMIES,
 } from '../src';
 
-// A fair army for a player whose patch is at each nest level (docs/17-wild-nests.md, tuning check).
-const FAIR: Record<number, UnitCounts> = {
-  1: { minor_soldier: 8 },
-  2: { minor_soldier: 20 },
-  3: { minor_soldier: 20, major_soldier: 12 },
-  4: { minor_soldier: 80, major_soldier: 10 },
-  5: { minor_soldier: 150, major_soldier: 40 },
-  6: { minor_soldier: 250, major_soldier: 100 },
-};
+// Fair armies per level live in docs/data/npc.json (tuning), shared with `npm run combat`.
+const FAIR = FAIR_NEST_ARMIES;
 const half = (u: UnitCounts): UnitCounts => Object.fromEntries(Object.entries(u).map(([k, n]) => [k, Math.floor(n! / 2)]));
 
 describe('wild nests', () => {
@@ -97,15 +90,8 @@ describe('wild nests', () => {
 });
 
 // Termite mounds and spider dens (docs/24-npcs.md, tuning check). The armies a player is expected to bring.
-const MOUND_FAIR: UnitCounts[] = [
-  { minor_soldier: 120, major_soldier: 40 },
-  { minor_soldier: 250, major_soldier: 110 },
-  { minor_soldier: 450, major_soldier: 220 },
-];
-const DEN_FAIR: UnitCounts[] = [
-  { minor_soldier: 250, major_soldier: 100 }, // a solo player around day 30 (the level-6 fair army)
-  { minor_soldier: 450, major_soldier: 220 }, // a bigger army, or several players together later (Alliances)
-];
+const MOUND_FAIR = FAIR_MOUND_ARMIES;
+const DEN_FAIR = FAIR_DEN_ARMIES; // tier 1: a solo player around day 30; tier 2: a bigger army, or several players together
 
 describe('termite mounds and spider dens', () => {
   const fight = (army: UnitCounts, species: NestSpecies, level: number) => {

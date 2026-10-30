@@ -14,7 +14,8 @@
     "migrate": "npm run migrate -w server",
     "test": "npm run test --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present",
-    "sim": "tsx shared/sim/cli.ts"
+    "sim": "tsx shared/sim/cli.ts",
+    "combat": "tsx shared/sim/combat.ts"
   },
   "devDependencies": {
     "concurrently": "^10.0.6",

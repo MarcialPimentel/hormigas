@@ -5,6 +5,7 @@ export * from './economy';
 export * from './world';
 export * from './combat';
 export * from './counters';
+export * from './tuning';
 export * from './points';
 export * from './pvp';
 export * from './forage';
