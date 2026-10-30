@@ -73,11 +73,6 @@ export function Patch3D({ region, patch, spots, selected, onPick, onFail, replay
   useEffect(() => sceneRef.current?.setReduced(reduced), [reduced]);
   useEffect(() => sceneRef.current?.setSpots(region, patch, spots), [region, patch, spots]);
   useEffect(() => sceneRef.current?.setSelected(selected), [selected]);
-  const orderKey = JSON.stringify(order ?? null);
-  useEffect(() => {
-    if (ready) sceneRef.current?.setOrder(order ?? null);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [orderKey, ready]);
   const insetRef = useRef(inset);
   insetRef.current = inset;
   const insetKey = JSON.stringify(inset ?? null);
@@ -85,6 +80,12 @@ export function Patch3D({ region, patch, spots, selected, onPick, onFail, replay
     if (inset) sceneRef.current?.setInset(inset);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [insetKey]);
+  // after the inset, so the order is framed in the room Deploy leaves
+  const orderKey = JSON.stringify(order ?? null);
+  useEffect(() => {
+    if (ready) sceneRef.current?.setOrder(order ?? null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [orderKey, ready]);
   // a party may only appear on the patch once the map and state have caught up: try for a few seconds
   useEffect(() => {
     if (!focus || !ready) return;

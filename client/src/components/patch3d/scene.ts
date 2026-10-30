@@ -1010,7 +1010,10 @@ export async function createPatchScene(
       return;
     }
     const { pts, lens, total } = orderPath;
-    const gap = 0.75, shift = reduced ? 0 : (clock * 1.4) % gap;
+    // dots grow as the camera backs off, so the route stays readable from the whole-patch view
+    const big = Math.max(1, view.dist / 22);
+    os.setScalar(big);
+    const gap = 0.75 * big, shift = reduced ? 0 : (clock * 1.4 * big) % gap;
     let n = 0;
     for (let d = shift; d < total && n < ORDER_DOTS; d += gap) {
       let i = 1;
@@ -1026,8 +1029,8 @@ export async function createPatchScene(
       const { x, z } = spotPos(c.spot);
       label(key, 'p3-label order', x, gH(x, z) + 2.4, z, html);
     };
-    tag(order.from, 'order-from', '<b>From</b>');
-    tag(order.to, 'order-to', `<b>To</b> · ${esc(order.label)}`);
+    tag(order.from, 'order-from', '<span><b>From</b></span>');
+    tag(order.to, 'order-to', `<span><b>To</b> · ${esc(order.label)}</span>`);
   }
 
   // ---------- labels (HTML over the canvas) ----------
@@ -1366,8 +1369,17 @@ export async function createPatchScene(
       still();
     },
     setOrder(o) {
+      const fresh = !!o && (!order || JSON.stringify([order.from, order.to]) !== JSON.stringify([o.from, o.to]));
       order = o;
       buildOrder();
+      // frame both ends of the order in the room Deploy leaves, rather than the whole patch
+      if (fresh && orderPath) {
+        const a = orderPath.pts[0], b = orderPath.pts[orderPath.pts.length - 1];
+        const span = Math.hypot(b.x - a.x, b.z - a.z);
+        Object.assign(goal, { tx: (a.x + b.x) / 2, tz: (a.z + b.z) / 2 + 2, yaw: 0, dist: Math.min(homeDist, Math.max(20, (span + 8) / (TANH * camera.aspect))) });
+        clampGoal();
+      }
+      if (!o) reset();
       still();
     },
     focusParty(key) {

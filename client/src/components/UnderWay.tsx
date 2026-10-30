@@ -121,6 +121,9 @@ export function UnderWay({ onFocus, compact, limit }: { onFocus?: FocusParty; co
           const ends = p.phase === 'out' ? m.arriveAt : p.phase === 'back' ? m.returnAt : null;
           const verb = p.phase === 'holding' ? (m.type === 'tend' ? 'Tending' : 'Holding') : p.phase === 'out' ? (p.oneWay ? 'Arrives' : 'There') : 'Home';
           const go = click(`m${m.id}`, from?.coords ?? colony.coords, m.target);
+          // your own colonies by name; anywhere else by its coordinates
+          const mine = (state.colonies ?? []).find((c) => c.coords.region === m.target.region && c.coords.patch === m.target.patch && c.coords.spot === m.target.spot);
+          const where = mine?.name ?? fmtCoords(m.target);
           const what = Object.entries(m.units as Record<string, number>).filter(([, c]) => c > 0).sort((a, b) => b[1] - a[1]).slice(0, 2)
             .map(([id, c]) => `${fmtFull(c)} ${(CASTES as Record<string, { name: string }>)[id]?.name ?? id}`).join(', ');
           return (
@@ -128,10 +131,10 @@ export function UnderWay({ onFocus, compact, limit }: { onFocus?: FocusParty; co
               <div className="uw-head">
                 {go ? (
                   <button className="linkish uw-title" onClick={go} title="Show it on the patch">
-                    {label(m.type as MissionType)} {p.phase === 'back' ? '←' : '→'} {fmtCoords(m.target)}
+                    {label(m.type as MissionType)} {p.phase === 'back' ? '←' : '→'} {where}
                   </button>
                 ) : (
-                  <strong className="uw-title">{label(m.type as MissionType)} {p.phase === 'back' ? '←' : '→'} {fmtCoords(m.target)}</strong>
+                  <strong className="uw-title">{label(m.type as MissionType)} {p.phase === 'back' ? '←' : '→'} {where}</strong>
                 )}
                 <span className="uw-time" title={ends ? `${verb} ${fmtClock(ends)}` : undefined}>
                   {ends ? `${verb} ${ends > now ? `in ${fmtDuration(ends - now)}` : 'now'}` : verb}
@@ -147,6 +150,7 @@ export function UnderWay({ onFocus, compact, limit }: { onFocus?: FocusParty; co
                 loads={p.phase === 'back' ? Object.keys(TRIP_LOAD).filter((r) => (m.cargo?.[r] ?? 0) > 0) : []}
               />
               <p className="uw-sub">
+                {homes.size > 1 && from ? `From ${from.name} · ` : ''}
                 {compact ? `${fmtFull(n)} ants` : what || `${fmtFull(n)} ants`}
                 {m.result?.recalled ? ' · recalled' : m.result?.turnedBack ? ' · turned back' : ''}
                 {p.phase === 'back' && m.cargo && sum(m.cargo) > 0 ? ` · carrying ${fmtFull(sum(m.cargo))}` : ''}
