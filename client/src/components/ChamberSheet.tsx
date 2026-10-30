@@ -5,7 +5,7 @@ import { api } from '../api';
 import { useGame } from '../game';
 import { fmtDuration, fmtFull } from '../format';
 import { CHAMBER_BLURB, RESOURCE_LABEL, chamberEffect } from '../describe';
-import { chamberPlan } from '../chamberPlan';
+import { chamberPlan, plannedDig } from '../chamberPlan';
 import { Cost } from './ui';
 
 export const STORE_OF: Partial<Record<ChamberId, ResourceId>> = { granary: 'foliage', larder: 'protein', nectar_cellar: 'nectar' };
@@ -67,12 +67,19 @@ export function ChamberSheet({ id, onClose, onLookInside, onAllChambers }: Sheet
   }, [onClose]);
 
   if (!colony || !state) return null;
-  const { level, next, locked, cost, secs, blocked } = chamberPlan(colony, state, id);
+  const { level, next, locked, cost, secs, blocked, planning } = chamberPlan(colony, state, id);
   const def = CHAMBERS[id];
   const store = STORE_OF[id];
   const cap = storageCapacity(colony.chambers, colony.research);
   const safe = protectedAmount(colony.chambers, colony.research);
   const job = colony.buildJob?.chamber === id ? colony.buildJob : null;
+  const planned = colony.digPlan?.chambers[0] === id ? plannedDig(colony, state, now) : null;
+  // the next level can be dug now, or planned behind the dig in progress
+  const offer = !locked && !planned && (!job || planning);
+  const dig = () =>
+    planning
+      ? act(() => api.post(`/api/colonies/${colony.id}/plan`, { chamber: id }), `Planned: ${def.name} ${next} digs next.`)
+      : act(() => api.post(`/api/colonies/${colony.id}/build`, { chamber: id }));
 
   return (
     <section className="sheet" aria-label={`${def.name}`}>
@@ -92,29 +99,33 @@ export function ChamberSheet({ id, onClose, onLookInside, onAllChambers }: Sheet
         </p>
       )}
       {level > 0 && !store && def.effect.type !== 'gate' && <p className="small">Now: {chamberEffect(id, level, colony, state.player.research, state.world.speed)}</p>}
-      {job ? (
+      {job && (
         <p className="small sheet-next">
           <strong>Digging level {job.level}</strong> · {fmtDuration(job.endAt - now)} left
         </p>
-      ) : locked ? (
-        <p className="small sheet-next">{blocked}</p>
-      ) : (
+      )}
+      {planned && (
         <p className="small sheet-next">
-          <strong>{level > 0 ? `Level ${next}` : 'At level 1'}:</strong> {chamberEffect(id, next, colony, state.player.research, state.world.speed)}
+          <strong>Planned next: level {planned.level}</strong>
           <br />
-          <Cost cost={cost} have={colony.resources} /> · {fmtDuration(secs * 1000)} to dig
+          <span className="muted">{planned.note}</span>
         </p>
       )}
+      {locked ? (
+        <p className="small sheet-next">{blocked}</p>
+      ) : (
+        offer && (
+          <p className="small sheet-next">
+            <strong>{next > 1 ? `Level ${next}` : 'At level 1'}:</strong> {chamberEffect(id, next, colony, state.player.research, state.world.speed)}
+            <br />
+            <Cost cost={cost} have={colony.resources} /> · {fmtDuration(secs * 1000)} to dig{planning ? ' · paid when it starts' : ''}
+          </p>
+        )
+      )}
       <div className="sheet-actions">
-        {!locked && !job && (
-          <button
-            type="button"
-            className="btn primary"
-            disabled={!!blocked}
-            title={blocked || undefined}
-            onClick={() => act(() => api.post(`/api/colonies/${colony.id}/build`, { chamber: id }))}
-          >
-            {level === 0 ? 'Dig it' : 'Dig deeper'}
+        {offer && (
+          <button type="button" className="btn primary" disabled={!!blocked} title={blocked || undefined} onClick={dig}>
+            {planning ? 'Plan next' : level === 0 ? 'Dig it' : 'Dig deeper'}
           </button>
         )}
         {level > 0 && onLookInside && (
@@ -125,7 +136,7 @@ export function ChamberSheet({ id, onClose, onLookInside, onAllChambers }: Sheet
         <button type="button" className="btn ghost" onClick={onAllChambers}>
           All chambers
         </button>
-        {!locked && !job && blocked && <span className="why">{blocked}</span>}
+        {offer && blocked && <span className="why">{blocked}</span>}
       </div>
     </section>
   );

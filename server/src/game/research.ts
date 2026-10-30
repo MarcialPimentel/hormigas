@@ -13,7 +13,7 @@ import {
 import type { Tx } from '../db';
 import { now } from '../clock';
 import { GameError } from '../errors';
-import { advance, requireAffordable, getPlayer, lockColony, lockOwnColony, playerColonyIds, saveColony, savePlayerResearch } from '../colony';
+import { advance, requireAffordable, getPlayer, lockColony, lockOwnColony, playerColonyIds, saveColony, savePlayerResearch, wakeDigPlan } from '../colony';
 import { cancelEvent, onEvent, schedule } from '../events';
 import { getWorld } from '../world';
 import { timeMultiplier } from './boost';
@@ -61,6 +61,8 @@ export async function cancelResearch(q: Tx, playerId: number) {
   c.resources = add(c.resources, job.cost);
   await cancelEvent(q, job.eventId);
   player.researchJob = null;
+  // a dig planned for the Pheromone Chamber was waiting for this research: it can go now
+  if (c.digPlan?.waiting === 'busy') await wakeDigPlan(q, c);
   await saveColony(q, c);
   await savePlayerResearch(q, player);
   return player;

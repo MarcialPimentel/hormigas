@@ -3,7 +3,7 @@ import { api } from '../api';
 import { useGame } from '../game';
 import { fmtDuration } from '../format';
 import { CHAMBER_BLURB, chamberEffect } from '../describe';
-import { chamberPlan } from '../chamberPlan';
+import { chamberPlan, plannedDig } from '../chamberPlan';
 import { Cost, Countdown, Panel, Pic } from '../components/ui';
 
 const GROUPS: { title: string; ids: ChamberId[] }[] = [
@@ -13,12 +13,14 @@ const GROUPS: { title: string; ids: ChamberId[] }[] = [
 ];
 
 export function Chambers() {
-  const { colony, state, act } = useGame();
+  const { colony, state, act, now } = useGame();
   if (!colony || !state) return null;
   const research = state.player.research;
   const used = spaceUsed(colony.chambers);
   const max = spaceMax(colony.baseSpace, research);
   const job = colony.buildJob;
+  const planned = plannedDig(colony, state, now);
+  const unplan = () => act(() => api.post(`/api/colonies/${colony.id}/plan/cancel`, { index: 0 }), 'Planned dig removed.');
 
   return (
     <div className="stack">
@@ -40,8 +42,19 @@ export function Chambers() {
               Cancel
             </button>
           </div>
-        ) : (
+        ) : planned ? null : (
           <p className="muted">Your diggers are idle. Pick a chamber to expand.</p>
+        )}
+        {planned && (
+          <div className="active-job planned-job">
+            <div>
+              <strong>{planned.waiting ? 'Planned' : 'Next'}: {CHAMBERS[planned.id].name}</strong> to level {planned.level}
+              <div className="muted small">{planned.note}</div>
+            </div>
+            <button className="btn ghost small" onClick={unplan}>
+              Remove
+            </button>
+          </div>
         )}
       </Panel>
 
@@ -49,7 +62,7 @@ export function Chambers() {
         <Panel key={g.title} title={g.title}>
           <ul className="rows">
             {g.ids.map((id) => {
-              const { level, next, locked, cost, secs, blocked } = chamberPlan(colony, state, id);
+              const { level, next, locked, cost, secs, blocked, planning } = chamberPlan(colony, state, id);
               return (
                 <li key={id} className={`row has-pic${locked ? ' locked' : ''}`}>
                   <Pic kind="chamber" id={id} />
@@ -80,9 +93,13 @@ export function Chambers() {
                           className="btn primary"
                           disabled={!!blocked}
                           title={blocked || undefined}
-                          onClick={() => act(() => api.post(`/api/colonies/${colony.id}/build`, { chamber: id }))}
+                          onClick={() =>
+                            planning
+                              ? act(() => api.post(`/api/colonies/${colony.id}/plan`, { chamber: id }), `Planned: ${CHAMBERS[id].name} ${next} digs next.`)
+                              : act(() => api.post(`/api/colonies/${colony.id}/build`, { chamber: id }))
+                          }
                         >
-                          {level === 0 ? 'Build' : `Dig level ${next}`}
+                          {planning ? `Plan level ${next}` : level === 0 ? 'Build' : `Dig level ${next}`}
                         </button>
                         {blocked && <span className="why">{blocked}</span>}
                       </>

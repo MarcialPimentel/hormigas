@@ -52,7 +52,7 @@ At the end of the run (~40 days) an engaged colony produces roughly 2,900 Foliag
 | Leaf Garden 10 | < 4 days |
 
 ## Known gaps / next tuning questions
-- The **Leaf Garden 15 → 20** stretch (~24 days) is steep. Decide whether Excavation Works or a second build queue should flatten it.
+- The **Leaf Garden 15 → 20** stretch (~24 days) is steep. The dig plan (2026-10-30, [04-colony](04-colony.md#build-rules)) doesn't shorten it for this simulated player, who never leaves the diggers idle; it closes the overnight gaps real players have. If the stretch is still too slow, Excavation Works is the lever.
 - Test servers (`WORLD_SPEED=5`) compress everything ~5×: Nectar in ~30 minutes.
 
 ## Open Questions
