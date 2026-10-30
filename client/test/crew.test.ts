@@ -2,7 +2,7 @@
 // (client/src/components/nest3d/crew.ts).
 import { describe, expect, it } from 'vitest';
 import { CHAMBER_IDS } from '@hormigas/shared';
-import { chamberJobs, createCrew, crewFor, crewSize, floorY, heapAt, stopAt, tunnelSide } from '../src/components/nest3d/crew';
+import { chamberJobs, createCrew, crewFor, crewSize, floorY, heapAt, shareCrews, stopAt, tunnelSide } from '../src/components/nest3d/crew';
 import { D, room } from '../src/components/nest3d/slab';
 
 describe('chamber crews', () => {
@@ -32,12 +32,22 @@ describe('chamber crews', () => {
     expect(tunnelSide(room('honeypot_gallery', 1))).toBe(-1);
   });
 
-  it('more ants in bigger chambers, never more than ten or than the colony has', () => {
+  it('more ants in bigger chambers, never more than ten or than the colony can spare', () => {
     expect(crewSize(1, 100)).toBe(3);
     expect(crewSize(8, 100)).toBe(7);
     expect(crewSize(30, 100)).toBe(10);
     expect(crewSize(10, 2)).toBe(2);
-    expect(crewSize(10, 0)).toBe(1);
+    expect(crewSize(10, 0)).toBe(0);
+  });
+
+  it('crews are shared out fairly: everyone gets someone before anyone gets a full crew, never past the budget', () => {
+    expect(shareCrews([6, 1, 1], 3)).toEqual([1, 1, 1]);
+    expect(shareCrews([6, 1, 1], 7)).toEqual([3, 2, 2]);
+    expect(shareCrews([6, 1, 1], 100)).toEqual([6, 3, 3]);
+    expect(shareCrews([6, 1, 1], 0)).toEqual([0, 0, 0]);
+    const s = shareCrews([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], 40);
+    expect(s.reduce((a, b) => a + b, 0)).toBe(40);
+    expect(Math.min(...s)).toBeGreaterThan(0);
   });
 
   it('the queen lives in her chamber; a soldier guards the stores only if the colony has soldiers', () => {
