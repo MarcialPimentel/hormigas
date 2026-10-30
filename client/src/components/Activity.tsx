@@ -1,4 +1,4 @@
-import { CHAMBERS, RESEARCH, queueEndsAt, type ChamberId, type ResearchId } from '@hormigas/shared';
+import { CHAMBERS, RESEARCH, plannedLevel, queueEndsAt, type ChamberId, type ResearchId } from '@hormigas/shared';
 import { useGame } from '../game';
 import { Countdown, Empty, Trip } from './ui';
 import { fmtCoords } from '../format';
@@ -22,12 +22,25 @@ export function ActivityList({ go }: { go: (screen: string) => void }) {
   if (!state || !colony) return null;
   const items: Item[] = [];
 
+  const planned = colony.digPlan?.chambers[0];
   if (colony.buildJob) {
     items.push({
       key: 'build',
       startAt: colony.buildJob.startAt,
       endAt: colony.buildJob.endAt,
-      label: <>Digging <strong>{CHAMBERS[colony.buildJob.chamber as ChamberId].name}</strong> to level {colony.buildJob.level}</>,
+      label: (
+        <>
+          Digging <strong>{CHAMBERS[colony.buildJob.chamber as ChamberId].name}</strong> to level {colony.buildJob.level}
+          {planned && <span className="muted small"> · then {CHAMBERS[planned].name} {plannedLevel(colony, 0)}</span>}
+        </>
+      ),
+      screen: 'chambers',
+    });
+  } else if (planned && colony.digPlan?.checkAt) {
+    items.push({
+      key: 'plan',
+      endAt: colony.digPlan.checkAt,
+      label: <>Planned dig <strong>{CHAMBERS[planned].name}</strong> {plannedLevel(colony, 0)} waiting to start</>,
       screen: 'chambers',
     });
   }

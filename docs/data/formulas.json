@@ -37,6 +37,11 @@
     "researchSeconds": "(foliage + protein) / (researchDivisor * (1 + pheromoneChamberLevel)) / worldSpeed",
     "researchDivisor": 1.0
   },
+  "digPlan": {
+    "_note": "The dig plan (docs/04-colony.md): chambers lined up behind the dig in progress. Each starts, and is paid for, when the diggers are free and the colony can afford it. 'slots' is how many can wait in line; 'unlock' is what the colony needs first.",
+    "slots": 1,
+    "unlock": { "queen_chamber": 4 }
+  },
   "distance": {
     "formula": "same spot: sameSpot; same patch: samePatchBase + samePatchPerSpot * |spotA - spotB|; same region: sameRegionBase + sameRegionPerPatch * |patchA - patchB|; otherwise otherRegionPerRegion * |regionA - regionB|",
     "sameSpot": 5,

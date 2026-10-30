@@ -1,19 +1,18 @@
 // The 3D nest (docs/12-ui-nest-view.md, "The 3D slab"; docs/art/sunlit-microcosm.md): the colony as a block of
 // earth cut open at the front, like an ant farm on a plinth, in the sunlit-microcosm look: soil in coloured
 // horizons, hollows lit from inside, grass and flowers towering on top. The ants are real 3D ants, drawn at
-// their true numbers up to a cap (ants3d.ts); the chambers keep their 2D art on each hollow's back wall.
+// their true numbers up to a cap (ants3d.ts); each hollow holds what the chamber holds, in 3D (contents.ts).
 // Like the 2D nest, it only shows what the server says; nothing here decides anything.
 import * as THREE from 'three';
 import { CHAMBERS, CHAMBER_IDS, lvl, type ChamberId, type ResourceId } from '@hormigas/shared';
 import type { ServerColony, ServerState } from '../../game';
 import type { Caste } from '../../art/ants';
-import { HOLLOW, VIEW } from '../../art/chambers';
-import { loadCanvases as roomCanvases } from '../chamberSprites';
 import { partyCaste, surfaceParties, type SurfaceParty } from '../nestScene';
 import { chamberTag, partyLabel } from '../nestInfo';
 import { fmtDuration } from '../../format';
 import { BACK, D, H, SHAFT_HW, W, ZS, carve, pathTo, room, shaftX, type P3, type Room } from './slab';
 import { CHITIN, antUniforms, createAnts, type AntOpts, type CargoKind } from './ants3d';
+import { createContents } from './contents';
 
 export interface NestData {
   colony: ServerColony | null;
@@ -82,7 +81,6 @@ export async function createNestScene(
   canvas.setAttribute('aria-hidden', 'true');
   // throws without WebGL: the caller falls back to the 2D nest
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
-  const roomPics = await roomCanvases();
   host.prepend(canvas);
   renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
   renderer.shadowMap.enabled = true;
@@ -372,7 +370,7 @@ export async function createNestScene(
     queen_chamber: ['#FFB36B', 2.5], honeypot_gallery: ['#FFCF5A', 2], leaf_garden: ['#E8F0D0', 1.5],
     pheromone_chamber: ['#C59BFF', 2.5], nectar_cellar: ['#FFCF5A', 1.2],
   };
-  let hourShown = -1, nightK = 0, artGlow = 0.6;
+  let hourShown = -1, nightK = 0;
   function applySky(hour: number) {
     hourShown = hour;
     const s = skyFor(hour);
@@ -391,41 +389,11 @@ export async function createNestScene(
     grassU.uGlow.value = L(0.22, 0.02);
     backWallMat.emissiveIntensity = L(0.42, 1.25);
     wallMat.emissiveIntensity = L(0.15, 0.6);
-    artGlow = L(0.6, 1.1);
-    for (const m of artMats) m.emissiveIntensity = artGlow;
+    contents.setNight(s.night);
     host.style.background = s.sky;
   }
 
-  // ---------- art: chamber pictures from the 2D art set, and the real 3D ants ----------
-  const roomTex = {} as Record<ChamberId, THREE.CanvasTexture>;
-  // the 2D pictures sit on near-black soil; in 3D that soil becomes warm clay lit from the middle of the hollow
-  const warmed = (src: HTMLCanvasElement) => {
-    const c = document.createElement('canvas');
-    c.width = src.width;
-    c.height = src.height;
-    const g = c.getContext('2d')!;
-    g.drawImage(src, 0, 0);
-    const img = g.getImageData(0, 0, c.width, c.height), px = img.data;
-    const cx = (HOLLOW.cx / VIEW.w) * c.width, cy = (HOLLOW.cy / VIEW.h) * c.height;
-    const rx = (HOLLOW.rx / VIEW.w) * c.width, ry = (HOLLOW.ry / VIEW.h) * c.height;
-    for (let y = 0; y < c.height; y++) {
-      for (let x = 0; x < c.width; x++) {
-        const i = (y * c.width + x) * 4;
-        if (!px[i + 3]) continue;
-        const l = (0.3 * px[i] + 0.59 * px[i + 1] + 0.11 * px[i + 2]) / 255;
-        const k = 1 - THREE.MathUtils.smoothstep(l, 0.06, 0.2);
-        if (k <= 0) continue;
-        const f = Math.max(0, 1 - Math.hypot((x - cx) / rx, (y - cy) / ry)) ** 0.7;
-        const tr = 92 + 70 * f, tg = 48 + 40 * f, tb = 28 + 20 * f;
-        px[i] += (tr - px[i]) * k * 0.9;
-        px[i + 1] += (tg - px[i + 1]) * k * 0.9;
-        px[i + 2] += (tb - px[i + 2]) * k * 0.9;
-      }
-    }
-    g.putImageData(img, 0, 0);
-    return c;
-  };
-  for (const id of CHAMBER_IDS) roomTex[id] = tex(warmed(roomPics[id]));
+  // ---------- the real 3D ants ----------
   const plane = keep(new THREE.PlaneGeometry(1, 1));
   // one drawn ant per ant, up to these caps (docs/art/sunlit-microcosm.md, decision 4); the tags give true numbers
   const CAP = coarse ? 0.5 : 1;
@@ -469,10 +437,6 @@ export async function createNestScene(
   const GLOW_RGB: Partial<Record<ChamberId, string>> = {
     pheromone_chamber: '185,140,255', nectar_cellar: '255,200,80', honeypot_gallery: '255,200,80', aphid_pasture: '190,230,120',
   };
-  const GLOW_HEX: Partial<Record<ChamberId, string>> = {
-    pheromone_chamber: '#C9A6FF', nectar_cellar: '#FFD070', honeypot_gallery: '#FFD070', aphid_pasture: '#D2EE90',
-  };
-  const artMats: THREE.MeshLambertMaterial[] = [];
   function paintGlow(list: Room[]) {
     const g = glowCanvas.getContext('2d')!;
     g.fillStyle = '#000';
@@ -492,6 +456,8 @@ export async function createNestScene(
   }
   const layoutGroup = new THREE.Group();
   scene.add(layoutGroup);
+  // what each hollow holds (contents.ts): rebuilt with the layout, kept in step with the colony every frame
+  const contents = createContents(scene, coarse);
   const layoutDisposables: { dispose(): void }[] = [];
   let rooms: Room[] = [];
   let queen: Room = room('queen_chamber', 1);
@@ -564,22 +530,12 @@ export async function createNestScene(
     face.castShadow = face.receiveShadow = true;
     layoutGroup.add(face);
 
-    // each chamber's own art on the back wall of its hollow, and an invisible disc to tap
+    // an invisible disc over each hollow to tap. The 2D chamber pictures no longer hang on the back walls: they
+    // have piles and brood drawn in, which would show a full store when it's empty. The 3D contents say it now.
     const hit = new THREE.MeshBasicMaterial({ visible: false });
     layoutDisposables.push(hit);
     taps = [];
-    artMats.length = 0;
     for (const r of rooms) {
-      const sx = r.rx / HOLLOW.rx, sy = r.ry / HOLLOW.ry;
-      // lit from inside with the chamber's own glow, so the hollows read warm rather than black
-      const artMat = new THREE.MeshLambertMaterial({ map: roomTex[r.id], transparent: true, alphaTest: 0.05, emissive: GLOW_HEX[r.id] ?? '#FFB070', emissiveMap: roomTex[r.id], emissiveIntensity: artGlow });
-      artMats.push(artMat);
-      const art = new THREE.Mesh(plane, artMat);
-      layoutDisposables.push(artMat);
-      art.scale.set(VIEW.w * sx, VIEW.h * sy, 1);
-      art.position.set(r.x - (HOLLOW.cx - VIEW.w / 2) * sx, r.y + (HOLLOW.cy - VIEW.h / 2) * sy, -D + 0.06);
-      art.receiveShadow = true;
-      layoutGroup.add(art);
       const disc = new THREE.Mesh(plane, hit);
       disc.scale.set(r.rx * 2, r.ry * 2, 1);
       disc.position.set(r.x, r.y, -0.1);
@@ -609,6 +565,7 @@ export async function createNestScene(
     }
     taps.push(mound);
     paintGlow(rooms);
+    contents.build(rooms, l.chambers);
 
     // glows in the chambers that have them, brighter at night
     for (const g of glows) scene.remove(g.l);
@@ -892,6 +849,7 @@ export async function createNestScene(
     drawDiggers(d);
     ants.end();
     const researching = !!d.state?.player.researchJob;
+    contents.update(d.colony, researching, clock);
     for (const g of glows) {
       const pulse = g.id === 'pheromone_chamber' && researching && !reduced ? 1 + 0.6 * Math.sin(clock * 3) : 1;
       g.l.intensity = g.base * (1 + nightK * 5) * pulse * (g.id === 'pheromone_chamber' && !researching ? 0.4 : 1);
@@ -973,6 +931,7 @@ export async function createNestScene(
       canvas.removeEventListener('dblclick', onDbl);
       canvas.removeEventListener('wheel', onWheel);
       for (const el of labelEls.values()) el.remove();
+      contents.dispose();
       for (const d of [...layoutDisposables, ...disposables]) d.dispose();
       for (const g of glows) g.l.dispose();
       renderer.dispose();

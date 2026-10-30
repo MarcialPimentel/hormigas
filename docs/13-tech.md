@@ -29,7 +29,7 @@ Rates are recalculated whenever a chamber, workforce or research changes. When a
 
 ## Event queue
 - Table `events(id, world_id, type, due_at, payload, status)`.
-- Types: `build_complete`, `research_complete`, `units_complete`, `mission_arrive`, `mission_return`, `corpse_decay`.
+- Types: `build_complete`, `dig_plan` (the planned dig's look again when it was waiting), `research_complete`, `units_complete`, `mission_arrive`, `mission_return`, `corpse_decay`.
 - A worker process picks due events **in `due_at` order** and resolves them.
 - When resolving an event that touches a colony, first bring that colony's resources up to the event's `due_at` time (not "now").
 - Ordering matters: if a raid and a build complete at the same second, define a strict order (e.g., builds before battles).

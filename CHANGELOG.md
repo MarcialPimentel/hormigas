@@ -2,6 +2,9 @@
 
 _Current as of Build 11 (2026-10-30)._ Newest first. One entry per build, in players' words, built from the merged PRs. Smaller PRs merged between builds are listed with the nearest build.
 
+## Next build (unreleased)
+- The dig plan: from Queen's Chamber 4, plan the next chamber while one is being dug. It starts on its own the moment the dig ends and the stores can pay, even while you're away, and costs nothing until then.
+
 ## Build 11: The full roster — 2026-10-30
 - Four new ants: the Supermajor (tramples through ranks), the Slave-maker (carries the dead home after a won raid), the Desert Ant (luckier forage parties) and the Gardener Minim (more Leaf Garden output) ([#84](https://github.com/MarcialPimentel/hormigas/pull/84)).
 - Allies through the Symbiosis research, raised like ants: Carrion Beetle, Assassin Bug, Bullet Ant and Rhinoceros Beetle ([#84](https://github.com/MarcialPimentel/hormigas/pull/84)).
@@ -11,6 +14,7 @@ _Current as of Build 11 (2026-10-30)._ Newest first. One entry per build, in pla
 - The World button opens the whole world as a 3D back garden: a light for every patch where colonies live (yours honey, your supercolony's teal with threads to you), a star map by night, Winged Queens flying their arcs. Zoom out of a patch to rise to it, tap a light to dive in, and go down into your nest from the patch (#97).
 - On the 3D patch, an army-ant swarm comes on as a fan-shaped front with insects fleeing ahead of it, and battles play out where they were fought: live when a raid or swarm lands while you watch, or from any battle report with **Replay on the patch** ([#96](https://github.com/MarcialPimentel/hormigas/pull/96)).
 - The 3D nest is sunlit: coloured soil layers, chambers lit from inside, and real 3D ants walking the tunnels at their real numbers, capped ([#90](https://github.com/MarcialPimentel/hormigas/pull/90)).
+- Living chambers in the 3D nest: stores heap up as they fill, brood follows the queue, research motes drift while research runs, and the rest grows with level ([#95](https://github.com/MarcialPimentel/hormigas/pull/95)).
 
 ## Build 10: Castes with a purpose — 2026-10-30
 - A counter triangle: Minor Soldiers beat Majors, Majors beat the new Acid Sprayer, Sprayers beat Minors ([#81](https://github.com/MarcialPimentel/hormigas/pull/81)).
