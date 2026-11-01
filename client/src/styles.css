@@ -876,3 +876,49 @@ pre.report-body { white-space: pre-wrap; overflow-x: auto; }
 /* battle report: what the fight was worth (docs/08-combat.md) */
 .net-result { border-top: 1px dotted var(--seam); padding-top: 0.4rem; margin-top: 0.2rem; }
 .net-result .ok { color: var(--leaf-ink); }
+
+/* ---------- Build 12: colony needs and the Field Journal (docs/26-come-back.md) ---------- */
+.needs { display: grid; gap: 0.6rem; padding: 0.9rem 1rem; border-radius: var(--r-md); border: 1px solid var(--seam); background: var(--wall); }
+.needs-head { display: flex; flex-wrap: wrap; gap: 0.25rem 1rem; align-items: baseline; justify-content: space-between; }
+.needs-head h2 { margin: 0; font-size: 1.05rem; }
+.needs-yesterday { display: flex; gap: 0.75rem; align-items: flex-start; justify-content: space-between; padding: 0.55rem 0.7rem; border-radius: var(--r-sm); background: var(--soil); border-left: 3px solid var(--leaf-ink); }
+.needs-yesterday p { margin: 0; }
+.needs-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.45rem; }
+.need { display: flex; flex-wrap: wrap; gap: 0.4rem 0.75rem; align-items: center; justify-content: space-between; padding: 0.5rem 0.65rem; border-radius: var(--r-sm); border: 1px dashed var(--seam); }
+.need.ready { border: 1px solid var(--honey); background: rgba(232, 178, 58, 0.1); }
+.need-main { display: grid; gap: 0.2rem; flex: 1 1 14rem; min-width: 0; }
+.need-side { display: flex; gap: 0.35rem; }
+.need-bar { display: block; height: 5px; border-radius: 3px; background: var(--soil); overflow: hidden; }
+.need-bar span { display: block; height: 100%; background: var(--honey); border-radius: 3px; }
+.needs-foot { margin: 0; }
+.player-title { color: var(--honey-ink); font-style: italic; font-size: 0.9em; }
+
+.journal-title { display: flex; flex-wrap: wrap; gap: 0.5rem 0.75rem; align-items: center; margin-top: 0.75rem; }
+.journal-title label { font-weight: 700; }
+.journal-title select { font: inherit; padding: 0.35rem 0.5rem; border-radius: var(--r-sm); border: 1px solid var(--seam); background: var(--soil); color: var(--sand); }
+.pages { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.75rem; grid-template-columns: repeat(auto-fill, minmax(min(100%, 19rem), 1fr)); }
+/* a page of the notebook: always paper-coloured, whatever the theme, with ink text */
+.page { position: relative; display: flex; gap: 0.75rem; padding: 0.8rem; border-radius: 4px 10px 10px 4px; background: #f3efe2; color: #2b1d13;
+  border: 1px solid #c9bfa6; box-shadow: inset 6px 0 0 -3px #d8cfb6; }
+.page h3 { margin: 0; font-size: 1rem; display: flex; gap: 0.4rem; align-items: baseline; flex-wrap: wrap; }
+.page .latin { margin: 0; font-style: italic; font-size: 0.85rem; color: #6b5d45; }
+.page-note { margin: 0.3rem 0 0.35rem; font-size: 0.9rem; line-height: 1.35; }
+.page-meta { margin: 0; color: #4d4230; }
+.page-meta .muted { color: #6b5d45; }
+.page .stage { font-weight: 700; }
+.page-pic .pic { width: 56px; height: 56px; }
+/* not started: an empty page, the picture only faintly pencilled in */
+.page.blank { background: #ebe6d6; color: #6b5d45; border-style: dashed; }
+.page.blank .pic svg { filter: grayscale(1) opacity(0.25); }
+/* sketch: pencil, no colour */
+.page.sketch .pic svg { filter: grayscale(1) contrast(0.8) opacity(0.75); }
+.page.sketch .page-note { color: #4d4230; }
+/* full entry: ink, colour coming in */
+.page.entry .pic svg { filter: saturate(0.55); }
+.page.entry { border-color: #a8987a; }
+/* coloured plate: full colour and a gilt edge */
+.page.plate { border: 2px solid #c8a24a; box-shadow: inset 6px 0 0 -3px #d8cfb6, 0 0 0 3px rgba(200, 162, 74, 0.18); }
+.page.plate .stage { color: #7e520a; }
+.page-unknown { font-family: var(--font-display); font-size: 1.6rem; color: #a8987a; }
+.page.fresh { outline: 2px dashed var(--honey); outline-offset: 3px; }
+.badge-new { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; padding: 0.05rem 0.4rem; border-radius: 999px; background: #e8b23a; color: #2b1d13; }

@@ -51,6 +51,7 @@ export function Rankings() {
                   <td>{r.rank}</td>
                   <td>
                     {r.username}
+                    {r.title && <span className="player-title"> · {r.title}</span>}
                     {r.inactive && <span className="muted small"> · inactive</span>}
                   </td>
                   <td>{r.colonies}</td>
