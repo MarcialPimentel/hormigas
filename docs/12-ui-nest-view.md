@@ -17,7 +17,8 @@
 | **Missions** | Your patch drawn at the top (colonies as mounds, unscouted ones as scents); tap a spot to scout, raid, send or forage; **World** opens the region grid. Below: send missions, "return at" picker, battle preview, missions under way. The Map tab folded in here in Build 7 ([22-discovery](22-discovery.md)) |
 | **Allies** | Truces and your supercolony: found or join one, invite and answer, players you've met ([23-supercolonies](23-supercolonies.md)) |
 | **Reports** | Battle, scout, forage reports |
-| **Rankings** | Leaderboards |
+| **Journal** | The Field Journal: pages earned for discoveries, deeds and oddities; pick a title to wear ([26-come-back](26-come-back.md)) |
+| **Rankings** | Leaderboards, with each player's title |
 | **Feedback** | Admins only: player feedback, newest first, mark as handled |
 
 A persistent **resource bar** (Foliage, Protein, Nectar, Workforce) sits at the top of every screen. Each resource has a small picture rather than a dot: a cut leaf, prey, a drop of honeydew, a worker. A thin bar under each food shows how full its store is (hover for the exact amount and capacity), so the Production table isn't needed on computers.
