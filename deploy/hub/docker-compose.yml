@@ -133,6 +133,28 @@ services:
     mem_limit: 256m
     cpus: 0.5
 
+  # SCRAM (repo: scram, deploy/hub/add-to-hub.sh). Serves the page and the game's WebSocket
+  # on port 8791 inside Docker; Caddy is the only way in. Shifts live in memory, so a restart (each
+  # deploy) ends any shift in progress; the grace period is short.
+  scram:
+    image: ghcr.io/marcialpimentel/scram:latest
+    restart: unless-stopped
+    environment:
+      PORT: "8791"
+      # Only SCRAM's own page (and marz.gg) may open a game connection.
+      ALLOWED_ORIGINS: https://scram.marz.gg,https://marz.gg,https://www.marz.gg
+      MAX_ROOMS: "50"
+    stop_grace_period: 5s
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:8791/healthz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    mem_limit: 256m
+    cpus: 0.5
+    logging: *logging
+
 volumes:
   caddy_data:
   caddy_config:
