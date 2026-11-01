@@ -3,7 +3,7 @@
 _Current as of Build 11 (2026-10-30)._ Newest first. One entry per build, in players' words, built from the merged PRs. Smaller PRs merged between builds are listed with the nearest build.
 
 ## Next build (unreleased)
-- Sandy Soil's spot card now says **10% faster build time** instead of "−10% build time", which read like a penalty. Nothing about the ground itself changed.
+- Every ground now has **one strength and one weakness**, shown on the spot card in green and red. **Sandy Soil** digs 20% faster and is as roomy as Grassland (space 160–200; existing Sandy Soil colonies get +20 space), but its sand walls crumble: defenses fight 15% weaker. **Rotting Log** keeps +20% Protein but digs 15% slower (wood is slow to chew). Grassland is the biggest nest with no food bonus; Sunny Meadow and Creek Bank are unchanged. The battle preview counts a Sandy Soil colony's weaker defenses.
 - Every level of Nuptial Flight now lets you rule one more colony: level 1 → 2 colonies, level 2 → 3, level 3 → 4. Before, level 2 added nothing (it was only levels 1, 3 and 5).
 - A new carrier, the **Media Worker** (leafcutter media): carries 3,500, more than twice a Worker, for 500 Foliage and 200 Protein, from Brood Hall 2 with no research. It fills the jump from Workers straight to Haulers, and hauls corpses too.
 - Fixed: scouts from a player you have a truce with (or share a supercolony scent with) no longer show up as "Enemy scouts". They're listed as visiting scouts with your pact beside their name, aren't drawn in enemy red, and never set off the alarm. Your ants never kill them, and you always get a report saying who looked.

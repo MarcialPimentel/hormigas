@@ -3,7 +3,7 @@
 // Used by the Missions screen: tap a spot, then scout, raid, send or forage from its card.
 import { Suspense, lazy, useEffect, useState, type ReactNode } from 'react';
 import {
-  WORLD, WILDS_SPOT, TERRAIN, CHAMBERS, CASTES, DEFENSES, DISCOVERY_MESSAGES, WILD_SCENTS, HERDS, foundColonyBlocker, isSiteSpot, raidBlockMessage, terrainForSpot,
+  WORLD, WILDS_SPOT, TERRAIN, CHAMBERS, CASTES, DEFENSES, DISCOVERY_MESSAGES, WILD_SCENTS, HERDS, foundColonyBlocker, isSiteSpot, raidBlockMessage, terrainForSpot, terrainTraits,
   type Knowledge, type Relation, type ScentHint, type ScentKind, type TerrainId,
 } from '@hormigas/shared';
 import { api } from '../api';
@@ -354,14 +354,17 @@ function ScoutView({ at }: { at: Coords }) {
   );
 }
 
-/** What a terrain does, for picking where to found a colony: "+20% Foliage, −10% Nectar · space 120–150". */
-function terrainSummary(t: (typeof TERRAIN)[keyof typeof TERRAIN]) {
-  const mods = t.mods as Record<string, number>;
-  const label: Record<string, string> = { foliagePct: 'Foliage', proteinPct: 'Protein', nectarPct: 'Nectar' };
-  // build time: less is better, so say it in words ("10% faster build time") rather than "−10% build time"
-  const parts = Object.entries(mods).map(([k, v]) =>
-    k === 'buildTimePct' ? `${Math.abs(v)}% ${v < 0 ? 'faster' : 'slower'} build time` : `${v > 0 ? '+' : '−'}${Math.abs(v)}% ${label[k] ?? k}`);
-  return `${parts.length ? parts.join(', ') : 'No bonuses'} · space ${t.space[0]}–${t.space[1]}`;
+/** What a ground gives and costs, for picking where to found a colony: its one strength, one weakness and space. */
+function TerrainTraits({ id }: { id: TerrainId }) {
+  const { strength, weakness } = terrainTraits(id);
+  const [lo, hi] = TERRAIN[id].space;
+  return (
+    <>
+      <span className="small trait good">Strength: {strength}</span>
+      <span className="small trait bad">Weakness: {weakness}</span>
+      <span className="muted small">Space {lo}–{hi}</span>
+    </>
+  );
 }
 
 export function SpotCard({ s, at, onAct }: { s: Spot; at: Coords; onAct: (type: MissionType, at: Coords) => void }) {
@@ -446,7 +449,7 @@ export function SpotCard({ s, at, onAct }: { s: Spot; at: Coords; onAct: (type: 
             <>
               <strong>Spot {s.spot}</strong>
               <span className="muted small">Empty {terrain?.name.toLowerCase()}. Nobody lives here yet.</span>
-              {terrain && <span className="muted small">{terrainSummary(terrain)}</span>}
+              {!wilds && <TerrainTraits id={terrainForSpot(s.spot)} />}
               {foundBlocker && <span className="muted small">{foundBlocker.short}</span>}
             </>
           )}
