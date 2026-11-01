@@ -1,6 +1,7 @@
 // The Whole Yard (preview, docs/art/whole-yard.md): the game on one map. Zoom from the whole yard down to ant height;
 // double-click one of your mounds to dive into its nest. The buttons on the left open what used to be screens
-// (Chambers, Brood Hall, Research, Missions) as panels over the map, for whichever colony you cycle to.
+// (Chambers, Brood Hall, Research, Missions) as panels over the map, for whichever colony you cycle to; Rankings and the
+// Field Journal cover the whole player, so they open without the colony switcher.
 // Computers only; it ships behind the ?preview=yard switch (client/src/preview.ts).
 import { Suspense, lazy, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { WORLD } from '@hormigas/shared';
@@ -15,23 +16,31 @@ import { Chambers } from './Chambers';
 import { Brood } from './Brood';
 import { Research } from './Research';
 import { SendMission } from './Missions';
+import { Rankings } from './Rankings';
+import { Journal } from './Journal';
 import { MISSION_LABEL, type MissionType, type Nav } from '../nav';
 import type { Rung, YardScene } from '../components/yard3d/scene';
 
 const NestHome = lazy(() => import('../components/NestHome').then((m) => ({ default: m.NestHome })));
-type PanelId = 'chambers' | 'brood' | 'research' | 'missions';
+type PanelId = 'chambers' | 'brood' | 'research' | 'missions' | 'ranks' | 'journal';
+/** Panels about the whole player rather than one colony: no colony switcher in their header. */
+const PLAYER_PANELS: PanelId[] = ['research', 'ranks', 'journal'];
+/** Panels that take the map's full width (the tech tree, the journal's pages). */
+const WIDE_PANELS: PanelId[] = ['research', 'journal'];
 
 const I = (d: string) => (
   <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
     <path d={d} />
   </svg>
 );
-const RAIL: { id: PanelId | 'nest'; label: string; icon: ReactNode }[] = [
+const RAIL: { id: PanelId | 'nest'; label: string; icon: ReactNode; gap?: boolean }[] = [
   { id: 'nest', label: 'Nest', icon: I('M3 11c3-6 15-6 18 0M5 11v8h14v-8M9 19v-4a3 3 0 0 1 6 0v4') },
   { id: 'chambers', label: 'Chambers', icon: I('M12 3v4M12 7c-4 0-7 2-7 5s3 5 7 5 7-2 7-5-3-5-7-5ZM12 17v4M5 12H2M22 12h-3') },
   { id: 'brood', label: 'Brood Hall', icon: I('M12 4c2 0 3 1.5 3 3.5S14 11 12 11 9 9.5 9 7.5 10 4 12 4ZM8 20c0-4 2-6 4-6s4 2 4 6M6 9 3 7M18 9l3-2M6 15l-3 1M18 15l3 1') },
   { id: 'research', label: 'Research', icon: I('M9 3h6M10 3v6l-5 9a2 2 0 0 0 2 3h10a2 2 0 0 0 2-3l-5-9V3M8 15h8') },
   { id: 'missions', label: 'Missions', icon: I('M4 18c4-1 6-5 8-9s5-5 8-5M16 4h4v4M4 18l2 2') },
+  { id: 'ranks', label: 'Rankings', icon: I('M8 21V11M16 21V7M12 21V3M4 21h16'), gap: true },
+  { id: 'journal', label: 'Journal', icon: I('M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3V4ZM5 17a3 3 0 0 1 3-3h11M9 8h6') },
 ];
 const RUNGS: { id: Rung; label: string }[] = [
   { id: 'yard', label: 'Yard' },
@@ -185,6 +194,7 @@ export function Yard({ go }: { go: Nav }) {
 
   if (!state || !colony) return null;
   const selSpot = sel ? spots[`${sel.region}:${sel.patch}`]?.find((s) => s.spot === sel.spot) : null;
+  const fresh = state.journal?.fresh ?? 0;
   const colonyTitle = (
     <div className="yard-cycle">
       {state.colonies.length > 1 && (
@@ -220,25 +230,29 @@ export function Yard({ go }: { go: Nav }) {
           <button
             key={b.id}
             type="button"
-            className={(b.id === 'nest' ? nest : panel === b.id) ? 'on' : ''}
+            className={[(b.id === 'nest' ? nest : panel === b.id) ? 'on' : '', b.gap ? 'gap' : ''].filter(Boolean).join(' ') || undefined}
             aria-pressed={b.id === 'nest' ? nest : panel === b.id}
             onClick={() => (b.id === 'nest' ? (nest ? surface() : dive()) : setPanel((p) => (p === b.id ? null : (b.id as PanelId))))}
           >
             {b.icon}
             <span>{b.id === 'nest' && nest ? 'Up' : b.label}</span>
+            {b.id === 'journal' && fresh > 0 && <i className="rail-badge" aria-label={`${fresh} new pages`}>{fresh}</i>}
           </button>
         ))}
       </nav>
 
-      {panel && panel !== 'research' && (
-        <aside className="yard-panel" aria-label={RAIL.find((r) => r.id === panel)?.label}>
+      {panel && (
+        <aside className={`yard-panel${WIDE_PANELS.includes(panel) ? ' wide' : ''}`} aria-label={RAIL.find((r) => r.id === panel)?.label}>
           <div className="yard-panel-head">
-            {colonyTitle}
+            {PLAYER_PANELS.includes(panel) ? <b>{RAIL.find((r) => r.id === panel)?.label}</b> : colonyTitle}
             <button type="button" className="btn ghost small" onClick={() => setPanel(null)} aria-label="Close">×</button>
           </div>
           <div className="yard-panel-body">
             {panel === 'chambers' && <Chambers />}
             {panel === 'brood' && <Brood />}
+            {panel === 'research' && <Research />}
+            {panel === 'ranks' && <Rankings />}
+            {panel === 'journal' && <Journal />}
             {panel === 'missions' && (
               <div className="stack">
                 <div className="row-actions">
@@ -247,17 +261,6 @@ export function Yard({ go }: { go: Nav }) {
                 <UnderWay onFocus={(_, at) => sceneRef.current?.flyTo(at, 'patch')} />
               </div>
             )}
-          </div>
-        </aside>
-      )}
-      {panel === 'research' && (
-        <aside className="yard-panel wide" aria-label="Research">
-          <div className="yard-panel-head">
-            <b>Research</b>
-            <button type="button" className="btn ghost small" onClick={() => setPanel(null)} aria-label="Close">×</button>
-          </div>
-          <div className="yard-panel-body">
-            <Research />
           </div>
         </aside>
       )}
