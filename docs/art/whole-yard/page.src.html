@@ -1,0 +1,234 @@
+<title>Hormigas Whole Yard</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&display=swap">
+<style>
+{{BASE_CSS}}
+/* ---------- the one map: Civ-style banners, region names, the "needs you" button */
+.banner { position: absolute; left: 0; top: 0; display: flex; align-items: stretch; white-space: nowrap; font: 0.78rem/1 var(--body); color: #FBF6EA; border-radius: 7px; overflow: hidden; box-shadow: 0 3px 10px rgba(20, 12, 6, 0.35); border: 1.5px solid #2B1D13; }
+.banner i { font-style: normal; font-weight: 700; display: grid; place-items: center; min-width: 22px; padding: 0 5px; background: #2B1D13; color: #FBF6EA; }
+.banner b { padding: 5px 8px; font-family: var(--display); font-weight: 700; letter-spacing: 0.01em; }
+.banner span { padding: 5px 8px 5px 0; font-variant-numeric: tabular-nums; opacity: 0.9; }
+.banner span:empty { display: none; }
+.banner.you { background: #8C5A12; } .banner.you i { background: #E8B23A; color: #2B1D13; }
+.banner.ally { background: #1F6A65; } .banner.ally i { background: #46C9B8; color: #10302E; }
+.banner.rival { background: #6E4A2E; } .banner.rival i { background: #C9A27A; color: #2B1D13; }
+.banner.wild { background: #8E2A20; } .banner.wild i { background: #F2B5AC; color: #5A140E; }
+.banner.slim span { display: none; } .banner.slim b { padding: 3px 7px; font-size: 0.72rem; }
+.bdot { position: absolute; left: 0; top: 0; width: 12px; height: 12px; border-radius: 3px; border: 1.5px solid #2B1D13; transform-origin: center; }
+.bdot.you { background: #E8B23A; } .bdot.ally { background: #46C9B8; } .bdot.rival { background: #B08660; } .bdot.wild { background: #C4473A; }
+.rname { position: absolute; left: 0; top: 0; font: 800 clamp(0.9rem, 1.6vw, 1.25rem)/1 var(--display); color: #FBF6EA; text-shadow: 0 2px 0 rgba(43, 29, 19, 0.6), 0 0 14px rgba(43, 29, 19, 0.55); letter-spacing: 0.02em; white-space: nowrap; }
+.coltag::before { background: #E8B23A !important; }
+.needs { position: absolute; right: 12px; bottom: 100px; z-index: 4; display: grid; gap: 2px; text-align: left; background: #2B1D13; color: #FBF6EA; border: 2px solid #E8B23A; border-radius: 14px; padding: 10px 14px; font: 0.8rem/1.25 var(--body); cursor: pointer; box-shadow: 0 6px 18px rgba(20, 12, 6, 0.35); max-width: 230px; }
+.needs b { font: 700 0.95rem/1.15 var(--display); color: #FFD27A; }
+.needs:focus-visible { outline: 3px solid #3C9BE8; outline-offset: 2px; }
+.stage { background: #BFDDEB; }
+.haze { background: #2A1A10; }
+.zoomkey { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; }
+.zoomkey .rung { gap: 6px; }
+.zoomkey .rung .d { font: 700 0.75rem/1 var(--body); letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+@media (max-width: 860px) { .zoomkey { grid-template-columns: 1fr 1fr; } .zoomkey .rung::after { display: none; } }
+.blender { border-radius: 14px; border: 1px solid var(--line); width: 100%; height: auto; background: #B3D597; }
+@media (max-width: 640px) { .res { top: 100px; } .toast { top: 140px; } .ladder button span { display: inline; } .ladder button { padding: 5px 7px; font-size: 0.75rem; } .needs { bottom: 64px; right: 12px; max-width: 170px; padding: 8px 10px; } .needs span { display: none; } .scalebar { display: none; } }
+</style>
+
+<main>
+  <section class="head" aria-labelledby="t">
+    <p class="eyebrow">Hormigas · art direction proposal · draft for Marz · 1 Nov 2026</p>
+    <h1 id="t">The Whole Yard</h1>
+    <p class="lead">One map, from the whole back garden down to a single ant and into the nest. Civilization's way of showing a world (hex tiles, borders, mist, cities that grow, banners) on top of the game we already have, with its clock and its rules unchanged.</p>
+  </section>
+
+  <section aria-label="Playable mock-up">
+    <div class="stage" id="stage">
+      <div class="fallback" id="fallback">Loading the yard…</div>
+      <div class="labels" id="labels" aria-hidden="true"></div>
+      <div class="haze" id="haze"></div>
+      <div class="hud-top">
+        <div class="ladder" id="ladder" role="group" aria-label="Zoom level">
+          <button type="button" data-r="yard" aria-pressed="true"><span>Yard</span></button><span class="sep">›</span>
+          <button type="button" data-r="region" aria-pressed="false"><span>Region</span></button><span class="sep">›</span>
+          <button type="button" data-r="patch" aria-pressed="false"><span>Patch</span></button><span class="sep">›</span>
+          <button type="button" data-r="nest" aria-pressed="false"><span>Nest</span></button>
+        </div>
+        <div class="hud-right">
+          <button type="button" class="hud-btn" id="daynight">Night</button>
+          <button type="button" class="hud-btn" id="reset">Whole yard</button>
+        </div>
+      </div>
+      <div class="res" aria-label="Stores (made-up numbers)">
+        <span><i style="background:#7FC24A"></i><b id="r-foliage">24,700</b></span>
+        <span><i style="background:#C4473A"></i><b id="r-protein">10,000</b></span>
+        <span><i style="background:#E8B23A"></i><b id="r-nectar">20,700</b></span>
+        <span><i style="background:#2B1D13"></i>Colonies 2 / 3</span>
+      </div>
+      <div class="toast" id="toast" role="status" aria-live="polite"></div>
+      <div class="hint" id="hint" hidden></div>
+      <button type="button" class="needs" id="needs"><b>Brood Hall idle</b><span>Marz's Nest · tap to go there</span></button>
+      <div class="scalebar" id="scale">View ≈ 30 m across</div>
+      <div class="sheet" id="sheet" hidden role="dialog" aria-labelledby="sheet-title">
+        <h3 id="sheet-title"></h3>
+        <p id="sheet-body"></p>
+        <div class="acts" id="sheet-acts"></div>
+        <p class="fake">Numbers are made up. In the game the server decides; the map only acts it out.</p>
+        <button type="button" class="x" id="sheet-x" aria-label="Close">×</button>
+      </div>
+      <div class="chips" role="group" aria-label="Try the four Xs">
+        <button type="button" class="chip hot" id="c-scout">Explore: scout the mist</button>
+        <button type="button" class="chip" id="c-flight">Expand: nuptial flight</button>
+        <button type="button" class="chip" id="c-herd">Exploit: herd aphids</button>
+        <button type="button" class="chip" id="c-raid">Exterminate: raid the wild nest</button>
+        <button type="button" class="chip" id="c-nest">Enter the nest</button>
+      </div>
+    </div>
+    <p class="under"><span><b>Scroll</b> or pinch to zoom, all the way from 30 m to ant height</span><span><b>Drag</b> to move · <b>right-drag</b> to turn · WASD, Q/E</span><span><b>Double-click</b> your mound (honey banner) to go inside</span><span>Tap any mound, the aphids or a chamber</span></div>
+  </section>
+
+  <section aria-labelledby="s1">
+    <div class="head"><h2 id="s1">The short version</h2></div>
+    <div class="cards">
+      <div class="card"><span class="k">Structure</span><h3>One map, one zoom</h3><p>Yard, Region, Patch, Mound and Nest become one continuous zoom on one screen. No more switching between Colony and Missions to see your world.</p></div>
+      <div class="card"><span class="k">Look</span><h3>Civ's map grammar</h3><p>Patches are hex tiles far out. Scent borders mark whose ground it is, mist hides what you haven't seen, mounds grow as colonies grow, and banners name them.</p></div>
+      <div class="card"><span class="k">Rules</span><h3>Civ's look, OGame's clock</h3><p>No turns and no unit micro. The colony still lives while you're away. "End turn" becomes a <b>Needs you</b> button that takes you to whatever is idle or under threat.</p></div>
+      <div class="card"><span class="k">Technology</span><h3>Same stack, one scene</h3><p>Three.js on the version we ship. The Garden and Patch scenes merge into one map with level-of-detail rules. The nest stays its own scene, joined by a dive through the mound.</p></div>
+      <div class="card"><span class="k">Art</span><h3>A Blender kit</h3><p>Mounds in three growth stages (made for this page in Blender), then landmarks and the master ant. All of it scripted, so it can be rebuilt and tuned.</p></div>
+    </div>
+  </section>
+
+  <section aria-labelledby="s2">
+    <div class="head"><h2 id="s2">What makes it read as a 4X</h2><p class="lead">Hormigas already has all four Xs: scouting, more colonies through Nuptial Flight, chambers and foraging, raids. Civilization's advantage is that you <em>see</em> them on one map. Here is what we borrow, and what each piece costs.</p></div>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Civilization</th><th>Hormigas, Whole Yard</th><th>Cost</th></tr></thead>
+      <tbody>
+        <tr><td>Hex map</td><td>Every patch is a hex tile (5 regions × 100). The grid shows far out and fades as you come down, so up close it's a garden again.</td><td>Art only</td></tr>
+        <tr><td>Cities that grow</td><td>Mounds in three stages by colony points: a small heap, a thatched mound, a big domed mound with twigs and leaf bits.</td><td>Art only</td></tr>
+        <tr><td>City banners</td><td>Level, name and ant count over every mound; "!" for wild nests. Far out they shrink to coloured squares.</td><td>Art only (data exists)</td></tr>
+        <tr><td>Culture borders</td><td><b>Scent borders</b>: honey around patches where you have a colony, teal for supercolony mates, amber for rivals.</td><td>Art only; a border <em>bonus</em> would be a new rule (decision 4)</td></tr>
+        <tr><td>Fog of war</td><td>Morning mist over patches you have never scouted or sent ants to. Scouting lifts it.</td><td>Small server change: a list of patches you have seen</td></tr>
+        <tr><td>Units on the map</td><td>Missions are columns of real ants close up, a tag with the count in between, and a thread far out.</td><td>Exists (#92, #96); joined up</td></tr>
+        <tr><td>Strategic view</td><td>Zooming out is the strategic view: flat tiles, borders, region names, banners.</td><td>Art only</td></tr>
+        <tr><td>End turn / "unit needs orders"</td><td><b>Needs you</b>: idle Brood Hall, no dig running, raid incoming. Tap and the map flies there.</td><td>Art only (Happening now has the data)</td></tr>
+        <tr><td>City screen</td><td>Double-click a mound: the camera dives through the crater into the 3D nest. Chambers are the city's buildings.</td><td>Exists (3D nest); joined by the dive</td></tr>
+        <tr><td>Wonders</td><td>Later idea: landmarks (the flowerpot, the woodpile, the hose) as contested places with a bonus.</td><td>New system: not in this proposal</td></tr>
+      </tbody>
+    </table></div>
+    <div class="prose">
+      <p><b>My recommendation on rules:</b> take Civilization's presentation, not its rules. Turns, settlers walking tile by tile and moving units by hand would break two pillars ("the colony lives while you're away" and "no unit micro") and turn a 5-minute check-in into a 40-minute session. The Whole Yard gives the look and feel of a 4X while every action stays one of today's server actions.</p>
+    </div>
+  </section>
+
+  <section aria-labelledby="s3">
+    <div class="head"><h2 id="s3">One zoom, five levels</h2><p class="lead">Each level shows what helps at that distance and hides the rest. The ladder at the top of the mock-up says where you are; the scale bar says how much of the yard is in view.</p></div>
+    <div class="zoomkey">
+      <div class="rung"><span class="d">≈ 30 m</span><h3>Yard</h3><p class="small">All five regions, the house and fence. Region names, borders, mist, coloured squares for colonies, threads for missions. At night, a star map.</p></div>
+      <div class="rung"><span class="d">≈ 5 m</span><h3>Region</h3><p class="small">Hex tiles with their terrain, full banners, wild sites. Today's Garden screen.</p></div>
+      <div class="rung"><span class="d">≈ 1 m</span><h3>Patch</h3><p class="small">Mounds, empty spots, scent trails, columns of ants. Grid lines gone. Today's Missions screen.</p></div>
+      <div class="rung"><span class="d">≈ 6 cm</span><h3>Ground</h3><p class="small">The camera comes down among the grass, at ant height. Today's Ant's-eye view.</p></div>
+      <div class="rung"><span class="d">35 cm deep</span><h3>Nest</h3><p class="small">Double-click your mound: the dive. Chambers, crews, the queen. Today's Colony screen.</p></div>
+    </div>
+  </section>
+
+  <section aria-labelledby="s4">
+    <div class="head"><h2 id="s4">Every system gets a place and a verb</h2><p class="lead">Menus open from the map as cards beside it. The server still decides every result; the map acts it out.</p></div>
+    <div class="tablewrap"><table>
+      <thead><tr><th>System</th><th>Where it lives</th><th>What you do</th><th>Builds on</th></tr></thead>
+      <tbody>
+        <tr><td>Scouting</td><td>The mist's edge</td><td>Tap a misty tile → Scout. The thread runs out; the mist lifts on the report.</td><td>Scout mission, discovery (22)</td></tr>
+        <tr><td>New colonies</td><td>Empty spots, empty tiles</td><td>Tap → Nuptial flight. A winged queen flies; a small mound rises; the border grows.</td><td>Colonies (19)</td></tr>
+        <tr><td>Food</td><td>Aphids, the wilds, windfalls</td><td>Tap the site → Herd / Forage / Claim. A column goes and comes home loaded.</td><td>Forage, aphid herds, windfalls</td></tr>
+        <tr><td>Raids and defence</td><td>Rival and wild mounds</td><td>Tap → Raid opens Deploy beside the map. The fight plays out where it happens.</td><td>Raids, battle replays (#96)</td></tr>
+        <tr><td>Chambers, brood, research</td><td>Inside the mound</td><td>Double-click your mound, tap a chamber: its card.</td><td>3D nest, chamber cards</td></tr>
+        <tr><td>Supercolonies</td><td>Teal borders and threads</td><td>Tap an ally's mound → Send food.</td><td>Supercolonies (23)</td></tr>
+        <tr><td>Swarms and threats</td><td>The yard edge, red</td><td>A red tide crosses the tiles; Needs you jumps to it.</td><td>Swarms (20), incoming</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section aria-labelledby="s5">
+    <div class="head"><h2 id="s5">Playtesting it before players see it</h2><p class="lead">You asked for a way to play this without shipping it. There are three, and they stack.</p></div>
+    <div class="cards">
+      <div class="card"><span class="k">Now</span><h3>This mock-up</h3><p>Made-up data, but the real feel of the zoom, the dive and the four Xs. Good for yes / no on the direction.</p></div>
+      <div class="card rec"><span class="badge">Recommended</span><span class="k">Next</span><h3>A preview switch on the live game</h3><p>The new map ships inside the game but stays switched off. You turn it on for your own browser with a link (<code>?preview=yard</code>) and play it with your real colonies. Players see nothing new. Switch it off and the game is exactly as it was.</p></div>
+      <div class="card"><span class="k">Optional</span><h3>A second server</h3><p>A copy of the game at its own address with test players. Costs about one more small server a month and its own world; worth it only once several people test at the same time.</p></div>
+    </div>
+  </section>
+
+  <section aria-labelledby="s6">
+    <div class="head"><h2 id="s6">Technology</h2></div>
+    <div class="layers">
+      <div class="layer"><b>Cards and menus (React, HTML)</b><span>Unchanged; they float beside the map</span></div>
+      <div class="layer new"><b>The map (Three.js): one scene for Yard → Ground</b><span>New: merges the Garden and Patch scenes with level-of-detail rules</span></div>
+      <div class="layer"><b>The nest (Three.js)</b><span>Unchanged scene; joined by the dive</span></div>
+      <div class="layer"><b>Game state, API, WebSocket</b><span>One addition: patches you have seen (for the mist)</span></div>
+      <div class="layer"><b>Server: the authority</b><span>Unchanged rules</span></div>
+    </div>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Option</th><th>Verdict</th></tr></thead>
+      <tbody>
+        <tr><td>Grow the Three.js scenes we have into one map</td><td><b>Recommended.</b> Reuses the patch, Garden, ants and battles already built; ships in steps; no rewrite.</td></tr>
+        <tr><td>React Three Fiber rewrite</td><td>Nicer to write, but weeks of moving working code for no new feature.</td></tr>
+        <tr><td>A game engine (Godot, Unity, Unreal web export)</td><td>Big downloads (20–60 MB), poor on phones, and the menus and server code would be split across two worlds. Not for a browser check-in game.</td></tr>
+        <tr><td>Physics engine</td><td>Still not needed: nothing here falls or collides; it's choreography.</td></tr>
+      </tbody>
+    </table></div>
+    <div class="cards">
+      <div class="card"><span class="k">Loading</span><p>Under 1.5 MB more for the map code and models, loaded only on computers when the map opens. Regions far away load as plain tiles and fill in as you come closer.</p></div>
+      <div class="card"><span class="k">Geometry</span><p>500 tiles in one draw call; grass, mist, ants and loads instanced. About 400k triangles at the busiest view; the mounds are 440–1,450 each.</p></div>
+      <div class="card"><span class="k">Frame rate</span><p>60 fps on a mid laptop; 30 fps and a smaller shadow map on phones; the map stops drawing when hidden.</p></div>
+    </div>
+  </section>
+
+  <section aria-labelledby="s7">
+    <div class="head"><h2 id="s7">Making the art in Blender</h2><p class="lead">The mounds in the mock-up were built for this page by a Blender script (<code>docs/art/whole-yard/mounds.blend.py</code>): dome, crater, pebbles, twig thatch, leaf bits, coloured faces. Change a number, run it again, get new mounds.</p></div>
+    <img class="blender" src="{{BLENDER_PREVIEW}}" alt="Three ant mounds rendered in Blender: a small heap with a crater, a thatched mound with twigs and pebbles, and a large domed mound with twigs and green leaf bits." width="1200" height="480">
+    <div class="cards">
+      <div class="card"><span class="k">Now</span><h3>Scripted kit</h3><p>Mounds (done), hex tile edges per terrain, the flowerpot, the woodpile, the hose, the house wall, the winged queen. Low-poly, coloured faces, no textures: small and quick.</p></div>
+      <div class="card"><span class="k">Next</span><h3>The master ant</h3><p>As decided on 30 Oct: one ant modelled in Blender, castes made from it, matching the cartoon ants now live.</p></div>
+      <div class="card"><span class="k">Later</span><h3>Menus and pictures</h3><p>Renders from the same models for chamber and unit pictures, so the 2D art and the 3D world finally match.</p></div>
+    </div>
+  </section>
+
+  <section aria-labelledby="s8">
+    <div class="head"><h2 id="s8">Where this disagrees with the design docs</h2><p class="lead">I haven't edited the docs yet. Once you approve, they change in the same PR as the first build.</p></div>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Doc</th><th>Says today</th><th>Would say</th></tr></thead>
+      <tbody>
+        <tr><td>00-vision · Inspirations</td><td>Classic persistent browser strategy, idle games, ant biology</td><td>Adds Civilization's map (presentation only)</td></tr>
+        <tr><td>00-vision · Tone</td><td>Grounded documentary, "no cartoon faces"</td><td>A stylised field guide: cartoon ants with eyes are live since #123, so the doc should catch up</td></tr>
+        <tr><td>18-art-direction · Decision 1</td><td>Ladder of separate rungs: Garden, Patch, Nest, Chamber</td><td>One continuous map for Yard → Ground; the nest joined by a dive</td></tr>
+        <tr><td>11-world · Missions screen</td><td>The map lives in the Missions tab</td><td>The map is the main screen; Colony and Missions become cards on it</td></tr>
+        <tr><td>11-world · Coordinates</td><td>Patches in a 10 × 10 grid</td><td>Same numbers, drawn as offset hex tiles (neighbours unchanged for travel time)</td></tr>
+        <tr><td>22-discovery</td><td>Unscouted colonies are scents</td><td>Plus mist over patches you have never seen</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section aria-labelledby="s9">
+    <div class="head"><h2 id="s9">Plan</h2></div>
+    <ol class="steps">
+      <li><b>Preview switch and the one zoom</b> (computers): Garden and Patch merge into one map behind <code>?preview=yard</code>; double-click your mound dives into today's 3D nest. Existing art.</li>
+      <li><b>Civ grammar:</b> hex tiles far out, scent borders, banners, the Needs you button.</li>
+      <li><b>Mist:</b> the server remembers which patches you've seen; scouting lifts it.</li>
+      <li><b>Blender kit:</b> growing mounds, landmarks, region dressing, the master ant.</li>
+      <li><b>Make it the main screen</b> for everyone (your call after playtests), then phones.</li>
+    </ol>
+    <div class="decide">
+      <h3>What I need from you</h3>
+      <ol>
+        <li><b>Direction:</b> go with the Whole Yard (Civilization's look, today's rules and clock)?</li>
+        <li><b>Hex tiles:</b> grid far out only, fading up close (recommended), or hexes at every zoom?</li>
+        <li><b>Mist:</b> add fog of war over patches you've never seen (needs a small server change)?</li>
+        <li><b>Scent borders:</b> art only for now (recommended), or should owning ground also give a bonus later?</li>
+        <li><b>Playtest path:</b> the preview switch on the live game, for your browser only (recommended)?</li>
+        <li><b>Phones:</b> computers first, phones keep today's screens until step 5 (recommended)?</li>
+        <li><b>Tone:</b> update the vision's "no cartoon faces" to "stylised field guide" to match the ants you just shipped?</li>
+      </ol>
+      <p class="small">Risks: a one-map screen is the biggest client change so far, so each step is its own PR and the old screens stay until you switch. 3D work costs more per feature than menus; the art kit is the slowest part.</p>
+    </div>
+  </section>
+</main>
+
+<script type="module">
+{{SCENE}}
+</script>
