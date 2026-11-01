@@ -12,6 +12,7 @@ import { cancelResearch, startResearch } from '../game/research';
 import { enqueueUnits, startDigestion, stopDigestion } from '../game/brood';
 import { activeMissions, incomingMissions, missionView } from '../game/missions';
 import { claimQuest, questStatus } from '../game/quests';
+import { claimNeed, journalStatus, markJournalSeen, needsStatus, rerollNeed, setTitle } from '../game/comeback';
 import { hasForagedBefore } from '../game/forage';
 import { membershipOf } from '../game/diplomacy';
 import { isInactive } from '@hormigas/shared';
@@ -41,6 +42,12 @@ export const colonyIdParam = (p: any): number => {
   if (!Number.isInteger(id) || id <= 0) throw new GameError('bad_id', 'Bad colony id.');
   return id;
 };
+
+/** The journal's title and how many pages are new, for the tab badge. */
+async function journalBadge(q: Parameters<typeof journalStatus>[0], playerId: number) {
+  const j = await journalStatus(q, playerId);
+  return { title: j.title, fresh: j.fresh };
+}
 
 export async function gameRoutes(app: FastifyInstance) {
   // Every game route: logged in, and the world is caught up before we read or change anything.
@@ -88,6 +95,9 @@ export async function gameRoutes(app: FastifyInstance) {
       missions: (await activeMissions(q, req.playerId)).map(missionView),
       incoming: await incomingMissions(q, req.playerId),
       quests: await questStatus(q, req.playerId),
+      /** colony needs and Yesterday in the colony (docs/26-come-back.md) */
+      needs: await needsStatus(q, req.playerId),
+      journal: await journalBadge(q, req.playerId),
       unreadReports: (await q.query('SELECT count(*)::int AS n FROM reports WHERE player_id = $1 AND NOT read', [req.playerId])).rows[0].n,
     };
   });
@@ -150,6 +160,33 @@ export async function gameRoutes(app: FastifyInstance) {
     return { ok: true, reward: quest.reward };
   });
 
+  // ---------- Build 12: colony needs and the Field Journal (docs/26-come-back.md) ----------
+
+  app.post('/api/needs/claim', async (req) => {
+    const body = (req.body ?? {}) as any;
+    const reward = await tx((q) => claimNeed(q, req.playerId, Number(body.day), Number(body.slot), Number(body.colonyId)));
+    return { ok: true, reward };
+  });
+
+  app.post('/api/needs/reroll', async (req) => {
+    const body = (req.body ?? {}) as any;
+    const def = await tx((q) => rerollNeed(q, req.playerId, Number(body.slot)));
+    return { ok: true, need: def.id };
+  });
+
+  app.get('/api/journal', async (req) => journalStatus(getPool(), req.playerId));
+
+  app.post('/api/journal/seen', async (req) => {
+    await markJournalSeen(getPool(), req.playerId);
+    return { ok: true };
+  });
+
+  app.post('/api/journal/title', async (req) => {
+    const body = (req.body ?? {}) as any;
+    const title = await setTitle(getPool(), req.playerId, body.entryId == null ? null : String(body.entryId));
+    return { ok: true, title };
+  });
+
   app.get('/api/rankings', async (req) => {
     const qs = req.query as any;
     const kind = ['total', 'economy', 'research', 'military'].includes(qs.kind) ? qs.kind : 'total';
@@ -160,7 +197,7 @@ export async function gameRoutes(app: FastifyInstance) {
     const t = now();
     const order = kind === 'total' ? 'points_total' : `(points->>'${kind}')::int`;
     const r = await q.query(
-      `SELECT id, username, points, points_total, last_active, protected_until,
+      `SELECT id, username, title, points, points_total, last_active, protected_until,
               (SELECT count(*)::int FROM colonies c WHERE c.player_id = p.id) AS colonies,
               rank() OVER (ORDER BY ${order} DESC, id) AS rank
          FROM players p WHERE world_id = $1 AND NOT is_npc ORDER BY ${order} DESC, id LIMIT $2 OFFSET $3`,
@@ -180,6 +217,7 @@ export async function gameRoutes(app: FastifyInstance) {
         rank: Number(x.rank),
         playerId: x.id,
         username: x.username,
+        title: x.title ?? null,
         points: kind === 'total' ? x.points_total : x.points[kind] ?? 0,
         colonies: x.colonies,
         inactive: isInactive({ points: x.points_total, protectedUntil: x.protected_until, lastActive: x.last_active }, t),

@@ -29,6 +29,7 @@ import { scheduleNestEvent } from './nestEvents';
 import { scheduleSwarm } from './swarms';
 import { refreshPointsAfterCommit } from './points';
 import { shareNewColony } from './diplomacy';
+import { bump } from './stats';
 
 /**
  * Insert a player colony with Queen's Chamber 1 and the starting stores (plus `extra`), arm its nest events,
@@ -99,6 +100,7 @@ defineMission('colonize', {
     await addReport(q, m.worldId, m.playerId, 'colonize', `New colony founded at ${where}`, {
       target: m.target, founded: true, colonyId: id, name, terrain: TERRAIN[terrain].name, units: escorts, cargo: m.cargo,
     }, at);
+    await bump(q, m.playerId, 'colonies_founded');
     // supercolony mates know the new nest at once: they share its scent (docs/23-supercolonies.md)
     await shareNewColony(q, m.playerId, id, at);
     m.result = { founded: true, colonyId: id };

@@ -24,6 +24,7 @@ Return → collect results (reports, finished builds, returned foragers)
 - Production accumulates while offline (uncapped time, capped by storage).
 - Several check-ins per day. Notifications for: build/research complete, mission returned, **raid incoming**.
 - Storage caps are the natural "come back and spend" nudge — full storage means wasted production.
+- **Colony needs** anchor the day: three small tasks each day, no streaks, and a "Yesterday in the colony" summary on the first visit ([26-come-back](26-come-back.md)).
 
 ## Week loop
 - Bigger goals: a new chamber tier, a new caste, founding a second colony (nuptial flight), climbing the rankings.
@@ -44,6 +45,6 @@ As build timers get longer, the game must still offer meaningful actions per ses
 - **Corpse hauling** — race other players to battle debris.
 - **Aphid herding** (v1) — tend and defend a second economy.
 
+
 ## Open Questions
-- Should there be a daily objective / quest list to anchor the day loop?
 - How many simultaneous missions at the start (mission slots)? Proposal: 2.

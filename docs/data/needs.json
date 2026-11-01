@@ -1,0 +1,22 @@
+{
+  "_version": "0.1",
+  "_note": "Colony needs: the daily tasks (docs/26-come-back.md). Each day (from dayStartsUtcHour, a real day at world speed 1) a player gets perDay needs, picked from the ones they can do. A need counts a stat (shared/src/stats.ts) from the moment it was given. Unfinished needs keep for keepDays days, then fade; there is no streak and nothing is lost by missing a day. rerollsPerDay swaps a need for another. The reward is rewardHours of the player's whole production (every colony), at least minReward, paid into the colony they pick. count is the goal; scale raises it by the player's highest Queen's Chamber level ([level, count], last match wins). unlock: when the need can be given, one of { chamber, level } (any colony), { units, count } (owned, home or away) or { stat, count }. weight: how often it is picked (default 1). {n} in the title is the goal.",
+  "perDay": 3,
+  "keepDays": 2,
+  "rerollsPerDay": 1,
+  "rewardHours": 1.5,
+  "minReward": { "foliage": 300, "protein": 150, "nectar": 50 },
+  "dayStartsUtcHour": 8,
+  "needs": [
+    { "id": "forage", "title": "Bring home {n} forage parties", "hint": "The colony is hungry for news from the wilds.", "screen": "missions", "stat": "forage_home", "count": 2, "scale": [[6, 3], [10, 4]], "unlock": { "chamber": "brood_hall", "level": 1 } },
+    { "id": "food", "title": "Carry home {n} food", "hint": "Anything that comes home on a party's backs counts: forage finds, loot, corpses, windfalls.", "screen": "missions", "stat": "food_home", "count": 1500, "scale": [[5, 4000], [8, 10000], [12, 25000]], "unlock": { "chamber": "brood_hall", "level": 1 } },
+    { "id": "digs", "title": "Finish {n} digs", "hint": "The queen's daughters want more room.", "screen": "chambers", "stat": "digs", "count": 2, "scale": [[8, 3]] },
+    { "id": "raise", "title": "Raise {n} ants", "hint": "Any caste counts, allies too.", "screen": "brood", "stat": "raised", "count": 10, "scale": [[5, 25], [8, 60], [12, 120]], "unlock": { "chamber": "brood_hall", "level": 1 } },
+    { "id": "research", "title": "Finish a piece of research", "hint": "The colony learns from what it smells.", "screen": "research", "stat": "research", "count": 1, "unlock": { "chamber": "pheromone_chamber", "level": 1 } },
+    { "id": "haul", "title": "Haul {n} Protein of corpses", "hint": "Every fight leaves the dead on the field. Workers and Haulers can carry them home.", "screen": "missions", "stat": "corpses_hauled", "count": 300, "scale": [[6, 1500], [10, 5000]], "unlock": { "stat": "wild_won", "count": 1 }, "weight": 0.6 },
+    { "id": "scout", "title": "Scout {n} places", "hint": "Colonies, wild sites or the wilds: any scout report counts.", "screen": "missions", "stat": "scouted", "count": 2, "unlock": { "units": "scout", "count": 1 } },
+    { "id": "fight", "title": "Win a fight in the wilds", "hint": "A wild nest, a termite mound, a spider den or a windfall.", "screen": "missions", "stat": "wild_won", "count": 1, "scale": [[8, 2]], "unlock": { "units": "minor_soldier", "count": 5 } },
+    { "id": "windfall", "title": "Claim a windfall", "hint": "Watch for food lying in the wilds near you.", "screen": "missions", "stat": "windfalls_claimed", "count": 1, "unlock": { "units": "worker", "count": 3 }, "weight": 0.7 },
+    { "id": "honeydew", "title": "Bring home {n} Nectar from aphid herds", "hint": "Tended herds send honeydew home every few hours.", "screen": "missions", "stat": "herd_nectar", "count": 100, "scale": [[6, 400], [10, 1200]], "unlock": { "stat": "herds_claimed", "count": 1 } }
+  ]
+}

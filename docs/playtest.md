@@ -11,7 +11,7 @@ _Current as of Build 11 (2026-10-30)._
 On a computer, open https://hormigas.marz.gg/?preview=yard once; the browser remembers it. **Whole Yard** is then the first screen. Scroll to zoom from the yard to the ground, drag to move, right-drag or Q/E to turn, WASD to pan; double-click your mound to go inside; the left buttons open Chambers, Brood Hall, Research and Missions. "Classic screens" goes back to the usual layout (Whole Yard stays at the top of the menu); "Turn preview off" or `?preview=off` removes it.
 
 ## Controls
-- Tap or click everything; the tabs are Colony, Chambers, Brood Hall, Research, Missions, Allies, Reports and Rankings ([12-ui-nest-view](12-ui-nest-view.md)).
+- Tap or click everything; the tabs are Colony, Chambers, Brood Hall, Research, Missions, Allies, Reports, Journal and Rankings ([12-ui-nest-view](12-ui-nest-view.md)).
 - **3D nest (computers):** drag to turn it; scroll, pinch or the + and − buttons to zoom. Tap a chamber to open it.
 - **3D Patch (computers, Missions):** drag or WASD/arrow keys to move, scroll or pinch to zoom (the camera drops toward ant height), right-drag, shift-drag or Q/E to turn (Shift + keys goes faster; low down, grass between you and what you look at sinks out of the way), double-click for the whole patch. **Ant's-eye view** jumps down beside your mound. Tap a mound or scent to open its card. A battle report's **Replay on the patch** plays the fight there.
 - **The war room (computers, Missions):** tap a spot, then Raid, Scout or Forage (or **Send ants…**) to open the Deploy card, which starts with **From** and **To**; **Under way** on the right shows every mission's progress; click one to fly to it. From Colony: **Open the war room**, or **↑ Up to the patch** on the nest.
@@ -21,6 +21,10 @@ On a computer, open https://hormigas.marz.gg/?preview=yard once; the browser rem
 ## Testing with more than one player
 - Open a second browser or a private window and sign up a second player. New players are placed in the same patch, up to 4 per patch ([11-world](11-world.md)), so the two can scout, raid, truce and form a supercolony.
 - For fast checks, run the game locally at ×5 speed (see the [README](../README.md#run-it-locally)).
+
+## Daily needs and the Journal
+- The **Colony needs** card (Colony screen) gives three tasks a day; collect each one's reward when it's done. **Swap** trades one for another once a day.
+- The **Journal** tab fills in as you play; pick a title there and look for it in the Rankings.
 
 ## What to look for
 - **Does the loop pull you back?** The MVP's success criteria: playtesters return on their own for 7+ days, pacing matches [02-progression](02-progression.md), and being raided doesn't make anyone quit ([15-roadmap](15-roadmap.md)).

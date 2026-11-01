@@ -45,6 +45,7 @@ import { cancelEvent, onEvent, schedule, type GameEvent } from '../events';
 import { getWorld } from '../world';
 import { refreshPointsAfterCommit } from './points';
 import { notify } from '../realtime';
+import { bump, foodIn } from './stats';
 
 export type { MissionType };
 
@@ -407,6 +408,11 @@ async function comeBack(q: Tx, ev: GameEvent<{ missionId: number }>) {
   c.units = addCounts(c.units, m.units);
   c.resources = add(c.resources, m.cargo);
   await saveColony(q, c);
+  // counters for colony needs and the Field Journal (wild nests' parties don't count)
+  if (!c.npc) {
+    await bump(q, m.playerId, 'food_home', foodIn(m.cargo));
+    if (m.type === 'forage') await bump(q, m.playerId, 'forage_home');
+  }
   m.status = 'done';
   await saveMission(q, m);
   await refreshPointsAfterCommit(q, m.playerId);

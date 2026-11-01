@@ -15,6 +15,7 @@ import { advance, getPlayer, lockColony, saveColony } from '../colony';
 import { recurringColonyEvent } from '../recurring';
 import { getWorld } from '../world';
 import { addReport } from './reports';
+import { bump } from './stats';
 
 const nestEvents = recurringColonyEvent('nest_event', {
   where: 'c.npc IS NULL',
@@ -37,6 +38,7 @@ const nestEvents = recurringColonyEvent('nest_event', {
     }
     await saveColony(q, c);
     await addReport(q, ev.world_id, c.playerId, 'nest_event', def.title, { event: roll.event, text: def.text, found: gift, colonyId: c.id }, t);
+    if (roll.resource && roll.amount > 0) await bump(q, c.playerId, 'gifts');
   },
 });
 

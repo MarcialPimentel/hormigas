@@ -6,6 +6,7 @@ import { getPlayer } from '../colony';
 import { defineMission } from './missions';
 import { addReport } from './reports';
 import { refreshPointsAfterCommit } from './points';
+import { bump } from './stats';
 
 const TITLES: Record<string, string> = {
   food_cache: 'Foragers found a food cache',
@@ -57,6 +58,7 @@ defineMission('forage', {
       target: m.target,
       returnsAt,
     }, at);
+    await bump(q, m.playerId, `forage:${r.outcome}`);
     if (Object.keys(lost).length) await refreshPointsAfterCommit(q, m.playerId);
     return { home: true, returnFactor: r.returnTimeFactor };
   },

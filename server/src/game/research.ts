@@ -18,6 +18,7 @@ import { cancelEvent, onEvent, schedule } from '../events';
 import { getWorld } from '../world';
 import { timeMultiplier } from './boost';
 import { refreshPoints } from './points';
+import { bump } from './stats';
 
 export async function startResearch(q: Tx, playerId: number, colonyId: number, research: string) {
   if (!RESEARCH_IDS.includes(research as ResearchId)) throw new GameError('bad_research', 'Unknown research.');
@@ -81,5 +82,6 @@ onEvent('research_complete', async (q, ev) => {
   player.research = { ...player.research, [job.research]: job.level };
   player.researchJob = null;
   await savePlayerResearch(q, player);
+  await bump(q, player.id, 'research');
   await refreshPoints(q, player.id);
 });

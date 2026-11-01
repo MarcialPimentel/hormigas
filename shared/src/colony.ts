@@ -16,6 +16,8 @@ export interface ColonyState {
   research?: ResearchLevels;
   /** Larval digestion running in the Brood Hall (Protein → Nectar), if any. */
   digestJob?: DigestJob | null;
+  /** Ants raised here, counted as they hatch (docs/26-come-back.md). Missing for wild nests. */
+  raised?: UnitCounts;
 }
 
 export function addCounts<T extends Record<string, number | undefined>>(a: T, b: T): T {
@@ -51,6 +53,7 @@ export function syncColony<S extends ColonyState>(state: S, to: number, worldSpe
     lastUpdated: to,
     unitQueue: adv.queue,
     units: addCounts(state.units, adv.castes),
+    ...(state.raised !== undefined ? { raised: addCounts(state.raised, adv.castes) } : {}),
     defenses: addCounts(state.defenses, adv.defenses),
   };
 }

@@ -19,6 +19,7 @@ import { Panel, ResDot } from '../components/ui';
 import { ActivityList } from '../components/Activity';
 import { QuestCard } from '../components/QuestCard';
 import { AwayCard } from '../components/AwayCard';
+import { NeedsCard } from '../components/NeedsCard';
 
 import { UnderWay } from '../components/UnderWay';
 
@@ -168,6 +169,7 @@ export function Overview({ go }: { go: (screen: string, params?: any) => void })
           </div>
           <div className="float-bottom" ref={frame.bottom}>
             <QuestCard nav={go} />
+            <NeedsCard nav={go} />
           </div>
         </div>
       </div>
@@ -181,6 +183,7 @@ export function Overview({ go }: { go: (screen: string, params?: any) => void })
       </Suspense>
       <AwayCard go={go} />
       <QuestCard nav={go} />
+      <NeedsCard nav={go} />
       <Panel>{nameCard}</Panel>
 
       {underWay}

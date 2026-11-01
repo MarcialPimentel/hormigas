@@ -42,6 +42,7 @@ import { refreshPointsAfterCommit } from './points';
 import { discover, requireKnown, smelledBy } from './discovery';
 import { areAllies, relationOf } from './diplomacy';
 import { DIPLOMACY_MESSAGES } from '@hormigas/shared';
+import { bump } from './stats';
 
 defineMission('transport', {
   async validate({ q, targetColony, colony, player }) {
@@ -181,6 +182,7 @@ defineMission('scout', {
     await discover(q, m.playerId, target.id, 'scouted', at);
     await smelledBy(q, defender.id, m.originColonyId, 'scouted_you', at);
     await addReport(q, m.worldId, m.playerId, 'scout', `Scout report: ${target.name} (${coordsKey(m.target)})`, data, at);
+    await bump(q, m.playerId, 'scouted');
     if (!defender.isNpc) await addReport(
       q, m.worldId, defender.id, 'scouted',
       pact ? `${attacker.username}'s scouts visited ${target.name}`
@@ -232,6 +234,7 @@ async function surveyWilds(q: Tx, m: Mission, at: number): Promise<ArrivalOutcom
   };
   m.result = { wilds: true };
   await addReport(q, m.worldId, m.playerId, 'scout', `Scout report: the wilds (${coordsKey(m.target)})`, data, at);
+  await bump(q, m.playerId, 'scouted');
   return { home: true };
 }
 

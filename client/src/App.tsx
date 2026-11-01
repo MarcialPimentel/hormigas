@@ -12,6 +12,7 @@ import { Missions } from './screens/Missions';
 import { Reports } from './screens/Reports';
 import { Rankings } from './screens/Rankings';
 import { Allies } from './screens/Allies';
+import { Journal } from './screens/Journal';
 import { FeedbackAdmin } from './screens/FeedbackAdmin';
 import { FeedbackButton } from './components/Feedback';
 import type { Nav } from './nav';
@@ -46,6 +47,7 @@ export const ICONS = {
   ranks: I('M8 21V11M16 21V7M12 21V3M4 21h16'),
   allies: I('M8 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM16 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM2 20c0-3 3-5 6-5s6 2 6 5M12 15.5c1-.3 2.4-.5 4-.5 3 0 6 2 6 5'),
   feedback: I('M4 5h16v11H9l-5 4V5ZM8 9.5h8M8 12.5h5'),
+  journal: I('M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3V4ZM5 17a3 3 0 0 1 3-3h11M9 8h6'),
   yard: I('M3 9l4.5-2.6L12 9v5.2l-4.5 2.6L3 14.2zM12 9l4.5-2.6L21 9v5.2l-4.5 2.6L12 14.2zM7.5 16.8V21M16.5 16.8V21'),
 };
 
@@ -79,6 +81,7 @@ export function App() {
     { id: 'missions', label: 'Missions', icon: ICONS.missions, render: (n) => <Missions draft={params} go={n} />, badge: (state.incoming ?? []).filter((i: any) => i.hostile).length },
     { id: 'allies', label: 'Allies', icon: ICONS.allies, render: (n) => <Allies go={n} />, badge: state.player.pendingDiplomacy },
     { id: 'reports', label: 'Reports', icon: ICONS.reports, render: (n) => <Reports go={n} />, badge: state.unreadReports },
+    { id: 'journal', label: 'Journal', icon: ICONS.journal, render: () => <Journal />, badge: state.journal?.fresh },
     { id: 'rankings', label: 'Rankings', icon: ICONS.ranks, render: () => <Rankings /> },
   ];
   if (isAdmin) screens.push({ id: 'feedback', label: 'Feedback', icon: ICONS.feedback, render: () => <FeedbackAdmin onCount={onFeedbackCount} />, badge: openFeedback });
