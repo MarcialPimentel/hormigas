@@ -107,7 +107,7 @@ export function Research() {
 
       <Panel>
         <div className="panel-head">
-          <span className="muted small">{view === 'tree' ? 'Hover or tap a research to see what it needs and what it leads to.' : 'Every research, one row each.'}</span>
+          <span className="muted small">{view === 'tree' ? 'Hover or tap a research to see what it needs and what it leads to. Drag to move around the tree; Ctrl + scroll (or pinch) to zoom.' : 'Every research, one row each.'}</span>
           <div className="seg" role="group" aria-label="Research view">
             <button type="button" className={view === 'tree' ? 'on' : ''} aria-pressed={view === 'tree'} onClick={() => choose('tree')}>Tree</button>
             <button type="button" className={view === 'list' ? 'on' : ''} aria-pressed={view === 'list'} onClick={() => choose('list')}>List</button>
