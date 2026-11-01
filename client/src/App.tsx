@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, type ReactNode } from 'react';
+import { Suspense, lazy, useCallback, useEffect, useState, type ReactNode } from 'react';
 import { api } from './api';
 import { useGame } from './game';
 import { fmtCoords } from './format';
@@ -15,6 +15,11 @@ import { Allies } from './screens/Allies';
 import { FeedbackAdmin } from './screens/FeedbackAdmin';
 import { FeedbackButton } from './components/Feedback';
 import type { Nav } from './nav';
+import { yardPreview } from './preview';
+
+// The Whole Yard preview (docs/art/whole-yard.md): only with ?preview=yard, only on computers, loaded when opened.
+const Yard = lazy(() => import('./screens/Yard').then((m) => ({ default: m.Yard })));
+const yardOn = yardPreview && typeof matchMedia === 'function' && matchMedia('(min-width: 900px)').matches;
 
 export interface ScreenDef {
   id: string;
@@ -41,11 +46,12 @@ export const ICONS = {
   ranks: I('M8 21V11M16 21V7M12 21V3M4 21h16'),
   allies: I('M8 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM16 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM2 20c0-3 3-5 6-5s6 2 6 5M12 15.5c1-.3 2.4-.5 4-.5 3 0 6 2 6 5'),
   feedback: I('M4 5h16v11H9l-5 4V5ZM8 9.5h8M8 12.5h5'),
+  yard: I('M3 9l4.5-2.6L12 9v5.2l-4.5 2.6L3 14.2zM12 9l4.5-2.6L21 9v5.2l-4.5 2.6L12 14.2zM7.5 16.8V21M16.5 16.8V21'),
 };
 
 export function App() {
   const { loggedIn, state, colony, selectColony, toasts, setLoggedIn } = useGame();
-  const [screen, setScreen] = useState('nest');
+  const [screen, setScreen] = useState(yardOn ? 'yard' : 'nest');
   const [params, setParams] = useState<any>(undefined);
   const [openFeedback, setOpenFeedback] = useState(0);
   const isAdmin = !!state?.player.isAdmin;
@@ -65,6 +71,7 @@ export function App() {
   if (!state || !colony) return <div className="boot">Waking the colony…</div>;
 
   const screens: ScreenDef[] = [
+    ...(yardOn ? [{ id: 'yard', label: 'Whole Yard', icon: ICONS.yard, render: (n: Nav) => <Suspense fallback={<div className="boot">Looking over the yard…</div>}><Yard go={n} /></Suspense> }] : []),
     { id: 'nest', label: 'Colony', icon: ICONS.nest, render: (n) => <Overview go={n} /> },
     { id: 'chambers', label: 'Chambers', icon: ICONS.chambers, render: () => <Chambers /> },
     { id: 'brood', label: 'Brood Hall', icon: ICONS.brood, render: () => <Brood /> },
@@ -79,7 +86,7 @@ export function App() {
   const current = screens.find((s) => s.id === (screen === 'map' ? 'missions' : screen)) ?? screens[0];
 
   return (
-    <div className="app">
+    <div className={`app${current.id === 'yard' ? ' yard-mode' : ''}`}>
       <header className="topbar">
         <div className="brand">
           <span className="wordmark small">Hormigas</span>
