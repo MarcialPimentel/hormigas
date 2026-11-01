@@ -63,7 +63,7 @@ World colours (fills, never text):
 | Light and air | Sunbeam `#FFD98A` (key light), Sky `#8CCBEB`, Warm haze `#F5E2B5` (fog, horizon), Dew `#DDF4FF`, Night `#131D43` |
 | Life | Backlit blade `#BCE35C`, Blade root `#2E5E25`, Buttercup `#FFD23F`, Clover `#F6B6D2`, Poppy `#FF6B4F`, Bracket fungus `#F08A3C`, Beetle sheen `#2F8F83`, Aphid `#B5E04A` |
 | Soil horizons | Leaf litter `#3E2B1E`, Topsoil `#7B4A2D`, Iron clay `#A9552F`, Ochre sand `#D3A05A`, Gley clay `#7E8E96`, Hollow glow `#FFB347` |
-| Who's who | Worker amber `#D9934A`, Your trail `#FFC93C`, **Allies (new) `#46C9B8`**, Raider red `#C4473A`, Army ant `#8E2216`, Scent `#B98CFF` |
+| Who's who | Worker red-brown `#B8612F` (was amber `#D9934A`, deepened 1 Nov for the cartoon ants), Your trail `#FFC93C`, **Allies (new) `#46C9B8`**, Raider red `#C4473A`, Army ant `#8E2216`, Scent `#B98CFF` |
 
 Retired: the three-step strata `#6B4F37` → `#4A3726` → `#33261A`.
 
