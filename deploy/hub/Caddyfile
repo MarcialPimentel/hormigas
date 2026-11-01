@@ -17,3 +17,13 @@ guildie.marz.gg {
 		redir https://marz.gg/games/guildie/ 302
 	}
 }
+
+lasthand.marz.gg {
+	reverse_proxy last-hand:8790
+}
+
+# Sunk Cost (repo: sunk-cost). The game container serves both the page and the WebSocket.
+sunk-cost.marz.gg {
+	encode gzip
+	reverse_proxy sunk-cost:8080
+}

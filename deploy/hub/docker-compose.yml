@@ -1,9 +1,22 @@
 # The hub: one droplet, one reverse proxy, one Postgres, one service per game.
-# Lives at /opt/hub on the droplet. Start or update everything with:
+# Lives at /opt/hub on the droplet. This file is the master copy: keep it the same as the server's.
+# Start or update everything with:
 #   docker compose up -d
+# Deploys only ever touch their own service:  docker compose up -d <service>
 #
-# To add another project later: add a service below, a block to the Caddyfile,
-# and (if it needs a database) run ./add-database.sh <name>.
+# To add another game: add a service below (with the logging, mem_limit and cpus lines),
+# a block to the Caddyfile, and (if it needs a database) run ./add-database.sh <name>.
+# Never add `ports:` to a game: Docker-published ports skip the firewall. Caddy is the only way in.
+#
+# Also on the droplet, outside this file: the Oh Ship station (container oh-ship-station,
+# 7777/udp, capped at 512 MB and 1 CPU), started by the oh-ship repo's tools/station/deploy-station.sh.
+
+# Every service keeps at most 3 x 10 MB of logs, so logs can never fill the disk.
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
 
 services:
   caddy:
@@ -17,6 +30,8 @@ services:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
       - caddy_config:/config
+    logging: *logging
+    mem_limit: 256m
 
   db:
     image: postgres:16
@@ -33,6 +48,8 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
+    logging: *logging
+    mem_limit: 512m
     # No ports published: only the other containers can reach the database.
 
   hormigas:
@@ -56,7 +73,11 @@ services:
       timeout: 5s
       retries: 3
       start_period: 30s
+    logging: *logging
+    mem_limit: 512m
+    cpus: 0.75
 
+  # Guildie realtime rooms (repo: guildie, realtime/). The game page itself is on SiteGround.
   guildie-realtime:
     image: ghcr.io/marcialpimentel/guildie-realtime:latest
     restart: unless-stopped
@@ -72,6 +93,45 @@ services:
       timeout: 5s
       retries: 3
       start_period: 10s
+    logging: *logging
+    mem_limit: 256m
+    cpus: 0.5
+
+  # Last Hand (repo: last-hand, deploy/compose-service.yml).
+  last-hand:
+    image: ghcr.io/marcialpimentel/last-hand:latest
+    restart: unless-stopped
+    environment:
+      PORT: "8790"
+      MAX_ROOMS: "200"
+    # A restart ends any match in progress; players land back on the home screen.
+    stop_grace_period: 5s
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:8790/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    logging: *logging
+    mem_limit: 256m
+    cpus: 0.5
+
+  # Sunk Cost (repo: sunk-cost, deploy/hub/add-to-hub.sh). Serves the page and the game's WebSocket
+  # on port 8080 inside Docker; Caddy is the only way in. Dives live in memory, so a restart (each
+  # deploy) ends any dive in progress; the grace period is short.
+  sunk-cost:
+    image: ghcr.io/marcialpimentel/sunk-cost:latest
+    restart: unless-stopped
+    stop_grace_period: 5s
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:8080/healthz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    logging: *logging
+    mem_limit: 256m
+    cpus: 0.5
 
 volumes:
   caddy_data:
