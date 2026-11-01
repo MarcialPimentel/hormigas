@@ -1,4 +1,5 @@
 // Tap a chamber in the nest: what it does, what it holds, and digging its next level, without leaving the colony.
+import { Digestion } from '../screens/Brood';
 import { useEffect, useRef } from 'react';
 import { CHAMBERS, protectedAmount, storageCapacity, type ChamberId, type ResourceId } from '@hormigas/shared';
 import { api } from '../api';
@@ -138,6 +139,7 @@ export function ChamberSheet({ id, onClose, onLookInside, onAllChambers }: Sheet
         </button>
         {offer && blocked && <span className="why">{blocked}</span>}
       </div>
+      {id === 'brood_hall' && level > 0 && <Digestion />}
     </section>
   );
 }

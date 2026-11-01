@@ -76,11 +76,48 @@ function Stats({ id, def }: { id: string; def: any }) {
   );
 }
 
+/** Your army in this colony: who's home, who's out on missions, who's being raised; defenses built. */
+function Army() {
+  const { colony, state } = useGame();
+  if (!colony || !state) return null;
+  const queued = queuedCounts(colony.unitQueue);
+  const out: Record<string, number> = {};
+  for (const m of (state.missions ?? []) as any[]) {
+    if (m.originColonyId !== colony.id) continue;
+    for (const [id, c] of Object.entries((m.units ?? {}) as Record<string, number>)) out[id] = (out[id] ?? 0) + (c ?? 0);
+  }
+  const castes = MVP_CASTES.filter((id) => lvl(colony.units, id as CasteId) > 0 || out[id] || queued[id]);
+  const defenses = MVP_DEFENSES.filter((id) => lvl(colony.defenses, id as DefenseId) > 0 || queued[id]);
+  if (!castes.length && !defenses.length) return <p className="muted small">No ants raised yet. Pick a caste below.</p>;
+  const line = (kind: 'unit' | 'defense', id: string, name: string, parts: string[]) => (
+    <li key={id} className="army-row">
+      <Pic kind={kind} id={id} />
+      <b>{name}</b>
+      <span className="muted small">{parts.filter(Boolean).join(' · ')}</span>
+    </li>
+  );
+  return (
+    <ul className="army">
+      {castes.map((id) =>
+        line('unit', id, CASTES[id as CasteId].name, [
+          `${fmtFull(lvl(colony.units, id as CasteId))} home`,
+          out[id] ? `${fmtFull(out[id])} out` : '',
+          queued[id] ? `${fmtFull(queued[id])} raising` : '',
+        ]),
+      )}
+      {defenses.map((id) =>
+        line('defense', id, DEFENSES[id as DefenseId].name, [`${fmtFull(lvl(colony.defenses, id as DefenseId))} built`, queued[id] ? `${fmtFull(queued[id])} building` : '']),
+      )}
+    </ul>
+  );
+}
+
 export function Brood() {
   const { colony, state, act } = useGame();
   const [tab, setTab] = useState<'caste' | 'defense'>('caste');
   const [counts, setCounts] = useState<Record<string, string>>({});
   const [feed, setFeed] = useState<Feeding>('normal');
+  const [open, setOpen] = useState<Record<string, boolean>>({});
   if (!colony || !state) return null;
   const brood = lvl(colony.chambers, 'brood_hall');
   const queued = queuedCounts(colony.unitQueue);
@@ -89,14 +126,12 @@ export function Brood() {
   const ids = tab === 'caste' ? MVP_CASTES : MVP_DEFENSES;
 
   return (
-    <div className="stack">
-      <Panel title="Brood Hall" actions={<span className="muted">{brood > 0 ? `Lv ${brood}` : 'not built'}</span>}>
-        {brood === 0 ? (
-          <p className="muted">Build a Brood Hall (Chambers → Colony) to raise castes and defenses.</p>
-        ) : colony.unitQueue.length === 0 ? (
-          <p className="muted">The Brood Hall is empty. Raise castes to forage, raid and defend.</p>
-        ) : (
+    <div className="stack brood">
+      <Panel title="Your army" actions={<span className="muted">Brood Hall {brood > 0 ? `Lv ${brood}` : 'not built'}</span>}>
+        <Army />
+        {colony.unitQueue.length > 0 && (
           <div className="queue">
+            <h3 className="queue-title">Raising now</h3>
             {colony.unitQueue.map((item, i) => {
               const def = item.kind === 'caste' ? CASTES[item.id as CasteId] : DEFENSES[item.id as DefenseId];
               return (
@@ -120,23 +155,25 @@ export function Brood() {
             )}
           </div>
         )}
+        {brood === 0 && <p className="muted small">Build a Brood Hall (Chambers → Colony) to raise castes and defenses.</p>}
         {colony.buildJob?.chamber === 'brood_hall' && <p className="notice">The Brood Hall is being enlarged and can't raise units until it's done.</p>}
       </Panel>
 
-      {brood > 0 && <Digestion />}
-
-      <div className="tabs" role="tablist" style={{ maxWidth: 360 }}>
-        <button role="tab" aria-selected={tab === 'caste'} className={tab === 'caste' ? 'on' : ''} onClick={() => setTab('caste')}>
-          Castes
-        </button>
-        <button role="tab" aria-selected={tab === 'defense'} className={tab === 'defense' ? 'on' : ''} onClick={() => setTab('defense')}>
-          Defenses
-        </button>
-      </div>
-
-      {tab === 'caste' && brood > 0 && (
-        <Panel>
-          <div className="feed-pick">
+      <Panel
+        title="Raise"
+        actions={
+          <div className="tabs brood-tabs" role="tablist">
+            <button role="tab" aria-selected={tab === 'caste'} className={tab === 'caste' ? 'on' : ''} onClick={() => setTab('caste')}>
+              Castes
+            </button>
+            <button role="tab" aria-selected={tab === 'defense'} className={tab === 'defense' ? 'on' : ''} onClick={() => setTab('defense')}>
+              Defenses
+            </button>
+          </div>
+        }
+      >
+        {tab === 'caste' && brood > 0 && (
+          <div className="feed-pick" title={FEED_TEXT[feed]}>
             <span>Feeding</span>
             <div className="tabs feed-tabs" role="radiogroup" aria-label="Feeding">
               {FEEDINGS.map((f) => (
@@ -145,13 +182,10 @@ export function Brood() {
                 </button>
               ))}
             </div>
+            {feed !== 'normal' && <p className="small muted feed-note">{FEED_TEXT[feed]}</p>}
           </div>
-          <p className="small muted">{FEED_TEXT[feed]}</p>
-        </Panel>
-      )}
-
-      <Panel>
-        <ul className="rows">
+        )}
+        <ul className="units">
           {ids.map((id) => {
             const def: any = tab === 'caste' ? CASTES[id as CasteId] : DEFENSES[id as DefenseId];
             const missing = missingRequirements(def.unlock, colony.chambers, state.player.research);
@@ -167,60 +201,65 @@ export function Brood() {
             // the server refuses with the same checks (shared/src/blockers.ts); affordability is explained here
             const blocker = broodBlocker(tab, id, def, n, colony, state.player);
             const blocked = blocker ? blocker.short : maxAfford < n ? whyShort(colony, scale(unitCost, n), state.world.speed) : n > maxN ? 'Over the limit' : '';
+            const isOpen = !!open[id];
             return (
-              <li key={id} className={`row has-pic${missing.length ? ' locked' : ''}`}>
-                <Pic kind={tab === 'caste' ? 'unit' : 'defense'} id={id} />
-                <div className="row-main">
-                  <div className="row-title">
-                    <h3>{def.name}</h3>
+              <li key={id} className={`unit${missing.length ? ' locked' : ''}${isOpen ? ' open' : ''}`}>
+                <button type="button" className="unit-head" aria-expanded={isOpen} onClick={() => setOpen((o) => ({ ...o, [id]: !o[id] }))}>
+                  <Pic kind={tab === 'caste' ? 'unit' : 'defense'} id={id} />
+                  <span className="unit-name">
+                    <b>{def.name}</b>
                     <span className="muted small">
                       {fmtFull(have)} {tab === 'caste' ? 'home' : 'built'}
                       {queued[id] ? ` · ${fmtFull(queued[id])} queued` : ''}
                     </span>
+                  </span>
+                  <span className="unit-more" aria-hidden="true">{isOpen ? '▴' : '▾'}</span>
+                  <span className="sr-only">{isOpen ? 'Hide details' : 'Show details'}</span>
+                </button>
+                {isOpen && (
+                  <div className="unit-details">
+                    <p className="blurb">{def.blurb}</p>
+                    <Stats id={id} def={def} />
                   </div>
-                  <p className="blurb">{def.blurb}</p>
-                  <Stats id={id} def={def} />
-                </div>
-                <div className="row-side">
-                  {missing.length || brood === 0 ? (
-                    <span className="req">{blocked}</span>
-                  ) : (
-                    <>
-                      <span className="small muted">
-                        Each: <Cost cost={unitCost} /> · {fmtDuration(per * 1000)}
+                )}
+                {missing.length || brood === 0 ? (
+                  <p className="req">{blocked}</p>
+                ) : (
+                  <div className="unit-buy">
+                    <span className="small muted">
+                      Each <Cost cost={unitCost} /> · {fmtDuration(per * 1000)}
+                    </span>
+                    <form
+                      className="count-form"
+                      onSubmit={async (e) => {
+                        e.preventDefault();
+                        if (n < 1 || blocked) return;
+                        if (await act(() => api.post(`/api/colonies/${colony.id}/brood`, { kind: tab, id, count: n, feed: f }), `${fmtFull(n)} ${def.name} queued${f !== 'normal' ? ` (${feedingName(f).toLowerCase()})` : ''}.`))
+                          setCounts((c) => ({ ...c, [id]: '' }));
+                      }}
+                    >
+                      <input
+                        inputMode="numeric"
+                        aria-label={`How many ${def.name}`}
+                        placeholder="0"
+                        value={raw}
+                        onChange={(e) => setCounts((c) => ({ ...c, [id]: e.target.value.replace(/\D/g, '') }))}
+                      />
+                      <button type="button" className="btn ghost small" disabled={maxN < 1} onClick={() => setCounts((c) => ({ ...c, [id]: String(maxN) }))}>
+                        Max {fmtNum(maxN)}
+                      </button>
+                      <button className="btn primary small" disabled={n < 1 || !!blocked}>
+                        Raise
+                      </button>
+                    </form>
+                    {n > 0 && !blocked && (
+                      <span className="why">
+                        Total <Cost cost={scale(unitCost, n)} have={colony.resources} /> · {fmtDuration(per * n * 1000)}
                       </span>
-                      <form
-                        className="count-form"
-                        onSubmit={async (e) => {
-                          e.preventDefault();
-                          if (n < 1 || blocked) return;
-                          if (await act(() => api.post(`/api/colonies/${colony.id}/brood`, { kind: tab, id, count: n, feed: f }), `${fmtFull(n)} ${def.name} queued${f !== 'normal' ? ` (${feedingName(f).toLowerCase()})` : ''}.`))
-                            setCounts((c) => ({ ...c, [id]: '' }));
-                        }}
-                      >
-                        <input
-                          inputMode="numeric"
-                          aria-label={`How many ${def.name}`}
-                          placeholder="0"
-                          value={raw}
-                          onChange={(e) => setCounts((c) => ({ ...c, [id]: e.target.value.replace(/\D/g, '') }))}
-                        />
-                        <button type="button" className="btn ghost small" disabled={maxN < 1} onClick={() => setCounts((c) => ({ ...c, [id]: String(maxN) }))}>
-                          Max {fmtNum(maxN)}
-                        </button>
-                        <button className="btn primary" disabled={n < 1 || !!blocked}>
-                          Raise
-                        </button>
-                      </form>
-                      {n > 0 && !blocked && (
-                        <span className="why">
-                          Total <Cost cost={scale(unitCost, n)} have={colony.resources} /> · {fmtDuration(per * n * 1000)}
-                        </span>
-                      )}
-                      {blocked && <span className="why">{blocked}</span>}
-                    </>
-                  )}
-                </div>
+                    )}
+                    {blocked && <span className="why">{blocked}</span>}
+                  </div>
+                )}
               </li>
             );
           })}
@@ -230,8 +269,12 @@ export function Brood() {
   );
 }
 
-/** Larval digestion: ant larvae digest solid Protein and feed liquid food back to the workers. docs/03-economy.md */
-function Digestion() {
+/**
+ * Larval digestion: ant larvae digest solid Protein and feed liquid food back to the workers (docs/03-economy.md).
+ * Lives on the Brood Hall's chamber card in the nest.
+ */
+export function Digestion() {
+
   const { colony, state, act, now } = useGame();
   const [raw, setRaw] = useState('');
   if (!colony || !state) return null;
@@ -247,10 +290,12 @@ function Digestion() {
   else if (amount > 0 && amount < DIGEST_RULES.minProtein) blocked = `At least ${DIGEST_RULES.minProtein} Protein`;
   else if (amount > have) blocked = 'Not enough Protein';
   return (
-    <Panel title="Larval digestion" actions={<span className="muted small">{rate} Protein → 1 Nectar</span>}>
+    <div className="digest">
+      <h3>
+        Larval digestion <span className="muted small">{rate} Protein → 1 Nectar</span>
+      </h3>
       <p className="small muted">
-        Adult ants can't digest solid food, so they feed Protein to the larvae, who turn it into liquid food for the colony. A poor
-        trade, but it turns spare Protein into Nectar while you're away. The larvae get through {fmtNum(perHour)} Protein an hour (more with a bigger Brood Hall).
+        Larvae turn spare Protein into Nectar while you're away: {fmtNum(perHour)} Protein an hour (more with a bigger Brood Hall).
       </p>
       {job ? (
         <div className="queue">
@@ -293,6 +338,6 @@ function Digestion() {
           {amount > 0 && <span className="why">{blocked || <>Makes {fmtFull(plan.nectar)} Nectar over {fmtDuration(plan.ms)}</>}</span>}
         </>
       )}
-    </Panel>
+    </div>
   );
 }

@@ -50,6 +50,7 @@ Adult ants can't swallow solid food. Workers feed protein to the larvae, which d
 - The Nectar trickles in evenly while the job runs and can go over the Nectar Cellar's cap, like mission cargo. Stopping the job keeps the Nectar made so far and refunds the undigested Protein.
 - The rate is deliberately poor (production values Protein at about 2 : 1), so Aphid Pastures stay the real Nectar source and digestion is for surplus Protein. Protein inside a running job is out of raiders' reach; at 3 : 1 that is an expensive way to hide it.
 - Numbers: `formulas.json` → `brood.digestion`.
+- Where: on the Brood Hall's chamber card in the nest (tap the Brood Hall), since 1 Nov 2026; the Brood Hall screen is for the army.
 
 ## Sinks and sources (economy health)
 | Sources | Sinks |
