@@ -61,7 +61,7 @@ describe('the helpers follow the data', () => {
     expect(forageLuck({ foraging_instinct: 4 })).toBe(4 * RESEARCH.foraging_instinct.effect.forageLuck!);
     expect(forageSlots({ foraging_instinct: 3 })).toBe(FORMULAS.missions.baseForageSlots + 1);
     expect(missionSlots({ colony_mind: 2 })).toBe(FORMULAS.missions.baseSlots + 2);
-    expect(maxColonies({ nuptial_flight: 3 })).toBe(FORMULAS.colonies.base + 2);
+    expect(maxColonies({ nuptial_flight: 3 })).toBe(FORMULAS.colonies.base + 3);
     expect(spaceMax(20, { deep_digging: 2 })).toBe(30);
     expect(unitSpeed('worker', { pheromone_trails: 3 })).toBeCloseTo(CASTES.worker.speed * 1.3);
   });

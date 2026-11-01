@@ -187,7 +187,7 @@ export const RESEARCH_NUMBER_EFFECTS = [
   // economy (economy.ts)
   'foliagePct', 'proteinPct', 'nectarPct', 'storagePct', 'protectedPct', 'buildTimePct', 'unitTimePct', 'researchTimePct', 'space',
   // missions and the map (world.ts, forage.ts)
-  'speedPct', 'missionSlots', 'forageSlotsPer2Levels', 'forageLuck', 'scoutLevel', 'scoutStealth', 'coloniesPer2Levels',
+  'speedPct', 'missionSlots', 'forageSlotsPer2Levels', 'forageLuck', 'scoutLevel', 'scoutStealth', 'coloniesPerLevel',
 ] as const;
 export type ResearchNumberEffect = (typeof RESEARCH_NUMBER_EFFECTS)[number];
 
