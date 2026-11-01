@@ -48,7 +48,7 @@ Terrain is determined by the colony's spot in a patch and affects space and prod
 | Terrain | Spots | Space | Modifiers |
 |---|---|---|---|
 | Sunny Meadow | 1–2 | 120–150 | Foliage +20%, Nectar −10% |
-| Sandy Soil | 3–4 | 140–170 | Easy digging: build time −10% |
+| Sandy Soil | 3–4 | 140–170 | Easy digging: 10% faster build time |
 | Grassland | 5–8 | 160–200 | No modifiers |
 | Rotting Log | 9–10 | 140–170 | Protein +20% |
 | Creek Bank | 11–12 | 120–150 | Nectar +25%, Foliage −10% |

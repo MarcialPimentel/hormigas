@@ -357,8 +357,10 @@ function ScoutView({ at }: { at: Coords }) {
 /** What a terrain does, for picking where to found a colony: "+20% Foliage, −10% Nectar · space 120–150". */
 function terrainSummary(t: (typeof TERRAIN)[keyof typeof TERRAIN]) {
   const mods = t.mods as Record<string, number>;
-  const label: Record<string, string> = { foliagePct: 'Foliage', proteinPct: 'Protein', nectarPct: 'Nectar', buildTimePct: 'build time' };
-  const parts = Object.entries(mods).map(([k, v]) => `${v > 0 ? '+' : '−'}${Math.abs(v)}% ${label[k] ?? k}`);
+  const label: Record<string, string> = { foliagePct: 'Foliage', proteinPct: 'Protein', nectarPct: 'Nectar' };
+  // build time: less is better, so say it in words ("10% faster build time") rather than "−10% build time"
+  const parts = Object.entries(mods).map(([k, v]) =>
+    k === 'buildTimePct' ? `${Math.abs(v)}% ${v < 0 ? 'faster' : 'slower'} build time` : `${v > 0 ? '+' : '−'}${Math.abs(v)}% ${label[k] ?? k}`);
   return `${parts.length ? parts.join(', ') : 'No bonuses'} · space ${t.space[0]}–${t.space[1]}`;
 }
 
