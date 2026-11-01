@@ -40,13 +40,15 @@ export interface SwarmTarget {
   units: UnitCounts;
   defenses: DefenseCounts;
   research: ResearchLevels;
+  /** the colony's ground on its defenses (groundDefensePct) */
+  groundDefensePct?: number;
 }
 
 /** Share of `trials` simulated battles the defender wins against a swarm of `packs` packs. */
 export function defenderWinRate(target: SwarmTarget, packs: number, seed: number, trials = SWARM.trials): number {
   let wins = 0;
   for (let i = 0; i < trials; i++) {
-    const r = simulateBattle({ units: swarmOfPacks(packs), research: {} }, { units: target.units, defenses: target.defenses, research: target.research }, createRng(seed + i));
+    const r = simulateBattle({ units: swarmOfPacks(packs), research: {} }, { units: target.units, defenses: target.defenses, research: target.research, groundDefensePct: target.groundDefensePct }, createRng(seed + i));
     if (r.winner === 'defender') wins++;
   }
   return wins / trials;

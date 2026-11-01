@@ -10,6 +10,7 @@ import {
   res,
   createRng,
   fillCargo,
+  groundDefensePct,
   groupCargo,
   lootable,
   presentUnits,
@@ -172,7 +173,8 @@ export async function resolveRaid(q: Tx, m: Mission, at: number, opts: { attacke
   const result = simulateBattle(
     // only player raids carry a fall-back order; wild nests and swarms fight to the end
     { units: startAttacker, research: attacker.research, retreatPct: m.retreatPct ?? 0 },
-    { units: startDefender, defenses: target.defenses, research: defender.research, allies: garrisons.map((g, i) => ({ units: allyStart[i], research: allyPlayers[i].research })) },
+    // a player colony's ground can weaken or strengthen its defenses (Sandy Soil); wild nests keep their own tuning
+    { units: startDefender, defenses: target.defenses, groundDefensePct: target.npc ? 0 : groundDefensePct(target.terrain), research: defender.research, allies: garrisons.map((g, i) => ({ units: allyStart[i], research: allyPlayers[i].research })) },
     rng,
   );
   const rebuilt = rebuildDefenses(result.defensesDestroyed, rng);

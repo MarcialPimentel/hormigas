@@ -451,6 +451,10 @@ pre.report-body { white-space: pre-wrap; overflow-x: auto; }
 .battle .outcome { font-family: var(--font-display); font-weight: 700; font-size: 1.1rem; }
 .battle .outcome.good { color: var(--leaf-ink); }
 .battle .outcome.bad { color: var(--danger); }
+/* a ground's strength and weakness on the spot card (docs/04-colony.md § Terrain) */
+.trait.good { color: var(--leaf-ink); }
+.trait.bad { color: var(--danger); }
+.has-tip { text-decoration: underline dotted; text-underline-offset: 2px; cursor: help; }
 .sides { display: grid; gap: 1rem; }
 @media (min-width: 640px) { .sides { grid-template-columns: 1fr 1fr; } }
 .sides section { display: grid; gap: 0.35rem; align-content: start; }

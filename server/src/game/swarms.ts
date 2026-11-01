@@ -1,7 +1,7 @@
 // Army-ant swarms (docs/20-swarms.md). Every player colony has one pending `swarm_spotted` event.
 // When it fires, a swarm sized against what the colony has at home sets off from the patch's wilds and
 // lands warningHours later as a raid. Survivors and their loot move on: nothing comes back.
-import { SWARM, WILDS_SPOT, createRng, isInactive, nextSwarmHours, productionPerHour, randomSeed, res, storageCapacity, swarmParty, swarmPrey } from '@hormigas/shared';
+import { SWARM, WILDS_SPOT, createRng, isInactive, nextSwarmHours, groundDefensePct, productionPerHour, randomSeed, res, storageCapacity, swarmParty, swarmPrey } from '@hormigas/shared';
 import type { Tx } from '../db';
 import { advance, getPlayer, lockColony, saveColony, type Colony } from '../colony';
 import { addReport } from './reports';
@@ -24,7 +24,7 @@ const swarms = recurringColonyEvent('swarm_spotted', {
     if (player.protectedUntil > t || isInactive(pvp, t) || busy.rowCount) return;
 
     const colony = advance(await lockColony(q, colonyId), t);
-    const units = swarmParty({ units: colony.units, defenses: colony.defenses, research: player.research }, randomSeed());
+    const units = swarmParty({ units: colony.units, defenses: colony.defenses, research: player.research, groundDefensePct: groundDefensePct(colony.terrain) }, randomSeed());
     await launchSwarm(q, colony, units, t);
   },
 });

@@ -1,6 +1,6 @@
 // In-game battle preview: runs the same combat code as the server against your latest scout report.
 import { useEffect, useMemo, useState } from 'react';
-import { counterHintText, counterHints, groupCargo, presentUnits, previewBattle, type Coords, type UnitCounts } from '@hormigas/shared';
+import { counterHintText, counterHints, groundDefensePct, groupCargo, presentUnits, previewBattle, terrainForSpot, type Coords, type UnitCounts } from '@hormigas/shared';
 import { api } from '../api';
 import { useGame } from '../game';
 import { fmtDuration, fmtNum } from '../format';
@@ -31,11 +31,12 @@ export function BattlePreview({ target, units, retreatPct = 0 }: { target: Coord
     return previewBattle(
       { units, research: state.player.research, retreatPct },
       // allied soldiers holding position fight too; their research is unknown, so count them unboosted
-      { units: d.units ?? {}, defenses: d.defenses ?? {}, research: d.research ?? {}, allies: d.garrison ? [{ units: d.garrison, research: {} }] : [] },
+      // a player colony's ground counts too (Sandy Soil's walls crumble); wild nests keep their own
+      { units: d.units ?? {}, defenses: d.defenses ?? {}, groundDefensePct: d.wild ? 0 : groundDefensePct(terrainForSpot(target.spot)), research: d.research ?? {}, allies: d.garrison ? [{ units: d.garrison, research: {} }] : [] },
       { defenderResources: d.resources, protectedEach: d.protectedEach ?? 0, cargoOf: (u) => groupCargo(u), wild: !!d.wild },
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [intel, unitsKey, retreatPct, state?.player.research]);
+  }, [intel, unitsKey, retreatPct, state?.player.research, target.spot]);
 
   if (intel === undefined) return <div className="preview muted small">Checking your scout reports…</div>;
   if (intel === null)

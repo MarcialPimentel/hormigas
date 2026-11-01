@@ -541,8 +541,35 @@ uniform vec3 uSpots[SIGHT_SPOTS];
   const flagColor = (c: SpotColony) =>
     c.mine ? FLAG.mine : c.relation === 'ally' ? FLAG.ally : c.kind === 'wild' ? (c.hint ? HINT_COLOR[c.hint] : FLAG.wild) : c.inactive ? FLAG.inactive : FLAG.other;
 
+  /** Every mound on the patch, so ants walk up out of its entrance and over it rather than through it. */
+  const mounds: { x: number; z: number; y: number; s: number }[] = [];
+  let moundsVer = 0;
+  /** The mound's surface at (x, z), or −∞ off every mound. Inside the entrance it drops away down the hole. */
+  function moundY(x: number, z: number) {
+    const { R, rim, hole, H, dip } = MOUND;
+    let best = -Infinity;
+    for (const m of mounds) {
+      const dx = x - m.x, dz = z - m.z;
+      if (Math.abs(dx) > R * m.s || Math.abs(dz) > R * m.s) continue;
+      const r = Math.hypot(dx, dz) / m.s;
+      if (r >= R) continue;
+      let h: number;
+      if (r <= hole) h = H - dip - (hole - r) * 4;
+      else if (r <= rim) h = H - dip * Math.sin((((rim - r) / (rim - hole)) * Math.PI) / 2);
+      else h = H * Math.pow(Math.sin((((R - r) / (R - rim)) * Math.PI) / 2), 1.6);
+      best = Math.max(best, m.y + h * m.s);
+    }
+    return best;
+  }
+  /** Where an ant's feet go: the ground, or the mound where there is one (a hair above its lumps). */
+  const footY = (x: number, z: number) => {
+    const m = moundY(x, z);
+    return m === -Infinity ? gH(x, z) : Math.max(gH(x, z), m + 0.035);
+  };
+
   function addMound(x: number, z: number, color: string, flag: string | null, scale = 1) {
     const y = gH(x, z);
+    mounds.push({ x, z, y: y - 0.05, s: scale });
     // the ground the colony has cleared around its entrance
     const bare = new THREE.Mesh(bareGeo, bareMat);
     bare.rotation.x = -Math.PI / 2;
@@ -717,6 +744,8 @@ uniform vec3 uSpots[SIGHT_SPOTS];
     for (const d of spotDisposables.splice(0)) d.dispose();
     spotGroup.clear();
     plumes.length = 0;
+    mounds.length = 0;
+    moundsVer++;
     taps = [];
     shown = spots ? { region, patch, spots } : null;
     dead.length = 0;
@@ -792,7 +821,7 @@ uniform vec3 uSpots[SIGHT_SPOTS];
     return { x: leftOf(c, other) ? -EDGE : EDGE, z: hash(c.patch, c.spot) * 10 - 5 };
   };
   function trailFor(key: string, a: { x: number; z: number }, b: { x: number; z: number }, color: string, bend: number) {
-    const k = `${key}|${a.x.toFixed(1)},${a.z.toFixed(1)}|${b.x.toFixed(1)},${b.z.toFixed(1)}|${color}`;
+    const k = `${key}|${a.x.toFixed(1)},${a.z.toFixed(1)}|${b.x.toFixed(1)},${b.z.toFixed(1)}|${color}|${moundsVer}`;
     const old = trails.get(key);
     if (old?.key === k) return old;
     if (old) {
@@ -804,11 +833,12 @@ uniform vec3 uSpots[SIGHT_SPOTS];
     const dx = b.x - a.x, dz = b.z - a.z, len = Math.hypot(dx, dz) || 1;
     const cx = (a.x + b.x) / 2 - (dz / len) * len * 0.12 * bend, cz = (a.z + b.z) / 2 + (dx / len) * len * 0.12 * bend;
     const pts: THREE.Vector3[] = [];
-    const n = Math.max(12, Math.round(len * 1.5));
+    // sampled finely enough to follow a mound's rim and crater
+    const n = Math.max(12, Math.round(len * 3));
     for (let i = 0; i <= n; i++) {
       const t = i / n, u = 1 - t;
       const x = u * u * a.x + 2 * u * t * cx + t * t * b.x, z = u * u * a.z + 2 * u * t * cz + t * t * b.z;
-      pts.push(new THREE.Vector3(x, gH(x, z), z));
+      pts.push(new THREE.Vector3(x, footY(x, z), z));
     }
     const lens = [0];
     for (let i = 1; i < pts.length; i++) lens.push(lens[i - 1] + pts[i].distanceTo(pts[i - 1]));
@@ -843,6 +873,15 @@ uniform vec3 uSpots[SIGHT_SPOTS];
   }
 
   const clamp01 = (v: number) => Math.max(0, Math.min(1, v));
+  // legs are tied to the ground covered: one tripod cycle per STRIDE, so the feet don't slide. A column that creeps
+  // (a long trip at world speed ×1) still steps at least MIN_STEP radians a second, slowly, rather than freezing.
+  const STRIDE = 0.17, MIN_STEP = 4;
+  /** Nose up or down to follow a mound's slope (and steeply up out of its entrance); flat ground stays level. */
+  function slope(x: number, z: number, fx: number, fz: number) {
+    if (moundY(x, z) === -Infinity && moundY(x + fx * 0.12, z + fz * 0.12) === -Infinity) return 0;
+    const dy = footY(x + fx * 0.12, z + fz * 0.12) - footY(x, z);
+    return Math.max(-1.3, Math.min(1.3, Math.atan2(dy, 0.12)));
+  }
   interface Column {
     key: string;
     from: { x: number; z: number };
@@ -859,6 +898,8 @@ uniform vec3 uSpots[SIGHT_SPOTS];
     tone: string;
     endsAt: number;
     holding?: boolean;
+    /** how fast k changes, per ms (negative heading home) */
+    rate: number;
   }
   function columns(d: PatchData): Column[] {
     const st = d.state, out: Column[] = [];
@@ -878,6 +919,7 @@ uniform vec3 uSpots[SIGHT_SPOTS];
         caste: (i) => (m.type === 'colonize' ? (i === 0 ? 'alate' : 'worker') : hash(i, m.id) < soldiers ? 'soldier' : 'worker'),
         trail: FLAG.mine, cargo: ob || hold ? [] : (Object.keys(CARGO) as ResourceId[]).filter((r) => (m.cargo?.[r] ?? 0) > 0),
         label: `${label}${ob || hold ? '' : ' home'}`, tone: 'ours', endsAt: hold ? 0 : ob ? m.arriveAt : m.returnAt, holding: hold,
+        rate: hold ? 0 : ob ? 1 / Math.max(1, m.arriveAt - m.departAt) : -1 / Math.max(1, m.returnAt - m.arriveAt),
       });
     }
     for (const i of (st.incoming ?? []) as any[]) {
@@ -894,6 +936,7 @@ uniform vec3 uSpots[SIGHT_SPOTS];
         color: swarm ? undefined : hostile ? CHITIN.raider : i.type === 'hold' ? '#3FA79E' : FLAG.other,
         trail: hostile ? '#C4473A' : i.type === 'hold' ? FLAG.ally : FLAG.other, cargo: [],
         label: what, tone: hostile ? 'raid' : 'ours', endsAt: i.arriveAt,
+        rate: i.departAt ? 1 / Math.max(1, i.arriveAt - i.departAt) : 0,
       });
     }
     return out;
@@ -909,6 +952,10 @@ uniform vec3 uSpots[SIGHT_SPOTS];
       const lanes = Math.min(swarm ? 9 : 4, Math.max(1, Math.round(Math.sqrt(c.n / (swarm ? 5 : 12)))));
       const gap = swarm ? 0.3 : 0.46;
       const lead = c.k * t.total;
+      // how fast the column really moves (world units a second), and the slow floor for its legs
+      const legs = (Math.abs(c.rate) * 1000 * t.total) / STRIDE * Math.PI * 2;
+      const idle = reduced ? 0 : Math.max(0, MIN_STEP - legs) * clock;
+      const gait = (walked: number, i: number) => (walked / STRIDE) * Math.PI * 2 + hash(i, 5) * 6.283 + idle;
       if (swarm) {
         // an army-ant swarm is a fan: a wide front that thins into the column behind it (docs/20-swarms.md)
         for (let i = 0; i < c.n; i++) {
@@ -922,9 +969,11 @@ uniform vec3 uSpots[SIGHT_SPOTS];
           const side = (hash(i, 12) * 2 - 1) * half + wob;
           const x = at.x + nx * side, z = at.z + nz * side;
           const caste = c.caste(i);
-          ants.ant(caste, x, gH(x, z), z, {
+          ants.ant(caste, x, footY(x, z), z, {
             scale: (ANT / 0.9) * (caste === 'army_major' ? 1.3 : 1),
-            yaw: Math.atan2(-dir.z, dir.x) + wob * 2 + (hash(i, 13) - 0.5) * 0.6, step: reduced ? 0 : 19,
+            yaw: Math.atan2(-dir.z, dir.x) + wob * 2 + (hash(i, 13) - 0.5) * 0.6,
+            pitch: slope(x, z, dir.x / tl, dir.z / tl),
+            ...(reduced ? { step: 0 } : { gait: gait(dd, i) }),
           });
         }
         flushAhead(t, lead);
@@ -944,10 +993,12 @@ uniform vec3 uSpots[SIGHT_SPOTS];
         const yaw = Math.atan2(-(back ? -dir.z : dir.z), back ? -dir.x : dir.x) + wob;
         const caste = c.caste(i);
         const r = c.cargo.length ? c.cargo[i % c.cargo.length] : null;
-        ants.ant(caste, x, gH(x, z), z, {
+        const fx = (back ? -dir.x : dir.x) / tl, fz = (back ? -dir.z : dir.z) / tl;
+        ants.ant(caste, x, footY(x, z), z, {
           // ants3d's body is about 0.9 long: scale it to 5 mm
           scale: (ANT / 0.9) * (caste === 'soldier' ? 1.15 : caste === 'army_major' ? 1.3 : caste === 'alate' ? 1.5 : 1),
-          yaw, step: reduced || c.holding ? 0 : swarm ? 19 : 15, color: c.color,
+          yaw, pitch: slope(x, z, fx, fz), color: c.color,
+          ...(reduced || c.holding ? { step: 0 } : { gait: gait(back ? t.total - dd : dd, i) }),
           cargo: r ? { kind: LOAD[r], color: CARGO[r] } : null,
         });
       }
@@ -1157,7 +1208,7 @@ uniform vec3 uSpots[SIGHT_SPOTS];
     for (let i = 0; i <= n; i++) {
       const t = i / n, u = 1 - t;
       const x = u * u * a.x + 2 * u * t * cx + t * t * b.x, z = u * u * a.z + 2 * u * t * cz + t * t * b.z;
-      pts.push(new THREE.Vector3(x, gH(x, z) + 0.08, z));
+      pts.push(new THREE.Vector3(x, Math.max(gH(x, z), moundY(x, z)) + 0.08, z));
     }
     const lens = [0];
     for (let i = 1; i < pts.length; i++) lens.push(lens[i - 1] + pts[i].distanceTo(pts[i - 1]));
@@ -1467,8 +1518,15 @@ uniform vec3 uSpots[SIGHT_SPOTS];
   const io = new IntersectionObserver(([en]) => (visible = en.isIntersecting));
   io.observe(host);
   let raf = 0, last = performance.now(), sinceStill = 1;
+  // the game's clock ticks once a second: run it on smoothly between ticks, so columns march instead of hopping
+  let tickNow = NaN, tickAt = 0;
   function step(dt: number) {
-    const d = get();
+    const raw = get();
+    if (raw.now !== tickNow) {
+      tickNow = raw.now;
+      tickAt = performance.now();
+    }
+    const d = reduced ? raw : { ...raw, now: tickNow + Math.min(1500, performance.now() - tickAt) };
     seen.clear();
     clock += reduced ? 0 : dt;
     antUniforms.uTime.value = clock;
