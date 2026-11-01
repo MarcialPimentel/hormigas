@@ -11,7 +11,7 @@ A player starts with one colony and can found more by sending a **Winged Queen**
 3. Send her on a **Found Colony** mission to an empty spot.
 
 ## How many colonies
-- **1 + Nuptial Flight level:** level 1 → 2 colonies, level 2 → 3, level 3 → 4, and so on (`coloniesPerLevel` in the research data). There is no top level for now: each level costs double the last, which keeps expansion in check (Marz, 1 Nov 2026; it was +1 only at levels 1, 3, 5, so level 2 added nothing).
+- **1 + Nuptial Flight level:** level 1 → 2 colonies, level 2 → 3, level 3 → 4, and so on (`coloniesPerLevel` in the research data). There is no top level for now, and the cost still doubles each level, so reaching the 5th colony costs about 240k in all, against 2M under the old rule (Marz, 1 Nov 2026: it was +1 only at levels 1, 3, 5, so level 2 added nothing; the faster pace is on purpose).
 - Queens already in the air count, so a player can't send two queens for one free slot.
 - Research is account-wide, so the cap is too.
 
