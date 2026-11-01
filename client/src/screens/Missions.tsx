@@ -169,7 +169,7 @@ export function Missions({ draft, go }: { draft?: MissionDraft; go?: (screen: st
  * The mission form: type, target, units, cargo, speed, fall-back, and Send. In the war room it's the Deploy card
  * that opens over the patch when you pick an action on a spot (`onClose` set); on phones it sits under the patch.
  */
-function SendMission({ type, setType, target, setTarget, onClose, onSent }: {
+export function SendMission({ type, setType, target, setTarget, onClose, onSent }: {
   type: MissionType;
   setType: (t: MissionType) => void;
   target: Coords;

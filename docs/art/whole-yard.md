@@ -1,6 +1,6 @@
 # The Whole Yard: Hormigas as a 3D 4X on one map
 
-**Status:** proposal, 1 Nov 2026, waiting on Marz's decisions (below). Nothing in the game or the other design docs has changed yet.
+**Status:** approved as a preview, 1 Nov 2026: Marz asked to ship it behind a switch to playtest, with Chambers, Brood Hall and Research as panels over the map and phones left on today's screens. Built in `client/src/screens/Yard.tsx` and `client/src/components/yard3d/scene.ts`; open with `?preview=yard`. Mist and border bonuses are still open.
 **Mock-up:** [whole-yard-mockup.html](whole-yard-mockup.html) (open in a browser; published as "Hormigas Whole Yard"). Sources in [whole-yard/](whole-yard/): edit `page.src.html` and `scene.js`, then run `python docs/art/whole-yard/build.py`. The mounds come from a Blender script: `"C:/Program Files/Blender Foundation/Blender 5.2/blender.exe" -b -P docs/art/whole-yard/mounds.blend.py` writes `mounds.json` and `mounds-preview.png`.
 
 Builds on [sunlit-microcosm.md](sunlit-microcosm.md) (the scale ladder, approved 30 Oct) and the cartoon ants (#123). Palette and type are unchanged.

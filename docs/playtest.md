@@ -7,6 +7,9 @@ _Current as of Build 11 (2026-10-30)._
 - The live world runs at **×1 speed**: a first session reaches Nectar in about 1.3 hours of play for an engaged player (gathering is ×2 since 2026-10-30) ([16-milestones](16-milestones.md)). Check in a few times a day.
 - What's new in this build: the latest entry in [CHANGELOG.md](../CHANGELOG.md). Each build's PR has its own playtest steps.
 
+### The Whole Yard (preview)
+On a computer, open https://hormigas.marz.gg/?preview=yard once; the browser remembers it. **Whole Yard** is then the first screen. Scroll to zoom from the yard to the ground, drag to move, right-drag or Q/E to turn, WASD to pan; double-click your mound to go inside; the left buttons open Chambers, Brood Hall, Research and Missions. "Classic screens" goes back to the usual layout (Whole Yard stays at the top of the menu); "Turn preview off" or `?preview=off` removes it.
+
 ## Controls
 - Tap or click everything; the tabs are Colony, Chambers, Brood Hall, Research, Missions, Allies, Reports and Rankings ([12-ui-nest-view](12-ui-nest-view.md)).
 - **3D nest (computers):** drag to turn it; scroll, pinch or the + and − buttons to zoom. Tap a chamber to open it.
