@@ -20,8 +20,7 @@ _Current as of Build 11 (2026-10-30)._ Hormigas has no GitHub milestones: each b
 | 9 | More wild things ([#67](https://github.com/MarcialPimentel/hormigas/issues/67)) | done |
 | 10 | Castes with a purpose ([#80](https://github.com/MarcialPimentel/hormigas/issues/80)) | done |
 | 11 | The full roster ([#83](https://github.com/MarcialPimentel/hormigas/issues/83)) | **current** (live) |
-| — | Tuning: gathering ×2 ([#107](https://github.com/MarcialPimentel/hormigas/pull/107)) | in review |
-| — | More action: windfalls (contested food) and livelier random events ([25-windfalls](25-windfalls.md)) | in review |
+| — | Between builds, live and listed under "Next build (unreleased)" in the CHANGELOG: dig plan ([#94](https://github.com/MarcialPimentel/hormigas/pull/94)), forage slots per colony ([#99](https://github.com/MarcialPimentel/hormigas/pull/99)), gathering ×2 ([#107](https://github.com/MarcialPimentel/hormigas/pull/107)), meeting the ants in the 3D nest ([#108](https://github.com/MarcialPimentel/hormigas/pull/108), [#110](https://github.com/MarcialPimentel/hormigas/pull/110)), grass that clears from view ([#109](https://github.com/MarcialPimentel/hormigas/pull/109), [#112](https://github.com/MarcialPimentel/hormigas/pull/112)), fights pay in loot ([#111](https://github.com/MarcialPimentel/hormigas/pull/111)), the Media Worker ([#116](https://github.com/MarcialPimentel/hormigas/pull/116)), Nuptial Flight per level ([#118](https://github.com/MarcialPimentel/hormigas/pull/118)), ground strengths and weaknesses ([#120](https://github.com/MarcialPimentel/hormigas/pull/120)), parties leave through the entrance ([#121](https://github.com/MarcialPimentel/hormigas/pull/121)), windfalls and livelier random events ([#122](https://github.com/MarcialPimentel/hormigas/pull/122)) ([25-windfalls](25-windfalls.md)), cartoon ants ([#123](https://github.com/MarcialPimentel/hormigas/pull/123)) | done (live) |
 | 12 | Reasons to come back: daily colony tasks, Diapause, Field Journal | next (no issue yet) |
 | v1 | Supercolonies stage B, joint raids on spider dens, more defenses | later |
 
@@ -82,7 +81,6 @@ Keep the MVP **brutally small**. Its only job is to answer: *is the core loop fu
 - War trails: standing raid orders that keep marching while you're away, on the trade-trail plumbing (the next step after windfalls, [25-windfalls](25-windfalls.md))
 - More defenses (Sticky Resin; the Narrow Tunnel shipped in Build 10)
 - Reasons to come back (next, Build 12): daily colony tasks with no streak penalty, Diapause (vacation mode), a Field Journal of achievements and titles
-- Vacation mode
 
 ## Later ideas
 - **Species as classes:** Leafcutters (economy), Army Ants (nomadic raiders), Honeypot ants (storage), Weaver ants (defense), Slave-maker ants (steal brood).
