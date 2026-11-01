@@ -141,8 +141,9 @@ function antMaterial() {
       sh.vertexShader.replace(
         '#include <begin_vertex>',
         `vec3 transformed = vec3(position);
-        float on = step(0.001, aSpeed);
-        float ph = uTime * aSpeed + aPhase;
+        // aSpeed > 0: legs cycle on the clock; < 0: aPhase is the gait itself (tied to the distance walked)
+        float on = step(0.001, abs(aSpeed));
+        float ph = aSpeed < 0.0 ? aPhase : uTime * aSpeed + aPhase;
         transformed.x += sin(ph) * aLeg.x * 0.07 * aLeg.y * on;
         transformed.y += max(0.0, cos(ph) * aLeg.x) * 0.045 * aLeg.y * on;
         transformed.y += (1.0 - abs(aLeg.x)) * abs(sin(ph)) * 0.006 * on;`,
@@ -170,12 +171,17 @@ const CARGO_AT = new THREE.Matrix4().compose(V3(0.4, 0.22, 0), new THREE.Quatern
 class Pool {
   readonly mesh: THREE.InstancedMesh;
   private speed: THREE.InstancedBufferAttribute;
+  private phase: THREE.InstancedBufferAttribute;
+  private base: Float32Array;
   private used = 0;
   constructor(geo: THREE.BufferGeometry, mat: THREE.Material, readonly cap: number, seed: () => number) {
     const g = geo.clone();
     const ph = new Float32Array(cap);
     for (let i = 0; i < cap; i++) ph[i] = seed() * 6.283;
-    g.setAttribute('aPhase', new THREE.InstancedBufferAttribute(ph, 1));
+    this.base = ph.slice();
+    this.phase = new THREE.InstancedBufferAttribute(ph, 1);
+    this.phase.setUsage(THREE.DynamicDrawUsage);
+    g.setAttribute('aPhase', this.phase);
     this.speed = new THREE.InstancedBufferAttribute(new Float32Array(cap), 1);
     this.speed.setUsage(THREE.DynamicDrawUsage);
     g.setAttribute('aSpeed', this.speed);
@@ -189,12 +195,14 @@ class Pool {
     this.used = 0;
   }
   /** Add one instance; returns its matrix (for cargo) or null when the pool is full. */
-  put(m: THREE.Matrix4, color: THREE.Color, step: number) {
+  put(m: THREE.Matrix4, color: THREE.Color, step: number, gait?: number) {
     if (this.used >= this.cap) return false;
     const i = this.used++;
     this.mesh.setMatrixAt(i, m);
     this.mesh.setColorAt(i, color);
-    (this.speed.array as Float32Array)[i] = step;
+    const walking = gait !== undefined;
+    (this.speed.array as Float32Array)[i] = walking ? -1 : step;
+    (this.phase.array as Float32Array)[i] = walking ? gait : this.base[i];
     return true;
   }
   end() {
@@ -202,6 +210,7 @@ class Pool {
     this.mesh.instanceMatrix.needsUpdate = true;
     if (this.mesh.instanceColor) this.mesh.instanceColor.needsUpdate = true;
     this.speed.needsUpdate = true;
+    this.phase.needsUpdate = true;
   }
   dispose() {
     this.mesh.geometry.dispose();
@@ -218,6 +227,8 @@ export interface AntOpts {
   pitch?: number;
   /** leg speed in radians per second; 0 stands still */
   step?: number;
+  /** the gait itself, in radians (overrides `step`): tie it to the distance walked so the feet don't slide */
+  gait?: number;
   color?: string | THREE.Color;
   cargo?: { kind: CargoKind; color: string } | null;
   /** dead: on its back, legs in the air */
@@ -269,7 +280,7 @@ export function createAnts(parent: THREE.Object3D, caps: Partial<Record<Caste, n
       if (o.flip) _q.multiply(_q2.setFromAxisAngle(X, Math.PI));
       _m.compose(_p.set(x, y + (o.flip ? 0.24 * (o.scale ?? 1) : 0), z), _q, _s.setScalar(o.scale ?? 1));
       col.set(o.color ?? CHITIN[caste as keyof typeof CHITIN] ?? CHITIN.worker);
-      if (!pools[caste].put(_m, col, o.step ?? 0)) return;
+      if (!pools[caste].put(_m, col, o.step ?? 0, o.flip ? undefined : o.gait)) return;
       const c = o.flip ? null : o.cargo;
       if (c && loadUsed[c.kind] < loadCap) {
         const im = loads[c.kind], i = loadUsed[c.kind]++;

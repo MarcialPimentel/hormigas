@@ -3,6 +3,7 @@
 _Current as of Build 11 (2026-10-30)._ Newest first. One entry per build, in players' words, built from the merged PRs. Smaller PRs merged between builds are listed with the nearest build.
 
 ## Next build (unreleased)
+- On the 3D patch, parties leave and come home through the mound's entrance: ants climb out of the hole in the crater on top, over the rim and down the slope onto their trail (and back up and in when they return), instead of appearing from inside the mound. The column now marches smoothly instead of hopping forward once a second, and each ant's legs keep pace with how far she actually walks, so a slow trip is a slow, steady walk rather than legs running on the spot.
 - Every level of Nuptial Flight now lets you rule one more colony: level 1 → 2 colonies, level 2 → 3, level 3 → 4. Before, level 2 added nothing (it was only levels 1, 3 and 5).
 - A new carrier, the **Media Worker** (leafcutter media): carries 3,500, more than twice a Worker, for 500 Foliage and 200 Protein, from Brood Hall 2 with no research. It fills the jump from Workers straight to Haulers, and hauls corpses too.
 - Fixed: scouts from a player you have a truce with (or share a supercolony scent with) no longer show up as "Enemy scouts". They're listed as visiting scouts with your pact beside their name, aren't drawn in enemy red, and never set off the alarm. Your ants never kill them, and you always get a report saying who looked.
