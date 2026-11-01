@@ -116,6 +116,22 @@ describe('in the world', () => {
     for (const r of ['foliage', 'protein', 'nectar']) expect(after.resources[r]).toBeGreaterThanOrEqual(1600 - 1);
   });
 
+  it('a colony that beats a swarm keeps the prey it was carrying', async () => {
+    await setColony(c.id, { units: { minor_soldier: 400, major_soldier: 200 }, defenses: {}, foliage: 0, protein: 0, nectar: 0, last_updated: clock.t, chambers: { queen_chamber: 3, leaf_garden: 5 } });
+    await setPlayer(me.id, { last_active: clock.t });
+    await spotNow(c.id);
+    const m = (await swarmsAt(c.id)).at(-1);
+    // a small swarm, so the colony surely wins
+    await getPool().query('UPDATE missions SET units = $2 WHERE id = $1', [m.id, JSON.stringify(swarmOfPacks(1))]);
+    await setPlayer(me.id, { last_active: Number(m.arrive_at) });
+    await clock.advance(Number(m.arrive_at) - clock.t + 1);
+    expect((await battles()).at(-1).data.winner).toBe('defender');
+    const prey = (await getPool().query("SELECT title, data FROM reports WHERE player_id = $1 AND type = 'nest_event' ORDER BY id DESC LIMIT 1", [me.id])).rows[0];
+    expect(prey.title).toBe('The swarm dropped its prey');
+    expect(prey.data.found.protein).toBeGreaterThanOrEqual(SWARM.minPrey);
+    expect((await p.get('/api/state')).colony.resources.protein).toBeGreaterThanOrEqual(SWARM.minPrey);
+  });
+
   it('players cannot send swarms', async () => {
     await setColony(c.id, { units: { minor_soldier: 5 }, nectar: 1000, last_updated: clock.t });
     const r = await p.post('/api/missions', { colonyId: c.id, type: 'swarm', target: { ...c.coords, spot: 1 }, units: { minor_soldier: 1 } });

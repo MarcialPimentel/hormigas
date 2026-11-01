@@ -68,7 +68,7 @@ describe('the area fills with wild things', () => {
   it('startup fills in areas settled before this build, once', async () => {
     await getPool().query('DELETE FROM colonies WHERE region = $1 AND patch = 2 AND npc IS NOT NULL', [ca.coords.region]);
     const first = await tx((q) => ensureWildNests(q, ca.world_id ?? 1, clock.t));
-    expect(first).toBe(2);
+    expect(first).toBe(3); // the wild nest, the aphid herd and the windfall site
     expect(await tx((q) => ensureWildNests(q, 1, clock.t))).toBe(0);
   });
 

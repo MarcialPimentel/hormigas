@@ -227,6 +227,10 @@ function SendMission({ type, setType, target, setTarget, onClose, onSent }: {
     else if (targetSpot !== undefined && !herd) problems.push('Only aphid herds can be tended. Tap a herd on the patch above.');
     else if (herd?.tended && !herd.yours) problems.push(`${herd.tenderName}'s ants tend this herd. Raid it to drive them off first.`);
   }
+  const windfall = targetSpot?.colony?.windfall;
+  if (type === 'claim' && targetSpot !== undefined && !windfall) problems.push('Only windfalls can be claimed. Tap a windfall in the wilds on the patch above.');
+  if (type === 'raid' && windfall?.yours) problems.push('Your own ants hold it.');
+  if (type === 'raid' && windfall && !windfall.held && !windfall.guarded) problems.push('Nobody holds it, so there is no one to fight. Send ants to claim it instead.');
   if (type === 'raid' && herd && !herd.tended) problems.push('Nobody tends this herd, so there is no one to fight. Send ants to tend it instead.');
   if (type === 'raid' && herd?.yours) problems.push('Your own ants tend this herd.');
   const rel = targetSpot?.colony?.relation;
@@ -380,6 +384,19 @@ function SendMission({ type, setType, target, setTarget, onClose, onSent }: {
             <p className="muted small">
               This herd makes {fmtFull(herd.nectarPerHour)} Nectar an hour while tended, carried home every {HERDS.deliverEveryHours} hours. Tenders stay
               until you call them home from the herd's card. Anyone can raid them to take the herd, so soldiers make good tenders.
+            </p>
+          )}
+          {type === 'claim' && windfall && (
+            <p className="muted small">
+              {windfall.yours
+                ? 'Your ants already hold it: these join them.'
+                : windfall.held
+                ? `${windfall.holderName}'s ants hold it. Yours fight them when they arrive; win, and they take it over.`
+                : windfall.guarded
+                ? 'Wild ants got there first. Yours fight them when they arrive; win, and they take it over.'
+                : 'Nobody holds it yet. The first ants to arrive take it, and anyone can fight them for it.'}{' '}
+              Holders carry a load home every {windfall.deliverEveryHours} hours (as much as they can carry) until it's gone or rots in{' '}
+              {fmtDuration(Math.max(0, windfall.endsAt - now))}. Send soldiers to win and keep it, and carriers to haul it.
             </p>
           )}
           {type === 'scout' && unscouted && (

@@ -107,16 +107,16 @@ describe('forage', () => {
       counts[o] = (counts[o] ?? 0) + 1;
     }
     expect(Object.keys(counts).sort()).toEqual([...FORAGE_OUTCOMES].sort());
-    expect(counts.food_cache / 20000).toBeGreaterThan(0.32);
-    expect(counts.food_cache / 20000).toBeLessThan(0.38);
+    expect(counts.food_cache / 20000).toBeGreaterThan(0.4);
+    expect(counts.food_cache / 20000).toBeLessThan(0.46);
   });
   it('odds are shown as percentages that match the table', () => {
     const o = forageOdds(0);
     expect(Object.values(o).reduce((a, b) => a + b, 0)).toBeCloseTo(100, 6);
-    expect(o.food_cache).toBeCloseTo(35, 6);
+    expect(o.food_cache).toBeCloseTo(43, 6);
     const s = forageOddsSummary(0);
-    expect(s).toEqual({ food: 50, empty: 30, losses: 15, early: 5 });
-    expect(forageOddsSummary(3).food).toBeGreaterThan(50);
+    expect(s).toEqual({ food: 58, empty: 22, losses: 15, early: 5 });
+    expect(forageOddsSummary(3).food).toBeGreaterThan(58);
   });
   it('a first trip always finds plenty of food and loses nobody', () => {
     const rng = createRng(3);

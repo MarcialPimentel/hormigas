@@ -4,8 +4,9 @@
 import { Suspense, lazy, useEffect, useState, type ReactNode } from 'react';
 import {
   WORLD, WILDS_SPOT, TERRAIN, CHAMBERS, CASTES, DEFENSES, DISCOVERY_MESSAGES, WILD_SCENTS, HERDS, foundColonyBlocker, isSiteSpot, raidBlockMessage, terrainForSpot, terrainTraits,
-  type Knowledge, type Relation, type ScentHint, type ScentKind, type TerrainId,
+  RESOURCE_IDS, type Knowledge, type Relation, type Resources, type ScentHint, type ScentKind, type TerrainId, type WindfallKind,
 } from '@hormigas/shared';
+import { RESOURCE_LABEL } from '../describe';
 import { api } from '../api';
 import { useGame } from '../game';
 import { fmtAgo, fmtCoords, fmtDuration, fmtNum } from '../format';
@@ -53,6 +54,11 @@ export interface SpotColony {
     level: number; nectarPerHour: number; storeCap: number; style: string; tended: boolean; tenderName: string | null; yours: boolean;
     tenders?: Record<string, number>; honeydew?: number; tenderColonyId?: number; since?: number;
   };
+  /** set for windfalls: food lying in the wilds that everyone nearby can smell (docs/25-windfalls.md) */
+  windfall?: {
+    kind: WindfallKind; text: string; left: Resources; pile: Resources; endsAt: number; held: boolean; guarded: boolean; holderName: string | null;
+    yours: boolean; deliverEveryHours: number; holders?: Record<string, number>; holderColonyId?: number; since?: number;
+  };
   /** a truce or shared supercolony scent with its owner (docs/23-supercolonies.md) */
   relation?: Relation;
   /** when a fading scent or an ending truce runs out */
@@ -63,6 +69,7 @@ export interface SpotColony {
 
 /** "Wild nest · Level 3", "Termite mound · Tier 2", "Boss · Tier 1" */
 export function wildTag(c: SpotColony): string {
+  if (c.windfall) return `Windfall · ${c.windfall.yours ? 'yours' : c.windfall.held ? 'held' : c.windfall.guarded ? 'guarded' : 'free'}`;
   if (c.herd) return `Aphid herd · ${c.herd.tended ? (c.herd.yours ? 'yours' : 'tended') : 'untended'}`;
   if (!c.wild) return '';
   if (c.wild.kind === 'mound') return `Termite mound · Tier ${c.wild.level}`;
@@ -144,7 +151,7 @@ export const W = 690;
 export const H = 240;
 const GROUND = 64;
 const SPOT_W = 45; // spots 1..12 share 0..540, the wilds take the rest: the wilds (13) and its wild sites (14+)
-const spotX = (n: number) => (n === WILDS_SPOT ? 562 : n > WILDS_SPOT ? 562 + (n - WILDS_SPOT) * 38 : (n - 0.5) * SPOT_W);
+const spotX = (n: number) => (n === WILDS_SPOT ? 558 : n > WILDS_SPOT ? 558 + (n - WILDS_SPOT) * 26 : (n - 0.5) * SPOT_W);
 const BAND: Record<TerrainId, { fill: string; ink: string }> = {
   sunny_meadow: { fill: '#B9C95A', ink: '#2B1D13' },
   sandy_soil: { fill: '#D9C08A', ink: '#2B1D13' },
@@ -221,7 +228,7 @@ export function SpotMark({ s, at, home, selected, onPick }: { s: Spot; at: Coord
     : c && scent
     ? `${site ? 'In the wilds' : `Spot ${s.spot}`}: ${c.known === 'familiar' ? `${c.name}, a scent you've smelled before` : c.name}, not scouted`
     : c
-    ? `${site ? 'In the wilds' : `Spot ${s.spot}`}: ${c.name}, ${c.mine ? 'your colony' : c.wild || c.herd ? wildTag(c).toLowerCase() : c.owner}`
+    ? `${site ? 'In the wilds' : `Spot ${s.spot}`}: ${c.name}, ${c.mine ? 'your colony' : c.wild || c.herd || c.windfall ? wildTag(c).toLowerCase() : c.owner}`
     : `Spot ${s.spot}: empty ${TERRAIN[terrainForSpot(s.spot)].name.toLowerCase()}`;
   const flag = c ? (c.mine ? FLAG.mine : c.kind === 'wild' ? (c.hint ? HINT_COLOR[c.hint] : FLAG.wild) : c.inactive ? FLAG.inactive : FLAG.other) : '';
   const labelY = s.spot % 2 ? 126 : 206;
@@ -236,7 +243,7 @@ export function SpotMark({ s, at, home, selected, onPick }: { s: Spot; at: Coord
       onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), onPick())}
     >
       <title>{label}</title>
-      <rect x={x - (site ? 19 : wilds ? 22 : SPOT_W / 2)} y={GROUND + 20} width={site ? 38 : wilds ? 44 : SPOT_W} height={H - GROUND - 20} fill="transparent" />
+      <rect x={x - (site ? 13 : wilds ? 13 : SPOT_W / 2)} y={GROUND + 20} width={site ? 26 : wilds ? 26 : SPOT_W} height={H - GROUND - 20} fill="transparent" />
       {selected && <ellipse cx={x} cy={y} rx={22} ry={12} fill="none" stroke="#F6F7F0" strokeWidth={2.5} />}
       {c && scent ? (
         <>
@@ -249,7 +256,7 @@ export function SpotMark({ s, at, home, selected, onPick }: { s: Spot; at: Coord
       ) : c && site ? (
         <>
           <WildSite c={c} x={x} y={y} />
-          <text x={x} y={labelY} textAnchor="middle" className="ps-name">{short(c.herd ? 'Aphids' : c.wild?.kind === 'den' ? 'Spider' : c.wild?.kind === 'mound' ? 'Termites' : c.name, 9)}</text>
+          <text x={x} y={labelY} textAnchor="middle" className="ps-name">{short(c.windfall ? WINDFALL_SHORT[c.windfall.kind] : c.herd ? 'Aphids' : c.wild?.kind === 'den' ? 'Spider' : c.wild?.kind === 'mound' ? 'Termites' : c.name, 9)}</text>
         </>
       ) : c ? (
         <>
@@ -273,8 +280,60 @@ export function SpotMark({ s, at, home, selected, onPick }: { s: Spot; at: Coord
   );
 }
 
-/** A known wild site, drawn: aphids on a stem, a termite mound, or a silk-lidded burrow. */
+/** "12,000 Protein, 4,000 Nectar": the food in a windfall, skipping what it doesn't have. */
+function ResList({ r }: { r: Resources }) {
+  const parts = RESOURCE_IDS.filter((k) => (r[k] ?? 0) > 0).map((k) => `${fmtNum(r[k])} ${RESOURCE_LABEL[k]}`);
+  return <>{parts.length ? parts.join(', ') : 'Nothing'}</>;
+}
+
+/** Short map labels for windfalls. */
+const WINDFALL_SHORT: Record<WindfallKind, string> = { grasshopper: 'Grasshopper', fig: 'Fig', branch: 'Branch', lizard: 'Lizard' };
+
+/** A windfall, drawn small: a fallen grasshopper, a split fig, a leafy branch or a lizard, with a flag if someone holds it. */
+function WindfallMark({ c, x, y }: { c: SpotColony; x: number; y: number }) {
+  const w = c.windfall!;
+  const flag = w.yours ? FLAG.mine : w.held ? FLAG.other : w.guarded ? FLAG.wild : null;
+  const body =
+    w.kind === 'fig' ? (
+      <>
+        <ellipse cx={x} cy={y - 4} rx={9} ry={8} fill="#6E3A5E" stroke="#2B1D13" strokeWidth={1} />
+        <path d={`M${x - 5} ${y - 6} q5 -6 10 0 q-5 5 -10 0z`} fill="#D9566B" />
+      </>
+    ) : w.kind === 'branch' ? (
+      <>
+        <path d={`M${x - 13} ${y + 2} L${x + 13} ${y - 6}`} stroke="#6E5236" strokeWidth={2.4} strokeLinecap="round" />
+        {[-8, -2, 4, 10].map((dx, i) => (
+          <ellipse key={dx} cx={x + dx} cy={y - 4 - (i % 2) * 6 + dx * 0.2} rx={4.5} ry={2.4} fill={i % 2 ? '#7DB043' : '#5E8A2E'} transform={`rotate(${i % 2 ? -30 : 25} ${x + dx} ${y - 4})`} />
+        ))}
+      </>
+    ) : w.kind === 'lizard' ? (
+      <>
+        <path d={`M${x - 15} ${y} q6 -6 14 -4 q8 2 13 -2 q-3 6 -12 7 q-9 1 -15 -1z`} fill="#8C8A4E" stroke="#2B1D13" strokeWidth={1} />
+        <path d={`M${x - 6} ${y - 2} l-3 5 M${x + 4} ${y - 1} l2 5`} stroke="#2B1D13" strokeWidth={1} />
+      </>
+    ) : (
+      <>
+        <path d={`M${x - 11} ${y - 2} q8 -6 20 -2 q-8 5 -20 2z`} fill="#9DAA45" stroke="#2B1D13" strokeWidth={1} />
+        <path d={`M${x - 2} ${y - 4} l-6 -8 M${x + 3} ${y - 4} l6 -9`} stroke="#2B1D13" strokeWidth={1.1} />
+      </>
+    );
+  return (
+    <>
+      <ellipse cx={x} cy={y + 2} rx={16} ry={5} fill="#2B1D13" opacity={0.25} />
+      {body}
+      {flag && (
+        <>
+          <line x1={x + 9} y1={y - 4} x2={x + 9} y2={y - 26} stroke="#2B1D13" strokeWidth={1.2} />
+          <path d={`M${x + 9} ${y - 26} h10 l-3 4 l3 4 h-10z`} fill={flag} stroke="#2B1D13" strokeWidth={0.8} />
+        </>
+      )}
+    </>
+  );
+}
+
+/** A known wild site, drawn: aphids on a stem, a termite mound, a silk-lidded burrow, or a windfall. */
 function WildSite({ c, x, y }: { c: SpotColony; x: number; y: number }) {
+  if (c.windfall) return <WindfallMark c={c} x={x} y={y} />;
   if (c.herd) {
     const tended = c.herd.tended;
     return (
@@ -381,6 +440,7 @@ export function SpotCard({ s, at, onAct }: { s: Spot; at: Coords; onAct: (type: 
   const scent = isScent(c);
   const wildKind = c?.kind === 'wild';
   const herd = c?.herd;
+  const windfall = c?.windfall;
   const site = isSiteSpot(s.spot);
   const pact = c && !scent && c.relation ? raidBlockMessage({ relation: c.relation, until: c.relationUntil ?? undefined }) : null;
   const pactLabel = c ? relationLabel(c, now) : null;
@@ -405,6 +465,29 @@ export function SpotCard({ s, at, onAct }: { s: Spot; at: Coords; onAct: (type: 
                   ? WILD_SCENTS[c.hint ?? 'nest'].text
                   : "Another player's colony, by the smell. Scout it to learn whose."}
               </span>
+            </>
+          ) : windfall ? (
+            <>
+              <strong>
+                {c!.name} <span className="wild-tag">{wildTag(c!)}</span>
+              </strong>
+              <span className="muted small">{windfall.text}</span>
+              <span className="small">
+                <ResList r={windfall.left} /> left · rots in {fmtDuration(Math.max(0, windfall.endsAt - now))}.{' '}
+                {windfall.yours
+                  ? 'Your ants hold it.'
+                  : windfall.held
+                  ? `${windfall.holderName}'s ants hold it: fight them for it.`
+                  : windfall.guarded
+                  ? 'Wild ants got there first: fight them for it.'
+                  : 'Nobody holds it yet.'}
+              </span>
+              {windfall.yours && (
+                <span className="muted small">
+                  Your ants there: {Object.entries(windfall.holders ?? {}).filter(([, n]) => n > 0).map(([k, n]) => `${fmtNum(n)} ${CASTES[k as keyof typeof CASTES]?.name ?? k}`).join(', ') || 'none'}.
+                  {' '}They carry a load home every {windfall.deliverEveryHours} hours.
+                </span>
+              )}
             </>
           ) : herd ? (
             <>
@@ -461,7 +544,17 @@ export function SpotCard({ s, at, onAct }: { s: Spot; at: Coords; onAct: (type: 
           {s.corpses > 0 && can('haul') && <button className="btn small" onClick={() => go('haul')}>Haul</button>}
           {c && !c.mine && (
             <>
-              <button className={`btn small${scent ? ' primary' : ''}`} onClick={() => go('scout')}>{scent ? 'Scout' : 'Scout again'}</button>
+              {windfall && can('claim') && (
+                <button className="btn small primary" onClick={() => go('claim')} title="Fight whoever is there, then hold it and haul it home load by load">
+                  {windfall.yours ? 'Send more ants' : windfall.held || windfall.guarded ? 'Fight for it' : 'Claim'}
+                </button>
+              )}
+              {windfall?.yours && (
+                <button className="btn ghost small" onClick={() => act(() => api.post(`/api/herds/${c.id}/recall`), 'Your ants are heading home with what they can carry.')}>
+                  Call ants home
+                </button>
+              )}
+              <button className={`btn small${scent ? ' primary' : ''}`} onClick={() => go('scout')}>{scent ? 'Scout' : windfall ? 'Scout' : 'Scout again'}</button>
               {can('tend') && (scent ? c.hint === 'herd' : herd && (!herd.tended || herd.yours)) && (
                 <button className="btn small" disabled={scent} title={scent ? DISCOVERY_MESSAGES.tend_needs_scout : undefined} onClick={() => go('tend')}>
                   {herd?.yours ? 'Send more tenders' : 'Tend'}
@@ -472,7 +565,7 @@ export function SpotCard({ s, at, onAct }: { s: Spot; at: Coords; onAct: (type: 
                   Call tenders home
                 </button>
               )}
-              {can('raid') && !(herd && (!herd.tended || herd.yours)) && (
+              {can('raid') && !(herd && (!herd.tended || herd.yours)) && !(windfall && (windfall.yours || !(windfall.held || windfall.guarded))) && (
                 <button className="btn small" disabled={scent || !!pact} title={scent ? DISCOVERY_MESSAGES.raid_needs_scout : pact ?? undefined} onClick={() => go('raid')}>
                   Raid
                 </button>
@@ -516,7 +609,7 @@ export function SpotCard({ s, at, onAct }: { s: Spot; at: Coords; onAct: (type: 
       {c && scent && <p className="why small">{c.hint === 'herd' ? DISCOVERY_MESSAGES.tend_needs_scout : DISCOVERY_MESSAGES.raid_needs_scout}</p>}
       {pact && <p className="muted small">{pact}</p>}
       {s.corpses > 0 && <span className="corpses">{fmtNum(s.corpses)} protein in corpses</span>}
-      {c && !c.mine && !scent && !herd && <ScoutView at={at} />}
+      {c && !c.mine && !scent && !herd && !windfall?.yours && <ScoutView at={at} />}
       <Movements at={at} home={colony.coords} />
     </div>
   );

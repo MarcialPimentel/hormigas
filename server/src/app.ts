@@ -21,6 +21,7 @@ import './game/nests';
 import './game/nestEvents';
 import './game/colonies';
 import './game/herds';
+import './game/windfalls';
 import './game/swarms';
 import './game/diplomacy';
 import { worldRoutes } from './routes/world';

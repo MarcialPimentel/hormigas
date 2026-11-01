@@ -135,7 +135,7 @@
   "colonies": { "base": 1 },
   "forage": {
     "outcomes": {
-      "food_cache": 35, "dead_beetle": 15, "nothing": 20, "lost_trail": 10,
+      "food_cache": 43, "dead_beetle": 15, "nothing": 12, "lost_trail": 10,
       "shortcut": 5, "spider_ambush": 10, "rainstorm": 4, "the_boot": 1
     },
     "luck": {
@@ -154,7 +154,7 @@
     "firstTripOutcome": "food_cache",
     "results": {
       "_note": "What each outcome does. cargoPct: [min, max] percent of the find cap, rolled evenly; firstTripCargoPct is used instead on a player's first trip. mixPct: how the find splits across resources. lossPct: [min, max] percent of the party lost, a whole number rolled evenly. returnFactor: multiplier on the trip home. Outcomes not listed do nothing.",
-      "food_cache": { "cargoPct": [40, 100], "firstTripCargoPct": [70, 100], "mixPct": { "foliage": 55, "protein": 30, "nectar": 15 } },
+      "food_cache": { "cargoPct": [60, 100], "firstTripCargoPct": [70, 100], "mixPct": { "foliage": 55, "protein": 30, "nectar": 15 } },
       "dead_beetle": { "cargoPct": [60, 100], "mixPct": { "foliage": 0, "protein": 100, "nectar": 0 } },
       "lost_trail": { "returnFactor": 1.5 },
       "shortcut": { "returnFactor": 0.5 },

@@ -16,6 +16,7 @@ This build fills the area around players with **more, and more varied, wild thin
 | **Aphid herds** | Contested Nectar | Hold one with tenders. Defend it, or take one from a neighbour |
 | **Termite mound** | Rich, heavily defended target | A mid-game goal worth a big army and many carriers |
 | **Spider den** | Boss | A late-game goal. Later, a target for several players together |
+| **Windfalls** (since 1 Nov 2026) | Contested food that drops and rots | Race for it, fight whoever holds it, haul it home. See [25-windfalls](25-windfalls.md) |
 
 All of them start as **scents** ([22-discovery](22-discovery.md)): you have to scout before you can raid or tend.
 
