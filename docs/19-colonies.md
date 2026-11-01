@@ -11,7 +11,7 @@ A player starts with one colony and can found more by sending a **Winged Queen**
 3. Send her on a **Found Colony** mission to an empty spot.
 
 ## How many colonies
-- **1 + Nuptial Flight levels, rounded up to the next odd level:** level 1 → 2 colonies, level 3 → 3, level 5 → 4, and so on (`coloniesPer2Levels` in the research data: +1 at levels 1, 3, 5…).
+- **1 + Nuptial Flight level:** level 1 → 2 colonies, level 2 → 3, level 3 → 4, and so on (`coloniesPerLevel` in the research data). There is no top level for now: each level costs double the last, which keeps expansion in check (Marz, 1 Nov 2026; it was +1 only at levels 1, 3, 5, so level 2 added nothing).
 - Queens already in the air count, so a player can't send two queens for one free slot.
 - Research is account-wide, so the cap is too.
 
@@ -44,6 +44,6 @@ Every order goes out from the colony you're playing as. On the Missions screen, 
 - Should a brand-new colony get a short protection window of its own (e.g. 12 h), so a far-flung nest isn't raided before its first chamber?
 - Should a queen be able to fail the flight (birds, rain), as real queens often do? Proposal: no; a lost 4,000-resource queen with no counterplay feels bad (pillar 2).
 - Starting stores: same as a new player, or nothing but what was carried?
-- Cap: is "+1 at levels 1, 3, 5" the right pace once playtests show how fast players reach it?
+- Cap: is "+1 colony per level, no top level" the right pace once playtests show how fast players reach it? A `maxLevel` on Nuptial Flight would add a ceiling.
 - Abandoning or moving a colony: not possible yet. Needed when players regret a spot?
 - Art: show the nuptial flight leaving the nest (alates are drawn in [18-art-direction](18-art-direction.md)) and the new colony's first dig.
