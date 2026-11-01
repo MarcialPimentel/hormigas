@@ -23,7 +23,7 @@ import {
   addCounts,
   coordsKey,
   CASTES,
-  isHerdState,
+  isHeldState,
   type Coords,
   type UnitCounts,
 } from '@hormigas/shared';
@@ -36,7 +36,7 @@ import { raidBlock } from './diplomacy';
 import { addReport } from './reports';
 import { refreshPointsAfterCommit } from './points';
 import { requireKnown, smelledBy } from './discovery';
-import { herdOf, leaveHerd } from './herds';
+import { heldOf, herdOf, leaveHerd } from './herds';
 
 const nonZero = <T extends Record<string, number | undefined>>(u: T): T => Object.fromEntries(Object.entries(u).filter(([, n]) => (n ?? 0) > 0)) as T;
 
@@ -79,6 +79,20 @@ defineMission('raid', {
     if (!targetColony) throw new GameError('bad_target', 'There is no colony there to raid.');
     if (targetColony.playerId === player.id) throw new GameError('bad_target', "You can't raid your own colony.");
     if (!presentUnits(units).some((u) => CASTES[u].attack > 0)) throw new GameError('no_fighters', 'Send at least one unit that can fight.');
+    const held = heldOf(targetColony);
+    if (held?.kind === 'windfall') {
+      // Windfalls (docs/25-windfalls.md): everyone nearby smells them, so no scouting first. Neutral ground: whoever
+      // goes there can be fought, so new-colony protection and the points rule don't apply; pacts and the bash limit do.
+      if (!held.drop) throw new GameError('windfall_gone', 'Nothing lies there right now.');
+      if (held.tender?.playerId === player.id) throw new GameError('bad_target', 'Your own ants hold it.');
+      if (presentUnits(targetColony.units).length === 0) throw new GameError('windfall_free', 'Nobody holds it, so there is no one to fight. Send ants to claim it instead.');
+      if (held.tender) {
+        const pact = await raidBlock(q, player.id, held.tender.playerId, t);
+        if (pact) throw new GameError(pact.code, pact.message);
+      }
+      if ((await raidsInLast24h(q, player.id, targetColony.id, t)) >= BASH_LIMIT_PER_24H) throw new GameError('bash_limit', BLOCK_MESSAGES.bash_limit);
+      return;
+    }
     // Scout before raiding: nobody raids a scent (docs/22-discovery.md).
     await requireKnown(q, player.id, targetColony.id, 'raid');
     const recentWins = await raidsInLast24h(q, player.id, targetColony.id, t);
@@ -117,7 +131,7 @@ defineMission('raid', {
     // A pact agreed while the raid was on its way: the soldiers smell it and turn back without a fight.
     // at an aphid herd, the pact that counts is with the player whose ants tend it (docs/24-npcs.md)
     const row = (await q.query('SELECT player_id, npc FROM colonies WHERE id = $1', [m.targetColonyId])).rows[0];
-    const owner = isHerdState(row?.npc) ? row.npc.tender?.playerId : row?.player_id;
+    const owner = isHeldState(row?.npc) ? row.npc.tender?.playerId : row?.player_id;
     const pact = owner != null ? await raidBlock(q, m.playerId, owner, at) : null;
     if (pact) {
       const c = await getColony(q, m.targetColonyId);
@@ -138,8 +152,9 @@ export async function resolveRaid(q: Tx, m: Mission, at: number, opts: { attacke
   let target = await lockColony(q, m.targetColonyId!);
   target = target.npc ? await syncNest(q, target, at) : advance(target, at);
   const attacker = await getPlayer(q, m.playerId);
-  // A herd's tenders fight for the player who sent them (docs/24-npcs.md); an untended herd has nobody to fight.
-  const herd = herdOf(target);
+  // A herd's tenders (or a windfall's holders) fight for the player who sent them (docs/24-npcs.md, docs/25-windfalls.md);
+  // a windfall's wild guards fight for the wild.
+  const herd = heldOf(target);
   const defender = await getPlayer(q, herd?.tender ? herd.tender.playerId : target.playerId);
   // Wild nests fight under their nest's name and get no reports or points.
   const attackerName = opts.attackerName ?? (attacker.isNpc ? (await getColony(q, m.originColonyId)).name : attacker.username);
@@ -226,9 +241,12 @@ export async function resolveRaid(q: Tx, m: Mission, at: number, opts: { attacke
   };
   m.result = { winner: result.winner, loot, corpses };
   const verb = result.retreatedAfterRound != null ? 'fell back' : result.winner === 'attacker' ? 'won' : result.winner === 'defender' ? 'lost' : 'drew';
+  const fightFor = herd?.kind === 'windfall' ? 'Fight for' : 'Raid on';
   if (!attacker.isNpc)
-    await addReport(q, m.worldId, attacker.id, 'battle', `Raid on ${target.name} (${coordsKey(m.target)}): you ${verb}`, { ...data, perspective: 'attacker' }, at);
-  const dverb = herd
+    await addReport(q, m.worldId, attacker.id, 'battle', `${fightFor} ${target.name} (${coordsKey(m.target)}): you ${verb}`, { ...data, perspective: 'attacker' }, at);
+  const dverb = herd?.kind === 'windfall'
+    ? result.winner === 'defender' ? 'held: your ants drove off the attackers' : result.winner === 'attacker' ? 'lost: your ants were driven off' : 'held (draw)'
+    : herd
     ? result.winner === 'defender' ? 'held: your tenders drove off the raiders' : result.winner === 'attacker' ? 'lost: your tenders were driven off' : 'held (draw)'
     : result.retreatedAfterRound != null ? 'held: the raiders fell back' : result.winner === 'defender' ? 'held' : result.winner === 'attacker' ? 'was raided' : 'held (draw)';
   // The defender now recognizes the raiders' scent (one way: they still scout before striking back). Swarms have no home.

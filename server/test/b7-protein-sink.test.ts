@@ -2,7 +2,7 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { FastifyInstance } from 'fastify';
 import { CASTES, FORMULAS, digestPlan } from '@hormigas/shared';
-import { setupTest, teardownTest, newPlayer, setColony, calmWildNests, type Client } from './helpers';
+import { setupTest, teardownTest, newPlayer, setColony, calmWildNests, calmNestEvents, type Client } from './helpers';
 
 let app: FastifyInstance;
 let clock: Awaited<ReturnType<typeof setupTest>>['clock'];
@@ -74,6 +74,7 @@ describe('larval digestion', () => {
   });
 
   it('turns Protein into Nectar at 3:1, trickling in over time', async () => {
+    await calmNestEvents(); // a nest event's Nectar gift would muddy the count
     await setColony(colonyId, { chambers: { queen_chamber: 3, brood_hall: 2 } });
     await rich();
     const r = await p.post(`/api/colonies/${colonyId}/digest`, { protein: 3000 });

@@ -96,12 +96,12 @@
       ]
     }
   },
-  "_area": "Where wild things live (docs/24-npcs.md): every patch within `range` patches (same region) of a patch with players gets a wild nest and an aphid herd. Termite mounds sit in patches where patch % every == offset, spider dens likewise, each spawned once a player lives within its range. Sites are extra spots in the wilds that never take one of the 12 colony spots.",
+  "_area": "Where wild things live (docs/24-npcs.md): every patch within `range` patches (same region) of a patch with players gets a wild nest and an aphid herd. Termite mounds sit in patches where patch % every == offset, spider dens likewise, each spawned once a player lives within its range. Sites are extra spots in the wilds that never take one of the 12 colony spots. Every patch within `range` also gets a windfall site (docs/25-windfalls.md).",
   "area": {
     "range": 2,
     "mound": {"every": 5, "offset": 3, "range": 2},
     "den": {"every": 10, "offset": 8, "range": 7},
-    "sites": {"herd": 14, "mound": 15, "den": 16}
+    "sites": {"herd": 14, "mound": 15, "den": 16, "windfall": 17}
   },
   "herds": {
     "_note": "Aphid herds (docs/24-npcs.md). A herd makes Nectar only while a player's ants tend it. nectarPerHour by level, before the gathering multiplier in formulas.json (levels follow the area leader like wild nests: npc.levels[].minPatchPoints). Honeydew piles up in the herd (up to storeHours of production) and the tenders carry it home every deliverEveryHours. Left untended for wanderAfterHours, the herd wanders to another patch nearby. Hours at world speed 1.",
@@ -113,6 +113,31 @@
     "perColony": 1,
     "style": "Aphids on a stem, dripping honeydew. Tend them and they make Nectar for you; anyone can drive your tenders off and take over."
   },
+  "windfalls": {
+    "_note": "Windfalls (docs/25-windfalls.md): contested food that drops on the patch's windfall site. Every site rolls a new one every everyHours (skipped while one is still there, or when no active player lives within announceRange patches). It lasts lastsHours, then rots. pile: food by level (levels follow the area leader like herds), times the kind's size, split by the kind's mix; not affected by the gathering multiplier. guardChance: how often wild ants get there first (guards by level). Ants that claim it fight whoever is there, then hold it and carry a load home every deliverEveryHours (as much as they can carry). Players with a colony within announceRange patches get a report when one drops. Hours at world speed 1.",
+    "name": "Windfall",
+    "everyHours": [8, 16],
+    "firstDropHours": [0.5, 3],
+    "lastsHours": 12,
+    "deliverEveryHours": 2,
+    "announceRange": 1,
+    "guardChance": 0.5,
+    "pile": [4000, 10000, 18000, 30000, 45000, 70000],
+    "guards": [
+      {"minor_soldier": 3},
+      {"minor_soldier": 6},
+      {"minor_soldier": 8, "major_soldier": 2},
+      {"minor_soldier": 20, "major_soldier": 6},
+      {"minor_soldier": 40, "major_soldier": 15},
+      {"minor_soldier": 80, "major_soldier": 35}
+    ],
+    "kinds": {
+      "grasshopper": {"name": "Dead grasshopper", "weight": 40, "size": 1, "mix": {"foliage": 0, "protein": 100, "nectar": 0}, "text": "A grasshopper dropped out of the grass and didn't get up. Every colony nearby can smell it."},
+      "fig": {"name": "Fallen fig", "weight": 30, "size": 1, "mix": {"foliage": 40, "protein": 0, "nectar": 60}, "text": "A ripe fig split open on the ground, sweet and sticky. It won't stay unclaimed for long."},
+      "branch": {"name": "Leafy branch", "weight": 25, "size": 1, "mix": {"foliage": 100, "protein": 0, "nectar": 0}, "text": "The wind snapped off a branch full of fresh leaves. A cutter's dream, if you can hold it."},
+      "lizard": {"name": "Dead lizard", "weight": 5, "size": 3, "mix": {"foliage": 0, "protein": 100, "nectar": 0}, "text": "A dead lizard lies in the wilds: a mountain of Protein. Every colony around will march for it."}
+    }
+  },
   "scents": {
     "_note": "What an unscouted wild scent hints at (docs/24-npcs.md).",
     "nest": {"name": "Wild scent", "text": "It smells sharp, of wild ants. You can't tell which kind, how many, or what they store."},
@@ -120,16 +145,16 @@
     "mound": {"name": "Woody scent", "text": "It smells of chewed wood and damp earth. Something big was built here."},
     "den": {"name": "Danger scent", "text": "Silk threads on the ground and no ants anywhere near. Every scout's antennae say: careful."}
   },
-  "regrowHours": 24,
+  "regrowHours": 12,
   "raids": {
     "_note": "Raids by wild nests on players in their patch. Gentle: a fraction (partyShare) of the nest's soldiers (castes with attack >= soldierMinAttack; Workers stay home), slow so players see them coming. The party is worth at most maxPartyValuePctOfTargetPoints % of the target's points, counted in resources (formulas.json points.resourcesPerPoint).",
-    "everyHours": [16, 32],
+    "everyHours": [8, 16],
     "partyShare": 0.3,
     "soldierMinAttack": 25,
     "minParty": {"minor_soldier": 2},
     "maxPartyValuePctOfTargetPoints": 10,
     "speedPct": 10,
-    "perPlayerCooldownHours": 24,
+    "perPlayerCooldownHours": 12,
     "revengeWeight": 2
   },
   "tuning": {
@@ -153,10 +178,12 @@
     ]
   },
   "swarm": {
-    "_note": "Army-ant swarms (docs/20-swarms.md): each player colony is visited about every 4 days, with warningHours of notice. The swarm is sized by simulating the battle against what the colony has at home when the swarm is spotted, so the colony wins about defenderWinRate of the time if it keeps its army home. Hours are at world speed 1.",
+    "_note": "Army-ant swarms (docs/20-swarms.md): each player colony is visited every 1.5 to 2.5 days (everyHours), with warningHours of notice. A colony that beats one keeps the prey the swarm was carrying: preyHours of its own total production per hour, as Protein (at least minPrey), up to what its storage holds. The swarm is sized by simulating the battle against what the colony has at home when the swarm is spotted, so the colony wins about defenderWinRate of the time if it keeps its army home. Hours are at world speed 1.",
     "name": "Army ant swarm",
-    "everyHours": [72, 120],
+    "everyHours": [36, 60],
     "warningHours": 4,
+    "preyHours": 4,
+    "minPrey": 300,
     "pack": {"minor_soldier": 4, "major_soldier": 1},
     "minPacks": 1,
     "maxPacks": 400,

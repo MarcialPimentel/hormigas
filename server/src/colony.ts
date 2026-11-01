@@ -17,6 +17,7 @@ import {
   type NpcState,
   herdHoneydewAt,
   isHerdState,
+  isWindfallState,
   type ResearchLevels,
   type Resources,
 } from '@hormigas/shared';
@@ -160,6 +161,8 @@ export const advance = (c: Colony, to: number): Colony => {
     const nectar = herdHoneydewAt(c.npc, c.resources.nectar, to, cachedWorldSpeed());
     return { ...c, resources: { ...c.resources, nectar }, lastUpdated: to, npc: { ...c.npc, at: to } };
   }
+  // a windfall neither grows nor regrows: it only shrinks as ants carry it off (docs/25-windfalls.md)
+  if (isWindfallState(c.npc)) return { ...c, lastUpdated: to, npc: { ...c.npc, at: to } };
   if (c.npc) {
     const live = nestAt(c.npc, c, to, cachedWorldSpeed());
     return { ...c, ...live, lastUpdated: to, npc: { ...c.npc, at: to, unitsAt: nestUnitsAt(c.npc, c, to, cachedWorldSpeed()) } };

@@ -5,7 +5,7 @@ import type { Q, Tx } from './db';
 import { onEvent, schedule, type GameEvent } from './events';
 import { gameHoursMs, getWorld } from './world';
 
-type RecurringType = 'nest_event' | 'swarm_spotted' | 'nest_raid';
+type RecurringType = 'nest_event' | 'swarm_spotted' | 'nest_raid' | 'windfall_drop';
 
 export interface RecurringColony {
   id: number;

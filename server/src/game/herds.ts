@@ -14,7 +14,10 @@ import {
   groupSpeed,
   herdNectarPerHour,
   isHerdState,
+  isHeldState,
   nearbyPatches,
+  sub,
+  type HeldState,
   presentUnits,
   randomSeed,
   res,
@@ -38,11 +41,14 @@ const HOUR = 3600_000;
 
 export const herdOf = (c: Colony | null): HerdState | null => (c && isHerdState(c.npc) ? c.npc : null);
 
+/** An aphid herd or a windfall: a wild site players hold with their own ants (docs/24-npcs.md, docs/25-windfalls.md). */
+export const heldOf = (c: Colony | null): HeldState | null => (c && isHeldState(c.npc) ? c.npc : null);
+
 /** The herd a colony's ants tend (or are on their way to tend), other than `exceptHerdId`. */
 async function herdTendedFrom(q: Q, colonyId: number, exceptHerdId: number): Promise<string | null> {
   const r = await q.query(
     `SELECT c.name, c.region, c.patch, c.spot FROM colonies c
-      WHERE c.id <> $2 AND (c.npc->'tender'->>'colonyId')::int = $1
+      WHERE c.id <> $2 AND c.npc->>'kind' = 'herd' AND (c.npc->'tender'->>'colonyId')::int = $1
      UNION ALL
      SELECT c.name, c.region, c.patch, c.spot FROM missions m JOIN colonies c ON c.id = m.target_colony_id
       WHERE m.origin_colony_id = $1 AND m.type = 'tend' AND m.status = 'outbound' AND c.id <> $2
@@ -63,10 +69,18 @@ async function scheduleWander(q: Tx, worldId: number, herdId: number, untendedSi
   await schedule(q, worldId, 'herd_wander', untendedSince + (HERDS.wanderAfterHours * HOUR) / speed, { colonyId: herdId, untendedSince });
 }
 
-/** The herd has lost its tenders (called home, or killed): it starts to drift and will wander off if nobody comes. */
+/**
+ * A held site has lost its ants (called home, or killed). A herd starts to drift and will wander off if nobody comes;
+ * a windfall just lies there for the next colony (docs/25-windfalls.md).
+ */
 export async function leaveHerd(q: Tx, herd: Colony, at: number) {
-  const npc = herdOf(herd)!;
+  const npc = heldOf(herd)!;
   herd.units = {};
+  if (npc.kind === 'windfall') {
+    herd.npc = { ...npc, tender: null };
+    await saveColony(q, herd);
+    return;
+  }
   herd.npc = { ...npc, tender: null, untendedSince: at };
   await saveColony(q, herd);
   await scheduleWander(q, herd.worldId, herd.id, at);
@@ -116,29 +130,36 @@ defineMission('tend', {
 
 // ---------- calling the tenders home ----------
 
-/** The player calls their tenders home. They carry what honeydew they can and the herd is left untended. */
+/**
+ * The player calls their ants home from a herd or a windfall. They carry what they can (honeydew from a herd, food from
+ * a windfall) and the site is left for others.
+ */
 export async function recallTenders(q: Tx, playerId: number, herdId: number) {
   const t = now();
   let herd = await lockColony(q, herdId);
-  const npc = herdOf(herd);
-  if (!npc) throw notFound('That is not an aphid herd.');
+  const npc = heldOf(herd);
+  if (!npc) throw notFound('That is not an aphid herd or a windfall.');
   if (!npc.tender || npc.tender.playerId !== playerId) throw forbidden();
   herd = advance(herd, t);
   const units = herd.units;
   const home = await getColony(q, npc.tender.colonyId);
   const player = await getPlayer(q, playerId);
-  const cargo = fillCargo(res(0, 0, Math.floor(herd.resources.nectar)), groupCargo(units));
-  herd.resources = { ...herd.resources, nectar: herd.resources.nectar - cargo.nectar };
+  const windfall = npc.kind === 'windfall';
+  const available = windfall ? floorRes(herd.resources) : res(0, 0, Math.floor(herd.resources.nectar));
+  const cargo = fillCargo(available, groupCargo(units));
+  herd.resources = sub(herd.resources, cargo);
   await leaveHerd(q, herd, t);
   const world = await getWorld(q);
   const secs = travelSeconds(distance(herd, home), groupSpeed(units, player.research), 100, world.speed);
   const m = await launchReturn(q, {
-    worldId: world.id, playerId, type: 'tend', home, from: herd, fromColonyId: herd.id, units, cargo, at: t, returnAt: t + secs * 1000,
-    result: { calledHome: true, carried: cargo.nectar },
+    worldId: world.id, playerId, type: windfall ? 'claim' : 'tend', home, from: herd, fromColonyId: herd.id, units, cargo, at: t, returnAt: t + secs * 1000,
+    result: { calledHome: true, carried: windfall ? cargo : cargo.nectar },
   });
   await refreshPointsAfterCommit(q, playerId);
   return m;
 }
+
+const floorRes = (r: { foliage: number; protein: number; nectar: number }) => res(Math.floor(r.foliage), Math.floor(r.protein), Math.floor(r.nectar));
 
 // ---------- events: deliveries and wandering ----------
 

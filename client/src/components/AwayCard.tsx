@@ -14,6 +14,7 @@ const GROUP: Record<string, string> = {
   transport: 'Deliveries',
   colonize: 'New colonies',
   haul: 'Corpse hauls',
+  windfall: 'Windfalls',
   milestone: 'Milestones',
 };
 
