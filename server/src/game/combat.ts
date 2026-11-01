@@ -38,6 +38,7 @@ import { addReport } from './reports';
 import { refreshPointsAfterCommit } from './points';
 import { requireKnown, smelledBy } from './discovery';
 import { heldOf, herdOf, leaveHerd } from './herds';
+import { bump } from './stats';
 
 const nonZero = <T extends Record<string, number | undefined>>(u: T): T => Object.fromEntries(Object.entries(u).filter(([, n]) => (n ?? 0) > 0)) as T;
 
@@ -261,6 +262,13 @@ export async function resolveRaid(q: Tx, m: Mission, at: number, opts: { attacke
     await addReport(q, m.worldId, ally.id, 'battle', `Your soldiers ${verbA} ${target.name} against ${attackerName}${lostAny ? '' : ', with no losses'}`, { ...data, perspective: 'ally', allyIndex: i }, at);
     await refreshPointsAfterCommit(q, ally.id);
   }
+  // counters for colony needs and the Field Journal (docs/26-come-back.md)
+  if (!attacker.isNpc && result.winner === 'attacker' && target.npc && (!herd || herd.kind === 'windfall')) {
+    await bump(q, attacker.id, 'wild_won');
+    const species = (target.npc as { species?: string }).species;
+    if (species) await bump(q, attacker.id, `beat:${species}`);
+  }
+  if (!defender.isNpc && !herd && result.winner === 'defender') await bump(q, defender.id, m.type === 'swarm' ? 'swarms_beaten' : 'raids_held');
   if (!defender.isNpc) await refreshPointsAfterCommit(q, defender.id);
   if (!attacker.isNpc) await refreshPointsAfterCommit(q, attacker.id);
 }
@@ -289,6 +297,7 @@ defineMission('haul', {
     }
     m.cargo = { foliage: 0, protein: take, nectar: 0 };
     m.result = { collected: take };
+    await bump(q, m.playerId, 'corpses_hauled', Math.floor(take));
     await addReport(q, m.worldId, m.playerId, 'haul', take > 0 ? `Hauled ${Math.floor(take).toLocaleString()} Protein from ${coordsKey(m.target)}` : `Nothing to haul at ${coordsKey(m.target)}`, {
       target: m.target,
       collected: take,

@@ -36,6 +36,7 @@ import { addReport } from './reports';
 import { refreshPointsAfterCommit } from './points';
 import { requireKnown } from './discovery';
 import { syncNest } from './nests';
+import { bump, bumpAll } from './stats';
 
 const HOUR = 3600_000;
 
@@ -116,7 +117,10 @@ defineMission('tend', {
     const tender = npc.tender ?? { playerId: m.playerId, colonyId: m.originColonyId, since: at };
     herd = { ...herd, units: addCounts(herd.units, m.units), npc: { ...npc, tender, untendedSince: null } };
     await saveColony(q, herd);
-    if (fresh) await scheduleDelivery(q, m.worldId, herd.id, tender.since, at);
+    if (fresh) {
+      await scheduleDelivery(q, m.worldId, herd.id, tender.since, at);
+      await bump(q, m.playerId, 'herds_claimed');
+    }
     const home = await getColony(q, m.originColonyId);
     await addReport(q, m.worldId, m.playerId, 'herd', fresh ? `Your ants now tend ${herd.name} (${coordsKey(m.target)})` : `More tenders reached ${herd.name}`, {
       herd: herd.name, coords: m.target, colony: home.name, units: m.units, tenders: herd.units, claimed: fresh,
@@ -176,6 +180,7 @@ onEvent('herd_deliver', async (q, ev) => {
     let home = advance(await lockColony(q, npc.tender.colonyId), t);
     home.resources = { ...home.resources, nectar: home.resources.nectar + amount };
     await saveColony(q, home);
+    await bumpAll(q, npc.tender.playerId, { herd_nectar: amount, food_home: amount });
     herd.resources = { ...herd.resources, nectar: herd.resources.nectar - amount };
   }
   await saveColony(q, herd);

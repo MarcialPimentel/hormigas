@@ -59,7 +59,7 @@ export interface Colony extends ColonyState {
 
 // owner_research: the owner's research, read along with the colony because production and storage depend on it.
 // Read-only here: saveColony never writes it (research is saved on the player row).
-const COLS = 'id, world_id, player_id, name, region, patch, spot, terrain, base_space, foliage, protein, nectar, last_updated, chambers, units, defenses, build_job, dig_plan, unit_queue, digest_job, created_at, npc, (SELECT p.research FROM players p WHERE p.id = colonies.player_id) AS owner_research';
+const COLS = 'id, world_id, player_id, name, region, patch, spot, terrain, base_space, foliage, protein, nectar, last_updated, chambers, units, defenses, build_job, dig_plan, unit_queue, digest_job, created_at, npc, raised, (SELECT p.research FROM players p WHERE p.id = colonies.player_id) AS owner_research';
 
 function fromRow(r: any): Colony {
   return {
@@ -83,6 +83,8 @@ function fromRow(r: any): Colony {
     digestJob: r.digest_job ?? null,
     createdAt: r.created_at,
     npc: r.npc ?? null,
+    // wild things don't count ants raised
+    ...(r.npc ? {} : { raised: r.raised ?? {} }),
     research: r.owner_research ?? {},
   };
 }
@@ -143,13 +145,14 @@ export async function saveColony(q: Q, c: Colony) {
     await wakeDigPlan(q, c);
   await q.query(
     `UPDATE colonies SET name=$2, foliage=$3, protein=$4, nectar=$5, last_updated=$6, chambers=$7, units=$8, defenses=$9,
-       build_job=$10, unit_queue=$11, npc=$12, digest_job=$13, dig_plan=$14 WHERE id=$1`,
+       build_job=$10, unit_queue=$11, npc=$12, digest_job=$13, dig_plan=$14, raised=$15 WHERE id=$1`,
     [
       c.id, c.name, c.resources.foliage, c.resources.protein, c.resources.nectar, c.lastUpdated,
       JSON.stringify(c.chambers), JSON.stringify(c.units), JSON.stringify(c.defenses),
       c.buildJob ? JSON.stringify(c.buildJob) : null, JSON.stringify(c.unitQueue), c.npc ? JSON.stringify(c.npc) : null,
       c.digestJob ? JSON.stringify(c.digestJob) : null,
       c.digPlan?.chambers.length ? JSON.stringify(c.digPlan) : null,
+      JSON.stringify(c.raised ?? {}),
     ],
   );
 }

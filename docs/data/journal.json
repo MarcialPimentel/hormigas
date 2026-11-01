@@ -1,0 +1,50 @@
+{
+  "_version": "0.1",
+  "_note": "The Field Journal (docs/26-come-back.md). Each entry reads one stat (shared/src/stats.ts) and fills in over its tiers: one tier for a discovery, three for a deed (sketch, full entry, coloured plate). Counts are across all your colonies, since space caps one colony, and no entry needs a particular ground. The entry's title is yours to wear from its first tier. hidden: shown as an unwritten page until earned (oddities; never needed for anything). Titles are cosmetic only (pillar 3).",
+  "sections": {
+    "discovery": "Discoveries",
+    "deeds": "Deeds",
+    "oddities": "Oddities"
+  },
+  "entries": [
+    { "id": "pavement", "section": "discovery", "name": "Pavement Ants", "latin": "Tetramorium", "stat": "beat:pavement", "tiers": [1], "title": "Border Warrior", "text": "Every spring, neighbouring colonies meet on the pavement and wrestle in their thousands over a border line." },
+    { "id": "fire", "section": "discovery", "name": "Fire Ants", "latin": "Solenopsis", "stat": "beat:fire", "tiers": [1], "title": "Fireproof", "text": "Their sting burns. When floods come, they link legs and float away as a living raft." },
+    { "id": "carpenter", "section": "discovery", "name": "Carpenter Ants", "latin": "Camponotus", "stat": "beat:carpenter", "tiers": [1], "title": "Woodcutter", "text": "They carve smooth galleries through damp wood, but never eat it." },
+    { "id": "honeypot", "section": "discovery", "name": "Honeypot Ants", "latin": "Myrmecocystus", "stat": "beat:honeypot", "tiers": [1], "title": "Pantry Raider", "text": "Some workers hang from the ceiling, swollen round with nectar: living jars for the lean months." },
+    { "id": "trapjaw", "section": "discovery", "name": "Trap-jaw Ants", "latin": "Odontomachus", "stat": "beat:trapjaw", "tiers": [1], "title": "Jaw-dodger", "text": "Their jaws lock open and snap shut faster than almost anything alive. A snap against the ground throws them clear." },
+    { "id": "termite", "section": "discovery", "name": "Termites", "latin": "Isoptera", "stat": "beat:termite", "tiers": [1], "title": "Mound-breaker", "text": "Not ants at all, but cousins of the cockroach, raised in cathedrals of chewed mud." },
+    { "id": "spider", "section": "discovery", "name": "Trapdoor Spider", "latin": "Ctenizidae", "stat": "beat:spider", "tiers": [1], "title": "Spider-slayer", "text": "She waits under a silk-hinged door and feels for footsteps on the threads outside." },
+    { "id": "grasshopper", "section": "discovery", "name": "Dead grasshopper", "stat": "windfall:grasshopper", "tiers": [1], "title": "Scavenger", "text": "A meadow's worth of protein, if you can hold it long enough to carry it home." },
+    { "id": "fig", "section": "discovery", "name": "Fallen fig", "stat": "windfall:fig", "tiers": [1], "title": "Fig-finder", "text": "Split open and sweet. Every forager in range smells it at once." },
+    { "id": "branch", "section": "discovery", "name": "Leafy branch", "stat": "windfall:branch", "tiers": [1], "title": "Leaf-hauler", "text": "Torn down by the wind: more leaves than a garden grows in a day." },
+    { "id": "roster", "section": "discovery", "name": "The roster", "stat": "castes_raised", "tiers": [3, 7, 12], "title": "Brood-keeper", "text": "Kinds of ant and ally you have raised. One queen's eggs become workers, soldiers and scouts by how the larvae are fed." },
+
+    { "id": "gardener", "section": "deeds", "name": "Leaf Gardens", "stat": "level:leaf_garden", "tiers": [10, 30, 60], "title": "Gardener", "text": "Levels of Leaf Garden across your colonies. Leafcutters don't eat the leaves: they farm a fungus on them." },
+    { "id": "huntress", "section": "deeds", "name": "Hunting Grounds", "stat": "level:hunting_grounds", "tiers": [10, 30, 60], "title": "Huntress", "text": "Levels of Hunting Grounds across your colonies. Every hunter is a sister, and every sister is armed." },
+    { "id": "shepherd", "section": "deeds", "name": "Aphid Pastures", "stat": "level:aphid_pasture", "tiers": [5, 15, 30], "title": "Shepherd", "text": "Levels of Aphid Pasture across your colonies. Ants stroke aphids for honeydew and drive off the ladybirds." },
+    { "id": "excavator", "section": "deeds", "name": "Digs finished", "stat": "digs", "tiers": [25, 100, 300], "title": "Excavator", "text": "Each pellet of soil is carried up and dropped on the mound. The nest grows down as the mound grows up." },
+    { "id": "nurse", "section": "deeds", "name": "Ants raised", "stat": "raised", "tiers": [100, 1000, 10000], "title": "Brood-tender", "text": "Nurses lick the eggs clean, feed the larvae and carry the cocoons to warm galleries." },
+    { "id": "naturalist", "section": "deeds", "name": "Research", "stat": "research", "tiers": [10, 40, 100], "title": "Naturalist", "text": "Levels of research learned. A colony remembers in scent, not in words." },
+    { "id": "forager", "section": "deeds", "name": "Forage parties home", "stat": "forage_home", "tiers": [10, 50, 200], "title": "Forager", "text": "Parties that came back from the wilds. Most foragers are the colony's oldest ants: the risky work falls to those with least life left." },
+    { "id": "provider", "section": "deeds", "name": "Food carried home", "stat": "food_home", "tiers": [10000, 100000, 1000000], "title": "Provider", "text": "Everything your parties carried home on their backs." },
+    { "id": "undertaker", "section": "deeds", "name": "Corpses hauled", "stat": "corpses_hauled", "tiers": [2000, 20000, 100000], "title": "Undertaker", "text": "Protein hauled from battlefields. Nothing is wasted in an ant colony, least of all the dead." },
+    { "id": "pathfinder", "section": "deeds", "name": "Places scouted", "stat": "scouted", "tiers": [5, 25, 100], "title": "Pathfinder", "text": "Scouts walk alone and mark the way home with a thin trail of scent." },
+    { "id": "raider", "section": "deeds", "name": "Fights won in the wilds", "stat": "wild_won", "tiers": [5, 25, 100], "title": "Raider of the Wilds", "text": "Wild nests, mounds, dens and windfalls taken by force." },
+    { "id": "swarmbreaker", "section": "deeds", "name": "Swarms beaten", "stat": "swarms_beaten", "tiers": [1, 5, 15], "title": "Swarm-breaker", "text": "Army ants eat everything in their path. Almost everything." },
+    { "id": "gatekeeper", "section": "deeds", "name": "Raids held off", "stat": "raids_held", "tiers": [1, 10, 50], "title": "Gatekeeper", "text": "Some ants plug the nest entrance with their own flat heads." },
+    { "id": "claimer", "section": "deeds", "name": "Windfalls claimed", "stat": "windfalls_claimed", "tiers": [1, 10, 40], "title": "Claim-jumper", "text": "First to the food, and still holding it when the others arrive." },
+    { "id": "herder", "section": "deeds", "name": "Honeydew from herds", "stat": "herd_nectar", "tiers": [1000, 20000, 100000], "title": "Herder", "text": "Nectar your tenders sent home from aphid herds in the wilds." },
+    { "id": "founder", "section": "deeds", "name": "Colonies", "stat": "colonies", "tiers": [2, 3, 4], "title": "Founder", "text": "Colonies you rule. Each began as one winged queen who dug in alone." },
+    { "id": "dutiful", "section": "deeds", "name": "Colony needs met", "stat": "needs_done", "tiers": [10, 50, 200], "title": "Dutiful", "text": "Days the colony asked, and you listened." },
+    { "id": "fortunate", "section": "deeds", "name": "Gifts from the nest", "stat": "gifts", "tiers": [10, 50, 150], "title": "Fortunate", "text": "Small luck in the nest: a lost beetle, an aphid boom, a gust of leaves." },
+    { "id": "peacemaker", "section": "deeds", "name": "A truce", "stat": "truces", "tiers": [1], "title": "Peacemaker", "text": "Two colonies that agreed to leave each other be." },
+    { "id": "supercolonist", "section": "deeds", "name": "A supercolony", "stat": "supercolonies", "tiers": [1], "title": "Supercolonist", "text": "Nests that share one scent and treat each other as sisters. The largest known runs for thousands of kilometres." },
+
+    { "id": "boot", "section": "oddities", "name": "The Boot", "stat": "forage:the_boot", "tiers": [1], "hidden": true, "title": "Boot-dodger", "text": "Something enormous came down from the sky." },
+    { "id": "ambush", "section": "oddities", "name": "Spider's lunch", "stat": "forage:spider_ambush", "tiers": [1], "hidden": true, "title": "Spider-bait", "text": "Not every silk thread is a bridge." },
+    { "id": "rain", "section": "oddities", "name": "Caught in the rain", "stat": "forage:rainstorm", "tiers": [1], "hidden": true, "title": "Rain-soaked", "text": "To an ant, a raindrop is a falling boulder of water." },
+    { "id": "shortcut", "section": "oddities", "name": "A shortcut", "stat": "forage:shortcut", "tiers": [1], "hidden": true, "title": "Trailblazer", "text": "Ants keep straightening their trails, and the shortest path wins." },
+    { "id": "lost", "section": "oddities", "name": "Lost the trail", "stat": "forage:lost_trail", "tiers": [1], "hidden": true, "title": "Wanderer", "text": "Wind can blow a scent trail away in minutes." },
+    { "id": "lizard", "section": "oddities", "name": "Dead lizard", "stat": "windfall:lizard", "tiers": [1], "hidden": true, "title": "Lizard-hauler", "text": "Rare, huge, and worth a war." }
+  ]
+}

@@ -20,6 +20,7 @@ import { notify } from '../realtime';
 import { addReport } from './reports';
 import { discover } from './discovery';
 import { sendGarrisonsHome } from './missions';
+import { bump } from './stats';
 
 const pair = (x: number, y: number): [number, number] => (x < y ? [x, y] : [y, x]);
 
@@ -186,6 +187,8 @@ export async function answerTruce(q: Tx, playerId: number, truceId: number, answ
   if (answer === 'accept') {
     await q.query("UPDATE truces SET status = 'active', accepted_at = $2 WHERE id = $1", [truceId, t]);
     await reportBoth(q, me.worldId, me, other, (_m, them) => `Truce with ${them.username}`, { event: 'truce_active' }, t);
+    await bump(q, me.id, 'truces');
+    await bump(q, other.id, 'truces');
   } else {
     await q.query('UPDATE truces SET status = $2, closed_at = $3 WHERE id = $1', [truceId, answer === 'decline' ? 'declined' : 'withdrawn', t]);
     if (answer === 'decline') {
@@ -294,6 +297,7 @@ export async function foundSupercolony(q: Tx, playerId: number, rawName: string)
   await q.query("INSERT INTO supercolony_members (supercolony_id, player_id, status, joined_at) VALUES ($1,$2,'member',$3)", [id, me.id, t]);
   await q.query('DELETE FROM supercolony_invites WHERE player_id = $1', [me.id]);
   await addReport(q, me.worldId, me.id, 'diplomacy', `You founded the supercolony ${name}`, { event: 'founded', supercolony: name }, t);
+  await bump(q, me.id, 'supercolonies');
   return id;
 }
 
@@ -340,6 +344,7 @@ export async function answerInvite(q: Tx, playerId: number, supercolonyId: numbe
   await shareScent(q, me.id, sc.id, t);
   await tellMembers(q, me.worldId, sc.id, `${me.username} joined ${sc.name}`, { event: 'joined', supercolony: sc.name, with: me.username }, t, [me.id]);
   await addReport(q, me.worldId, me.id, 'diplomacy', `You joined the supercolony ${sc.name}`, { event: 'joined', supercolony: sc.name }, t);
+  await bump(q, me.id, 'supercolonies');
 }
 
 /** Leave (or be removed): the scent starts to fade, and soldiers holding position on either side go home. */

@@ -41,6 +41,7 @@ import { refreshPointsAfterCommit } from './points';
 import { syncNest } from './nests';
 import { raidBlock } from './diplomacy';
 import { resolveRaid } from './combat';
+import { bump, foodIn } from './stats';
 
 export const windfallOf = (c: Colony | null): WindfallState | null => (c && isWindfallState(c.npc) ? c.npc : null);
 
@@ -147,6 +148,7 @@ onEvent('windfall_deliver', async (q, ev) => {
     const home = advance(await lockColony(q, npc.tender.colonyId), t);
     home.resources = add(home.resources, load);
     await saveColony(q, home);
+    await bump(q, npc.tender.playerId, 'food_home', foodIn(load));
     site.resources = sub(site.resources, load);
   }
   if (isEmpty(site.resources)) {
@@ -252,7 +254,11 @@ async function hold(q: Tx, m: Mission, site: Colony, at: number) {
   const tender = fresh ? { playerId: m.playerId, colonyId: m.originColonyId, since: at } : npc.tender!;
   site = { ...site, units: addCounts(fresh ? {} : site.units, m.units), npc: { ...npc, tender } };
   await saveColony(q, site);
-  if (fresh) await scheduleDelivery(q, m.worldId, site.id, tender.since, at);
+  if (fresh) {
+    await scheduleDelivery(q, m.worldId, site.id, tender.since, at);
+    await bump(q, m.playerId, 'windfalls_claimed');
+    if (npc.drop?.kind) await bump(q, m.playerId, `windfall:${npc.drop.kind}`);
+  }
   const home = await getColony(q, m.originColonyId);
   await addReport(q, m.worldId, m.playerId, 'windfall', fresh ? `Your ants hold the ${site.name.toLowerCase()} (${coordsKey(m.target)})` : `More of your ants reached the ${site.name.toLowerCase()}`, {
     event: 'windfall_held', windfall: site.name, coords: m.target, colony: home.name, units: m.units, holders: site.units, claimed: fresh,

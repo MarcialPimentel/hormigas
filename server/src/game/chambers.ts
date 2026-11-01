@@ -21,6 +21,7 @@ import { getWorld } from '../world';
 import { timeMultiplier } from './boost';
 import { refreshPointsAfterCommit } from './points';
 import { addReport } from './reports';
+import { bump } from './stats';
 
 const chamberId = (chamber: string): ChamberId => {
   if (!CHAMBER_IDS.includes(chamber as ChamberId)) throw new GameError('bad_chamber', 'Unknown chamber.');
@@ -155,6 +156,7 @@ onEvent('build_complete', async (q, ev) => {
   c = advance(c, ev.due_at);
   c.chambers = { ...c.chambers, [job.chamber]: job.level };
   c.buildJob = null;
+  if (!c.npc) await bump(q, c.playerId, 'digs');
   // the planned dig starts the moment this one ends, if the stores can pay
   await settleDigPlan(q, c, Math.max(ev.due_at, c.lastUpdated));
   await saveColony(q, c);
