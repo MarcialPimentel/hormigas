@@ -32,15 +32,15 @@ describe('wild nests', () => {
     expect(nestLevelFor(0, 3)).toBe(3);
   });
 
-  it('regrows in a straight line to full over 24 h, scaled by world speed', () => {
+  it('regrows in a straight line to full over 12 h, scaled by world speed', () => {
     const state = { species: 'pavement' as const, level: 2, at: 0 };
     const full = nestTargets('pavement', 2);
     const empty = { units: {}, defenses: {}, resources: { foliage: 0, protein: 0, nectar: 0 } };
-    const h12 = nestAt(state, empty, 12 * 3600_000);
-    expect(h12.units.minor_soldier).toBe(Math.floor(full.units.minor_soldier! / 2));
-    expect(h12.resources.foliage).toBeCloseTo(full.resources.foliage / 2, 6);
-    expect(nestAt(state, empty, 48 * 3600_000)).toEqual(full);
-    expect(nestAt(state, empty, 12 * 3600_000, 2)).toEqual(full);
+    const h6 = nestAt(state, empty, 6 * 3600_000);
+    expect(h6.units.minor_soldier).toBe(Math.floor(full.units.minor_soldier! / 2));
+    expect(h6.resources.foliage).toBeCloseTo(full.resources.foliage / 2, 6);
+    expect(nestAt(state, empty, 24 * 3600_000)).toEqual(full);
+    expect(nestAt(state, empty, 6 * 3600_000, 2)).toEqual(full);
     // loot carried home above the store stays until someone takes it
     const rich = { ...full, resources: { foliage: 99999, protein: 0, nectar: 0 } };
     expect(nestAt(state, rich, 3600_000).resources.foliage).toBe(99999);
@@ -108,7 +108,7 @@ describe('termite mounds and spider dens', () => {
     expect(maxLevel(den)).toBe(2);
     expect(regrowHours(mound)).toBe(72);
     expect(regrowHours(den)).toBe(168);
-    expect(regrowHours('pavement')).toBe(24);
+    expect(regrowHours('pavement')).toBe(12);
     expect(nestRaidsBack(mound) || nestRaidsBack(den)).toBe(false);
     expect(nestRaidsBack('pavement')).toBe(true);
     // tiers follow their own thresholds and never drop
@@ -184,6 +184,7 @@ describe('where wild things live', () => {
     const of = (thing: string) => around.filter((w) => w.thing === thing).map((w) => w.patch);
     expect(of('nest')).toEqual([8, 9, 10, 11, 12]);
     expect(of('herd')).toEqual([8, 9, 10, 11, 12]);
+    expect(of('windfall')).toEqual([8, 9, 10, 11, 12]);
     expect(of('mound')).toEqual([8]);
     expect(of('den')).toEqual([8]);
     expect(around.every((w) => w.region === 2)).toBe(true);
@@ -193,10 +194,10 @@ describe('where wild things live', () => {
   });
 
   it('sites are extra spots in the wilds, never colony spots', () => {
-    expect(isSiteSpot(14) && isSiteSpot(15) && isSiteSpot(16)).toBe(true);
+    expect(isSiteSpot(14) && isSiteSpot(15) && isSiteSpot(16) && isSiteSpot(17)).toBe(true);
     expect(isSiteSpot(12) || isSiteSpot(13)).toBe(false);
     expect(validCoords({ region: 1, patch: 1, spot: 15 })).toBe(false);
     expect(validCoords({ region: 1, patch: 1, spot: 15 }, false, true)).toBe(true);
-    expect(validCoords({ region: 1, patch: 1, spot: 17 }, true, true)).toBe(false);
+    expect(validCoords({ region: 1, patch: 1, spot: 18 }, true, true)).toBe(false);
   });
 });

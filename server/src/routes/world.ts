@@ -2,7 +2,7 @@
 import type { FastifyInstance } from 'fastify';
 import {
   WORLD, SPECIES, SCENT_NAME, WILD_SCENTS, HERDS, MAX_SPOT, isInactive, isNewPlayerProtected, corpseFieldAmount, nestLevelFor, isHerdState,
-  herdNectarPerHour, herdStoreCap, herdHoneydewAt, speciesKind, type ScentHint,
+  herdNectarPerHour, herdStoreCap, herdHoneydewAt, speciesKind, type ScentHint, isWindfallState, WINDFALLS, type WindfallState,
 } from '@hormigas/shared';
 import { leaderOf } from '../game/nests';
 import { knowledgeOf, type KnownEntry } from '../game/discovery';
@@ -31,6 +31,7 @@ function scentHint(npc: any): ScentHint {
  * its name; a known colony shows everything.
  */
 function colonyView(c: any, k: KnownEntry, leader: number, t: number, me: number, rel?: RelationInfo, tag?: { id: number; name: string }) {
+  if (isWindfallState(c.npc)) return windfallView(c, c.npc, me);
   const kind = c.npc ? 'wild' : 'player';
   const hint = c.npc ? scentHint(c.npc) : undefined;
   const base = { known: k.knowledge, kind, hint, smelledAt: k.smelledAt, discoveredAt: k.discoveredAt };
@@ -78,6 +79,40 @@ function herdView(c: any, herd: any, t: number, me: number) {
   };
 }
 
+/**
+ * A windfall lying in the wilds (docs/25-windfalls.md). Everyone smells it, so it needs no scouting: anyone sees what it
+ * is, how much is left, when it rots, and who holds it. How many ants hold or guard it takes a scout, unless they're yours.
+ */
+function windfallView(c: any, w: WindfallState, me: number) {
+  const yours = w.tender?.playerId === me;
+  const holders = Object.values(c.units as Record<string, number>).some((n) => n > 0);
+  return {
+    known: 'known' as const,
+    kind: 'wild' as const,
+    smelledAt: null,
+    discoveredAt: null,
+    id: c.id,
+    name: c.name,
+    playerId: c.player_id,
+    owner: w.tender ? c.tender_name : holders ? 'Wild ants' : 'Nobody',
+    points: 0,
+    mine: false,
+    windfall: {
+      kind: w.drop!.kind,
+      text: WINDFALLS.kinds[w.drop!.kind].text,
+      left: { foliage: Math.floor(Number(c.foliage)), protein: Math.floor(Number(c.protein)), nectar: Math.floor(Number(c.nectar)) },
+      pile: w.drop!.pile,
+      endsAt: w.drop!.endsAt,
+      held: !!w.tender && holders,
+      guarded: !w.tender && holders,
+      holderName: w.tender ? c.tender_name : null,
+      yours,
+      deliverEveryHours: WINDFALLS.deliverEveryHours,
+      ...(yours ? { holders: c.units, holderColonyId: w.tender!.colonyId, since: w.tender!.since } : {}),
+    },
+  };
+}
+
 export async function worldRoutes(app: FastifyInstance) {
   app.addHook('preHandler', async (req) => {
     await requireAuth(req);
@@ -94,7 +129,7 @@ export async function worldRoutes(app: FastifyInstance) {
     const world = await getWorld(q);
     const t = now();
     const r = await q.query(
-      `SELECT c.id, c.name, c.spot, c.player_id, c.npc, c.units, c.nectar, p.username, p.points_total, p.protected_until, p.last_active,
+      `SELECT c.id, c.name, c.spot, c.player_id, c.npc, c.units, c.foliage, c.protein, c.nectar, p.username, p.points_total, p.protected_until, p.last_active,
               (SELECT tp.username FROM players tp WHERE tp.id = (c.npc->'tender'->>'playerId')::int) AS tender_name
          FROM colonies c JOIN players p ON p.id = c.player_id
         WHERE c.world_id = $1 AND c.region = $2 AND c.patch = $3 ORDER BY c.spot`,
@@ -113,7 +148,9 @@ export async function worldRoutes(app: FastifyInstance) {
     const spots = [];
     // colony spots, the wilds, then any wild sites that hold something (herds, mounds, dens: docs/24-npcs.md)
     for (let spot = 1; spot <= MAX_SPOT; spot++) {
-      const c = r.rows.find((x: any) => x.spot === spot);
+      let c = r.rows.find((x: any) => x.spot === spot);
+      // an empty windfall site shows nothing until the next windfall drops (docs/25-windfalls.md)
+      if (c && isWindfallState(c.npc) && !c.npc.drop) c = undefined;
       if (spot > WORLD.spotsPerPatch + 1 && !c) continue;
       const corpse = corpses.find((x: any) => x.spot === spot);
       spots.push({

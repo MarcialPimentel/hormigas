@@ -40,7 +40,7 @@ describe('scouting the wilds', () => {
     const d = reports[0].data;
     expect(d.wilds).toBe(true);
     expect(reports[0].title).toContain(`(${c.coords.region}:${c.coords.patch}:13)`);
-    expect(d.odds).toEqual({ food: 50, empty: 30, losses: 15, early: 5 });
+    expect(d.odds).toEqual({ food: 58, empty: 22, losses: 15, early: 5 });
     expect(typeof d.text).toBe('string');
     expect(d.colonies).toBeGreaterThanOrEqual(0);
 

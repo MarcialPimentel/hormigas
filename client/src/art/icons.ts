@@ -84,6 +84,7 @@ const SUPER = { base: '#7a3418', light: '#c0704a', shade: '#4e1f0c', far: '#3a17
 const POLYERGUS = { base: '#b0402a', light: '#e2836a', shade: '#74251a', far: '#561a12' };
 const DESERT = { base: '#c48a3c', light: '#efc786', shade: '#8a5c22', far: '#6a4418' };
 const MINIM = { base: '#9a6a3c', light: '#d6a676', shade: '#664424', far: '#4e331a' };
+const MEDIA = { base: '#8a4a2a', light: '#c98a5c', shade: '#5a2e18', far: '#421f10' };
 const BULLET = { base: '#3a2420', light: '#8a5a48', shade: '#24140f', far: '#1a0e0a', ink: '#0f0806' };
 
 const UNIT: Record<CasteId, () => string> = {
@@ -95,6 +96,10 @@ const UNIT: Record<CasteId, () => string> = {
   hauler: () =>
     ground() + ant('worker', 30, 49, 54, { load: '#8db255' }) +
     `<g transform="rotate(-18 40 18)"><ellipse cx="40" cy="18" rx="15" ry="7" fill="#8db255" stroke="${INK}" stroke-width="1.6"/><path d="M26,18 L54,18" stroke="#5f7d36" stroke-width="1.2"/></g><path d="M44,32 L41,25" stroke="${INK}" stroke-width="1.4"/>`,
+  // a leafcutter media holding a cut leaf fragment upright, the classic leafcutter pose
+  media_worker: () =>
+    ground() + ant('worker', 31, 49, 58, { palette: MEDIA }) +
+    `<path d="M45,33 L47,9 C58,11 61,22 56,31 Z" fill="#8db255" stroke="${INK}" stroke-width="1.6" stroke-linejoin="round"/><path d="M46.5,30 L50,15" stroke="#5f7d36" stroke-width="1.1"/>`,
   winged_queen: () => ground() + ant('alate', 32, 49, 66),
   // Build 10 (docs/05-castes-units.md): a formicine soldier spraying acid from its gaster (left), and a
   // trap-jaw with its long jaws locked open at 180 degrees, ready to snap

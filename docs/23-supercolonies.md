@@ -25,6 +25,7 @@ How OGame and Civilization compare, and why we sit in between: OGame lets anyone
 ## Truces
 - **Offer** to any player you've met. They **accept** or **decline**; you can **withdraw** while it waits. One open truce (or offer) per pair.
 - **Active:** raids are refused both ways with the reason ("You have a truce with this colony…"). Scouting and sending are still allowed.
+- **Pact scouts are visitors.** While a truce (or its notice) or a shared scent (or its fade) lasts, the other side's scouts show as "Visiting scouts" with the pact beside the sender's name, not as enemy scouts. They are never caught or killed, and the hosts always get a report naming who looked ("bee's scouts visited …"), so scouting a partner before a betrayal is always seen. Report detail still follows Scent Reading as usual.
 - **Ending takes notice.** Either side can give notice at any time. Raids stay off for **24 hours** (`truceNoticeHours`), then the truce ends and both get a report. A truce can't be broken instantly, so a betrayal is always telegraphed.
 - **Raids already on their way** when a truce (or a shared scent) starts turn back on arrival without a fight: "Your soldiers smelled the truce". Nothing is lost but the Nectar.
 
@@ -87,6 +88,7 @@ Four new tables, read and written only through `server/src/game/diplomacy.ts`:
 - **Founder and joiners both need it.** Everyone in a supercolony has passed the colonization stage, and a brand-new player can't be pulled in on day 1.
 - **Truce notice 24 hours; scent fade 3 days.** Long enough for the betrayed side to log in and react, short enough not to trap people.
 - **6 players per supercolony.** With today's player count a bigger cap would let one supercolony hold most of the world, leaving nobody to raid.
+- **Pact scouts are never killed, always seen** (30 Oct 2026, after a playtest showed a truce partner's scouts as "Enemy scouts"). Killing a partner's ants goes against the truce, and an always-reported visit keeps a betrayal telegraphed.
 - Decided in the build (Marz may overrule): allies hold position regardless of strength difference; declared wars wait; the founder can remove members, who fade like anyone leaving; Hold Position uses a mission slot.
 
 ## On the map

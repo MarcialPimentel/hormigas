@@ -2,6 +2,7 @@ import { CHAMBERS, RESEARCH, plannedLevel, queueEndsAt, type ChamberId, type Res
 import { useGame } from '../game';
 import { Countdown, Empty, Trip } from './ui';
 import { fmtCoords } from '../format';
+import { incomingName, pactNote } from '../incoming';
 import { MISSION_LABEL, type MissionType } from '../nav';
 import type { ReactNode } from 'react';
 
@@ -110,8 +111,9 @@ export function ActivityList({ go, trips = true, quiet = false }: { go: (screen:
             </>
           ) : (
             <>
-              <strong>{i.type === 'raid' ? 'Raid incoming' : 'Enemy scouts incoming'}</strong>{i.herd ? ` on your aphid herd (${fmtCoords(i.herd)})` : ''} from {i.from} ({fmtCoords(i.origin)}){i.type === 'raid' ? ` — ${i.unitCount.toLocaleString()} units` : ''}
-              {i.herd && i.type === 'raid' && <span className="muted small"> They're after your tenders and the honeydew. Send more soldiers to tend it, or call your tenders home before they land.</span>}
+              <strong>{i.type === 'raid' || i.type === 'claim' ? 'Raid incoming' : 'Enemy scouts incoming'}</strong>{i.windfall ? ` on your windfall (${fmtCoords(i.herd)})` : i.herd ? ` on your aphid herd (${fmtCoords(i.herd)})` : ''} from {i.from} ({fmtCoords(i.origin)}){i.type === 'raid' || i.type === 'claim' ? ` — ${i.unitCount.toLocaleString()} units` : ''}
+              {i.windfall && i.type !== 'scout' && <span className="muted small"> They're coming to fight your ants for it. Send more soldiers, or call your ants home with a load before they land.</span>}
+              {i.herd && !i.windfall && i.type === 'raid' && <span className="muted small"> They're after your tenders and the honeydew. Send more soldiers to tend it, or call your tenders home before they land.</span>}
             </>
           )}
           {i.wild && i.type === 'raid' && (
@@ -119,7 +121,7 @@ export function ActivityList({ go, trips = true, quiet = false }: { go: (screen:
           )}
         </>
       ) : (
-        <>Delivery from {i.from} arriving</>
+        <>{incomingName(i)} from {i.from}{pactNote(i)} arriving</>
       ),
       screen: 'missions',
       tone: i.hostile ? 'danger' : undefined,

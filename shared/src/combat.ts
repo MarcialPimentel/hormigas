@@ -5,10 +5,12 @@ import {
   DEFENSES,
   FORMULAS,
   RESOURCE_IDS,
+  TERRAIN,
   type CasteId,
   type CombatStats,
   type DefenseId,
   type Resources,
+  type TerrainId,
 } from './data';
 import { casteResearchFraction, researchFraction, researchSum, type DefenseCounts, type ResearchLevels, type UnitCounts } from './economy';
 import { res, add, scale } from './resources';
@@ -24,6 +26,8 @@ export interface CombatSide {
    */
   retreatPct?: number;
   defenses?: DefenseCounts;
+  /** Defender only: the ground's percent on its defenses (Sandy Soil −15), from groundDefensePct(). */
+  groundDefensePct?: number;
   research: ResearchLevels;
   /**
    * Defender only: allied soldiers holding position at the colony (docs/23-supercolonies.md).
@@ -88,11 +92,14 @@ interface Army {
   size: number;
 }
 
-function statsFor(key: EntityKey, research: ResearchLevels): EntityStats {
+/** What a player colony's ground does to its defenses, in percent (docs/04-colony.md § Terrain). Wild nests: 0. */
+export const groundDefensePct = (terrain: TerrainId): number => TERRAIN[terrain]?.mods.defensePct ?? 0;
+
+function statsFor(key: EntityKey, research: ResearchLevels, groundPct = 0): EntityStats {
   const id = key.slice(key.indexOf(':') + 1);
   const base: CombatStats & { cost: Resources } = key[0] === 'd' ? DEFENSES[id as DefenseId] : CASTES[id as CasteId];
-  // Formic Acid: defenses get an extra percentage on all three stats.
-  const def = key[0] === 'd' ? researchSum(research, 'defensePct') / 100 : 0;
+  // Formic Acid (and the ground, e.g. Sandy Soil): defenses get an extra percentage on all three stats.
+  const def = key[0] === 'd' ? (researchSum(research, 'defensePct') + groundPct) / 100 : 0;
   // Instincts: research that sharpens only this caste (docs/21-tech-tree.md)
   const ownAttack = key[0] === 'd' ? 0 : casteResearchFraction(research, id, 'casteAttackPct');
   const ownHealth = key[0] === 'd' ? 0 : casteResearchFraction(research, id, 'casteHealthPct');
@@ -122,7 +129,7 @@ function buildArmy(side: CombatSide): Army {
     for (const [id, n] of Object.entries(g.units)) if ((n ?? 0) > 0) { keys.push(`a${i}:${id as CasteId}`); counts.push(n!); research.push(g.research); }
   });
   const size = counts.reduce((a, b) => a + b, 0);
-  const stats = keys.map((k, t) => statsFor(k, research[t]));
+  const stats = keys.map((k, t) => statsFor(k, research[t], side.groundDefensePct ?? 0));
   const type = new Uint16Array(size);
   const health = new Float64Array(size);
   const guard = new Float64Array(size);

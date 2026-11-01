@@ -1,6 +1,6 @@
 // Allies: truces and supercolonies with the players you've met (docs/23-supercolonies.md).
 import { useCallback, useEffect, useState } from 'react';
-import { SUPERCOLONY_MAX_MEMBERS, SUPERCOLONY_NAME_LENGTH, scentFadeMs, supercolonyNameProblem, truceNoticeMs, type RelationInfo } from '@hormigas/shared';
+import { SUPERCOLONY_MAX_MEMBERS, SUPERCOLONY_NAME_LENGTH, scentFadeMs, supercolonyNameProblem, truceNoticeMs, RELATION_NAMES, type RelationInfo } from '@hormigas/shared';
 import { api } from '../api';
 import { useGame } from '../game';
 import { fmtCoords, fmtNum, fmtSpan } from '../format';
@@ -219,7 +219,7 @@ export function Allies({ go }: { go: Nav }) {
                     <strong>{c.username}</strong>
                     <span className="muted small"> · {fmtNum(c.points)} pts</span>
                     {c.supercolony && <span className="sc-tag">{c.supercolony}</span>}
-                    {c.relation && <span className={`pact-tag ${c.relation.relation}`}>{RELATION_TEXT[c.relation.relation]}</span>}
+                    {c.relation && <span className={`pact-tag ${c.relation.relation}`}>{RELATION_NAMES[c.relation.relation]}</span>}
                     {c.invited && <span className="muted small"> · invited</span>}
                   </div>
                   <div className="row-actions">
@@ -244,7 +244,6 @@ export function Allies({ go }: { go: Nav }) {
   );
 }
 
-const RELATION_TEXT = { ally: 'Supercolony mate', fading: 'Scent fading', truce: 'Truce', truce_ending: 'Truce ending' } as const;
 
 function FoundPanel({ canFound, onFound, goResearch }: { canFound: boolean; onFound: (name: string) => void; goResearch: () => void }) {
   const [name, setName] = useState('');

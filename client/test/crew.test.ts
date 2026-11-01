@@ -2,7 +2,7 @@
 // (client/src/components/nest3d/crew.ts).
 import { describe, expect, it } from 'vitest';
 import { CHAMBER_IDS } from '@hormigas/shared';
-import { chamberJobs, createCrew, crewFor, crewSize, floorY, heapAt, shareCrews, stopAt, tunnelSide } from '../src/components/nest3d/crew';
+import { chamberJobs, createCrew, crewFor, crewSize, floorY, guardPosts, heapAt, shareCrews, stopAt, tunnelSide } from '../src/components/nest3d/crew';
 import { D, room } from '../src/components/nest3d/slab';
 
 describe('chamber crews', () => {
@@ -109,5 +109,17 @@ describe('chamber crews', () => {
     expect(heapAt(r, r.x, 0)).toBe(0);
     expect(heapAt(r, r.x, 1)).toBeGreaterThan(heapAt(r, r.x, 0.25));
     expect(heapAt(room('nursery', 3), 0, 1)).toBe(0);
+  });
+
+  it('guards stand spread round the entrance, never stacked: a full guard of 30 keeps about an ant-length apart', () => {
+    for (const n of [0, 1, 5, 12, 30]) {
+      const posts = guardPosts(n);
+      expect(posts).toHaveLength(n);
+      const at = posts.map((p) => ({ x: Math.cos(p.a) * p.r, z: -Math.sin(p.a) * p.r }));
+      for (let i = 0; i < at.length; i++)
+        for (let j = i + 1; j < at.length; j++) expect(Math.hypot(at[i].x - at[j].x, at[i].z - at[j].z), `${n}: ${i}-${j}`).toBeGreaterThan(0.6);
+      // and all within a short walk of the hole
+      for (const p of posts) expect(p.r).toBeLessThan(4.5);
+    }
   });
 });

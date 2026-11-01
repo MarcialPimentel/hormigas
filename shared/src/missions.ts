@@ -6,7 +6,7 @@ import { lvl, missingRequirements, type ChamberLevels, type ResearchLevels, type
 import { forageSlots, maxColonies, missionSlots, presentUnits } from './world';
 import type { Blocker } from './blockers';
 
-export type MissionType = 'transport' | 'relocate' | 'scout' | 'raid' | 'haul' | 'forage' | 'colonize' | 'swarm' | 'hold' | 'tend';
+export type MissionType = 'transport' | 'relocate' | 'scout' | 'raid' | 'haul' | 'forage' | 'colonize' | 'swarm' | 'hold' | 'tend' | 'claim';
 export type MissionSlot = 'mission' | 'forage';
 
 /** What kind of place a mission is aimed at. */
@@ -15,6 +15,7 @@ export type MissionTarget =
   | 'own' // one of your own colonies (relocate)
   | 'ally' // a supercolony mate's colony (hold)
   | 'herd' // an aphid herd (tend)
+  | 'windfall' // food lying in the wilds (claim)
   | 'empty' // an empty colony spot, 1–12 (colonize)
   | 'wilds' // the wilds, spot 13 (forage)
   | 'any'; // a colony, wild site or the wilds (scout, haul)
@@ -63,6 +64,11 @@ export const MISSION_TYPES: Record<MissionType, MissionTypeDef> = {
     help: 'Station ants at an aphid herd you have scouted. They stay, guard it and carry its honeydew home as Nectar every few hours. One herd per colony.',
     target: 'herd', allowsCargo: false, allowsWilds: false, allowsSites: true, slot: 'mission', oneWay: true, playerSent: true,
   },
+  claim: {
+    label: 'Claim windfall',
+    help: 'Send ants to food lying in the wilds. They fight whoever is already there, then hold it and carry a load home every few hours until it is gone or rots. Bring soldiers to win the fight and carriers to haul.',
+    target: 'windfall', allowsCargo: false, allowsWilds: false, allowsSites: true, slot: 'mission', oneWay: true, playerSent: true,
+  },
   transport: {
     label: 'Transport', help: 'Carry resources to any colony. Your units come back.',
     target: 'colony', allowsCargo: true, allowsWilds: false, allowsSites: true, slot: 'mission', oneWay: false, playerSent: true,
@@ -93,7 +99,7 @@ export const MISSION_TYPES: Record<MissionType, MissionTypeDef> = {
 };
 
 /** Mission types a player can send, in the order the Missions screen shows them. */
-export const PLAYER_MISSIONS: MissionType[] = ['raid', 'scout', 'forage', 'tend', 'transport', 'relocate', 'haul', 'colonize', 'hold'];
+export const PLAYER_MISSIONS: MissionType[] = ['raid', 'scout', 'forage', 'claim', 'tend', 'transport', 'relocate', 'haul', 'colonize', 'hold'];
 
 /** Castes allowed on a mission, or null for any. */
 export const missionUnitsAllowed = (type: MissionType): CasteId[] | null => MISSION_TYPES[type].onlyUnits ?? null;

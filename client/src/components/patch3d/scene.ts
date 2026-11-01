@@ -50,7 +50,7 @@ const EDGE = HALF_W + 4; // where parties from other patches enter
 /** The drawn patch's x (0…690 px) in units. */
 const pxToX = (px: number) => (px - 345) / 9.6;
 const SPOT_PX = 45;
-const spotPx = (n: number) => (n === WILDS_SPOT ? 562 : n > WILDS_SPOT ? 562 + (n - WILDS_SPOT) * 38 : (n - 0.5) * SPOT_PX);
+const spotPx = (n: number) => (n === WILDS_SPOT ? 558 : n > WILDS_SPOT ? 558 + (n - WILDS_SPOT) * 26 : (n - 0.5) * SPOT_PX);
 /** Spots on a patch: the colony spots, the wilds, then the four wild sites. */
 const SPOT_COUNT = WILDS_SPOT + 4;
 /** Where a spot sits: the drawn patch's order left to right, staggered front and back so neighbours don't crowd. */
@@ -541,8 +541,35 @@ uniform vec3 uSpots[SIGHT_SPOTS];
   const flagColor = (c: SpotColony) =>
     c.mine ? FLAG.mine : c.relation === 'ally' ? FLAG.ally : c.kind === 'wild' ? (c.hint ? HINT_COLOR[c.hint] : FLAG.wild) : c.inactive ? FLAG.inactive : FLAG.other;
 
+  /** Every mound on the patch, so ants walk up out of its entrance and over it rather than through it. */
+  const mounds: { x: number; z: number; y: number; s: number }[] = [];
+  let moundsVer = 0;
+  /** The mound's surface at (x, z), or −∞ off every mound. Inside the entrance it drops away down the hole. */
+  function moundY(x: number, z: number) {
+    const { R, rim, hole, H, dip } = MOUND;
+    let best = -Infinity;
+    for (const m of mounds) {
+      const dx = x - m.x, dz = z - m.z;
+      if (Math.abs(dx) > R * m.s || Math.abs(dz) > R * m.s) continue;
+      const r = Math.hypot(dx, dz) / m.s;
+      if (r >= R) continue;
+      let h: number;
+      if (r <= hole) h = H - dip - (hole - r) * 4;
+      else if (r <= rim) h = H - dip * Math.sin((((rim - r) / (rim - hole)) * Math.PI) / 2);
+      else h = H * Math.pow(Math.sin((((R - r) / (R - rim)) * Math.PI) / 2), 1.6);
+      best = Math.max(best, m.y + h * m.s);
+    }
+    return best;
+  }
+  /** Where an ant's feet go: the ground, or the mound where there is one (a hair above its lumps). */
+  const footY = (x: number, z: number) => {
+    const m = moundY(x, z);
+    return m === -Infinity ? gH(x, z) : Math.max(gH(x, z), m + 0.035);
+  };
+
   function addMound(x: number, z: number, color: string, flag: string | null, scale = 1) {
     const y = gH(x, z);
+    mounds.push({ x, z, y: y - 0.05, s: scale });
     // the ground the colony has cleared around its entrance
     const bare = new THREE.Mesh(bareGeo, bareMat);
     bare.rotation.x = -Math.PI / 2;
@@ -589,6 +616,10 @@ uniform vec3 uSpots[SIGHT_SPOTS];
   }
   function addSite(c: SpotColony, x: number, z: number) {
     const y = gH(x, z);
+    if (c.windfall) {
+      addWindfall(c, x, z, y);
+      return;
+    }
     if (c.herd) {
       // aphids on a stem
       const stem = new THREE.Mesh(sk(new THREE.CylinderGeometry(0.08, 0.12, 5, 6).translate(0, 2.5, 0)), mat('#5E8A2E'));
@@ -644,6 +675,65 @@ uniform vec3 uSpots[SIGHT_SPOTS];
     addMound(x, z, '#8C6A48', c.wild ? FLAG.wild : null, 0.9);
   }
 
+  /** A windfall in the wilds (docs/25-windfalls.md): food big enough that colonies march for it, with a flag when held. */
+  function addWindfall(c: SpotColony, x: number, z: number, y: number) {
+    const w = c.windfall!;
+    if (w.kind === 'fig') {
+      // a ripe fig split open on the ground
+      const fig = new THREE.Mesh(sk(new THREE.SphereGeometry(1.4, 16, 12).scale(1, 0.85, 1)), mat('#6E3A5E', { roughness: 0.55 }));
+      fig.position.set(x, y + 1.1, z);
+      spotGroup.add(shadow(fig));
+      const flesh = new THREE.Mesh(sk(new THREE.CircleGeometry(0.9, 16)), mat('#D9566B', { roughness: 0.4, side: THREE.DoubleSide }));
+      flesh.position.set(x + 0.2, y + 1.85, z + 0.55);
+      flesh.rotation.set(-0.9, 0.3, 0);
+      spotGroup.add(flesh);
+    } else if (w.kind === 'branch') {
+      // a snapped twig full of leaves
+      const twig = new THREE.Mesh(sk(new THREE.CylinderGeometry(0.12, 0.2, 7, 6)), mat('#6E5236'));
+      twig.position.set(x, y + 0.3, z);
+      twig.rotation.set(0, 0.4, Math.PI / 2 - 0.12);
+      spotGroup.add(shadow(twig));
+      const leaf = sk(new THREE.SphereGeometry(1, 10, 6).scale(1.2, 0.06, 0.55));
+      for (let i = 0; i < 7; i++) {
+        const l = new THREE.Mesh(leaf, mat(i % 2 ? '#7DB043' : '#5E8A2E', { side: THREE.DoubleSide }));
+        l.position.set(x - 3 + i, y + 0.45 + (i % 3) * 0.15, z + (i % 2 ? 0.7 : -0.6));
+        l.rotation.set(0.2 * (i % 2 ? 1 : -1), i * 0.9, 0.15);
+        spotGroup.add(shadow(l));
+      }
+    } else {
+      // a dead grasshopper or lizard on its side: long body, legs in the air
+      const lizard = w.kind === 'lizard';
+      const len = lizard ? 7 : 4;
+      const body = new THREE.Mesh(sk(new THREE.CapsuleGeometry(lizard ? 0.55 : 0.45, len, 6, 12)), mat(lizard ? '#8C8A4E' : '#9DAA45', { roughness: 0.7 }));
+      body.position.set(x, y + 0.5, z);
+      body.rotation.set(0, 0.3, Math.PI / 2);
+      spotGroup.add(shadow(body));
+      const leg = sk(new THREE.CylinderGeometry(0.05, 0.05, lizard ? 1.2 : 2, 4));
+      for (let i = 0; i < (lizard ? 4 : 6); i++) {
+        const l = new THREE.Mesh(leg, mat('#3A2A1C'));
+        const along = (i / (lizard ? 3 : 5) - 0.5) * len * 0.7;
+        l.position.set(x + Math.cos(0.3) * along, y + 1.2, z - Math.sin(0.3) * along);
+        l.rotation.set(0.3 * (i % 2 ? 1 : -1), 0, 0.2);
+        spotGroup.add(l);
+      }
+      if (lizard) {
+        const tail = new THREE.Mesh(sk(new THREE.ConeGeometry(0.45, 5, 8)), mat('#8C8A4E', { roughness: 0.7 }));
+        tail.position.set(x - Math.cos(0.3) * (len / 2 + 2.4), y + 0.4, z + Math.sin(0.3) * (len / 2 + 2.4));
+        tail.rotation.set(0, 0.3, Math.PI / 2);
+        spotGroup.add(shadow(tail));
+      }
+    }
+    const flag = w.yours ? FLAG.mine : w.held ? FLAG.other : w.guarded ? FLAG.wild : null;
+    if (flag) {
+      const p = new THREE.Mesh(sk(new THREE.CylinderGeometry(0.05, 0.05, 4, 5).translate(0, 2, 0)), mat('#3A2A1C'));
+      p.position.set(x + 1.8, y, z - 0.8);
+      spotGroup.add(shadow(p));
+      const f = new THREE.Mesh(sk(new THREE.PlaneGeometry(1.2, 0.7).translate(0.6, 0, 0)), mat(flag, { side: THREE.DoubleSide, roughness: 0.6 }));
+      f.position.set(x + 1.8, y + 3.6, z - 0.8);
+      spotGroup.add(shadow(f));
+    }
+  }
+
   let spotsKey = '';
   const dead: { x: number; z: number; yaw: number; caste: Caste; color: string }[] = [];
   function setSpots(region: number, patch: number, spots: Spot[] | null) {
@@ -654,6 +744,8 @@ uniform vec3 uSpots[SIGHT_SPOTS];
     for (const d of spotDisposables.splice(0)) d.dispose();
     spotGroup.clear();
     plumes.length = 0;
+    mounds.length = 0;
+    moundsVer++;
     taps = [];
     shown = spots ? { region, patch, spots } : null;
     dead.length = 0;
@@ -729,7 +821,7 @@ uniform vec3 uSpots[SIGHT_SPOTS];
     return { x: leftOf(c, other) ? -EDGE : EDGE, z: hash(c.patch, c.spot) * 10 - 5 };
   };
   function trailFor(key: string, a: { x: number; z: number }, b: { x: number; z: number }, color: string, bend: number) {
-    const k = `${key}|${a.x.toFixed(1)},${a.z.toFixed(1)}|${b.x.toFixed(1)},${b.z.toFixed(1)}|${color}`;
+    const k = `${key}|${a.x.toFixed(1)},${a.z.toFixed(1)}|${b.x.toFixed(1)},${b.z.toFixed(1)}|${color}|${moundsVer}`;
     const old = trails.get(key);
     if (old?.key === k) return old;
     if (old) {
@@ -741,11 +833,12 @@ uniform vec3 uSpots[SIGHT_SPOTS];
     const dx = b.x - a.x, dz = b.z - a.z, len = Math.hypot(dx, dz) || 1;
     const cx = (a.x + b.x) / 2 - (dz / len) * len * 0.12 * bend, cz = (a.z + b.z) / 2 + (dx / len) * len * 0.12 * bend;
     const pts: THREE.Vector3[] = [];
-    const n = Math.max(12, Math.round(len * 1.5));
+    // sampled finely enough to follow a mound's rim and crater
+    const n = Math.max(12, Math.round(len * 3));
     for (let i = 0; i <= n; i++) {
       const t = i / n, u = 1 - t;
       const x = u * u * a.x + 2 * u * t * cx + t * t * b.x, z = u * u * a.z + 2 * u * t * cz + t * t * b.z;
-      pts.push(new THREE.Vector3(x, gH(x, z), z));
+      pts.push(new THREE.Vector3(x, footY(x, z), z));
     }
     const lens = [0];
     for (let i = 1; i < pts.length; i++) lens.push(lens[i - 1] + pts[i].distanceTo(pts[i - 1]));
@@ -780,6 +873,15 @@ uniform vec3 uSpots[SIGHT_SPOTS];
   }
 
   const clamp01 = (v: number) => Math.max(0, Math.min(1, v));
+  // legs are tied to the ground covered: one tripod cycle per STRIDE, so the feet don't slide. A column that creeps
+  // (a long trip at world speed ×1) still steps at least MIN_STEP radians a second, slowly, rather than freezing.
+  const STRIDE = 0.17, MIN_STEP = 4;
+  /** Nose up or down to follow a mound's slope (and steeply up out of its entrance); flat ground stays level. */
+  function slope(x: number, z: number, fx: number, fz: number) {
+    if (moundY(x, z) === -Infinity && moundY(x + fx * 0.12, z + fz * 0.12) === -Infinity) return 0;
+    const dy = footY(x + fx * 0.12, z + fz * 0.12) - footY(x, z);
+    return Math.max(-1.3, Math.min(1.3, Math.atan2(dy, 0.12)));
+  }
   interface Column {
     key: string;
     from: { x: number; z: number };
@@ -796,6 +898,8 @@ uniform vec3 uSpots[SIGHT_SPOTS];
     tone: string;
     endsAt: number;
     holding?: boolean;
+    /** how fast k changes, per ms (negative heading home) */
+    rate: number;
   }
   function columns(d: PatchData): Column[] {
     const st = d.state, out: Column[] = [];
@@ -815,6 +919,7 @@ uniform vec3 uSpots[SIGHT_SPOTS];
         caste: (i) => (m.type === 'colonize' ? (i === 0 ? 'alate' : 'worker') : hash(i, m.id) < soldiers ? 'soldier' : 'worker'),
         trail: FLAG.mine, cargo: ob || hold ? [] : (Object.keys(CARGO) as ResourceId[]).filter((r) => (m.cargo?.[r] ?? 0) > 0),
         label: `${label}${ob || hold ? '' : ' home'}`, tone: 'ours', endsAt: hold ? 0 : ob ? m.arriveAt : m.returnAt, holding: hold,
+        rate: hold ? 0 : ob ? 1 / Math.max(1, m.arriveAt - m.departAt) : -1 / Math.max(1, m.returnAt - m.arriveAt),
       });
     }
     for (const i of (st.incoming ?? []) as any[]) {
@@ -831,6 +936,7 @@ uniform vec3 uSpots[SIGHT_SPOTS];
         color: swarm ? undefined : hostile ? CHITIN.raider : i.type === 'hold' ? '#3FA79E' : FLAG.other,
         trail: hostile ? '#C4473A' : i.type === 'hold' ? FLAG.ally : FLAG.other, cargo: [],
         label: what, tone: hostile ? 'raid' : 'ours', endsAt: i.arriveAt,
+        rate: i.departAt ? 1 / Math.max(1, i.arriveAt - i.departAt) : 0,
       });
     }
     return out;
@@ -846,6 +952,10 @@ uniform vec3 uSpots[SIGHT_SPOTS];
       const lanes = Math.min(swarm ? 9 : 4, Math.max(1, Math.round(Math.sqrt(c.n / (swarm ? 5 : 12)))));
       const gap = swarm ? 0.3 : 0.46;
       const lead = c.k * t.total;
+      // how fast the column really moves (world units a second), and the slow floor for its legs
+      const legs = (Math.abs(c.rate) * 1000 * t.total) / STRIDE * Math.PI * 2;
+      const idle = reduced ? 0 : Math.max(0, MIN_STEP - legs) * clock;
+      const gait = (walked: number, i: number) => (walked / STRIDE) * Math.PI * 2 + hash(i, 5) * 6.283 + idle;
       if (swarm) {
         // an army-ant swarm is a fan: a wide front that thins into the column behind it (docs/20-swarms.md)
         for (let i = 0; i < c.n; i++) {
@@ -859,9 +969,11 @@ uniform vec3 uSpots[SIGHT_SPOTS];
           const side = (hash(i, 12) * 2 - 1) * half + wob;
           const x = at.x + nx * side, z = at.z + nz * side;
           const caste = c.caste(i);
-          ants.ant(caste, x, gH(x, z), z, {
+          ants.ant(caste, x, footY(x, z), z, {
             scale: (ANT / 0.9) * (caste === 'army_major' ? 1.3 : 1),
-            yaw: Math.atan2(-dir.z, dir.x) + wob * 2 + (hash(i, 13) - 0.5) * 0.6, step: reduced ? 0 : 19,
+            yaw: Math.atan2(-dir.z, dir.x) + wob * 2 + (hash(i, 13) - 0.5) * 0.6,
+            pitch: slope(x, z, dir.x / tl, dir.z / tl),
+            ...(reduced ? { step: 0 } : { gait: gait(dd, i) }),
           });
         }
         flushAhead(t, lead);
@@ -881,10 +993,12 @@ uniform vec3 uSpots[SIGHT_SPOTS];
         const yaw = Math.atan2(-(back ? -dir.z : dir.z), back ? -dir.x : dir.x) + wob;
         const caste = c.caste(i);
         const r = c.cargo.length ? c.cargo[i % c.cargo.length] : null;
-        ants.ant(caste, x, gH(x, z), z, {
+        const fx = (back ? -dir.x : dir.x) / tl, fz = (back ? -dir.z : dir.z) / tl;
+        ants.ant(caste, x, footY(x, z), z, {
           // ants3d's body is about 0.9 long: scale it to 5 mm
           scale: (ANT / 0.9) * (caste === 'soldier' ? 1.15 : caste === 'army_major' ? 1.3 : caste === 'alate' ? 1.5 : 1),
-          yaw, step: reduced || c.holding ? 0 : swarm ? 19 : 15, color: c.color,
+          yaw, pitch: slope(x, z, fx, fz), color: c.color,
+          ...(reduced || c.holding ? { step: 0 } : { gait: gait(back ? t.total - dd : dd, i) }),
           cargo: r ? { kind: LOAD[r], color: CARGO[r] } : null,
         });
       }
@@ -1094,7 +1208,7 @@ uniform vec3 uSpots[SIGHT_SPOTS];
     for (let i = 0; i <= n; i++) {
       const t = i / n, u = 1 - t;
       const x = u * u * a.x + 2 * u * t * cx + t * t * b.x, z = u * u * a.z + 2 * u * t * cz + t * t * b.z;
-      pts.push(new THREE.Vector3(x, gH(x, z) + 0.08, z));
+      pts.push(new THREE.Vector3(x, Math.max(gH(x, z), moundY(x, z)) + 0.08, z));
     }
     const lens = [0];
     for (let i = 1; i < pts.length; i++) lens.push(lens[i - 1] + pts[i].distanceTo(pts[i - 1]));
@@ -1404,8 +1518,15 @@ uniform vec3 uSpots[SIGHT_SPOTS];
   const io = new IntersectionObserver(([en]) => (visible = en.isIntersecting));
   io.observe(host);
   let raf = 0, last = performance.now(), sinceStill = 1;
+  // the game's clock ticks once a second: run it on smoothly between ticks, so columns march instead of hopping
+  let tickNow = NaN, tickAt = 0;
   function step(dt: number) {
-    const d = get();
+    const raw = get();
+    if (raw.now !== tickNow) {
+      tickNow = raw.now;
+      tickAt = performance.now();
+    }
+    const d = reduced ? raw : { ...raw, now: tickNow + Math.min(1500, performance.now() - tickAt) };
     seen.clear();
     clock += reduced ? 0 : dt;
     antUniforms.uTime.value = clock;

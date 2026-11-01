@@ -9,6 +9,8 @@ export const SWARM = NPC_DATA.swarm as unknown as {
   name: string;
   everyHours: [number, number];
   warningHours: number;
+  preyHours: number;
+  minPrey: number;
   pack: UnitCounts;
   minPacks: number;
   maxPacks: number;
@@ -22,20 +24,31 @@ export function nextSwarmHours(rng: Rng): number {
   return lo + rng() * (hi - lo);
 }
 
-export const swarmOfPacks = (n: number): UnitCounts =>
+/**
+ * Protein a colony keeps after beating a swarm: the prey the swarm was carrying (docs/20-swarms.md).
+ * preyHours of the colony's total production per hour (at the world's speed), at least minPrey, up to free storage.
+ */
+export function swarmPrey(perHourTotal: number, freeProteinStorage: number): number {
+  const want = Math.max(SWARM.minPrey, perHourTotal * SWARM.preyHours);
+  return Math.floor(Math.max(0, Math.min(want, freeProteinStorage)));
+}
+
+export const swarmOfPacks =(n: number): UnitCounts =>
   Object.fromEntries(Object.entries(SWARM.pack).map(([k, v]) => [k, (v ?? 0) * n])) as UnitCounts;
 
 export interface SwarmTarget {
   units: UnitCounts;
   defenses: DefenseCounts;
   research: ResearchLevels;
+  /** the colony's ground on its defenses (groundDefensePct) */
+  groundDefensePct?: number;
 }
 
 /** Share of `trials` simulated battles the defender wins against a swarm of `packs` packs. */
 export function defenderWinRate(target: SwarmTarget, packs: number, seed: number, trials = SWARM.trials): number {
   let wins = 0;
   for (let i = 0; i < trials; i++) {
-    const r = simulateBattle({ units: swarmOfPacks(packs), research: {} }, { units: target.units, defenses: target.defenses, research: target.research }, createRng(seed + i));
+    const r = simulateBattle({ units: swarmOfPacks(packs), research: {} }, { units: target.units, defenses: target.defenses, research: target.research, groundDefensePct: target.groundDefensePct }, createRng(seed + i));
     if (r.winner === 'defender') wins++;
   }
   return wins / trials;

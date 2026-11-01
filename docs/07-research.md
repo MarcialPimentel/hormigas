@@ -35,7 +35,7 @@ Since Build 6 research is a **tree**: research can need other research (not only
 | **Nurse Workers** | Nest | Pher 3, Brood Science 1 | Units raised 5% faster per level (max 6) |
 | **Deep Digging** | Nest | Pher 4 | +5 space per level in all colonies |
 | **Tunnel Engineering** | Nest | Pher 4, Deep Digging 2 | Chambers dug 5% faster per level (max 6); level 1 also opens the Narrow Tunnel defense |
-| **Nuptial Flight** | Nest | Pher 3 | Unlocks the Winged Queen; +1 colony at levels 1, 3, 5… ([19-colonies](19-colonies.md)) |
+| **Nuptial Flight** | Nest | Pher 3 | Unlocks the Winged Queen; +1 colony per level ([19-colonies](19-colonies.md)) |
 | **Pheromone Trails** | Scent | Pher 1 | +10% unit speed per level |
 | **Colony Mind** | Scent | Pher 1 | +1 mission slot per level |
 | **Scent Reading** | Scent | Pher 2 | Better scouting reports; harder to scout |

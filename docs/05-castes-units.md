@@ -29,7 +29,8 @@ Units are **castes** raised in the Brood Hall. Each unit represents a squad of a
 | **Desert Ant** (Build 11) | Forager | *Cataglyphis*. Very fast; every 5 in a forage party count as one more Foraging Instinct level for that trip (up to +5). Brood Hall 3 + Foraging Instinct 2. |
 | **Gardener Minim** (Build 11) | Economy | The tiniest leafcutters, tending the fungus. Each at home adds 0.5% to the Leaf Gardens' output, counting up to 4 per Leaf Garden level ([03](03-economy.md#gardener-minims-build-11)). Fights like a Worker, so raids can kill some. Brood Hall 2 + Fungus Farming 1. |
 | **Scout** | Espionage | Near-zero combat value; dies easily. |
-| **Hauler** | Bulk cargo | Unlocked after Major Soldier. |
+| **Media Worker** (30 Oct 2026) | Carrier | Leafcutter *media*: the everyday carrier between Worker and Hauler. Carries 3,500 (Worker 1,500, Hauler 7,500) for 500 Foliage / 200 Protein, 5.0 cargo per resource spent (Worker 3.8, Hauler 6.3). Hauls corpses. Can't fight. **Brood Hall 2, no research.** |
+| **Hauler** | Bulk cargo | 7,500 cargo. Brood Hall 2 + Brood Science 2. |
 | **Winged Queen** | Founds a new colony | Brood Hall 4 + Nuptial Flight 1. Used up on landing ([19-colonies](19-colonies.md)). |
 
 ## Feeding the brood

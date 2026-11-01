@@ -1,8 +1,11 @@
 import { useCallback, useEffect, useState } from 'react';
-import { CASTES, CHAMBERS, DEFENSES, RESEARCH, RESOURCE_IDS } from '@hormigas/shared';
+import { CASTES, CHAMBERS, DEFENSES, RESEARCH, RESOURCE_IDS, type Relation } from '@hormigas/shared';
+
+/** "Because of …": why a pact partner's scouts are let be (docs/23-supercolonies.md). */
+const PACT_PHRASE: Record<Relation, string> = { truce: 'your truce', truce_ending: 'your truce (still in its notice)', ally: 'your shared supercolony scent', fading: 'your shared scent (still fading)' };
 import { api } from '../api';
 import { useGame } from '../game';
-import { fmtClock, fmtCoords, fmtFull } from '../format';
+import { fmtClock, fmtCoords, fmtDuration, fmtFull } from '../format';
 import { RESOURCE_LABEL } from '../describe';
 import { Empty, Panel, ResDot } from '../components/ui';
 import type { Nav } from '../nav';
@@ -71,6 +74,54 @@ function WildsReport({ d }: { d: any }) {
   );
 }
 
+/** Windfalls (docs/25-windfalls.md): one dropped nearby, your ants took one, or one ran out. */
+function WindfallReport({ d, go }: { d: any; go?: Nav }) {
+  const { now } = useGame();
+  const show = go && d.coords ? () => go('missions', { view: { region: d.coords.region, patch: d.coords.patch } }) : undefined;
+  const mapButton = show && (
+    <button className="btn small" onClick={show}>
+      Show on the map
+    </button>
+  );
+  if (d.turnedBack) return <p className="report-body">{d.why} Your ants are walking home.</p>;
+  if (d.event === 'windfall')
+    return (
+      <div className="report-body">
+        <p>{d.text}</p>
+        <p>
+          It holds <ResLine r={d.pile} /> and rots {d.endsAt > now ? `in ${fmtDuration(d.endsAt - now)}` : 'soon'}.{' '}
+          {d.guarded ? 'Wild ants are already on it: bring soldiers.' : 'Nobody holds it yet.'} Send ants to claim it from its card in the wilds, at{' '}
+          {fmtCoords(d.coords)}.
+        </p>
+        {mapButton}
+      </div>
+    );
+  if (d.event === 'windfall_held')
+    return (
+      <div className="report-body">
+        <p>
+          {d.claimed ? `Your ants from ${d.colony} hold the ${String(d.windfall).toLowerCase()} (${fmtCoords(d.coords)}).` : `More of your ants joined the others at the ${String(d.windfall).toLowerCase()}.`}{' '}
+          They carry up to {fmtFull(d.carryPerLoad)} home every {d.deliverEveryHours} hours until it's gone or rots. Anyone can fight them for it; call them home from its card.
+        </p>
+        <h4>Left on it</h4>
+        <ResLine r={d.left} />
+        <h4>Holding it now</h4>
+        <Counts counts={d.holders} />
+        {mapButton}
+      </div>
+    );
+  return (
+    <div className="report-body">
+      <p>
+        {d.done === 'rotted'
+          ? `The ${String(d.windfall).toLowerCase()} rotted away. Your ants are bringing home one last load:`
+          : `Nothing is left of the ${String(d.windfall).toLowerCase()}. The last load is in your stores and your ants are walking home:`}
+      </p>
+      <ResLine r={d.carried ?? d.delivered} />
+    </div>
+  );
+}
+
 function ReportBody({ r, go }: { r: Report; go?: Nav }) {
   const d = r.data;
   switch (r.type) {
@@ -101,6 +152,7 @@ function ReportBody({ r, go }: { r: Report; go?: Nav }) {
               <>{d.colony} ({fmtCoords(d.coords)}), owned by {d.owner}.{' '}</>
             )}
             {d.caught ? <strong className="warn">Your scouts were caught after reporting back what they saw.</strong> : null}
+            {d.pact ? <span className="muted">Because of {PACT_PHRASE[d.pact as Relation]}, they let your scouts go home safely, and they know you looked.</span> : null}
           </p>
           {d.raidArrivesAt ? (
             <p className="warn small">Your raid hadn't arrived yet when your scouts looked (it lands at {fmtClock(d.raidArrivesAt)}). Scouts are faster than soldiers, so this is the colony before the fight.</p>
@@ -138,6 +190,7 @@ function ReportBody({ r, go }: { r: Report; go?: Nav }) {
       return (
         <p className="report-body">
           {d.scouts} {d.scouts === 1 ? 'scout' : 'scouts'} from {d.from} ({fmtCoords(d.origin)}) {d.caught ? 'were caught and killed near' : 'looked over'} {d.colony}.
+          {d.pact ? ` Because of ${PACT_PHRASE[d.pact as Relation]}, your ants let them look and go home.` : ''}
         </p>
       );
     case 'transport':
@@ -187,6 +240,8 @@ function ReportBody({ r, go }: { r: Report; go?: Nav }) {
           <Counts counts={d.tenders} />
         </div>
       );
+    case 'windfall':
+      return <WindfallReport d={d} go={go} />;
     case 'hold':
       return (
         <div className="report-body">

@@ -58,7 +58,7 @@ export const RESEARCH_BLURB: Record<string, string> = {
   nurse_workers: 'Dedicated nurses feed and groom the larvae. Units are raised 5% faster per level (up to 30%).',
   deep_digging: '+5 space in every colony, per level.',
   tunnel_engineering: 'Shore up tunnels with packed soil. Chambers are dug 5% faster per level (up to 30%).',
-  nuptial_flight: 'Unlocks the Winged Queen (Brood Hall 4). Rule one more colony at levels 1, 3, 5…',
+  nuptial_flight: 'Unlocks the Winged Queen (Brood Hall 4). Rule one more colony with every level.',
   supercolony: 'Lets you found or join a supercolony: up to 6 players who share one scent, never raid each other and can hold position at each other\'s nests.',
   // Scent
   pheromone_trails: 'Clearer trails. +10% travel speed per level.',

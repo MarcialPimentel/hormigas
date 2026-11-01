@@ -27,6 +27,7 @@ import {
   regrowHours,
   speciesKind,
   type CasteId,
+  blocksRaids,
 } from '@hormigas/shared';
 import type { Tx } from '../db';
 import type { ArrivalOutcome, Mission } from './missions';
@@ -34,12 +35,12 @@ import { GameError } from '../errors';
 import { cachedWorldSpeed } from '../world';
 import { advance, getColony, getPlayer, lockColony, saveColony } from '../colony';
 import { nestStateOf, syncNest } from './nests';
-import { herdOf } from './herds';
+import { heldOf, herdOf } from './herds';
 import { defineMission, garrisonUnits } from './missions';
 import { addReport } from './reports';
 import { refreshPointsAfterCommit } from './points';
 import { discover, requireKnown, smelledBy } from './discovery';
-import { areAllies } from './diplomacy';
+import { areAllies, relationOf } from './diplomacy';
 import { DIPLOMACY_MESSAGES } from '@hormigas/shared';
 
 defineMission('transport', {
@@ -47,6 +48,7 @@ defineMission('transport', {
     if (!targetColony) throw new GameError('bad_target', 'There is no colony there.');
     if (targetColony.id === colony.id) throw new GameError('bad_target', 'Pick a different colony.');
     if (herdOf(targetColony)) throw new GameError('bad_target', "Aphids don't take deliveries. Send ants to tend them instead.");
+    if (heldOf(targetColony)) throw new GameError('bad_target', 'A windfall is food to take, not a place to deliver to. Send ants to claim it instead.');
     if (targetColony.npc) throw new GameError('bad_target', "Wild ants don't accept deliveries.");
     await requireKnown(q, player.id, targetColony.id, 'send');
   },
@@ -125,27 +127,34 @@ defineMission('scout', {
     const found = await getColony(q, m.targetColonyId);
     const target = found.npc ? await syncNest(q, await lockColony(q, found.id), at) : advance(found, at);
     const attacker = await getPlayer(q, m.playerId);
-    // at an aphid herd, the tenders (if any) are the ones who might spot the scouts (docs/24-npcs.md)
+    // at an aphid herd or a windfall, the ants holding it (if any) are the ones who might spot the scouts (docs/24-npcs.md)
     const herd = herdOf(target);
-    const defender = await getPlayer(q, herd?.tender ? herd.tender.playerId : target.playerId);
+    const held = heldOf(target);
+    const defender = await getPlayer(q, held?.tender ? held.tender.playerId : target.playerId);
+    const windfall = held?.kind === 'windfall' ? held : null;
     const scouts = lvl(m.units, 'scout');
     const yours = scoutLevel(attacker.research);
     const theirs = scoutLevel(defender.research);
     const detail = scoutDetail(yours, theirs, scouts);
     const homeUnits = Object.values(target.units).reduce((a, b) => a + (b ?? 0), 0);
-    const chance = scoutDetectionChance(homeUnits, scouts, yours, theirs, researchSum(attacker.research, 'scoutStealth'));
-    const caught = createRng(randomSeed())() < chance;
+    // a truce or a shared scent: the hosts know who's looking and let them be (docs/23-supercolonies.md)
+    const pact = defender.isNpc ? null : (await relationOf(q, defender.id, attacker.id, at))?.relation ?? null;
+    const chance = blocksRaids(pact) ? 0 : scoutDetectionChance(homeUnits, scouts, yours, theirs, researchSum(attacker.research, 'scoutStealth'));
+    const caught = chance > 0 && createRng(randomSeed())() < chance;
 
     const nest = nestStateOf(target);
     const data: any = {
       colony: target.name,
-      owner: herd ? (herd.tender ? `Tended by ${defender.username}` : 'Untended') : nest ? SPECIES[nest.species].name : defender.username,
+      owner: windfall
+        ? windfall.tender ? `Held by ${defender.username}` : presentUnits(target.units).length > 0 ? 'Guarded by wild ants' : 'Nobody holds it'
+        : herd ? (herd.tender ? `Tended by ${defender.username}` : 'Untended') : nest ? SPECIES[nest.species].name : defender.username,
       ...(nest ? { wild: { species: nest.species, kind: speciesKind(nest.species), level: nest.level, style: SPECIES[nest.species].style } } : {}),
       ...(herd ? { herd: { level: herd.level, nectarPerHour: herdNectarPerHour(herd.level), storeCap: herdStoreCap(herd.level), tended: !!herd.tender, tenderName: herd.tender ? defender.username : null, style: HERDS.style } } : {}),
       coords: target ? { region: target.region, patch: target.patch, spot: target.spot } : m.target,
       detail,
       detectionChance: chance,
       caught,
+      ...(pact ? { pact } : {}),
       resources: target.resources,
       protectedEach: protectedAmount(target.chambers, defender.research),
     };
@@ -174,8 +183,9 @@ defineMission('scout', {
     await addReport(q, m.worldId, m.playerId, 'scout', `Scout report: ${target.name} (${coordsKey(m.target)})`, data, at);
     if (!defender.isNpc) await addReport(
       q, m.worldId, defender.id, 'scouted',
-      caught ? `Your colony killed ${scouts} enemy ${scouts === 1 ? 'scout' : 'scouts'}` : `Enemy scouts spotted near ${target.name}`,
-      { colony: target.name, from: attacker.username, origin: m.origin, scouts, caught },
+      pact ? `${attacker.username}'s scouts visited ${target.name}`
+        : caught ? `Your colony killed ${scouts} enemy ${scouts === 1 ? 'scout' : 'scouts'}` : `Enemy scouts spotted near ${target.name}`,
+      { colony: target.name, from: attacker.username, origin: m.origin, scouts, caught, ...(pact ? { pact } : {}) },
       at,
     );
     if (caught) {

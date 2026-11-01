@@ -11,7 +11,7 @@ A player starts with one colony and can found more by sending a **Winged Queen**
 3. Send her on a **Found Colony** mission to an empty spot.
 
 ## How many colonies
-- **1 + Nuptial Flight levels, rounded up to the next odd level:** level 1 → 2 colonies, level 3 → 3, level 5 → 4, and so on (`coloniesPer2Levels` in the research data: +1 at levels 1, 3, 5…).
+- **1 + Nuptial Flight level:** level 1 → 2 colonies, level 2 → 3, level 3 → 4, and so on (`coloniesPerLevel` in the research data). There is no top level for now, and the cost still doubles each level, so reaching the 5th colony costs about 240k in all, against 2M under the old rule (Marz, 1 Nov 2026: it was +1 only at levels 1, 3, 5, so level 2 added nothing; the faster pace is on purpose).
 - Queens already in the air count, so a player can't send two queens for one free slot.
 - Research is account-wide, so the cap is too.
 
@@ -21,7 +21,7 @@ A player starts with one colony and can found more by sending a **Winged Queen**
 - Uses a normal mission slot, pays Nectar for the trip, and can be recalled before it lands.
 - **On landing**, if the spot is still free and the player is still under the cap:
   - A new colony appears: **Queen's Chamber 1**, the same starting stores as a new player (500 Foliage, 500 Protein) **plus whatever was carried**, and the escorts as its first units.
-  - Its terrain and space come from the spot (see [04-colony](04-colony.md) § Terrain), plus Deep Digging. Choosing the spot is the strategic choice: a Rotting Log for Protein, a Creek Bank for Nectar.
+  - Its terrain and space come from the spot (see [04-colony](04-colony.md) § Terrain), plus Deep Digging. Choosing the spot is the strategic choice: each ground has one strength and one weakness, e.g. a Rotting Log for Protein but slower digs, Sandy Soil for fast digs far from rivals.
   - It's named "*player*'s Nest 2" (3, 4…) and can be renamed.
   - It gets its own nest events, and the patch gets a wild nest if it had none ([17-wild-nests](17-wild-nests.md)).
   - A report says where it was founded.
@@ -44,6 +44,6 @@ Every order goes out from the colony you're playing as. On the Missions screen, 
 - Should a brand-new colony get a short protection window of its own (e.g. 12 h), so a far-flung nest isn't raided before its first chamber?
 - Should a queen be able to fail the flight (birds, rain), as real queens often do? Proposal: no; a lost 4,000-resource queen with no counterplay feels bad (pillar 2).
 - Starting stores: same as a new player, or nothing but what was carried?
-- Cap: is "+1 at levels 1, 3, 5" the right pace once playtests show how fast players reach it?
+- Cap: is "+1 colony per level, no top level" the right pace once playtests show how fast players reach it? A `maxLevel` on Nuptial Flight would add a ceiling.
 - Abandoning or moving a colony: not possible yet. Needed when players regret a spot?
 - Art: show the nuptial flight leaving the nest (alates are drawn in [18-art-direction](18-art-direction.md)) and the new colony's first dig.

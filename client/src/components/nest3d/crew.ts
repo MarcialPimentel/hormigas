@@ -254,3 +254,32 @@ export function createCrew(r: Room, members: Member[], seed = 1, heap: (x: numbe
   };
 }
 export type Crew = ReturnType<typeof createCrew>;
+
+/** A guard's post on the mound: angle round the hole (0 = right, π/2 = straight back), radius, and her pace. */
+export interface Post {
+  a: number;
+  r: number;
+  ph: number;
+  sp: number;
+}
+/**
+ * Guard posts around the entrance: real guard ants stand about on the mound around the hole, not queued in the
+ * shaft. Ring k sits at radius 0.8 + 0.6k, posts about an ant-length apart, toward the back first (the front edge
+ * of the block is close), each milling a little either side of her post.
+ */
+export function guardPosts(n: number): Post[] {
+  const out: Post[] = [];
+  let sd = 77;
+  const r2 = () => ((sd = (sd * 1664525 + 1013904223) >>> 0) / 4294967296);
+  for (let ring = 0; out.length < n; ring++) {
+    const r = 0.8 + ring * 0.6;
+    // the back half and the sides; the innermost ring may go all the way round (it stays on the block)
+    const arc = ring === 0 ? Math.PI * 2 : Math.PI * 1.25;
+    const fits = Math.max(3, Math.floor((arc * r) / 0.85));
+    for (let k = 0; k < fits && out.length < n; k++) {
+      const a = ring === 0 ? (k / fits) * Math.PI * 2 + 0.4 : Math.PI * 0.5 + (k + 0.5) / fits * arc - arc / 2 + (ring % 2) * 0.2;
+      out.push({ a, r, ph: r2() * 6.28, sp: 0.25 + r2() * 0.35 });
+    }
+  }
+  return out;
+}

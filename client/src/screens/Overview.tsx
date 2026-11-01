@@ -8,6 +8,7 @@ import {
   spaceMax,
   spaceUsed,
   storageCapacity,
+  terrainTraits,
   workforce,
 } from '@hormigas/shared';
 import { api } from '../api';
@@ -113,7 +114,8 @@ export function Overview({ go }: { go: (screen: string, params?: any) => void })
         </h1>
       )}
       <p className="muted">
-        {fmtCoords(colony.coords)} · {terrain.name} · Space {spaceUsed(colony.chambers)}/{spaceMax(colony.baseSpace, state.player.research)} ·{' '}
+        {fmtCoords(colony.coords)} ·{' '}
+        <span className="has-tip" title={`Strength: ${terrainTraits(colony.terrain).strength}. Weakness: ${terrainTraits(colony.terrain).weakness}.`}>{terrain.name}</span> · Space {spaceUsed(colony.chambers)}/{spaceMax(colony.baseSpace, state.player.research)} ·{' '}
         {fmtFull(state.player.points.total)} points
       </p>
       {protectedLeft > 0 && (

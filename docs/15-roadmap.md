@@ -20,7 +20,7 @@ _Current as of Build 11 (2026-10-30)._ Hormigas has no GitHub milestones: each b
 | 9 | More wild things ([#67](https://github.com/MarcialPimentel/hormigas/issues/67)) | done |
 | 10 | Castes with a purpose ([#80](https://github.com/MarcialPimentel/hormigas/issues/80)) | done |
 | 11 | The full roster ([#83](https://github.com/MarcialPimentel/hormigas/issues/83)) | **current** (live) |
-| — | Between builds, live and listed under "Next build (unreleased)" in the CHANGELOG: dig plan ([#94](https://github.com/MarcialPimentel/hormigas/pull/94)), forage slots per colony ([#99](https://github.com/MarcialPimentel/hormigas/pull/99)), gathering ×2 ([#107](https://github.com/MarcialPimentel/hormigas/pull/107)), fights pay in loot ([#111](https://github.com/MarcialPimentel/hormigas/pull/111)), meeting the ants in the 3D nest ([#108](https://github.com/MarcialPimentel/hormigas/pull/108), [#110](https://github.com/MarcialPimentel/hormigas/pull/110)), grass that clears from view ([#109](https://github.com/MarcialPimentel/hormigas/pull/109), [#112](https://github.com/MarcialPimentel/hormigas/pull/112)) | done (live) |
+| — | Between builds, live and listed under "Next build (unreleased)" in the CHANGELOG: dig plan ([#94](https://github.com/MarcialPimentel/hormigas/pull/94)), forage slots per colony ([#99](https://github.com/MarcialPimentel/hormigas/pull/99)), gathering ×2 ([#107](https://github.com/MarcialPimentel/hormigas/pull/107)), meeting the ants in the 3D nest ([#108](https://github.com/MarcialPimentel/hormigas/pull/108), [#110](https://github.com/MarcialPimentel/hormigas/pull/110)), grass that clears from view ([#109](https://github.com/MarcialPimentel/hormigas/pull/109), [#112](https://github.com/MarcialPimentel/hormigas/pull/112)), fights pay in loot ([#111](https://github.com/MarcialPimentel/hormigas/pull/111)), the Media Worker ([#116](https://github.com/MarcialPimentel/hormigas/pull/116)), Nuptial Flight per level ([#118](https://github.com/MarcialPimentel/hormigas/pull/118)), ground strengths and weaknesses ([#120](https://github.com/MarcialPimentel/hormigas/pull/120)), parties leave through the entrance ([#121](https://github.com/MarcialPimentel/hormigas/pull/121)), windfalls and livelier random events ([#122](https://github.com/MarcialPimentel/hormigas/pull/122)) ([25-windfalls](25-windfalls.md)), cartoon ants ([#123](https://github.com/MarcialPimentel/hormigas/pull/123)) | done (live) |
 | 12 | Reasons to come back: daily colony tasks, Diapause, Field Journal | next (no issue yet) |
 | v1 | Supercolonies stage B, joint raids on spider dens, more defenses | later |
 
@@ -38,7 +38,7 @@ Keep the MVP **brutally small**. Its only job is to answer: *is the core loop fu
 - PvP rules: new-colony protection, strength protection, bash limit, Honeypot protection, Late Founding Boost (catch-up).
 - More colonies (Build 4): Nuptial Flight research, Winged Queen, Found Colony mission ([19-colonies](19-colonies.md)). Moved up from v1.
 - Wild nests: one NPC colony per patch with players, raidable, raiding back gently ([17-wild-nests](17-wild-nests.md)).
-- Army-ant swarms (Build 5): every colony is visited about every 4 days, 4 h warning, beatable ([20-swarms](20-swarms.md)).
+- Army-ant swarms (Build 5): every colony is visited every 1.5–2.5 days (about every 4 days until 1 Nov 2026), 4 h warning, beatable ([20-swarms](20-swarms.md)).
 - The tech tree (Build 6): research that needs other research, four branches (Jaws, Harvest, Nest, Scent), ten new research and Aphid Husbandry made playable ([21-tech-tree](21-tech-tree.md)).
 - Scents and neighbours (Build 7): the Missions tab shows your patch; unscouted colonies are player or wild scents; scout before you raid; new players are placed together, up to 4 per patch ([22-discovery](22-discovery.md), [11-world](11-world.md)).
 - Truces and supercolonies (alliances stage A): meet before you deal; truces with 24 h notice; supercolonies of up to 6 with the Supercolony research; Hold Position; a 3-day scent fade on leaving ([23-supercolonies](23-supercolonies.md)). Moved up from v1.
@@ -78,6 +78,7 @@ Keep the MVP **brutally small**. Its only job is to answer: *is the core loop fu
 - Supercolonies, stage B: joint raids, trade trails, a members' board (stage A shipped early: truces, supercolonies, hold position)
 - ~~Aphid herding (raidable livestock economy)~~ (moved up: Build 9)
 - Joint raids on spider dens (bosses from [24-npcs](24-npcs.md))
+- War trails: standing raid orders that keep marching while you're away, on the trade-trail plumbing (the next step after windfalls, [25-windfalls](25-windfalls.md))
 - More defenses (Sticky Resin; the Narrow Tunnel shipped in Build 10)
 - Reasons to come back (next, Build 12): daily colony tasks with no streak penalty, Diapause (vacation mode), a Field Journal of achievements and titles
 

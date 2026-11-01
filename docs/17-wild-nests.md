@@ -49,13 +49,13 @@ Different species make scouting matter: the right army depends on what lives nex
 - Nests can't receive transports.
 
 ### Regrowth
-- Lost soldiers, destroyed defenses and taken food **grow back over 24 h** (`regrowHours`, ÷ world speed), in a straight line toward the level's targets.
+- Lost soldiers, destroyed defenses and taken food **grow back over 12 h** (`regrowHours`, ÷ world speed; 24 h until 1 Nov 2026), in a straight line toward the level's targets, so a nest can be raided about twice a day.
 - Computed from elapsed time like everything else (see [13-tech](13-tech.md)): nothing ticks.
 - With the bash limit, one patch can take roughly one store's worth per day from its nest: about 8 hours of a nearby player's production. That's worth doing, but not worth more than growing your own economy (pillar 3).
 
 ### Nests raid back (gently)
-- Every **16–32 h** (÷ world speed) a nest may send a raid at **one player colony in its patch**.
-- **Never** at players under new-colony protection, inactive players (7+ days), or anyone a nest raided in the last 24 h.
+- Every **8–16 h** (÷ world speed; 16–32 h until 1 Nov 2026) a nest may send a raid at **one player colony in its patch**.
+- **Never** at players under new-colony protection, inactive players (7+ days), or anyone a nest raided in the last 12 h (`perPlayerCooldownHours`).
 - **Revenge:** players who raided this nest in the last 24 h are twice as likely to be picked.
 - **The party is small:** 30% of the nest's soldiers (castes with 25+ attack, so Workers stay home), at least 2 Minor Soldiers, and never worth more than 10% of the target's points (in resources, 1,000 per point). Numbers: `npc.json` → `raids`.
 - **The party is slow:** it marches at 10% speed, so a same-patch raid gives about **50 minutes of warning** at ×1. That's enough to send the army away or reinforce. "Raid incoming" notifications fire as for any raid.

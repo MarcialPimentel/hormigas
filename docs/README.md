@@ -32,10 +32,11 @@ _Current as of Build 11 (2026-10-30)._ Every doc, its role and its status. The n
 | [22-discovery.md](22-discovery.md) | System | current | Scents, scouting before raiding, known colonies |
 | [23-supercolonies.md](23-supercolonies.md) | System | current | Truces, supercolonies, Hold Position |
 | [24-npcs.md](24-npcs.md) | System | current | More wild things: aphid herds, termite mounds, spider dens, new nest species |
+| [25-windfalls.md](25-windfalls.md) | System | current | Windfalls: contested food in the wilds, claimed by fighting for it |
 | [playtest.md](playtest.md) | **Playtesting** | current | How to play the current build, test with two players, report feedback |
 | [DEPLOY.md](DEPLOY.md) | **Deploy** | current | How a merge reaches players, rollbacks, everyday commands, rebuilding the server (general terms) |
 | [art/3d-exploration.md](art/3d-exploration.md) | Art reference | reference | The approved 3D nest exploration (2026-10-28) and its mock-up |
 | [art/sunlit-microcosm.md](art/sunlit-microcosm.md) | Art reference | reference | The approved "sunlit microcosm" 3D direction (2026-10-30) and its mock-up |
 | [data/](data/) | Numbers | current | Costs, stats and formulas as JSON, read by the game; the data wins over any doc |
 
-_Last doc sync: 2026-10-30 at a82c17d (doc-sync)._
+_Last doc sync: 2026-11-01 at b4b7202 (doc-sync)._

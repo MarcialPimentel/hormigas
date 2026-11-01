@@ -1,9 +1,10 @@
 // Army-ant swarms (docs/20-swarms.md). Every player colony has one pending `swarm_spotted` event.
 // When it fires, a swarm sized against what the colony has at home sets off from the patch's wilds and
 // lands warningHours later as a raid. Survivors and their loot move on: nothing comes back.
-import { SWARM, WILDS_SPOT, createRng, isInactive, nextSwarmHours, randomSeed, res, swarmParty } from '@hormigas/shared';
+import { SWARM, WILDS_SPOT, createRng, isInactive, nextSwarmHours, groundDefensePct, productionPerHour, randomSeed, res, storageCapacity, swarmParty, swarmPrey } from '@hormigas/shared';
 import type { Tx } from '../db';
-import { advance, getPlayer, lockColony, type Colony } from '../colony';
+import { advance, getPlayer, lockColony, saveColony, type Colony } from '../colony';
+import { addReport } from './reports';
 import { recurringColonyEvent } from '../recurring';
 import { gameHoursMs, getWorld } from '../world';
 import { defineMission, launchMission } from './missions';
@@ -23,7 +24,7 @@ const swarms = recurringColonyEvent('swarm_spotted', {
     if (player.protectedUntil > t || isInactive(pvp, t) || busy.rowCount) return;
 
     const colony = advance(await lockColony(q, colonyId), t);
-    const units = swarmParty({ units: colony.units, defenses: colony.defenses, research: player.research }, randomSeed());
+    const units = swarmParty({ units: colony.units, defenses: colony.defenses, research: player.research, groundDefensePct: groundDefensePct(colony.terrain) }, randomSeed());
     await launchSwarm(q, colony, units, t);
   },
 });
@@ -48,6 +49,21 @@ export async function launchSwarm(q: Tx, colony: Colony, units: Record<string, n
   });
 }
 
+/** A beaten swarm drops the prey it was carrying at the colony's entrance (docs/20-swarms.md). */
+async function dropPrey(q: Tx, colonyId: number, at: number) {
+  let c = advance(await lockColony(q, colonyId), at);
+  const world = await getWorld(q);
+  const perHour = productionPerHour(c.chambers, c.terrain, world.speed, c.research, c.units);
+  const cap = storageCapacity(c.chambers, c.research);
+  const prey = swarmPrey(perHour.foliage + perHour.protein + perHour.nectar, cap.protein - c.resources.protein);
+  if (prey <= 0) return;
+  c = { ...c, resources: { ...c.resources, protein: c.resources.protein + prey } };
+  await saveColony(q, c);
+  await addReport(q, world.id, c.playerId, 'nest_event', 'The swarm dropped its prey', {
+    event: 'swarm_prey', text: 'Your soldiers broke the column. The army ants fled and left behind everything they had been carrying.', found: res(0, prey, 0), colonyId: c.id,
+  }, at);
+}
+
 defineMission('swarm', {
   async validate() {
     throw new GameError('bad_type', 'Only the wild sends swarms.');
@@ -55,6 +71,7 @@ defineMission('swarm', {
   async arrive(q, m, at) {
     if (!m.targetColonyId) return { home: false };
     await resolveRaid(q, m, at, { attackerName: SWARM.name });
+    if ((m.result as { winner?: string } | null)?.winner === 'defender') await dropPrey(q, m.targetColonyId, at);
     // a swarm never goes home: survivors and whatever they took march on
     m.units = {};
     m.cargo = res();

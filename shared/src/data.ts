@@ -44,6 +44,8 @@ export const CASTE_IDS = [
   'slave_maker',
   'desert_ant',
   'gardener_minim',
+  // the middle carrier between Worker and Hauler (docs/05-castes-units.md)
+  'media_worker',
   'hauler',
   'winged_queen',
   // allies (Symbiosis): other insects living with the colony, raised like castes
@@ -185,7 +187,7 @@ export const RESEARCH_NUMBER_EFFECTS = [
   // economy (economy.ts)
   'foliagePct', 'proteinPct', 'nectarPct', 'storagePct', 'protectedPct', 'buildTimePct', 'unitTimePct', 'researchTimePct', 'space',
   // missions and the map (world.ts, forage.ts)
-  'speedPct', 'missionSlots', 'forageSlotsPer2Levels', 'forageLuck', 'scoutLevel', 'scoutStealth', 'coloniesPer2Levels',
+  'speedPct', 'missionSlots', 'forageSlotsPer2Levels', 'forageLuck', 'scoutLevel', 'scoutStealth', 'coloniesPerLevel',
 ] as const;
 export type ResearchNumberEffect = (typeof RESEARCH_NUMBER_EFFECTS)[number];
 
@@ -213,7 +215,8 @@ export interface TerrainDef {
   name: string;
   spots: number[];
   space: [number, number];
-  mods: Partial<Record<'foliagePct' | 'proteinPct' | 'nectarPct' | 'buildTimePct', number>>;
+  /** buildTimePct below 0 digs faster; defensePct changes a player colony's defenses (not wild nests'). */
+  mods: Partial<Record<'foliagePct' | 'proteinPct' | 'nectarPct' | 'buildTimePct' | 'defensePct', number>>;
 }
 
 export const RESOURCES_DATA = resourcesJson as {

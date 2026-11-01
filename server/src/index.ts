@@ -8,6 +8,7 @@ import { refreshAllPoints } from './game/points';
 import { ensureWildNests } from './game/nests';
 import { ensureNestEvents } from './game/nestEvents';
 import { ensureSwarms } from './game/swarms';
+import { ensureWindfallDrops } from './game/windfalls';
 import { repairStuckMissions } from './game/missions';
 import { now } from './clock';
 
@@ -22,6 +23,8 @@ async function main() {
   if (armed) console.log(`Nest events scheduled for ${armed} colon${armed === 1 ? 'y' : 'ies'}`);
   const swarms = await tx((q) => ensureSwarms(q, world.id, now()));
   if (swarms) console.log(`Swarm sightings scheduled for ${swarms} colon${swarms === 1 ? 'y' : 'ies'}`);
+  const windfalls = await tx((q) => ensureWindfallDrops(q, world.id, now()));
+  if (windfalls) console.log(`Windfall drops scheduled for ${windfalls} site${windfalls === 1 ? '' : 's'}`);
   const stuck = await tx((q) => repairStuckMissions(q, world.id, now()));
   if (stuck) console.warn(`Repaired ${stuck} mission${stuck === 1 ? '' : 's'} that had lost their arrival or return event`);
   const app = await buildApp({ logger: true });

@@ -49,10 +49,12 @@ describe('costs and times', () => {
     expect(chamberBuildSeconds('leaf_garden', 4, ctx)).toBe(101);
     expect(chamberBuildSeconds('leaf_garden', 1, { ...ctx, worldSpeed: 100 })).toBe(5);
   });
-  it('excavation, sandy soil and world speed reduce time', () => {
+  it('excavation, sandy soil and world speed reduce time; a rotting log slows it', () => {
     const base = chamberBuildSeconds('leaf_garden', 10, { worldSpeed: 1, excavation: 0, terrain: 'grassland' });
     expect(chamberBuildSeconds('leaf_garden', 10, { worldSpeed: 1, excavation: 1, terrain: 'grassland' })).toBe(Math.round(base / 2));
-    expect(chamberBuildSeconds('leaf_garden', 10, { worldSpeed: 1, excavation: 0, terrain: 'sandy_soil' })).toBe(Math.round(base * 0.9));
+    // within a second: base is already rounded
+    expect(Math.abs(chamberBuildSeconds('leaf_garden', 10, { worldSpeed: 1, excavation: 0, terrain: 'sandy_soil' }) - base * 0.8)).toBeLessThanOrEqual(1);
+    expect(Math.abs(chamberBuildSeconds('leaf_garden', 10, { worldSpeed: 1, excavation: 0, terrain: 'rotting_log' }) - base * 1.15)).toBeLessThanOrEqual(1);
     expect(chamberBuildSeconds('leaf_garden', 10, { worldSpeed: 5, excavation: 0, terrain: 'grassland' })).toBe(Math.round(base / 5));
   });
   it('pacing target: level 10 production chamber takes ~20 minutes at speed 1', () => {

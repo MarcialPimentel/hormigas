@@ -7,6 +7,7 @@ import { useGame } from '../game';
 import { fmtClock, fmtCoords, fmtDuration, fmtFull } from '../format';
 import { Empty, TRIP_LOAD, tripAnt } from './ui';
 import { useMotion } from '../motion';
+import { incomingName, pactNote } from '../incoming';
 import type { Caste } from '../art/ants';
 
 type Coords = { region: number; patch: number; spot: number };
@@ -25,7 +26,6 @@ const soldierLed = (units: Record<string, number>) => {
   return all > 0 && f * 2 >= all;
 };
 const label = (t: string) => (MISSION_TYPES as Record<string, { label: string }>)[t]?.label ?? t;
-const INCOMING: Record<string, string> = { swarm: 'Army ant swarm', raid: 'Raid', scout: 'Enemy scouts', hold: 'Allied soldiers', transport: 'Delivery' };
 
 /** How far along a trip is, 0…1 across the whole bar, and what it's doing now. */
 export function tripProgress(m: { status: string; departAt: number; arriveAt: number; returnAt?: number | null; type: string }, now: number) {
@@ -91,25 +91,27 @@ export function UnderWay({ onFocus, compact, limit }: { onFocus?: FocusParty; co
                 <div className="uw-head">
                   {go ? (
                     <button className="linkish uw-title" onClick={go} title="Show it on the patch">
-                      {INCOMING[i.type] ?? i.type}
+                      {incomingName(i)}
                     </button>
                   ) : (
-                    <strong className="uw-title">{INCOMING[i.type] ?? i.type}</strong>
+                    <strong className="uw-title">{incomingName(i)}</strong>
                   )}
                   <span className="uw-time">{i.arriveAt > now ? fmtDuration(i.arriveAt - now) : 'now'}</span>
                 </div>
                 <Bar x={x} oneWay tone={i.hostile ? 'hostile' : 'friend'} caste={i.type === 'swarm' ? 'army' : i.type === 'raid' || i.type === 'hold' ? 'soldier' : 'worker'} />
-                {i.hostile && (i.type === 'swarm' || (i.type === 'raid' && (i.wild || i.herd))) && (
+                {i.hostile && (i.type === 'swarm' || ((i.type === 'raid' || i.type === 'claim') && (i.wild || i.herd))) && (
                   <p className="uw-advice">
                     {i.type === 'swarm'
                       ? "Sized so the army you have at home now usually wins. Keep your soldiers in to fight it and win corpses to haul, or send them away and let it take some unprotected food. It never touches chambers."
-                      : i.herd
+                      : i.windfall
+                        ? "They're coming to fight your ants for the windfall. Send more soldiers to hold it, or call your ants home with a load before they land."
+                        : i.herd
                         ? "They're after your tenders and the honeydew. Send more soldiers to tend it, or call your tenders home before they land."
                         : 'Wild ants. Keep soldiers at home to fight them off, or send your army away until they’ve gone.'}
                   </p>
                 )}
                 <p className="uw-sub">
-                  {i.from}{i.unitCount && i.type !== 'scout' ? ` · ${fmtFull(i.unitCount)} ${i.type === 'swarm' ? 'ants' : 'units'}` : ''} → {i.herd ? 'your aphid herd' : homes.get(i.targetColonyId)?.name ?? 'you'}
+                  {i.from}{pactNote(i)}{i.unitCount && i.type !== 'scout' ? ` · ${fmtFull(i.unitCount)} ${i.type === 'swarm' ? 'ants' : 'units'}` : ''} → {i.windfall ? 'your windfall' : i.herd ? 'your aphid herd' : homes.get(i.targetColonyId)?.name ?? 'you'}
                 </p>
               </li>
             );

@@ -20,7 +20,7 @@ Combat is automatic and resolves instantly when a raid arrives. The skill is in 
 11. **Fall-back order:** after a round in which the raiders have lost at least their chosen share of their army's worth (Foliage + Protein + Nectar cost), they break off (below).
 12. Battle ends when one side is wiped out, the raiders fall back, or after round 6 (draw).
 
-Research bonuses (Mandibles, Chitin, Guard Formation, and each caste's instinct) apply to both sides' stats before the battle.
+Research bonuses (Mandibles, Chitin, Guard Formation, and each caste's instinct) apply to both sides' stats before the battle. A player colony's ground adds to its defenses' stats too: Sandy Soil −15% ([04-colony](04-colony.md#terrain)).
 
 **Slave-makers** (Build 11): after a won raid, the raiders carry up to 400 Protein of corpses each straight home; only the rest is left on the field.
 

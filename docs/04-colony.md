@@ -1,6 +1,6 @@
 # 04 — Colony
 
-**Version:** 0.2
+**Version:** 0.3
 **Data:** [`data/chambers.json`](data/chambers.json), [`data/terrain.json`](data/terrain.json), [`data/nest-events.json`](data/nest-events.json)
 
 ## Colony basics
@@ -43,29 +43,36 @@
 - Cancelling refunds 100% in MVP (tune later).
 
 ## Terrain
-Terrain is determined by the colony's spot in a patch and affects space and production.
+Terrain is determined by the colony's spot in a patch. **Every ground has one strength and one weakness** (Marz, 1 Nov 2026), each from how real ants live there (pillar 4), plus its space.
 
-| Terrain | Spots | Space | Modifiers |
-|---|---|---|---|
-| Sunny Meadow | 1–2 | 120–150 | Foliage +20%, Nectar −10% |
-| Sandy Soil | 3–4 | 140–170 | Easy digging: build time −10% |
-| Grassland | 5–8 | 160–200 | No modifiers |
-| Rotting Log | 9–10 | 140–170 | Protein +20% |
-| Creek Bank | 11–12 | 120–150 | Nectar +25%, Foliage −10% |
+| Terrain | Spots | Space | Strength | Weakness |
+|---|---|---|---|---|
+| Sunny Meadow | 1–2 | 120–150 | Foliage +20% (sun-warmed leaves) | Nectar −10% (dry, few aphids) |
+| Sandy Soil | 3–4 | 160–200 | Digs 20% faster (sand digs easily and deep) | Defenses 15% weaker (sand walls crumble) |
+| Grassland | 5–8 | 160–200 | Biggest nest | No food bonus |
+| Rotting Log | 9–10 | 140–170 | Protein +20% (full of insects) | Digs 15% slower (wood is slow to chew) |
+| Creek Bank | 11–12 | 120–150 | Nectar +25% (aphids on the reeds) | Foliage −10% (damp, leaves rot) |
+
+- The weaknesses sit on a different axis from the strengths where it makes a real choice: a Sandy Soil colony out-builds Grassland far from rivals, but on a border its walls let it down.
+- **Defenses** on Sandy Soil: all three combat stats of the colony's defenses −15%, added to Formic Acid's bonus. Only player colonies; wild nests on that ground keep their own tuning ([17-wild-nests](17-wild-nests.md)). The battle preview counts it.
+- **Space** is rolled once, when a colony is founded. When Sandy Soil's range went up from 140–170, existing Sandy Soil colonies got +20 (migration 014).
+- Every player starts on Grassland, so first experiences stay even ([11-world](11-world.md#starting-placement)).
+- The spot card shows the strength in green, the weakness in red and the space; the Colony screen shows them on the ground's name.
 
 Choosing where to found a colony is a meaningful strategic choice.
 
 ## Nest events
-Small, rare surprises inside the nest, so a check-in isn't always exactly what you left (pillars 1 and 4). Numbers in [`data/nest-events.json`](data/nest-events.json).
+Small surprises inside the nest, so a check-in isn't always exactly what you left (pillars 1 and 4). Numbers in [`data/nest-events.json`](data/nest-events.json).
 
-- **About once a day** per colony (every 16–32 h at world speed ×1, ÷ world speed), offline too. Each colony has one pending `nest_event` in the event queue; it re-arms itself after firing.
+- **Two to four a day** per colony (every 6–12 h at world speed ×1, ÷ world speed), offline too. Was every 16–32 h until 1 Nov 2026 (more action, [00-vision](00-vision.md#decision-log)). Each colony has one pending `nest_event` in the event queue; it re-arms itself after firing.
 - **Only good or harmless.** Risk stays in forage, where the player chose it; a random loss with no counterplay feels bad in an idle game (pillar 2).
-  - Gifts: a lost beetle (Protein), an aphid boom (Nectar), a gust of leaves (Foliage). Each is **about an hour of that resource's production** (at least 40), never into full storage: a full resource's gifts are skipped, and a gift is capped to what fits.
-  - Harmless moments: rain drumming on the soil, a neighbouring nest's nuptial flight, diggers breaking into an old empty tunnel. Flavour only.
+  - Gifts: a lost beetle (Protein), an aphid boom (Nectar), a gust of leaves (Foliage). Each is **about two hours of that resource's production** (at least 40), never into full storage: a full resource's gifts are skipped, and a gift is capped to what fits.
+  - Harmless moments: rain drumming on the soil, a neighbouring nest's nuptial flight, diggers breaking into an old empty tunnel. Flavour only, and only 15% of events (85% are gifts).
 - Each event files a report with flavour text, and plays a short animation in the Nest View if the game is open.
 - **Inactive players get none** (same rule as raids: 7 days without logging in), so abandoned colonies don't pile up free loot. The timer keeps running.
-- About +4% income over a day. Not power, and the same for everyone (pillar 3).
+- About +6% of each resource's daily income (about 2.3 gifts a day, each 2 h of one resource; was about +1%). Not power, and the same for everyone (pillar 3).
 
 ## Open Questions
+- ~~Spots 3–4 felt like only negatives~~ Decided 2026-11-01: every ground has one strength and one weakness (see Terrain; idea [#119](https://github.com/MarcialPimentel/hormigas/issues/119)).
 - ~~Should the chamber queue grow?~~ Decided 2026-10-30: a dig plan of one, unlocked by Queen's Chamber 4, paid when it starts (see Build rules). A second slot later, through research, only if playtests show one isn't enough. Never sold.
 - Do we want a visible penalty for destroyed chambers? Proposal: no — chambers can't be destroyed in v0.1.
