@@ -649,7 +649,23 @@ pre.report-body { white-space: pre-wrap; overflow-x: auto; }
   .content:has(.tt-wrap) .tt-scroll { flex: 1; max-height: none; }
   .content:has(.tt-wrap) .tt-card { position: static; align-self: start; max-height: 100%; overflow: auto; }
 }
-.tt-main { min-width: 0; }
+.tt-main { min-width: 0; position: relative; }
+/* the tree is its own map: drag to move it, Ctrl + scroll or the buttons to zoom (the zoom wraps heads and tree) */
+@media (hover: hover) and (pointer: fine) { .tt-scroll { cursor: grab; } }
+.tt-scroll.dragging, .tt-scroll.dragging .tt-node { cursor: grabbing; user-select: none; }
+.tt-zoom { width: max-content; }
+.tt-zoom-ctl { position: absolute; top: 34px; right: 14px; z-index: 4; display: flex; gap: 4px; }
+.tt-zoom-ctl button { min-width: 30px; height: 30px; padding: 0 9px; border: 1px solid var(--seam); border-radius: 8px; background: var(--wall); color: var(--sand); font: 700 0.85rem/1 var(--font-body); cursor: pointer; box-shadow: 0 2px 6px rgba(20, 14, 9, 0.18); }
+.tt-zoom-ctl button:hover:not(:disabled) { border-color: var(--honey); }
+.tt-zoom-ctl button:disabled { opacity: 0.45; cursor: default; }
+/* in the Whole Yard's Research panel too: the tree box scrolls inside and the card stays beside it */
+.yard-panel-body:has(.tt-wrap) { overflow: hidden; display: flex; flex-direction: column; }
+.yard-panel-body:has(.tt-wrap) > .stack { flex: 1; min-height: 0; grid-template-rows: auto minmax(0, 1fr); }
+.yard-panel-body:has(.tt-wrap) > .stack > .panel:has(.tt-wrap) { display: flex; flex-direction: column; min-height: 0; }
+.yard-panel-body .tt-wrap { flex: 1; min-height: 0; align-items: stretch; }
+.yard-panel-body .tt-main { display: flex; flex-direction: column; min-height: 0; }
+.yard-panel-body .tt-scroll { flex: 1; max-height: none; }
+.yard-panel-body .tt-card { position: static; align-self: start; max-height: 100%; overflow: auto; }
 .tt-scroll { overflow: auto; max-height: min(72vh, 660px); border: 1px solid var(--seam); border-radius: var(--r-sm); background: var(--soil); overscroll-behavior: contain; }
 .tt-heads { position: sticky; top: 0; z-index: 3; height: 26px; background: var(--soil); border-bottom: 1px solid var(--seam); }
 .tt-head { position: absolute; top: 4px; text-align: center; font-size: 0.72rem; font-weight: 700; color: var(--muted); letter-spacing: 0.03em; white-space: nowrap; }

@@ -2,7 +2,7 @@
 // Columns follow the Pheromone Chamber level a research needs; a research that builds on another at the same
 // chamber level sits one step to its right. Lanes are the four branches. Trails are drawn from every
 // `research.<id>` key in `unlock`, so the tree always matches docs/data/research.json.
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 import {
   CHAMBERS,
   RESEARCH,
@@ -27,6 +27,18 @@ import { whyShort } from '../describe';
 import { Cost, Pic } from './ui';
 
 const NODE_W = 112; // a research: picture tile, name, one status line
+/** How far the tree zooms out and in (1 = drawn size). */
+const ZMIN = 0.25, ZMAX = 1.6;
+const ZOOM_KEY = 'hormigas.treeZoom';
+const clampZoom = (z: number) => Math.max(ZMIN, Math.min(ZMAX, z));
+function savedZoom() {
+  try {
+    const z = Number(localStorage.getItem(ZOOM_KEY));
+    return z >= ZMIN && z <= ZMAX ? z : 1;
+  } catch {
+    return 1;
+  }
+}
 const COL_W = 156;
 const ROW_H = 128;
 const LANE_TOP = 26; // room for the branch name
@@ -161,6 +173,90 @@ export function ResearchTree({ blurbs }: { blurbs: Record<string, string> }) {
   const [hover, setHover] = useState<ResearchId | null>(null);
   const [pinned, setPinned] = useState<ResearchId | null>(null);
   const scroller = useRef<HTMLDivElement>(null);
+  // the tree is a map of its own: drag to move around it, scroll, and zoom (Ctrl + scroll, pinch, or the buttons)
+  const [zoom, setZoom] = useState(savedZoom);
+  const zoomRef = useRef(zoom);
+  const anchor = useRef<{ ux: number; uy: number; px: number; py: number } | null>(null);
+  const drag = useRef<{ x: number; y: number; l: number; t: number; id: number; moved: boolean } | null>(null);
+  const dragged = useRef(false);
+  const [dragging, setDragging] = useState(false);
+
+  /** Zoom to `z`, keeping the point under (px, py) (pixels inside the tree box; default its middle) where it is. */
+  const zoomTo = (z: number, px?: number, py?: number) => {
+    const el = scroller.current;
+    const old = zoomRef.current;
+    z = clampZoom(z);
+    if (!el || Math.abs(z - old) < 0.001) return;
+    px ??= el.clientWidth / 2;
+    py ??= el.clientHeight / 2;
+    anchor.current = { ux: (el.scrollLeft + px) / old, uy: (el.scrollTop + py) / old, px, py };
+    zoomRef.current = z;
+    setZoom(z);
+    try {
+      localStorage.setItem(ZOOM_KEY, String(z));
+    } catch {
+      /* private window: the zoom just isn't remembered */
+    }
+  };
+  // once the new zoom is drawn, scroll so the anchored point is back under the cursor
+  useLayoutEffect(() => {
+    const el = scroller.current, a = anchor.current;
+    if (!el || !a) return;
+    anchor.current = null;
+    el.scrollLeft = a.ux * zoom - a.px;
+    el.scrollTop = a.uy * zoom - a.py;
+  }, [zoom]);
+  // Ctrl + scroll (and a trackpad pinch, which arrives as one) zooms toward the cursor; plain scrolling still scrolls
+  useEffect(() => {
+    const el = scroller.current;
+    if (!el) return;
+    const onWheel = (e: WheelEvent) => {
+      if (!e.ctrlKey && !e.metaKey) return;
+      e.preventDefault();
+      const r = el.getBoundingClientRect();
+      zoomTo(zoomRef.current * Math.exp(-Math.max(-60, Math.min(60, e.deltaY)) * 0.004), e.clientX - r.left, e.clientY - r.top);
+    };
+    el.addEventListener('wheel', onWheel, { passive: false });
+    return () => el.removeEventListener('wheel', onWheel);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  const fitWhole = () => {
+    const el = scroller.current;
+    if (!el) return;
+    zoomTo(Math.min(el.clientWidth / LAYOUT.width, (el.clientHeight - 4) / (LAYOUT.height + 26)), 0, 0);
+  };
+  // mouse: drag anywhere on the tree to move it (a short press is still a click); touch scrolls natively
+  const onDown = (e: ReactPointerEvent) => {
+    dragged.current = false;
+    const el = scroller.current;
+    if (!el || e.pointerType !== 'mouse' || e.button !== 0) return;
+    drag.current = { x: e.clientX, y: e.clientY, l: el.scrollLeft, t: el.scrollTop, id: e.pointerId, moved: false };
+  };
+  const onMove = (e: ReactPointerEvent) => {
+    const d = drag.current, el = scroller.current;
+    if (!d || !el) return;
+    if (!(e.buttons & 1)) return endDrag();
+    const dx = e.clientX - d.x, dy = e.clientY - d.y;
+    if (!d.moved) {
+      if (Math.hypot(dx, dy) < 5) return;
+      d.moved = true;
+      el.setPointerCapture(d.id);
+      setDragging(true);
+    }
+    el.scrollLeft = d.l - dx;
+    el.scrollTop = d.t - dy;
+  };
+  const endDrag = () => {
+    const d = drag.current;
+    drag.current = null;
+    if (!d?.moved) return;
+    dragged.current = true;
+    setDragging(false);
+    try {
+      scroller.current?.releasePointerCapture(d.id);
+    } catch {
+      /* already released */
+    }
+  };
 
   const job = state?.player.researchJob ?? null;
   const pher = colony ? lvl(colony.chambers, 'pheromone_chamber') : 0;
@@ -171,8 +267,9 @@ export function ResearchTree({ blurbs }: { blurbs: Record<string, string> }) {
     if (!el) return;
     const active = job ? LAYOUT.pos[job.research as ResearchId] : undefined;
     const fx = frontierX(pher);
-    if (active) el.scrollLeft = Math.max(0, active.x + NODE_W / 2 - el.clientWidth / 2);
-    else if (fx !== undefined) el.scrollLeft = Math.max(0, fx - el.clientWidth * 0.8);
+    const z = zoomRef.current;
+    if (active) el.scrollLeft = Math.max(0, (active.x + NODE_W / 2) * z - el.clientWidth / 2);
+    else if (fx !== undefined) el.scrollLeft = Math.max(0, fx * z - el.clientWidth * 0.8);
   }, []); // only on first show
 
   useEffect(() => {
@@ -211,7 +308,23 @@ export function ResearchTree({ blurbs }: { blurbs: Record<string, string> }) {
   return (
     <div className="tt-wrap">
       <div className="tt-main">
-        <div className="tt-scroll" ref={scroller} onPointerLeave={() => setHover(null)}>
+        <div
+          className={`tt-scroll${dragging ? ' dragging' : ''}`}
+          ref={scroller}
+          onPointerLeave={() => setHover(null)}
+          onPointerDown={onDown}
+          onPointerMove={onMove}
+          onPointerUp={endDrag}
+          onPointerCancel={endDrag}
+          onClickCapture={(e) => {
+            // the end of a drag isn't a click on whatever research it ended over
+            if (!dragged.current) return;
+            dragged.current = false;
+            e.stopPropagation();
+            e.preventDefault();
+          }}
+        >
+          <div className="tt-zoom" style={{ zoom }}>
           <div className="tt-heads" style={{ width: LAYOUT.width }}>
             {LAYOUT.groups.map((g) => (
               <span key={g.pher} className={`tt-head${g.pher <= pher ? ' reached' : ''}`} style={{ left: g.x, width: g.width - (COL_W - NODE_W) }}>
@@ -276,6 +389,13 @@ export function ResearchTree({ blurbs }: { blurbs: Record<string, string> }) {
               );
             })}
           </div>
+          </div>
+        </div>
+        <div className="tt-zoom-ctl" role="group" aria-label="Zoom the tree">
+          <button type="button" onClick={() => zoomTo(zoom * 1.25)} disabled={zoom >= ZMAX} aria-label="Zoom in" title="Zoom in (or Ctrl + scroll)">+</button>
+          <button type="button" onClick={() => zoomTo(zoom / 1.25)} disabled={zoom <= ZMIN} aria-label="Zoom out" title="Zoom out (or Ctrl + scroll)">−</button>
+          <button type="button" onClick={fitWhole} title="Fit the whole tree in the box">Whole tree</button>
+          {Math.abs(zoom - 1) > 0.01 && <button type="button" onClick={() => zoomTo(1)} title="Back to full size">100%</button>}
         </div>
         <div className="tt-legend" aria-hidden="true">
           <span><svg width="30" height="8"><path d="M2,4 H28" className="tt-trail on" /></svg>trail laid</span>
