@@ -21,7 +21,7 @@ A player starts with one colony and can found more by sending a **Winged Queen**
 - Uses a normal mission slot, pays Nectar for the trip, and can be recalled before it lands.
 - **On landing**, if the spot is still free and the player is still under the cap:
   - A new colony appears: **Queen's Chamber 1**, the same starting stores as a new player (500 Foliage, 500 Protein) **plus whatever was carried**, and the escorts as its first units.
-  - Its terrain and space come from the spot (see [04-colony](04-colony.md) § Terrain), plus Deep Digging. Choosing the spot is the strategic choice: a Rotting Log for Protein, a Creek Bank for Nectar.
+  - Its terrain and space come from the spot (see [04-colony](04-colony.md) § Terrain), plus Deep Digging. Choosing the spot is the strategic choice: each ground has one strength and one weakness, e.g. a Rotting Log for Protein but slower digs, Sandy Soil for fast digs far from rivals.
   - It's named "*player*'s Nest 2" (3, 4…) and can be renamed.
   - It gets its own nest events, and the patch gets a wild nest if it had none ([17-wild-nests](17-wild-nests.md)).
   - A report says where it was founded.

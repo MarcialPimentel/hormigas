@@ -31,6 +31,29 @@ export function validCoords(c: Coords, allowWilds = false, allowSites = false): 
   );
 }
 
+const FOOD_NAMES: Record<string, string> = { foliagePct: 'Foliage', proteinPct: 'Protein', nectarPct: 'Nectar' };
+
+/**
+ * A ground's one strength and one weakness in plain words (docs/04-colony.md § Terrain), read from its numbers:
+ * Sandy Soil → "Digs 20% faster" / "Defenses 15% weaker". Grassland has no modifiers: the biggest nest, no food bonus.
+ */
+export function terrainTraits(terrain: TerrainId): { strength: string; weakness: string } {
+  const good: string[] = [];
+  const bad: string[] = [];
+  for (const [k, v] of Object.entries(TERRAIN[terrain].mods) as [string, number][]) {
+    if (!v) continue;
+    const n = Math.abs(v);
+    if (FOOD_NAMES[k]) (v > 0 ? good : bad).push(`${FOOD_NAMES[k]} ${v > 0 ? '+' : '−'}${n}%`);
+    else if (k === 'buildTimePct') (v < 0 ? good : bad).push(`Digs ${n}% ${v < 0 ? 'faster' : 'slower'}`);
+    else if (k === 'defensePct') (v > 0 ? good : bad).push(`Defenses ${n}% ${v > 0 ? 'stronger' : 'weaker'}`);
+  }
+  const roomiest = TERRAIN[terrain].space[1] >= Math.max(...TERRAIN_IDS.map((t) => TERRAIN[t].space[1]));
+  return {
+    strength: good.join(', ') || (roomiest ? 'Biggest nest' : 'None'),
+    weakness: bad.join(', ') || (good.length ? 'None' : 'No food bonus'),
+  };
+}
+
 export function terrainForSpot(spot: number): TerrainId {
   return TERRAIN_IDS.find((t) => TERRAIN[t].spots.includes(spot)) ?? 'grassland';
 }

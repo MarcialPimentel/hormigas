@@ -215,7 +215,8 @@ export interface TerrainDef {
   name: string;
   spots: number[];
   space: [number, number];
-  mods: Partial<Record<'foliagePct' | 'proteinPct' | 'nectarPct' | 'buildTimePct', number>>;
+  /** buildTimePct below 0 digs faster; defensePct changes a player colony's defenses (not wild nests'). */
+  mods: Partial<Record<'foliagePct' | 'proteinPct' | 'nectarPct' | 'buildTimePct' | 'defensePct', number>>;
 }
 
 export const RESOURCES_DATA = resourcesJson as {
