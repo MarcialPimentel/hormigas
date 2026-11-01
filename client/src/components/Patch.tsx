@@ -151,7 +151,7 @@ export const W = 690;
 export const H = 240;
 const GROUND = 64;
 const SPOT_W = 45; // spots 1..12 share 0..540, the wilds take the rest: the wilds (13) and its wild sites (14+)
-const spotX = (n: number) => (n === WILDS_SPOT ? 562 : n > WILDS_SPOT ? 562 + (n - WILDS_SPOT) * 29 : (n - 0.5) * SPOT_W);
+const spotX = (n: number) => (n === WILDS_SPOT ? 558 : n > WILDS_SPOT ? 558 + (n - WILDS_SPOT) * 26 : (n - 0.5) * SPOT_W);
 const BAND: Record<TerrainId, { fill: string; ink: string }> = {
   sunny_meadow: { fill: '#B9C95A', ink: '#2B1D13' },
   sandy_soil: { fill: '#D9C08A', ink: '#2B1D13' },
@@ -243,7 +243,7 @@ export function SpotMark({ s, at, home, selected, onPick }: { s: Spot; at: Coord
       onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), onPick())}
     >
       <title>{label}</title>
-      <rect x={x - (site ? 14 : wilds ? 15 : SPOT_W / 2)} y={GROUND + 20} width={site ? 28 : wilds ? 30 : SPOT_W} height={H - GROUND - 20} fill="transparent" />
+      <rect x={x - (site ? 13 : wilds ? 13 : SPOT_W / 2)} y={GROUND + 20} width={site ? 26 : wilds ? 26 : SPOT_W} height={H - GROUND - 20} fill="transparent" />
       {selected && <ellipse cx={x} cy={y} rx={22} ry={12} fill="none" stroke="#F6F7F0" strokeWidth={2.5} />}
       {c && scent ? (
         <>
@@ -604,7 +604,7 @@ export function SpotCard({ s, at, onAct }: { s: Spot; at: Coords; onAct: (type: 
       {c && scent && <p className="why small">{c.hint === 'herd' ? DISCOVERY_MESSAGES.tend_needs_scout : DISCOVERY_MESSAGES.raid_needs_scout}</p>}
       {pact && <p className="muted small">{pact}</p>}
       {s.corpses > 0 && <span className="corpses">{fmtNum(s.corpses)} protein in corpses</span>}
-      {c && !c.mine && !scent && !herd && <ScoutView at={at} />}
+      {c && !c.mine && !scent && !herd && !windfall?.yours && <ScoutView at={at} />}
       <Movements at={at} home={colony.coords} />
     </div>
   );

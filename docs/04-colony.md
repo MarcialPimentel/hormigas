@@ -56,15 +56,15 @@ Terrain is determined by the colony's spot in a patch and affects space and prod
 Choosing where to found a colony is a meaningful strategic choice.
 
 ## Nest events
-Small, rare surprises inside the nest, so a check-in isn't always exactly what you left (pillars 1 and 4). Numbers in [`data/nest-events.json`](data/nest-events.json).
+Small surprises inside the nest, so a check-in isn't always exactly what you left (pillars 1 and 4). Numbers in [`data/nest-events.json`](data/nest-events.json).
 
-- **About once a day** per colony (every 16–32 h at world speed ×1, ÷ world speed), offline too. Each colony has one pending `nest_event` in the event queue; it re-arms itself after firing.
+- **Two to four a day** per colony (every 6–12 h at world speed ×1, ÷ world speed), offline too. Was every 16–32 h until 1 Nov 2026 (more action, [00-vision](00-vision.md#decision-log)). Each colony has one pending `nest_event` in the event queue; it re-arms itself after firing.
 - **Only good or harmless.** Risk stays in forage, where the player chose it; a random loss with no counterplay feels bad in an idle game (pillar 2).
-  - Gifts: a lost beetle (Protein), an aphid boom (Nectar), a gust of leaves (Foliage). Each is **about an hour of that resource's production** (at least 40), never into full storage: a full resource's gifts are skipped, and a gift is capped to what fits.
-  - Harmless moments: rain drumming on the soil, a neighbouring nest's nuptial flight, diggers breaking into an old empty tunnel. Flavour only.
+  - Gifts: a lost beetle (Protein), an aphid boom (Nectar), a gust of leaves (Foliage). Each is **about two hours of that resource's production** (at least 40), never into full storage: a full resource's gifts are skipped, and a gift is capped to what fits.
+  - Harmless moments: rain drumming on the soil, a neighbouring nest's nuptial flight, diggers breaking into an old empty tunnel. Flavour only, and only 15% of events (85% are gifts).
 - Each event files a report with flavour text, and plays a short animation in the Nest View if the game is open.
 - **Inactive players get none** (same rule as raids: 7 days without logging in), so abandoned colonies don't pile up free loot. The timer keeps running.
-- About +4% income over a day. Not power, and the same for everyone (pillar 3).
+- About +6% of each resource's daily income (about 2.3 gifts a day, each 2 h of one resource; was about +1%). Not power, and the same for everyone (pillar 3).
 
 ## Open Questions
 - ~~Should the chamber queue grow?~~ Decided 2026-10-30: a dig plan of one, unlocked by Queen's Chamber 4, paid when it starts (see Build rules). A second slot later, through research, only if playtests show one isn't enough. Never sold.

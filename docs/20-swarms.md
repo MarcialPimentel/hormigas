@@ -8,16 +8,21 @@ Every now and then a column of army ants marches out of the wilds toward a colon
 ## Decisions (Marz, 27–29 Oct 2026)
 - **An army-ant swarm**, a new roaming enemy, not more raids from the patch's wild nest, so it feels different.
 - **4 hours' warning.** Players check in a few times a day, so most see it coming.
-- **About once every 4 days per colony** (each colony has its own schedule). More colonies means defending more often: expanding is a commitment.
+- **About once every 4 days per colony** (each colony has its own schedule). More colonies means defending more often: expanding is a commitment. _Changed 1 Nov 2026: every 1.5–2.5 days._
 - **Beatable:** a colony that keeps its army home wins about 70% of the time.
-- **Beating it leaves corpses to haul**, like any battle. No bonus gift.
+- **Beating it leaves corpses to haul**, like any battle. No bonus gift. _Changed 1 Nov 2026: beating it also leaves the prey it was carrying (see Rules)._
+
+## Decisions (Marz, 1 Nov 2026)
+- **More action:** swarms come every **36–60 h** instead of 72–120 h.
+- **Beating one pays:** the army ants drop the prey they were carrying.
 - **Nothing is ever destroyed for good** (pillar 2): a swarm takes unprotected food and kills units, never chambers, brood or the colony.
 
 ## Rules
-- Each player colony has one pending sighting, every **72–120 hours** at world speed ×1 (÷ world speed). When it comes due, a swarm sets off from the patch's wilds (spot 13) and lands **4 hours** later.
+- Each player colony has one pending sighting, every **36–60 hours** at world speed ×1 (÷ world speed). When it comes due, a swarm sets off from the patch's wilds (spot 13) and lands **4 hours** later.
 - **Skipped** (the schedule carries on) while the player has new-colony protection, when the player is inactive (7 days), or if a swarm is already on its way to that colony.
 - **Size.** When the swarm is spotted, the server simulates the battle against what the colony has at home (units, defenses, research) and picks the biggest swarm the colony still beats about 70% of the time (`defenderWinRate`, 12 simulated battles). It's built from packs of 4 Minor + 1 Major Soldier. A colony with nothing at home meets the smallest swarm (one pack). Units raised or sent away after the sighting change the odds: that's the choice.
 - **The fight** uses the normal raid rules ([08-combat](08-combat.md)): loot only from unprotected stores (the Honeypot Gallery protects its share, [03-economy](03-economy.md)), corpses at the colony's spot, defenses may rebuild. The defender gets a battle report "… attack by Army ant swarm".
+- **Prey:** a colony that wins keeps what the swarm was carrying: **4 hours of its own total production, as Protein** (`preyHours`, at least `minPrey` 300), up to what its Protein storage holds. It arrives as a report, "The swarm dropped its prey".
 - **Afterwards** the survivors and whatever they took march on. Nothing comes back, and there's no "attacker" to raid in revenge.
 - Players can't send swarms, and swarms don't count toward anyone's bash limit.
 

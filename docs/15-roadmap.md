@@ -21,6 +21,7 @@ _Current as of Build 11 (2026-10-30)._ Hormigas has no GitHub milestones: each b
 | 10 | Castes with a purpose ([#80](https://github.com/MarcialPimentel/hormigas/issues/80)) | done |
 | 11 | The full roster ([#83](https://github.com/MarcialPimentel/hormigas/issues/83)) | **current** (live) |
 | — | Tuning: gathering ×2 ([#107](https://github.com/MarcialPimentel/hormigas/pull/107)) | in review |
+| — | More action: windfalls (contested food) and livelier random events ([25-windfalls](25-windfalls.md)) | in review |
 | 12 | Reasons to come back: daily colony tasks, Diapause, Field Journal | next (no issue yet) |
 | v1 | Supercolonies stage B, joint raids on spider dens, more defenses | later |
 
@@ -38,7 +39,7 @@ Keep the MVP **brutally small**. Its only job is to answer: *is the core loop fu
 - PvP rules: new-colony protection, strength protection, bash limit, Honeypot protection, Late Founding Boost (catch-up).
 - More colonies (Build 4): Nuptial Flight research, Winged Queen, Found Colony mission ([19-colonies](19-colonies.md)). Moved up from v1.
 - Wild nests: one NPC colony per patch with players, raidable, raiding back gently ([17-wild-nests](17-wild-nests.md)).
-- Army-ant swarms (Build 5): every colony is visited about every 4 days, 4 h warning, beatable ([20-swarms](20-swarms.md)).
+- Army-ant swarms (Build 5): every colony is visited every 1.5–2.5 days (about every 4 days until 1 Nov 2026), 4 h warning, beatable ([20-swarms](20-swarms.md)).
 - The tech tree (Build 6): research that needs other research, four branches (Jaws, Harvest, Nest, Scent), ten new research and Aphid Husbandry made playable ([21-tech-tree](21-tech-tree.md)).
 - Scents and neighbours (Build 7): the Missions tab shows your patch; unscouted colonies are player or wild scents; scout before you raid; new players are placed together, up to 4 per patch ([22-discovery](22-discovery.md), [11-world](11-world.md)).
 - Truces and supercolonies (alliances stage A): meet before you deal; truces with 24 h notice; supercolonies of up to 6 with the Supercolony research; Hold Position; a 3-day scent fade on leaving ([23-supercolonies](23-supercolonies.md)). Moved up from v1.
@@ -78,6 +79,7 @@ Keep the MVP **brutally small**. Its only job is to answer: *is the core loop fu
 - Supercolonies, stage B: joint raids, trade trails, a members' board (stage A shipped early: truces, supercolonies, hold position)
 - ~~Aphid herding (raidable livestock economy)~~ (moved up: Build 9)
 - Joint raids on spider dens (bosses from [24-npcs](24-npcs.md))
+- War trails: standing raid orders that keep marching while you're away, on the trade-trail plumbing (the next step after windfalls, [25-windfalls](25-windfalls.md))
 - More defenses (Sticky Resin; the Narrow Tunnel shipped in Build 10)
 - Reasons to come back (next, Build 12): daily colony tasks with no streak penalty, Diapause (vacation mode), a Field Journal of achievements and titles
 - Vacation mode

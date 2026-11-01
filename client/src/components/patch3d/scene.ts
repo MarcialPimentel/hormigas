@@ -50,7 +50,7 @@ const EDGE = HALF_W + 4; // where parties from other patches enter
 /** The drawn patch's x (0…690 px) in units. */
 const pxToX = (px: number) => (px - 345) / 9.6;
 const SPOT_PX = 45;
-const spotPx = (n: number) => (n === WILDS_SPOT ? 562 : n > WILDS_SPOT ? 562 + (n - WILDS_SPOT) * 29 : (n - 0.5) * SPOT_PX);
+const spotPx = (n: number) => (n === WILDS_SPOT ? 558 : n > WILDS_SPOT ? 558 + (n - WILDS_SPOT) * 26 : (n - 0.5) * SPOT_PX);
 /** Spots on a patch: the colony spots, the wilds, then the four wild sites. */
 const SPOT_COUNT = WILDS_SPOT + 4;
 /** Where a spot sits: the drawn patch's order left to right, staggered front and back so neighbours don't crowd. */
