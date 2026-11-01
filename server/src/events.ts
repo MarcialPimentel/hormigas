@@ -15,6 +15,9 @@ export interface EventPayloads {
   nest_raid: { colonyId: number };
   herd_deliver: { colonyId: number; since: number };
   herd_wander: { colonyId: number; untendedSince: number };
+  windfall_drop: { colonyId: number };
+  windfall_deliver: { colonyId: number; since: number };
+  windfall_rot: { colonyId: number; startedAt: number };
   truce_end: { truceId: number };
   scent_faded: { memberRowId: number };
 }

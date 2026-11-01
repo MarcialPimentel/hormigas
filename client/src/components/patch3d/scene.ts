@@ -50,7 +50,7 @@ const EDGE = HALF_W + 4; // where parties from other patches enter
 /** The drawn patch's x (0…690 px) in units. */
 const pxToX = (px: number) => (px - 345) / 9.6;
 const SPOT_PX = 45;
-const spotPx = (n: number) => (n === WILDS_SPOT ? 562 : n > WILDS_SPOT ? 562 + (n - WILDS_SPOT) * 38 : (n - 0.5) * SPOT_PX);
+const spotPx = (n: number) => (n === WILDS_SPOT ? 558 : n > WILDS_SPOT ? 558 + (n - WILDS_SPOT) * 26 : (n - 0.5) * SPOT_PX);
 /** Spots on a patch: the colony spots, the wilds, then the four wild sites. */
 const SPOT_COUNT = WILDS_SPOT + 4;
 /** Where a spot sits: the drawn patch's order left to right, staggered front and back so neighbours don't crowd. */
@@ -616,6 +616,10 @@ uniform vec3 uSpots[SIGHT_SPOTS];
   }
   function addSite(c: SpotColony, x: number, z: number) {
     const y = gH(x, z);
+    if (c.windfall) {
+      addWindfall(c, x, z, y);
+      return;
+    }
     if (c.herd) {
       // aphids on a stem
       const stem = new THREE.Mesh(sk(new THREE.CylinderGeometry(0.08, 0.12, 5, 6).translate(0, 2.5, 0)), mat('#5E8A2E'));
@@ -669,6 +673,65 @@ uniform vec3 uSpots[SIGHT_SPOTS];
       return;
     }
     addMound(x, z, '#8C6A48', c.wild ? FLAG.wild : null, 0.9);
+  }
+
+  /** A windfall in the wilds (docs/25-windfalls.md): food big enough that colonies march for it, with a flag when held. */
+  function addWindfall(c: SpotColony, x: number, z: number, y: number) {
+    const w = c.windfall!;
+    if (w.kind === 'fig') {
+      // a ripe fig split open on the ground
+      const fig = new THREE.Mesh(sk(new THREE.SphereGeometry(1.4, 16, 12).scale(1, 0.85, 1)), mat('#6E3A5E', { roughness: 0.55 }));
+      fig.position.set(x, y + 1.1, z);
+      spotGroup.add(shadow(fig));
+      const flesh = new THREE.Mesh(sk(new THREE.CircleGeometry(0.9, 16)), mat('#D9566B', { roughness: 0.4, side: THREE.DoubleSide }));
+      flesh.position.set(x + 0.2, y + 1.85, z + 0.55);
+      flesh.rotation.set(-0.9, 0.3, 0);
+      spotGroup.add(flesh);
+    } else if (w.kind === 'branch') {
+      // a snapped twig full of leaves
+      const twig = new THREE.Mesh(sk(new THREE.CylinderGeometry(0.12, 0.2, 7, 6)), mat('#6E5236'));
+      twig.position.set(x, y + 0.3, z);
+      twig.rotation.set(0, 0.4, Math.PI / 2 - 0.12);
+      spotGroup.add(shadow(twig));
+      const leaf = sk(new THREE.SphereGeometry(1, 10, 6).scale(1.2, 0.06, 0.55));
+      for (let i = 0; i < 7; i++) {
+        const l = new THREE.Mesh(leaf, mat(i % 2 ? '#7DB043' : '#5E8A2E', { side: THREE.DoubleSide }));
+        l.position.set(x - 3 + i, y + 0.45 + (i % 3) * 0.15, z + (i % 2 ? 0.7 : -0.6));
+        l.rotation.set(0.2 * (i % 2 ? 1 : -1), i * 0.9, 0.15);
+        spotGroup.add(shadow(l));
+      }
+    } else {
+      // a dead grasshopper or lizard on its side: long body, legs in the air
+      const lizard = w.kind === 'lizard';
+      const len = lizard ? 7 : 4;
+      const body = new THREE.Mesh(sk(new THREE.CapsuleGeometry(lizard ? 0.55 : 0.45, len, 6, 12)), mat(lizard ? '#8C8A4E' : '#9DAA45', { roughness: 0.7 }));
+      body.position.set(x, y + 0.5, z);
+      body.rotation.set(0, 0.3, Math.PI / 2);
+      spotGroup.add(shadow(body));
+      const leg = sk(new THREE.CylinderGeometry(0.05, 0.05, lizard ? 1.2 : 2, 4));
+      for (let i = 0; i < (lizard ? 4 : 6); i++) {
+        const l = new THREE.Mesh(leg, mat('#3A2A1C'));
+        const along = (i / (lizard ? 3 : 5) - 0.5) * len * 0.7;
+        l.position.set(x + Math.cos(0.3) * along, y + 1.2, z - Math.sin(0.3) * along);
+        l.rotation.set(0.3 * (i % 2 ? 1 : -1), 0, 0.2);
+        spotGroup.add(l);
+      }
+      if (lizard) {
+        const tail = new THREE.Mesh(sk(new THREE.ConeGeometry(0.45, 5, 8)), mat('#8C8A4E', { roughness: 0.7 }));
+        tail.position.set(x - Math.cos(0.3) * (len / 2 + 2.4), y + 0.4, z + Math.sin(0.3) * (len / 2 + 2.4));
+        tail.rotation.set(0, 0.3, Math.PI / 2);
+        spotGroup.add(shadow(tail));
+      }
+    }
+    const flag = w.yours ? FLAG.mine : w.held ? FLAG.other : w.guarded ? FLAG.wild : null;
+    if (flag) {
+      const p = new THREE.Mesh(sk(new THREE.CylinderGeometry(0.05, 0.05, 4, 5).translate(0, 2, 0)), mat('#3A2A1C'));
+      p.position.set(x + 1.8, y, z - 0.8);
+      spotGroup.add(shadow(p));
+      const f = new THREE.Mesh(sk(new THREE.PlaneGeometry(1.2, 0.7).translate(0.6, 0, 0)), mat(flag, { side: THREE.DoubleSide, roughness: 0.6 }));
+      f.position.set(x + 1.8, y + 3.6, z - 0.8);
+      spotGroup.add(shadow(f));
+    }
   }
 
   let spotsKey = '';

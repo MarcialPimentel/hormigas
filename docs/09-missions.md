@@ -20,6 +20,7 @@
 | **Haul Corpses** | ✅ | Collect a corpse field (Workers / Carrion Beetles) |
 | **Forage** | ✅ | Expedition into the wilds (below) |
 | **Found Colony** | ✅ | A Winged Queen (plus escorts and cargo) founds a new colony at an empty spot ([19-colonies](19-colonies.md)) |
+| **Claim windfall** | ✅ | Send ants to food lying in the wilds. They fight whoever holds it, then stay and carry a load home every 2 h until it is gone or rots; call them home from its card ([25-windfalls](25-windfalls.md)) |
 | **Tend Aphids** | ✅ | Station ants at a scouted aphid herd. They stay, and carry its honeydew home as Nectar every 6 h; call them home from the herd's card ([24-npcs](24-npcs.md)) |
 | **Hold Position** | ✅ | Station soldiers at a supercolony mate's colony; they fight in its battles until recalled ([23-supercolonies](23-supercolonies.md)) |
 | **Joint Raid** | v1 | Several supercolony members raid together (alliances stage B) |
@@ -32,9 +33,9 @@ Sent to the wild edge of a patch (spot 13). Outcome rolled on arrival:
 
 | Outcome | Base chance | Result |
 |---|---|---|
-| Food cache | 35% | Foliage / Protein / Nectar, scaled by cargo & research |
+| Food cache | 43% | Foliage / Protein / Nectar, 60–100% of the find cap |
 | Dead beetle | 15% | Large Protein haul |
-| Nothing | 20% | Flavor text only |
+| Nothing | 12% | Flavor text only |
 | Lost the trail | 10% | Returns late (+50% travel time) |
 | Shortcut | 5% | Returns early |
 | Spider ambush | 10% | Loses 10–30% of the party |
@@ -42,6 +43,8 @@ Sent to the wild edge of a patch (spot 13). Outcome rolled on arrival:
 | The Boot | 1% | Whole party lost |
 
 **Desert Ants** (Build 11) in a party add luck: every 5 count as one more Foraging Instinct level for that trip, up to +5 (`formulas.json` → `desertAnts`). The forage screen shows the party's luck.
+
+Since 1 Nov 2026 (more action) a food cache is worth 60–100% of the find cap (was 40–100%), and 8 points of chance moved from Nothing to Food cache.
 
 Foraging Instinct research shifts odds toward good outcomes: each level (its `forageLuck` effect) moves 2 points of chance from Nothing, Lost the trail, Spider ambush, Rainstorm and The Boot, in that order, to Food cache (70%) and Dead beetle (30%). Each bad outcome always keeps at least a quarter of its chance. All the forage numbers (chances, luck shift, find cap, how much each find is worth, losses, return times) are in `formulas.json` → `forage`. Every result has short flavor text — this is where the game's personality shows.
 

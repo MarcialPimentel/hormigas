@@ -8,6 +8,12 @@ import {
   SITE_SPOTS,
   herdLevelFor,
   isHerdState,
+  isHeldState,
+  isWindfallState,
+  firstWindfallHours,
+  WINDFALLS,
+  WINDFALL_MAX_LEVEL,
+  type WindfallState,
   nestRaidsBack,
   res,
   speciesOfKind,
@@ -37,6 +43,7 @@ import {
 import type { Q, Tx } from '../db';
 import { advance, lockColony, saveColony, type Colony } from '../colony';
 import { recurringColonyEvent } from '../recurring';
+import { schedule } from '../events';
 import { gameHoursMs, getWorld } from '../world';
 import { launchMission } from './missions';
 
@@ -152,8 +159,24 @@ export async function ensureHerd(q: Tx, worldId: number, region: number, patch: 
 }
 
 /**
- * Fill the area around a patch where a player lives (docs/24-npcs.md): a wild nest and an aphid herd in every patch
- * within range, plus the termite mounds and spider dens in reach. Returns how many wild things were spawned.
+ * Make the patch's windfall site, if it has none (docs/25-windfalls.md). It starts empty; its first windfall drops
+ * within a few hours, then the site rolls again every few hours (server/src/game/windfalls.ts).
+ */
+export async function ensureWindfallSite(q: Tx, worldId: number, region: number, patch: number, t: number): Promise<number | null> {
+  const spot = SITE_SPOTS.windfall;
+  const here = await q.query('SELECT id FROM colonies WHERE world_id = $1 AND region = $2 AND patch = $3 AND spot = $4', [worldId, region, patch, spot]);
+  if (here.rows[0]) return null;
+  const level = Math.min(WINDFALL_MAX_LEVEL, nestLevelFor(await areaLeaderPoints(q, worldId, region, patch, t)));
+  const npc: WindfallState = { kind: 'windfall', level, at: t, tender: null, drop: null };
+  const id = await insertWild(q, worldId, { region, patch, spot }, WINDFALLS.name, 'wilds', { units: {}, defenses: {}, resources: res() }, npc, t);
+  if (!id) return null;
+  await schedule(q, worldId, 'windfall_drop', t + gameHoursMs(firstWindfallHours(createRng(randomSeed())), (await getWorld(q)).speed), { colonyId: id });
+  return id;
+}
+
+/**
+ * Fill the area around a patch where a player lives (docs/24-npcs.md): a wild nest, an aphid herd and a windfall site
+ * in every patch within range, plus the termite mounds and spider dens in reach. Returns how many wild things were spawned.
  */
 export async function ensureArea(q: Tx, worldId: number, region: number, patch: number, t: number): Promise<number> {
   let n = 0;
@@ -164,6 +187,7 @@ export async function ensureArea(q: Tx, worldId: number, region: number, patch: 
       if (before.rows[0]) continue;
       id = await ensureNest(q, worldId, w.region, w.patch, t);
     } else if (w.thing === 'herd') id = await ensureHerd(q, worldId, w.region, w.patch, t);
+    else if (w.thing === 'windfall') id = await ensureWindfallSite(q, worldId, w.region, w.patch, t);
     else id = await ensureBigNest(q, worldId, w.region, w.patch, w.thing, t);
     if (id) n++;
   }
@@ -200,6 +224,15 @@ export async function syncNest(q: Q, nest: Colony, t: number): Promise<Colony> {
     }
     return c;
   }
+  if (isWindfallState(c.npc)) {
+    // a windfall site's level sets the size of the next windfall; it follows the area like a herd's
+    const level = Math.min(WINDFALL_MAX_LEVEL, nestLevelFor(leader, c.npc.level));
+    if (level > c.npc.level) {
+      c.npc = { ...c.npc, level };
+      await saveColony(q, c);
+    }
+    return c;
+  }
   const level = nestLevelFor(leader, c.npc.level, c.npc.species);
   if (level > c.npc.level) {
     // values so far were regrowing toward the old level; from now on they grow toward the new one
@@ -212,8 +245,8 @@ export async function syncNest(q: Q, nest: Colony, t: number): Promise<Colony> {
 /** Display name for whoever owns a colony: the nest's name for wild nests. */
 export const ownerName = (c: Colony, username: string) => (c.npc ? c.name : username);
 
-/** The wild nest-like state of a colony (nest, mound or den), or null for players' colonies and aphid herds. */
-export const nestStateOf = (c: Colony): NestState | null => (c.npc && !isHerdState(c.npc) ? c.npc : null);
+/** The wild nest-like state of a colony (nest, mound or den), or null for players' colonies, aphid herds and windfalls. */
+export const nestStateOf = (c: Colony): NestState | null => (c.npc && !isHeldState(c.npc) ? c.npc : null);
 
 // ---------- nests raid back (gently) ----------
 

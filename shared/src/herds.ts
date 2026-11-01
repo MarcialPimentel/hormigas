@@ -2,6 +2,7 @@
 import { GATHER_MULTIPLIER, NPC_DATA, WILDS_SPOT } from './data';
 import { WORLD } from './world';
 import { nestLevelFor, type NestKind, type NestState } from './nests';
+import type { WindfallState } from './windfalls';
 
 interface HerdData {
   name: string;
@@ -34,8 +35,8 @@ export interface HerdState {
   untendedSince: number | null;
 }
 
-/** What colonies.npc holds: a nest-like state (wild nest, termite mound, spider den) or an aphid herd. */
-export type NpcState = NestState | HerdState;
+/** What colonies.npc holds: a nest-like state (wild nest, termite mound, spider den), an aphid herd or a windfall site. */
+export type NpcState = NestState | HerdState | WindfallState;
 
 export const isHerdState = (npc: unknown): npc is HerdState => !!npc && (npc as { kind?: string }).kind === 'herd';
 
@@ -66,23 +67,23 @@ const AREA = NPC_DATA.area as unknown as {
   range: number;
   mound: { every: number; offset: number; range: number };
   den: { every: number; offset: number; range: number };
-  sites: Record<'herd' | 'mound' | 'den', number>;
+  sites: Record<'herd' | 'mound' | 'den' | 'windfall', number>;
 };
 
-/** The extra spots in a patch's wilds that hold herds, mounds and dens. Never one of the 12 colony spots. */
+/** The extra spots in a patch's wilds that hold herds, mounds, dens and windfalls. Never one of the 12 colony spots. */
 export const SITE_SPOTS = AREA.sites;
 export const isSiteSpot = (spot: number) => Object.values(AREA.sites).includes(spot);
 /** Highest spot number anything can live on. */
 export const MAX_SPOT = Math.max(WILDS_SPOT, ...Object.values(AREA.sites));
 
-export type WildThing = 'nest' | 'herd' | Exclude<NestKind, 'nest'>;
+export type WildThing = 'nest' | 'herd' | 'windfall' | Exclude<NestKind, 'nest'>;
 
 const hasMound = (patch: number) => patch % AREA.mound.every === AREA.mound.offset % AREA.mound.every;
 const hasDen = (patch: number) => patch % AREA.den.every === AREA.den.offset % AREA.den.every;
 
 /**
- * Every wild thing that should exist because a player lives in `patch`: a wild nest and an aphid herd in each patch
- * within `range` (same region), plus the termite mounds and spider dens within their own ranges.
+ * Every wild thing that should exist because a player lives in `patch`: a wild nest, an aphid herd and a windfall site
+ * in each patch within `range` (same region), plus the termite mounds and spider dens within their own ranges.
  */
 export function wildThingsAround(region: number, patch: number): { region: number; patch: number; thing: WildThing }[] {
   const out: { region: number; patch: number; thing: WildThing }[] = [];
@@ -93,6 +94,7 @@ export function wildThingsAround(region: number, patch: number): { region: numbe
     if (d <= AREA.range) {
       out.push({ region, patch: p, thing: 'nest' });
       out.push({ region, patch: p, thing: 'herd' });
+      out.push({ region, patch: p, thing: 'windfall' });
     }
     if (d <= AREA.mound.range && hasMound(p)) out.push({ region, patch: p, thing: 'mound' });
     if (d <= AREA.den.range && hasDen(p)) out.push({ region, patch: p, thing: 'den' });
