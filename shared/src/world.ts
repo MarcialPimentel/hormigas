@@ -85,9 +85,9 @@ export function missionFuel(units: UnitCounts, dist: number, speedPct: number): 
 export const missionSlots = (research: ResearchLevels): number =>
   FORMULAS.missions.baseSlots + researchSum(research, 'missionSlots');
 
-/** Most colonies a player may hold (docs/19-colonies.md): 1, plus one at Nuptial Flight levels 1, 3, 5… */
+/** Most colonies a player may hold (docs/19-colonies.md): 1, plus one per Nuptial Flight level. */
 export const maxColonies = (research: ResearchLevels): number =>
-  FORMULAS.colonies.base + Math.ceil(researchSum(research, 'coloniesPer2Levels') / 2);
+  FORMULAS.colonies.base + researchSum(research, 'coloniesPerLevel');
 
 /** Forage parties each colony can have out at once (per colony, docs/09-missions.md). */
 export const forageSlots = (research: ResearchLevels): number =>

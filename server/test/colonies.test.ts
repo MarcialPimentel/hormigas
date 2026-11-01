@@ -35,12 +35,12 @@ afterAll(async () => teardownTest(app));
 beforeEach(calmWildNests);
 
 describe('the cap', () => {
-  it('is 1 colony, plus one at Nuptial Flight levels 1, 3, 5', () => {
+  it('is 1 colony, plus one per Nuptial Flight level', () => {
     expect(maxColonies({})).toBe(1);
     expect(maxColonies({ nuptial_flight: 1 })).toBe(2);
-    expect(maxColonies({ nuptial_flight: 2 })).toBe(2);
-    expect(maxColonies({ nuptial_flight: 3 })).toBe(3);
-    expect(maxColonies({ nuptial_flight: 5 })).toBe(4);
+    expect(maxColonies({ nuptial_flight: 2 })).toBe(3);
+    expect(maxColonies({ nuptial_flight: 3 })).toBe(4);
+    expect(maxColonies({ nuptial_flight: 5 })).toBe(6);
   });
 });
 
@@ -128,7 +128,7 @@ describe('founding', () => {
   it('is capped by Nuptial Flight', async () => {
     const r = await p.post('/api/missions', { colonyId: c.id, type: 'colonize', target: await emptySpot(), units: { winged_queen: 1 } });
     expect(r.error.code).toBe('colony_cap');
-    await setPlayer(me.id, { research: { nuptial_flight: 3 } });
+    await setPlayer(me.id, { research: { nuptial_flight: 2 } });
     const ok = await p.post('/api/missions', { colonyId: c.id, type: 'colonize', target: await emptySpot(), units: { winged_queen: 1 } });
     expect(ok.ok).toBe(true);
     // don't let it land: recall it, she comes home
