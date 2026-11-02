@@ -26,6 +26,8 @@ Browser ── https://hormigas.marz.gg ──▶ DNS record for the subdomain
 
 The hub also runs containers for other projects (for example Guildie's live rooms). Those projects deploy their own containers from their own repos; **Hormigas deploys leave them alone** and only run `docker compose up -d hormigas`. If another project's container stops, Hormigas is unaffected. If you change another project's block in the server's `docker-compose.yml` or `Caddyfile`, copy the change into `deploy/hub/` here too.
 
+Every service has a memory cap (`mem_limit`), the games also a CPU cap (`cpus`), and every service keeps at most 30 MB of logs (the shared `x-logging` settings at the top of the file), so one project can't starve the others or fill the disk. Give any new service the same three lines. No game service publishes `ports:`: Docker-published ports skip the server's firewall, so Caddy stays the only way in.
+
 The files that define the hub are in [`deploy/`](../deploy/). The copy on the server is the one that runs. It also has a `.env` with the real passwords, which never leaves the server.
 
 | File | What it does |
