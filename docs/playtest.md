@@ -8,7 +8,7 @@ _Current as of Build 11 (2026-10-30)._
 - What's new in this build: the latest entry in [CHANGELOG.md](../CHANGELOG.md). Each build's PR has its own playtest steps.
 
 ### The Whole Yard (preview)
-On a computer, open https://hormigas.marz.gg/?preview=yard once; the browser remembers it. **Whole Yard** is then the first screen. Scroll to zoom from the yard to the ground, drag to move, right-drag or Q/E to turn, WASD to pan; double-click your mound to go inside; the left buttons open Chambers, Brood Hall, Research and Missions, then Rankings and the Field Journal (the Journal button shows a count of new pages). "Classic screens" goes back to the usual layout (Whole Yard stays at the top of the menu); "Turn preview off" or `?preview=off` removes it.
+On a computer, open https://hormigas.marz.gg/?preview=yard once; the browser remembers it. **Whole Yard** is then the first screen. Scroll to zoom from the yard to the ground, drag to move, right-drag or Q/E to turn, WASD to pan; double-click your mound to go inside; the left buttons open Chambers, Brood Hall, Research and Missions, then Allies, Reports, Rankings and the Field Journal (red counts show unread reports, truce offers, raids coming and new journal pages). "Classic screens" goes back to the usual layout (Whole Yard stays at the top of the menu); "Turn preview off" or `?preview=off` removes it.
 
 ## Controls
 - Tap or click everything; the tabs are Colony, Chambers, Brood Hall, Research, Missions, Allies, Reports, Journal and Rankings ([12-ui-nest-view](12-ui-nest-view.md)).
