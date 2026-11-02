@@ -51,6 +51,7 @@ See [16-milestones](16-milestones.md) for the full timeline and the targets the 
 ## Points & ranking
 - 1 point per 1,000 resources spent (all types counted equally in v0.1).
 - Rankings: total, economy (chambers), research, military (castes + defenses).
+- There is no end and no reset. Past the first weeks, the goals are the Field Journal, the recurring Great Nuptial Flight and, later, landmarks ([27-living-world](27-living-world.md)).
 
 ## Open Questions
 - Should Nectar count more than Foliage for points (it's rarer)?
