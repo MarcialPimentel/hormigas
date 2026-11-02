@@ -1074,9 +1074,10 @@ export async function createYardScene(host: HTMLElement, labels: HTMLElement, da
     if (fogDirty) paintFog();
     fogU.uFogTime.value = reduced ? 0 : time;
     ants.begin();
-    const showAnts = d < 420;
-    // true size at ant height, about 3× at the Patch zoom so a column of ants reads on a 1 m patch (Marz, 2 Nov 2026)
-    const antGrow = 1 + 5 * smooth(20, 300, d);
+    const showAnts = d < 700;
+    // true size at ant height, then bigger as the camera pulls back (about 7× at the Patch zoom, 20× halfway out, 25× near
+    // the Region zoom) so a column reads like a unit on the map (Marz, 2 Nov 2026: they were still too small)
+    const antGrow = 1 + 6 * smooth(20, 140, d) + 18 * smooth(140, 500, d);
     // the game's clock ticks once a second: run it on smoothly in between, so columns march instead of hopping
     const smoothNow = reduced ? dd.now : nowSeen + Math.min(1500, t0 - nowAt);
     for (const c of columns.values()) {
@@ -1099,7 +1100,7 @@ export async function createYardScene(host: HTMLElement, labels: HTMLElement, da
         // nose up out of the crater and over the rim, down the far slope
         const ahead = footY(x + tg.x * 0.3, z + tg.z * 0.3);
         const pitch = y > 0 || ahead > 0 ? clamp(Math.atan2(ahead - y, 0.3), -1.2, 1.2) : 0;
-        ants.ant(c.caste, x, y, z, { pitch, scale: (c.caste === 'soldier' ? 0.75 : 0.6) * antGrow, yaw: Math.atan2(-tg.z, tg.x), gait: (k * c.len) / 0.17 * 1.2, color: c.color, cargo: pr.back && c.cargo ? { kind: 'leaf', color: c.cargo } : null });
+        ants.ant(c.caste, x, y, z, { pitch, scale: (c.caste === 'soldier' ? 0.75 : 0.6) * antGrow, yaw: Math.atan2(-tg.z, tg.x), gait: (k * c.len) / (0.17 * antGrow) * 1.2, color: c.color, cargo: pr.back && c.cargo ? { kind: 'leaf', color: c.cargo } : null });
       }
     }
     ants.end();
