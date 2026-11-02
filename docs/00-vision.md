@@ -21,6 +21,9 @@ Hormigas is a browser-based, persistent strategy game where you grow an ant king
 4. **The ant fantasy *is* the mechanics.** Every system maps to real ant behavior (foraging, corpse hauling, castes, pheromone trails). If a mechanic doesn't fit ants, rethink the mechanic.
 5. **Readable depth.** Simple rules, deep interactions. The game explains its own systems — no external simulators needed.
 
+## The long game
+There's no ending and no reset: the world is one living place. The long game is big moments that come round again (the Great Nuptial Flight, planned) and goals that last (the Field Journal; landmarks, planned). Players fight over brood, food and places, not to end each other's colonies. See [27-living-world](27-living-world.md).
+
 ## Target player
 - Liked classic browser strategy / idle games and want that loop without the pay-to-win.
 - Plays in short check-ins (2–10 minutes, several times a day), on desktop or phone browser.
@@ -34,6 +37,7 @@ Browser-first (desktop + mobile browser). No install.
 - Not a pay-to-win or gacha game.
 - Not a detailed nest *simulation*: the art shows what the colony is doing, but there's no per-ant simulation or micro-management.
 - Not multiple worlds/servers at launch — one world.
+- Not a game that resets: no wipes, no fresh worlds. Players keep what they build ([27-living-world](27-living-world.md)).
 
 ## Inspirations
 - Classic persistent browser strategy (offline progression, raids, fleetsaving).
@@ -45,6 +49,7 @@ Decisions Marz made, newest first. Details and the smaller calls live in the lin
 
 | Date | Decision | Why |
 |---|---|---|
+| 2026-11-02 | **No world resets, ever:** Hormigas is one living world, and colonies, chambers, ants and research are never wiped. The long game comes from moments that come round again and goals that last, proposed in [27-living-world](27-living-world.md) as ideas [#144](https://github.com/MarcialPimentel/hormigas/issues/144) (the Great Nuptial Flight, a recurring finale), [#143](https://github.com/MarcialPimentel/hormigas/issues/143) (a world calendar) and [#145](https://github.com/MarcialPimentel/hormigas/issues/145) (landmarks). Replaces the roadmap's "Seasons with fresh worlds" | Marz found little reason to keep going once resources ran high and asked what the end goal should be. A Travian-style reset was floated; players reacted strongly against it: they want a living game and to keep their stuff |
 | 2026-11-02 | Background music: a march made from the ants' footsteps. Each 4/4 beat is a tiny three-foot tripod step swinging left/right, under a low soil drum and a sparse wooden marimba tune that keeps rewriting itself. It follows the colony: quiet when nobody's out, fuller while parties walk, faster and tense while a raid or swarm is coming. On by default at half volume, after the first click; a speaker in the top bar turns it off or changes the volume; it pauses in a hidden tab ([sound](sound.md)) | Marz asked for a 4/4, left/right march to match the marching ants. "Tiny feet on soil" (recommended) was picked over a field-drum corps and clockwork ticking because it fits the nature-documentary tone and can be left on for an hour. The tripod step is real ant gait (pillar 4) |
 | 2026-11-02 | **Fog of war**, for everyone on every screen: you see the patches with your colonies and the patches touching them (and where your ants are stationed); patches your ants have reached stay explored and show as last seen, greyed; never-explored patches show only their outline. Only Scouts or foragers surveying the wilds may enter a patch you've never explored. Supercolony mates share sight. Existing players keep what they'd already seen ([22-discovery](22-discovery.md#fog-of-war)) | Marz: like Civilization, but players know the outlines. Exploring gives Scouts a job and makes the map something you uncover. The regions stay separate beds: joining them would suggest border patches are neighbours when crossing regions is a long trip |
 | 2026-11-02 | Whole Yard top view cut to the five beds: it fits them to the window and stops zooming out there; the house, patio, pots, hose, fence and hedge are removed; the Woodpile's log pile moves onto the lawn beside its bed ([art/whole-yard.md](art/whole-yard.md#the-yard-view)) | Marz's playtest: the fake building and huge top level weren't needed, and the log pile hid the Woodpile's patches |

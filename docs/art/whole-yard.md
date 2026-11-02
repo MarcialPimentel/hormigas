@@ -29,7 +29,7 @@ Builds on [sunlit-microcosm.md](sunlit-microcosm.md) (the scale ladder, approved
 | Strategic view | Zooming out is the strategic view. | Art only |
 | End turn | **Needs you**: idle Brood Hall, no dig, raid incoming; tap and the map flies there. | Art only |
 | City screen | The dive through the crater into the 3D nest. | Exists; joined by the dive |
-| Wonders | Later idea: landmarks as contested places. | New system, not proposed now |
+| Wonders | Later idea: landmarks as contested places ([#145](https://github.com/MarcialPimentel/hormigas/issues/145), [27-living-world](../27-living-world.md#4-landmarks)). | New system, not proposed now |
 
 **Recommendation on rules:** take Civilization's presentation, not its rules. Turns, settlers and moving units by hand break "the colony lives while you're away" and "no unit micro", and turn a 5-minute check-in into a long session.
 

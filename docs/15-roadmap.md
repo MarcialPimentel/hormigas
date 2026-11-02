@@ -85,9 +85,10 @@ Keep the MVP **brutally small**. Its only job is to answer: *is the core loop fu
 
 ## Later ideas
 - **Species as classes:** Leafcutters (economy), Army Ants (nomadic raiders), Honeypot ants (storage), Weaver ants (defense), Slave-maker ants (steal brood).
-- **Seasons:** world lifecycle (spring founding → winter end) with fresh worlds.
+- ~~**Seasons:** world lifecycle (spring founding → winter end) with fresh worlds.~~ Replaced (Marz, 2 Nov 2026: no resets): a **world calendar** that loops in the one world ([#143](https://github.com/MarcialPimentel/hormigas/issues/143)), ending each cycle in the **Great Nuptial Flight** with a Hall of Fame ([#144](https://github.com/MarcialPimentel/hormigas/issues/144)); see [27-living-world](27-living-world.md).
+- **Landmarks** in the Whole Yard, held by players and supercolonies: a goal that never ends ([#145](https://github.com/MarcialPimentel/hormigas/issues/145), [27-living-world](27-living-world.md#4-landmarks)).
 - Player trading / market.
-- Achievements and cosmetics.
+- Cosmetics (achievements shipped as the Field Journal in Build 12).
 - ~~Illustrated nest art~~ (shipped: field-guide art for ants, chambers and pictures, and the 3D nest; [18-art-direction](18-art-direction.md)).
 
 ## Open Questions
