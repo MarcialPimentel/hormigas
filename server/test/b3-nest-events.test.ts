@@ -1,7 +1,7 @@
 // Build 3: small random events inside the nest (docs/04-colony.md, "Nest events").
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { FastifyInstance } from 'fastify';
-import { NEST_EVENTS, NEST_EVENTS_DATA, createRng, productionPerHour, rollNestEvent, storageCapacity } from '@hormigas/shared';
+import { NEST_EVENTS, NEST_EVENTS_DATA, GATHER_MULTIPLIER, createRng, nestEventMinGift, productionPerHour, rollNestEvent, storageCapacity } from '@hormigas/shared';
 import { getPool, tx } from '../src/db';
 import { ensureNestEvents } from '../src/game/nestEvents';
 import { setupTest, teardownTest, newPlayer, setColony, setPlayer, type Client } from './helpers';
@@ -43,8 +43,19 @@ describe('rolling', () => {
     for (let i = 0; i < 200; i++) {
       const r = rollNestEvent(rng, perHour, have, cap);
       expect(NEST_EVENTS[r.event]).toBeTruthy();
-      if (r.resource) expect(r.amount).toBe(Math.floor(Math.max(NEST_EVENTS_DATA.minGift, perHour[r.resource] * NEST_EVENTS_DATA.giftHours)));
+      if (r.resource) expect(r.amount).toBe(Math.floor(Math.max(nestEventMinGift(), perHour[r.resource] * NEST_EVENTS_DATA.giftHours)));
       else expect(r.amount).toBe(0);
+      expect(r.full).toBe(false);
+    }
+  });
+
+  it('the minimum gift follows the gathering multiplier', () => {
+    expect(nestEventMinGift()).toBe(NEST_EVENTS_DATA.minGift * GATHER_MULTIPLIER);
+    const rng = createRng(4);
+    const none = { foliage: 0, protein: 0, nectar: 0 };
+    for (let i = 0; i < 50; i++) {
+      const r = rollNestEvent(rng, none, have, cap);
+      if (r.resource) expect(r.amount).toBe(nestEventMinGift());
     }
   });
 
@@ -54,7 +65,10 @@ describe('rolling', () => {
     for (let i = 0; i < 200; i++) {
       const r = rollNestEvent(rng, perHour, full, cap);
       expect(r.resource === null || r.resource === 'nectar').toBe(true);
-      if (r.resource === 'nectar') expect(r.amount).toBe(10);
+      if (r.resource === 'nectar') {
+        expect(r.amount).toBe(10);
+        expect(r.full).toBe(true);
+      }
     }
   });
 
@@ -93,7 +107,11 @@ describe('in the world', () => {
     const reps = await eventReports();
     expect(reps).toHaveLength(1);
     const rep = reps[0];
-    expect(NEST_EVENTS[rep.data.event].title).toBe(rep.title);
+    // the title and the report name the colony it happened in
+    expect(rep.title).toBe(`${NEST_EVENTS[rep.data.event].title} (${c.name})`);
+    expect(rep.data.colony).toBe(c.name);
+    expect(rep.data.colonyId).toBe(c.id);
+    expect(rep.data.coords).toEqual(c.coords);
     expect(rep.data.text).toBeTruthy();
     const after = (await p.get('/api/state')).colony.resources;
     const rate = productionPerHour({ queen_chamber: 1 }, c.terrain, speed);

@@ -1,5 +1,5 @@
 // Small random events inside the nest (docs/04-colony.md, "Nest events"). Only good or harmless.
-import { NEST_EVENTS_DATA, type ResourceId, type Resources } from './data';
+import { GATHER_MULTIPLIER, NEST_EVENTS_DATA, type ResourceId, type Resources } from './data';
 import type { Rng } from './rng';
 
 export interface NestEventDef {
@@ -22,7 +22,12 @@ export interface NestEventRoll {
   event: NestEventId;
   resource: ResourceId | null;
   amount: number;
+  /** true when storage couldn't take the whole gift */
+  full: boolean;
 }
+
+/** The smallest gift, scaled like everything else a colony gathers (formulas.json "gathering"). */
+export const nestEventMinGift = () => NEST_EVENTS_DATA.minGift * GATHER_MULTIPLIER;
 
 /**
  * Pick an event and its gift. Gifts for a resource whose storage is already full are skipped,
@@ -45,8 +50,9 @@ export function rollNestEvent(rng: Rng, perHour: Resources, have: Resources, cap
     }
   }
   const resource = NEST_EVENTS[event].resource;
-  if (!resource) return { event, resource: null, amount: 0 };
-  const want = Math.max(NEST_EVENTS_DATA.minGift, perHour[resource] * NEST_EVENTS_DATA.giftHours);
+  if (!resource) return { event, resource: null, amount: 0, full: false };
+  // perHour already includes the gathering multiplier; the minimum gets it here
+  const want = Math.floor(Math.max(nestEventMinGift(), perHour[resource] * NEST_EVENTS_DATA.giftHours));
   const amount = Math.floor(Math.max(0, Math.min(want, cap[resource] - have[resource])));
-  return { event, resource, amount };
+  return { event, resource, amount, full: amount < want };
 }
