@@ -147,7 +147,7 @@ export function Overview({ go }: { go: (screen: string, params?: any) => void })
         </button>
       }
     >
-      {out > 0 ? <UnderWay compact limit={4} onFocus={() => go('missions')} /> : <p className="muted small">Nothing out. Send ants from the war room.</p>}
+      {out > 0 ? <UnderWay compact limit={4} onFocus={() => go('missions')} go={go} /> : <p className="muted small">Nothing out. Send ants from the war room.</p>}
     </Panel>
   );
 

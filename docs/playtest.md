@@ -13,6 +13,9 @@ On a computer, open https://hormigas.marz.gg/?preview=yard once; the browser rem
 ### Fog of war
 You see the patches round your colonies; the rest is greyed (explored, as last seen) or under mist (never explored). To explore a patch, tap it, pick **the wilds** and send **Scouts**. When they arrive the mist lifts, and the patch stays explored after they leave.
 
+### Scouting the swarm
+A swarm comes every 1.5–2.5 days. To meet one sooner on a test world, wait for the "Army ant swarm" warning, then press **Scout the swarm** on its card under Under way and send a few Scouts. Check that the odds on the form go up as you add Scouts, that the report says how many came back, and that the card then shows the swarm's size and a win / draw / lose bar that moves when you raise or send away soldiers ([20-swarms](20-swarms.md)).
+
 ## Controls
 - Tap or click everything; the tabs are Colony, Chambers, Brood Hall, Research, Missions, Allies, Reports, Journal and Rankings ([12-ui-nest-view](12-ui-nest-view.md)).
 - **3D nest (computers):** drag to turn it; scroll, pinch or the + and − buttons to zoom. Tap a chamber to open it.

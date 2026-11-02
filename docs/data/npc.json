@@ -188,6 +188,13 @@
     "minPacks": 1,
     "maxPacks": 400,
     "defenderWinRate": 0.7,
-    "trials": 12
+    "trials": 12,
+    "scouting": {
+      "_note": "Scouting the swarm (docs/20-swarms.md): each Scout sent slips up to the column and back on its own with basePct, plus perScentReadingPct per Scent Reading level and perMimicryPct per Chemical Mimicry level, up to maxPct. The report comes back if at least one does; the rest are eaten.",
+      "basePct": 30,
+      "perScentReadingPct": 10,
+      "perMimicryPct": 10,
+      "maxPct": 90
+    }
   }
 }

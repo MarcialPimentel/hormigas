@@ -41,6 +41,7 @@ import { Empty, Panel, ResDot } from '../components/ui';
 import { ENABLED_MISSIONS, MISSION_HELP, MISSION_LABEL, type MissionType } from '../nav';
 import { BattlePreview } from '../components/BattlePreview';
 import { ForageOdds } from '../components/ForageOdds';
+import { SwarmScoutOdds } from '../components/SwarmIntel';
 import { PatchView, isScent, usePatchMode, type PartyFocus, type Spot } from '../components/Patch';
 import { UnderWay, type FocusParty } from '../components/UnderWay';
 
@@ -137,7 +138,7 @@ export function Missions({ draft, go }: { draft?: MissionDraft; go?: (screen: st
   );
   const underWay = (
     <Panel title="Under way">
-      <UnderWay onFocus={onFocus} />
+      <UnderWay onFocus={onFocus} go={go} />
     </Panel>
   );
 
@@ -215,6 +216,12 @@ export function SendMission({ type, setType, target, setTarget, onClose, onSent 
   const missions: any[] = state.missions ?? [];
   const { used, max } = missionSlotUsage(missions, pool, research, colony.id);
 
+  // Scouts sent at one of your own colonies while an army-ant swarm is coming go out to meet it (docs/20-swarms.md)
+  const ownTarget = valid ? state.colonies.find((c) => c.coords.region === target.region && c.coords.patch === target.patch && c.coords.spot === target.spot) : undefined;
+  const swarmAt = ownTarget ? ((state.incoming ?? []) as any[]).find((i) => i.type === 'swarm' && i.targetColonyId === ownTarget.id) : undefined;
+  const scoutingSwarm = type === 'scout' && !!swarmAt;
+  const toName = targetName(targetSpot, target, colony.coords);
+
   const problems: string[] = [];
   if (!valid) problems.push(wildsOk ? 'Pick a real patch.' : 'Pick a real colony spot (spots 1–12).');
   if (rules.target === 'wilds' && valid && target.spot !== WILDS_SPOT) problems.push(`Foragers go to the wilds (spot ${WILDS_SPOT}).`);
@@ -244,7 +251,8 @@ export function SendMission({ type, setType, target, setTarget, onClose, onSent 
   if (cargoAmounts.nectar + fuel > colony.resources.nectar) problems.push(`Not enough Nectar: needs ${fmtFull(fuel)} for the trip${cargoAmounts.nectar ? ' plus cargo' : ''}.`);
   for (const r of ['foliage', 'protein'] as const) if (cargoAmounts[r] > colony.resources[r]) problems.push(`Not enough ${RESOURCE_LABEL[r]} to load.`);
   if (used >= max) problems.push(noSlotsMessage(pool, max));
-  if (valid && target.region === colony.coords.region && target.patch === colony.coords.patch && target.spot === colony.coords.spot) problems.push("That's this colony.");
+  if (type === 'scout' && ownTarget && !swarmAt) problems.push("You don't need to scout your own colony. When an army ant swarm is coming, Scouts sent here go out to meet it.");
+  else if (!scoutingSwarm && valid && target.region === colony.coords.region && target.patch === colony.coords.patch && target.spot === colony.coords.spot) problems.push("That's this colony.");
   if (type === 'colonize') {
     const flying = missions.filter((m) => m.type === 'colonize' && m.status === 'outbound').length;
     const cap = maxColonies(research);
@@ -296,7 +304,7 @@ export function SendMission({ type, setType, target, setTarget, onClose, onSent 
 
   return (
       <Panel
-        title={`${MISSION_LABEL[type]}: ${colony.name} → ${targetName(targetSpot, target, colony.coords)}`}
+        title={`${MISSION_LABEL[type]}: ${colony.name} → ${scoutingSwarm ? 'Army ant swarm' : toName}`}
         actions={
           <>
             <span className="muted small">{used}/{max} {pool === 'forage' ? 'forage parties' : 'slots'} in use</span>
@@ -332,7 +340,7 @@ export function SendMission({ type, setType, target, setTarget, onClose, onSent 
           )}
           <div className="route-row">
             <span className="route-k">To</span>
-            <strong>{targetName(targetSpot, target, colony.coords)}</strong>
+            <strong>{scoutingSwarm ? `Army ant swarm → ${ownTarget!.name}` : toName}</strong>
             <span className="muted small">{valid ? fmtCoords(target) : 'not a place'}</span>
             {unscouted && <span className="scent-tag">Not scouted</span>}
             <button className="btn ghost small route-edit" aria-expanded={manual} onClick={() => setManual(!manual)}>
@@ -398,6 +406,9 @@ export function SendMission({ type, setType, target, setTarget, onClose, onSent 
               Holders carry a load home every {windfall.deliverEveryHours} hours (as much as they can carry) until it's gone or rots in{' '}
               {fmtDuration(Math.max(0, windfall.endsAt - now))}. Send soldiers to win and keep it, and carriers to haul it.
             </p>
+          )}
+          {scoutingSwarm && swarmAt.scouted && (
+            <p className="muted small">Your scouts have already seen this swarm: its size and your odds are on its card under Under way. More Scouts won't tell you more.</p>
           )}
           {type === 'scout' && unscouted && (
             <p className="muted small">Scouting turns this scent into a colony you know: its name, owner and what's inside. Then you can raid it.</p>
@@ -486,6 +497,8 @@ export function SendMission({ type, setType, target, setTarget, onClose, onSent 
             </p>
           </fieldset>
         )}
+
+        {scoutingSwarm && <SwarmScoutOdds scouts={lvl(chosen, 'scout')} research={research} />}
 
         {type === 'raid' && !unscouted && <BattlePreview target={target} units={chosen} retreatPct={retreatPct} />}
 

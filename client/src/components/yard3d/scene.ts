@@ -12,6 +12,7 @@ import propsUrl from './props.json?url';
 import { CHITIN, antUniforms, createAnts, type Ants } from '../nest3d/ants3d';
 import { tripProgress } from '../UnderWay';
 import { TIMING, drawnFor, momentAt, planBattle, replayLength, type BattlePlan, type ReplayMoment } from '../patch3d/battle';
+import { makePath, pitchAhead, pointAlong, type Path } from '../three/path';
 import type { Spot, Coords } from '../Patch';
 import type { ServerState } from '../../game';
 
@@ -829,14 +830,15 @@ export async function createYardScene(host: HTMLElement, labels: HTMLElement, da
   // ---------- parties: columns of real ants up close, a thread far out
   // room for a swarm's column (200 army ants) and a battle replay (140 a side) at once
   const ants: Ants = createAnts(world, { worker: 700, soldier: 400, army: 450, army_major: 30, queen: 4, alate: 10 }, true);
-  interface Column { key: string; from: THREE.Vector3; to: THREE.Vector3; curve: THREE.QuadraticBezierCurve3; len: number; thread: THREE.Line; rib: THREE.Mesh; color: string; caste: 'worker' | 'soldier' | 'army'; n: number; el: HTMLDivElement; prog: (now: number) => { d: number; back: boolean } | null; cargo?: string }
+  interface Column { key: string; from: THREE.Vector3; to: THREE.Vector3; path: Path; len: number; thread: THREE.Line; rib: THREE.Mesh; color: string; caste: 'worker' | 'soldier' | 'army'; n: number; el: HTMLDivElement; prog: (now: number) => { d: number; back: boolean } | null; cargo?: string }
   const columns = new Map<string, Column>();
+  const colP = new THREE.Vector3(), colT = new THREE.Vector3(); // scratch: where an ant stands, and which way it faces
   const sumUnits = (u?: Record<string, number>) => Object.values(u ?? {}).reduce((a, b) => a + (b ?? 0), 0);
   function syncColumns() {
     const d = data();
     const st = d.state;
     if (!st) return;
-    const want = new Map<string, Omit<Column, 'curve' | 'len' | 'thread' | 'rib' | 'el'> & { label: string }>();
+    const want = new Map<string, Omit<Column, 'path' | 'len' | 'thread' | 'rib' | 'el'> & { label: string }>();
     const home = new Map((st.colonies ?? []).map((c) => [c.id, c.coords]));
     for (const m of (st.missions ?? []) as any[]) {
       if (!m.origin || !m.target) continue;
@@ -856,7 +858,7 @@ export async function createYardScene(host: HTMLElement, labels: HTMLElement, da
       want.set(`i${i.id}`, {
         key: `i${i.id}`, from: spotAt(i.origin), to: spotAt(target), color: swarm ? CHITIN.army : i.hostile ? CHITIN.raider : CHITIN.worker,
         caste: swarm ? 'army' : i.hostile ? 'soldier' : 'worker', n: Math.min(swarm ? 200 : 60, Math.max(4, Math.round(Math.sqrt(i.unitCount ?? 30) * 3))),
-        label: swarm ? `Army ants · ${(i.unitCount ?? 0).toLocaleString('en')}` : i.hostile ? `${i.type === 'raid' ? 'Raid' : 'Scouts'} from ${i.from}` : `Delivery from ${i.from}`,
+        label: swarm ? `Army ants · ${i.scouted ? (i.unitCount ?? 0).toLocaleString('en') : '?'}` : i.hostile ? `${i.type === 'raid' ? 'Raid' : 'Scouts'} from ${i.from}` : `Delivery from ${i.from}`,
         prog: (now) => ({ d: clamp((now - i.departAt) / Math.max(1, i.arriveAt - i.departAt), 0, 1), back: false }),
       });
     }
@@ -868,7 +870,9 @@ export async function createYardScene(host: HTMLElement, labels: HTMLElement, da
       const dist = Math.max(1, a.distanceTo(b));
       const nrm = new THREE.Vector3(-(b.z - a.z), 0, b.x - a.x).normalize().multiplyScalar(dist * 0.12);
       const curve = new THREE.QuadraticBezierCurve3(a.clone(), mid.add(nrm), b.clone());
-      const len = curve.getLength();
+      // walked by distance, like the patch's trails (docs/art/whole-yard.md): sampled finely along the curve
+      const path = makePath(curve.getSpacedPoints(64));
+      const len = path.total;
       const arc = new THREE.QuadraticBezierCurve3(a.clone().setY(4), a.clone().lerp(b, 0.5).setY(len * 0.25 + 10), b.clone().setY(4));
       const tg = new THREE.BufferGeometry().setFromPoints(arc.getPoints(40));
       const thread = new THREE.Line(tg, new THREE.LineDashedMaterial({ color: w.color, dashSize: 14, gapSize: 9, transparent: true, opacity: 0 }));
@@ -876,7 +880,7 @@ export async function createYardScene(host: HTMLElement, labels: HTMLElement, da
       const rib = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(curve.getPoints(40)), 60, 0.5, 4), new THREE.MeshBasicMaterial({ color: w.color, transparent: true, opacity: 0.35, depthWrite: false }));
       rib.scale.y = 0.15; rib.position.y = 0.3;
       world.add(thread, rib);
-      columns.set(k, { ...w, curve, len, thread, rib, el: tag('ybanner col', `<b>${esc(w.label)}</b>`) });
+      columns.set(k, { ...w, path, len, thread, rib, el: tag('ybanner col', `<b>${esc(w.label)}</b>`) });
     }
   }
 
@@ -1232,20 +1236,20 @@ export async function createYardScene(host: HTMLElement, labels: HTMLElement, da
       const pr = c.prog(smoothNow);
       if (!pr) continue;
       const lead = clamp(pr.d, 0, 1);
-      const lp = c.curve.getPoint(lead);
+      const lp = pointAlong(c.path, lead * c.len, colP);
       place(c.el, lp.x, 8, lp.z, d < 700 && d > 30);
       if (!showAnts) continue;
       const spacing = (1.3 * antGrow) / c.len;
       for (let i = 0; i < c.n; i++) {
         const k = pr.back ? lead + i * spacing : lead - i * spacing;
         if (k < 0 || k > 1) continue;
-        const p = c.curve.getPoint(k), tg = c.curve.getTangent(k);
+        const p = pointAlong(c.path, k * c.len, colP, colT), tg = colT;
         if (pr.back) tg.negate();
         const wob = Math.sin(i * 12.9) * 0.6 * antGrow;
         const x = p.x - tg.z * wob, z = p.z + tg.x * wob, y = footY(x, z);
         // nose up out of the crater and over the rim, down the far slope
         const ahead = footY(x + tg.x * 0.3, z + tg.z * 0.3);
-        const pitch = y > 0 || ahead > 0 ? clamp(Math.atan2(ahead - y, 0.3), -1.2, 1.2) : 0;
+        const pitch = y > 0 || ahead > 0 ? pitchAhead(footY, x, z, tg.x, tg.z, 0.3, 1.2) : 0;
         ants.ant(c.caste, x, y, z, { pitch, scale: (c.caste === 'soldier' ? 0.75 : 0.6) * antGrow, yaw: Math.atan2(-tg.z, tg.x), gait: (k * c.len) / (0.17 * antGrow) * 1.2, color: c.color, cargo: pr.back && c.cargo ? { kind: 'leaf', color: c.cargo } : null });
       }
     }

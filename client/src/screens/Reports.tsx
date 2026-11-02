@@ -11,6 +11,7 @@ import { Empty, Panel, ResDot } from '../components/ui';
 import type { Nav } from '../nav';
 import { BattleReport } from '../components/BattleReport';
 import { ForageOdds } from '../components/ForageOdds';
+import { swarmMakeUp } from '../components/SwarmIntel';
 
 interface Report {
   id: number;
@@ -148,11 +149,38 @@ function WindfallReport({ d, go }: { d: any; go?: Nav }) {
   );
 }
 
+/** Scouts sent out to meet an army-ant swarm heading for your colony (docs/20-swarms.md § Scouting the swarm). */
+function SwarmScoutReport({ d }: { d: any }) {
+  const s = d.swarm;
+  const lost = d.lost ? ` Army ants ate ${fmtFull(d.lost)} of the ${fmtFull(d.scouts)} you sent.` : '';
+  if (s.gone) return <div className="report-body"><p>By the time your scouts got out, the swarm had already reached {s.colony}. They came home.</p></div>;
+  if (!s.units)
+    return (
+      <div className="report-body">
+        <p>
+          None of your {fmtFull(d.scouts)} {d.scouts === 1 ? 'scout' : 'scouts'} came back from the army ant column heading for {s.colony}. You still don't know how big it is.
+        </p>
+        <p className="muted small">Send more Scouts to try again before it lands at {fmtClock(s.arriveAt)}. Scent Reading and Chemical Mimicry help them slip past.</p>
+      </div>
+    );
+  const n = Object.values(s.units as Record<string, number>).reduce((a, b) => a + b, 0);
+  return (
+    <div className="report-body">
+      <p>
+        Your scouts got close to the column heading for {s.colony} ({fmtCoords(s.coords)}): <strong>{fmtFull(n)} army ants</strong>, {swarmMakeUp(s.units)}. It lands at{' '}
+        {fmtClock(s.arriveAt)}.{lost}
+      </p>
+      <p className="muted small">Its size and your live odds against it are on its card under Under way. They change as you raise soldiers or send them away.</p>
+    </div>
+  );
+}
+
 function ReportBody({ r, go }: { r: Report; go?: Nav }) {
   const d = r.data;
   switch (r.type) {
     case 'scout':
       if (d.wilds) return <WildsReport d={d} />;
+      if (d.swarm) return <SwarmScoutReport d={d} />;
       return (
         <div className="report-body">
           <p>
