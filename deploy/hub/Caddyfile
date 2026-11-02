@@ -33,3 +33,9 @@ scram.marz.gg {
 	encode gzip
 	reverse_proxy scram:8791
 }
+
+# Food Fight (repo: food-fight). The game container serves the page.
+food-fight.marz.gg {
+	encode gzip
+	reverse_proxy food-fight:8080
+}
