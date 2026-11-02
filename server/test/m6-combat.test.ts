@@ -162,6 +162,19 @@ describe('corpses', () => {
     expect(later.spots.find((s: any) => s.spot === cb.coords.spot).corpses).toBeLessThan(1100);
   });
 
+  it('you can haul the corpses left at your own colony (a short trip, not instant)', async () => {
+    await getPool().query('DELETE FROM corpse_fields');
+    await getPool().query('INSERT INTO corpse_fields (world_id, region, patch, spot, protein, created_at) VALUES (1,$1,$2,$3,1000,$4)', [
+      ca.coords.region, ca.coords.patch, ca.coords.spot, clock.t,
+    ]);
+    const h = await a.post('/api/missions', { colonyId: ca.id, type: 'haul', target: ca.coords, units: { worker: 2 } });
+    expect(h.ok).toBe(true);
+    expect(h.mission.arriveAt).toBeGreaterThan(clock.t);
+    await clock.advance(h.mission.arriveAt - clock.t + 10);
+    const own = (x: any) => x.type === 'haul' && x.data.target.spot === ca.coords.spot && x.data.target.patch === ca.coords.patch && x.data.target.region === ca.coords.region;
+    expect((await a.get('/api/reports')).reports.find(own).data.collected).toBe(1000);
+  });
+
   it('intel returns the latest scout report for a spot', async () => {
     const s = await a.post('/api/missions', { colonyId: ca.id, type: 'scout', target: cb.coords, units: { scout: 2 } });
     await clock.advance(s.mission.arriveAt - clock.t + 10);
