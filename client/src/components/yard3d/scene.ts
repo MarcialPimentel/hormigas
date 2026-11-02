@@ -8,6 +8,7 @@
 import * as THREE from 'three';
 import { WILDS_SPOT, WORLD } from '@hormigas/shared';
 import moundsUrl from './mounds.json?url';
+import propsUrl from './props.json?url';
 import { CHITIN, antUniforms, createAnts, type Ants } from '../nest3d/ants3d';
 import { tripProgress } from '../UnderWay';
 import type { Spot, Coords } from '../Patch';
@@ -37,6 +38,8 @@ export interface YardScene {
 }
 
 type MoundData = { pos: number[]; tri: number[][]; r: number; h: number };
+/** small models built in Blender (docs/art/whole-yard/props.blend.py): positions y-up, sRGB colour per vertex */
+type PropData = Record<string, { pos: number[]; col: number[] }>;
 const lerp = (a: number, b: number, k: number) => a + (b - a) * k;
 const clamp = (x: number, a: number, b: number) => Math.max(a, Math.min(b, x));
 const smooth = (a: number, b: number, x: number) => { const t = clamp((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
@@ -103,7 +106,7 @@ const OWN = { you: '#F2B21F', ally: '#2F9C95', rival: '#9A6B45', wild: '#C4473A'
 type Owner = keyof typeof OWN;
 
 export async function createYardScene(host: HTMLElement, labels: HTMLElement, data: () => YardData, h: YardHandlers, reducedStart: boolean): Promise<YardScene> {
-  const MOUNDS: MoundData[] = await fetch(moundsUrl).then((r) => r.json());
+  const [MOUNDS, PROPS]: [MoundData[], PropData] = await Promise.all([fetch(moundsUrl).then((r) => r.json()), fetch(propsUrl).then((r) => r.json())]);
   let reduced = reducedStart;
   const R = rng(42);
   const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -131,22 +134,29 @@ export async function createYardScene(host: HTMLElement, labels: HTMLElement, da
     return mats.get(color)!;
   };
   const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), e3 = new THREE.Euler(), v = new THREE.Vector3(), s3 = new THREE.Vector3(), col = new THREE.Color();
+  // ---------- the Blender models (grass, flowers, shrubs, rocks, stones, logs, chips, leaves)
+  const propGeo = new Map<string, THREE.BufferGeometry>();
+  function prop(name: string) {
+    let g = propGeo.get(name);
+    if (!g) {
+      const d = PROPS[name], c = new Float32Array(d.col.length);
+      for (let i = 0; i < c.length; i += 3) { col.setRGB(d.col[i], d.col[i + 1], d.col[i + 2], THREE.SRGBColorSpace); c[i] = col.r; c[i + 1] = col.g; c[i + 2] = col.b; }
+      g = new THREE.BufferGeometry();
+      g.setAttribute('position', new THREE.Float32BufferAttribute(d.pos, 3));
+      g.setAttribute('color', new THREE.BufferAttribute(c, 3));
+      g.computeVertexNormals();
+      propGeo.set(name, g); disposables.push(g);
+    }
+    return g;
+  }
+  const propMat = new THREE.MeshStandardMaterial({ vertexColors: true, flatShading: true, roughness: 0.9 });
+  /** thin things seen from both sides: petals, leaves, reeds */
+  const propMat2 = new THREE.MeshStandardMaterial({ vertexColors: true, flatShading: true, roughness: 0.9, side: THREE.DoubleSide });
+  disposables.push(propMat, propMat2);
 
   // ---------- tiles
   const tiles: { region: number; patch: number; x: number; z: number; col: number }[] = [];
   for (let r = 1; r <= NREG; r++) for (let p = 1; p <= PER; p++) tiles.push({ region: r, patch: p, ...tileAt(r, p) });
-  const hexGeo = new THREE.CylinderGeometry(HR, HR, 8, 6).translate(0, -4, 0);
-  const tileMesh = new THREE.InstancedMesh(hexGeo, new THREE.MeshStandardMaterial({ flatShading: true, roughness: 0.95 }), tiles.length);
-  tileMesh.receiveShadow = true;
-  tiles.forEach((t, i) => {
-    tileMesh.setMatrixAt(i, m4.makeTranslation(t.x, 0, t.z));
-    const g = REGIONS[t.region - 1];
-    // the lawn is mown in stripes; the other beds shade gently across, not tile by tile
-    const base = g.kind === 'lawn' ? (Math.floor(t.col / 2) % 2 ? g.alt : g.color) : g.color;
-    const drift = Math.sin(t.x * 0.006 + t.region) * Math.cos(t.z * 0.005 - t.region) * 0.035;
-    tileMesh.setColorAt(i, col.set(base).offsetHSL(0, 0, drift + (R() - 0.5) * 0.012));
-  });
-  world.add(tileMesh);
   const bounds = { x0: Infinity, x1: -Infinity, z0: Infinity, z1: -Infinity };
   for (const t of tiles) { bounds.x0 = Math.min(bounds.x0, t.x); bounds.x1 = Math.max(bounds.x1, t.x); bounds.z0 = Math.min(bounds.z0, t.z); bounds.z1 = Math.max(bounds.z1, t.z); }
   const X0 = bounds.x0 - 170, X1 = bounds.x1 + 170, ZB = bounds.z0 - 190, ZF = bounds.z1 + 210;
@@ -190,10 +200,58 @@ export async function createYardScene(host: HTMLElement, labels: HTMLElement, da
   };
   const bx0 = Math.min(...beds.map((b) => b.x0)), bx1 = Math.max(...beds.map((b) => b.x1));
   const bz0 = Math.min(...beds.map((b) => b.z0)), bz1 = Math.max(...beds.map((b) => b.z1));
-  // under each bed, its own soil fills the notches the hex rows leave at the edges
+  // each bed is one continuous ground, painted with its own surface (Marz's pick, 2 Nov 2026: soft ground, the hexes
+  // only drawn on it as lines). Painted at about 1 px per cm, so it still has grain at ant height.
   for (const b of beds) {
-    const g = REGIONS[b.region - 1];
-    flat(b.x1 - b.x0, b.z1 - b.z0, mat(col.set(g.alt).offsetHSL(0, -0.05, -0.1).getStyle()), b.cx, -0.8, b.cz);
+    const g = REGIONS[b.region - 1], W = b.x1 - b.x0, D = b.z1 - b.z0;
+    const S = 1024, pr = rng(100 + b.region), sx = S / W;
+    const tex = canvasTex(S, (c) => {
+      c.fillStyle = g.color; c.fillRect(0, 0, S, S);
+      const blot = (x: number, y: number, r: number, color: string, a: number) => {
+        const gr = c.createRadialGradient(x, y, 0, x, y, r);
+        gr.addColorStop(0, color); gr.addColorStop(1, 'transparent');
+        c.globalAlpha = a; c.fillStyle = gr; c.fillRect(x - r, y - r, r * 2, r * 2); c.globalAlpha = 1;
+      };
+      if (g.kind === 'lawn') {
+        // mown stripes running away from the house, 1.6 m wide
+        c.fillStyle = g.alt;
+        for (let x = 0; x < W; x += 320) c.fillRect(x * sx, 0, 160 * sx, S);
+      }
+      const light = col.set(g.color).offsetHSL(0, 0, 0.07).getStyle(), dark = col.set(g.alt).offsetHSL(0, 0, -0.08).getStyle();
+      for (let i = 0; i < 70; i++) blot(pr() * S, pr() * S, 40 + pr() * 120, pr() < 0.5 ? light : dark, 0.35);
+      const extra: Record<string, [string[], number]> = {
+        lawn: [['#B4C860', '#5E8F38'], 14],
+        garden: [['#4E3422', '#83613F'], 30],
+        creek: [['#6F9C5A', '#7C8A80', '#5E7D6A'], 40],
+        wood: [['#C98450', '#7E4A28'], 24],
+        grass: [['#B9B45A', '#3C6E24'], 30],
+      };
+      const [cols, n] = extra[g.kind];
+      for (let i = 0; i < n; i++) blot(pr() * S, pr() * S, 30 + pr() * 90, cols[i % cols.length], 0.4);
+      // grain: soil crumbs, gravel, chips, clippings
+      const grain: Record<string, string[]> = {
+        lawn: ['#86B252', '#66903C', '#9CC45E'],
+        garden: ['#8A6A48', '#3E2A1C', '#9C7B55'],
+        creek: ['#B9B4A8', '#6C8D62', '#8FA98F'],
+        wood: ['#D48B52', '#8E4F27', '#E3A56A'],
+        grass: ['#6E9E3A', '#3E6E28', '#C9C072'],
+      };
+      for (let i = 0; i < 26000; i++) {
+        c.fillStyle = grain[g.kind][i % 3];
+        const w = g.kind === 'wood' ? 3 + pr() * 6 : 1 + pr() * 2, h = g.kind === 'wood' ? 2 + pr() * 3 : 1 + pr() * 2;
+        c.save(); c.translate(pr() * S, pr() * S); c.rotate(pr() * 3); c.globalAlpha = 0.55 + pr() * 0.45; c.fillRect(-w / 2, -h / 2, w, h); c.restore();
+      }
+      c.globalAlpha = 1;
+      // a damp, shaded rim inside the brick edge
+      const rim = 16 * sx;
+      for (const [x0, y0, x1, y1] of [[0, 0, 0, rim], [0, S, 0, S - rim], [0, 0, rim, 0], [S, 0, S - rim, 0]]) {
+        const gr = c.createLinearGradient(x0, y0, x1, y1);
+        gr.addColorStop(0, 'rgba(40,28,16,0.45)'); gr.addColorStop(1, 'rgba(40,28,16,0)');
+        c.fillStyle = gr; c.fillRect(Math.min(x0, x1), Math.min(y0, y1), x0 === x1 ? S : rim, y0 === y1 ? S : rim);
+      }
+    }, 1);
+    tex.wrapS = tex.wrapT = THREE.ClampToEdgeWrapping; tex.anisotropy = 8;
+    flat(W, D, new THREE.MeshStandardMaterial({ map: tex, roughness: 1 }), b.cx, 0, b.cz);
   }
   // a low brick edge with a pale coping round every bed (Marz's pick, 1 Nov 2026)
   const EDGE = { w: 20, top: 4 };
@@ -226,11 +284,14 @@ export async function createYardScene(host: HTMLElement, labels: HTMLElement, da
       const z = (Math.max(...rows[i].map((b) => b.z1)) + Math.min(...rows[i + 1].map((b) => b.z0))) / 2;
       for (let x = bx0 + 20; x < bx1; x += 70) stones.push([x, z]);
     }
-    const sm = new THREE.InstancedMesh(new THREE.CylinderGeometry(24, 26, 3, 8), mat('#C9BFAE'), stones.length);
     const pr = rng(7);
-    stones.forEach(([x, z], i) => sm.setMatrixAt(i, m4.compose(v.set(x, GY + 1, z), q.setFromEuler(e3.set(0, pr() * 3, 0)), s3.set(0.9 + pr() * 0.2, 1, 0.8 + pr() * 0.2))));
-    sm.receiveShadow = true;
-    world.add(sm);
+    for (const [k, name] of ['stone_a', 'stone_b'].entries()) {
+      const these = stones.filter((_, i) => i % 2 === k);
+      const sm = new THREE.InstancedMesh(prop(name), propMat, these.length);
+      these.forEach(([x, z], i) => sm.setMatrixAt(i, m4.compose(v.set(x, GY - 0.6, z), q.setFromEuler(e3.set(0, pr() * 6, 0)), s3.set(0.95 + pr() * 0.15, 1, 0.95 + pr() * 0.15))));
+      sm.receiveShadow = true;
+      world.add(sm);
+    }
   }
   // the back of the house: rendered wall on a plinth, a door, windows, a downpipe and an outside tap
   const WX = (X0 + X1) / 2, WW = X1 - X0 + 900, WF = ZB - 360;
@@ -313,39 +374,89 @@ export async function createYardScene(host: HTMLElement, labels: HTMLElement, da
     world.add(im);
     return im;
   }
-  const blade = new THREE.ConeGeometry(0.9, 1, 3).translate(0, 0.5, 0);
-  const grassMat = new THREE.MeshStandardMaterial({ color: '#5E9A34', flatShading: true, roughness: 0.9 });
+  /** a random point inside a bed, clear of its brick edge */
+  const inBed = (r: number, pad = 3) => () => { const b = beds[r - 1]; return { x: lerp(b.x0 + pad, b.x1 - pad, R()), z: lerp(b.z0 + pad, b.z1 - pad, R()), region: r }; };
+  const lying = (x: number, y: number, z: number, s: number, tilt = 0.25) => m4.compose(v.set(x, y, z), q.setFromEuler(e3.set((R() - 0.5) * tilt, R() * 6.3, (R() - 0.5) * tilt)), s3.set(s, s, s));
+  // grass: clumps of curved blades, dark at the root and light at the tip, that sway in the wind (Marz's pick, 2 Nov 2026)
+  const grassMat = new THREE.MeshStandardMaterial({ vertexColors: true, flatShading: true, roughness: 0.9, side: THREE.DoubleSide });
   // grass round the point you're looking at is pressed down, so it never hides the mound you came to see
-  const grassU = { uTarget: { value: new THREE.Vector2() }, uClear: { value: 0 } };
+  const grassU = { uTarget: { value: new THREE.Vector2() }, uClear: { value: 0 }, uTime: { value: 0 }, uCam: { value: new THREE.Vector2() }, uCamR: { value: 0 } };
   grassMat.onBeforeCompile = (sh) => {
-    sh.uniforms.uTarget = grassU.uTarget;
-    sh.uniforms.uClear = grassU.uClear;
-    sh.vertexShader = 'uniform vec2 uTarget;\nuniform float uClear;\n' + sh.vertexShader.replace(
+    Object.assign(sh.uniforms, grassU);
+    sh.vertexShader = 'uniform vec2 uTarget;\nuniform float uClear;\nuniform float uTime;\nuniform vec2 uCam;\nuniform float uCamR;\n' + sh.vertexShader.replace(
       '#include <begin_vertex>',
       `#include <begin_vertex>
       vec4 gOrigin = instanceMatrix * vec4(0.0, 0.0, 0.0, 1.0);
+      float gH = max(position.y, 0.0);
+      float gWind = sin(uTime * 1.7 + gOrigin.x * 0.035 + gOrigin.z * 0.02) + 0.4 * sin(uTime * 3.1 + gOrigin.z * 0.05);
+      float gBend = gWind * 0.08 * gH * gH / (gH + 10.0);
+      transformed.x += gBend; transformed.z += gBend * 0.5;
       float gK = mix(0.12, 1.0, smoothstep(uClear * 0.55, uClear, length(gOrigin.xz - uTarget)));
-      transformed.y *= uClear > 0.0 ? gK : 1.0;`,
+      // and round the camera's own feet, so no clump fills the screen at ant height
+      float gC = uCamR > 0.0 ? mix(0.08, 1.0, smoothstep(uCamR * 0.5, uCamR, length(gOrigin.xz - uCam))) : 1.0;
+      transformed.y *= (uClear > 0.0 ? gK : 1.0) * gC;`,
     );
   };
+  disposables.push(grassMat);
   const kindOf = (r: number) => REGIONS[r - 1].kind;
   /** big dressing that reads from the top and gives way to the real grass and flowers up close */
   const farDress: THREE.Object3D[] = [];
-  const grass = scatter(blade, grassMat, 16000, () => tiles[Math.floor(R() * tiles.length)], (t) => {
-    if (kindOf(t.region) === 'wood' && R() < 0.6) return null;
-    const [x, z] = onTile(t, 0.95);
-    const tall = kindOf(t.region) === 'grass' ? 13 : kindOf(t.region) === 'lawn' ? 6 : 10;
-    return m4.compose(v.set(x, 0, z), q.setFromEuler(e3.set((R() - 0.5) * 0.4, R() * 6, (R() - 0.5) * 0.4)), s3.set(1 + R(), tall * (0.6 + R() * 0.8), 1 + R()));
-  }, false);
-  const reg = (r: number) => { const ts = tilesOf(r); return () => ts[Math.floor(R() * ts.length)]; };
+  /** per bed: which clump, how many, how tall, and a tint so each bed's grass belongs to its ground */
+  const GRASS: Record<string, { model: string; n: number; tall: number; tint: string }> = {
+    lawn: { model: 'grass_short', n: 2800, tall: 1, tint: '#FFFFFF' },
+    garden: { model: 'grass_mid', n: 700, tall: 0.85, tint: '#D9DCC4' },
+    creek: { model: 'grass_mid', n: 1500, tall: 1, tint: '#D0E4D4' },
+    wood: { model: 'grass_short', n: 450, tall: 1, tint: '#E6DFB4' },
+    grass: { model: 'grass_tall', n: 3000, tall: 1, tint: '#FFFFFF' },
+  };
+  const grassMeshes: THREE.InstancedMesh[] = [];
+  for (const model of ['grass_short', 'grass_mid', 'grass_tall']) {
+    const plan = beds.filter((b) => GRASS[kindOf(b.region)].model === model);
+    const n = plan.reduce((a, b) => a + GRASS[kindOf(b.region)].n, 0);
+    if (!n) continue;
+    const im = new THREE.InstancedMesh(prop(model), grassMat, n);
+    let k = 0;
+    for (const b of plan) {
+      const cfg = GRASS[kindOf(b.region)], pick = inBed(b.region, 2);
+      for (let i = 0; i < cfg.n; i++) {
+        const t = pick(), sc = 0.75 + R() * 0.55;
+        im.setMatrixAt(k, m4.compose(v.set(t.x, 0, t.z), q.setFromEuler(e3.set((R() - 0.5) * 0.25, R() * 6.3, (R() - 0.5) * 0.25)), s3.set(sc, sc * cfg.tall * (0.8 + R() * 0.4), sc)));
+        im.setColorAt(k++, col.set(cfg.tint).offsetHSL(0, 0, (R() - 0.5) * 0.06));
+      }
+    }
+    world.add(im);
+    grassMeshes.push(im);
+  }
+  // litter at ant height: pebbles everywhere but the lawn, fallen leaves in the flowerbed and on the creek bank
+  for (const [r, n] of [[2, 500], [3, 900], [4, 200], [5, 300]] as const) if (r <= NREG)
+    scatter(prop('pebble'), propMat, n, inBed(r), (t) => lying(t.x, -0.1, t.z, 0.4 + R() * 1.2, 1.5), false);
+  for (const [r, n] of [[2, 400], [3, 250]] as const) if (r <= NREG)
+    scatter(prop('leaf'), propMat2, n, inBed(r), (t) => lying(t.x, 0, t.z, 0.6 + R() * 0.5, 0.3), false);
+  const FLOWERS = ['#F2A0C4', '#FFD84D', '#F7F4EA', '#B98CFF', '#FF8A5C'];
   if (NREG >= 2) {
-    for (const c of ['#F2A0C4', '#FFD84D', '#F7F4EA', '#B98CFF', '#FF8A5C'])
-      scatter(new THREE.CylinderGeometry(4, 2, 1.5, 6).translate(0, 26, 0), mat(c), 70, reg(2), (t) => { const [x, z] = onTile(t); return m4.compose(v.set(x, 0, z), q.identity(), s3.set(1, 0.8 + R() * 0.6, 1)); });
-    scatter(new THREE.CylinderGeometry(0.5, 0.5, 26, 4).translate(0, 13, 0), mat('#4F8A2E'), 350, reg(2), (t) => { const [x, z] = onTile(t); return m4.compose(v.set(x, 0, z), q.identity(), s3.set(1, 0.8 + R() * 0.6, 1)); });
-    // flower clumps big enough to read from the top: the Old Garden's colour comes from what grows in it
-    farDress.push(scatter(new THREE.IcosahedronGeometry(13, 0), mat('#4C7F34'), 60, reg(2), (t) => { const [x, z] = onTile(t); return m4.compose(v.set(x, 6, z), q.setFromEuler(e3.set(R(), R(), R())), s3.set(1 + R() * 0.6, 0.7, 1 + R() * 0.6)); }));
-    for (const c of ['#F2A0C4', '#FFD84D', '#F7F4EA', '#B98CFF', '#FF8A5C'])
-      farDress.push(scatter(new THREE.IcosahedronGeometry(7, 0), mat(c), 40, reg(2), (t) => { const [x, z] = onTile(t); return m4.compose(v.set(x, 10, z), q.identity(), s3.set(1, 0.6, 1)); }));
+    // the Old Garden: flowers on stems, the petals coloured per flower
+    const pick = inBed(2, 8), n = 350;
+    const stems = new THREE.InstancedMesh(prop('flower_stem'), propMat2, n), heads = new THREE.InstancedMesh(prop('flower_petals'), propMat2, n);
+    for (let i = 0; i < n; i++) {
+      const t = pick(), sc = 0.8 + R() * 0.45;
+      m4.compose(v.set(t.x, 0, t.z), q.setFromEuler(e3.set((R() - 0.5) * 0.2, R() * 6.3, (R() - 0.5) * 0.2)), s3.set(sc, sc * (0.8 + R() * 0.5), sc));
+      stems.setMatrixAt(i, m4); heads.setMatrixAt(i, m4);
+      heads.setColorAt(i, col.set(FLOWERS[i % FLOWERS.length]));
+    }
+    stems.castShadow = heads.castShadow = true;
+    world.add(stems, heads);
+    // flowering shrubs big enough to read from the top
+    const shrubs = new THREE.InstancedMesh(prop('shrub'), propMat, 70), bloom = new THREE.InstancedMesh(prop('blossom'), propMat2, 70);
+    const sp = inBed(2, 25);
+    for (let i = 0; i < 70; i++) {
+      const t = sp(), sc = 0.9 + R() * 0.6;
+      m4.compose(v.set(t.x, 0, t.z), q.setFromEuler(e3.set(0, R() * 6.3, 0)), s3.set(sc, sc * (0.8 + R() * 0.3), sc));
+      shrubs.setMatrixAt(i, m4); bloom.setMatrixAt(i, m4);
+      bloom.setColorAt(i, col.set(FLOWERS[i % FLOWERS.length]));
+    }
+    shrubs.castShadow = true;
+    world.add(shrubs, bloom);
+    farDress.push(shrubs, bloom);
   }
   // terracotta pots on the patio
   {
@@ -371,13 +482,14 @@ export async function createYardScene(host: HTMLElement, labels: HTMLElement, da
   if (NREG >= 4) {
     const g = tileAt(4, 56);
     for (let i = 0; i < 9; i++) {
-      const lg = new THREE.Mesh(new THREE.CylinderGeometry(18 + R() * 8, 20 + R() * 8, 240 + R() * 120, 9), mat(i % 2 ? '#7A5536' : '#6B4A2F'));
-      lg.rotation.z = Math.PI / 2; lg.rotation.y = 0.2 + (R() - 0.5) * 0.3;
+      const r = 18 + R() * 8, len = 240 + R() * 120;
+      const lg = new THREE.Mesh(prop('log'), propMat);
+      lg.scale.set(len / 300, r / 22, r / 22); lg.rotation.set(R() * 6.3, 0.2 + (R() - 0.5) * 0.3, 0, 'YXZ');
       lg.position.set(g.x - 120 + (i % 3) * 40, 20 + Math.floor(i / 3) * 34, g.z - 160 + (i % 3) * 46);
-      lg.castShadow = true;
+      lg.castShadow = lg.receiveShadow = true;
       world.add(lg);
     }
-    scatter(new THREE.CylinderGeometry(5, 5, 0.6, 5), mat('#B5622E'), 500, reg(4), (t) => { const [x, z] = onTile(t); return m4.compose(v.set(x, 0.4, z), q.setFromEuler(e3.set(0, R() * 6, 0)), s3.set(1 + R(), 1, 0.6 + R() * 0.5)); }, false);
+    for (const name of ['chip_a', 'chip_b']) scatter(prop(name), propMat, 300, inBed(4), (t) => lying(t.x, -0.2, t.z, 0.7 + R() * 0.8, 0.3), false);
   }
   if (NREG >= 3) {
     const a = tileAt(3, 1), b = tileAt(3, 100);
@@ -398,22 +510,22 @@ export async function createYardScene(host: HTMLElement, labels: HTMLElement, da
       const pool = new THREE.Mesh(new THREE.CircleGeometry(r, 18), water);
       pool.rotation.x = -Math.PI / 2; pool.position.set(p.x, 0.9, p.z);
       world.add(pool);
-      const ring = new THREE.InstancedMesh(new THREE.DodecahedronGeometry(7), mat('#9E988E'), 16);
-      for (let i = 0; i < 16; i++) { const a = (i / 16) * Math.PI * 2 + R() * 0.2; ring.setMatrixAt(i, m4.compose(v.set(p.x + Math.cos(a) * r, 2, p.z + Math.sin(a) * r), q.setFromEuler(e3.set(R(), R(), R())), s3.set(1 + R() * 0.5, 0.6, 1 + R() * 0.5))); }
+      const ring = new THREE.InstancedMesh(prop(k ? 'rock_moss' : 'rock'), propMat, 16);
+      for (let i = 0; i < 16; i++) { const a = (i / 16) * Math.PI * 2 + R() * 0.2, sc = 7 + R() * 3; ring.setMatrixAt(i, m4.compose(v.set(p.x + Math.cos(a) * r, -0.5, p.z + Math.sin(a) * r), q.setFromEuler(e3.set(0, R() * 6.3, 0)), s3.set(sc * (1 + R() * 0.4), sc * 0.8, sc))); }
       ring.castShadow = true;
       world.add(ring);
     }
-    scatter(new THREE.DodecahedronGeometry(6), mat('#A8A299'), 160, reg(3), (t) => { const [x, z] = onTile(t); return m4.compose(v.set(x, 2, z), q.setFromEuler(e3.set(R(), R(), R())), s3.set(1 + R(), 0.6, 1 + R())); });
+    for (const name of ['rock', 'rock_moss']) scatter(prop(name), propMat, 80, inBed(3, 8), (t) => { const sc = 4 + R() * 5; return m4.compose(v.set(t.x, -0.4, t.z), q.setFromEuler(e3.set(0, R() * 6.3, 0)), s3.set(sc * (1 + R() * 0.4), sc * 0.8, sc)); });
     // reed clumps along the water
-    farDress.push(scatter(new THREE.ConeGeometry(7, 40, 5).translate(0, 20, 0), mat('#3F7A4A'), 70, () => tiles[0], () => {
+    farDress.push(scatter(prop('reeds'), grassMat, 70, () => tiles[0], () => {
       const k = R(), p = curve.getPoint(k), tg = curve.getTangent(k), side = R() < 0.5 ? -1 : 1, d = 34 + R() * 14;
-      return m4.compose(v.set(p.x - tg.z * d * side, 0, p.z + tg.x * d * side), q.setFromEuler(e3.set((R() - 0.5) * 0.3, 0, (R() - 0.5) * 0.3)), s3.set(1, 0.7 + R() * 0.6, 1));
+      const sc = 0.8 + R() * 0.4;
+      return m4.compose(v.set(p.x - tg.z * d * side, 0, p.z + tg.x * d * side), q.setFromEuler(e3.set((R() - 0.5) * 0.2, R() * 6.3, (R() - 0.5) * 0.2)), s3.set(sc, sc * (0.8 + R() * 0.4), sc));
     }));
   }
   if (NREG >= 5) {
     // tussocks with straw seed heads: the Long Grass reads as a meadow, not a second lawn
-    farDress.push(scatter(new THREE.ConeGeometry(11, 46, 5).translate(0, 23, 0), mat('#6E9E3A'), 260, reg(5), (t) => { const [x, z] = onTile(t); return m4.compose(v.set(x, 0, z), q.setFromEuler(e3.set((R() - 0.5) * 0.3, R() * 6, (R() - 0.5) * 0.3)), s3.set(1, 0.7 + R() * 0.6, 1)); }));
-    farDress.push(scatter(new THREE.IcosahedronGeometry(5, 0), mat('#D9C27A'), 260, reg(5), (t) => { const [x, z] = onTile(t); return m4.compose(v.set(x, 38 + R() * 14, z), q.identity(), s3.set(1, 1.6, 1)); }, false));
+    farDress.push(scatter(prop('tussock'), grassMat, 260, inBed(5, 10), (t) => { const sc = 0.85 + R() * 0.4; return m4.compose(v.set(t.x, 0, t.z), q.setFromEuler(e3.set((R() - 0.5) * 0.2, R() * 6.3, (R() - 0.5) * 0.2)), s3.set(sc, sc * (0.75 + R() * 0.5), sc)); }));
   }
   {
     // the garden hose runs from the outside tap across the patio and lies coiled on the lawn behind the Backyard bed
@@ -604,8 +716,9 @@ export async function createYardScene(host: HTMLElement, labels: HTMLElement, da
   const selRing = new THREE.Mesh(new THREE.RingGeometry(6.5, 7.6, 32), new THREE.MeshBasicMaterial({ color: '#F2B21F', transparent: true, opacity: 0.9, depthWrite: false }));
   selRing.rotation.x = -Math.PI / 2; selRing.visible = false; selRing.renderOrder = 3;
   world.add(selRing);
-  const ringMat = new THREE.MeshBasicMaterial({ color: '#FFF6DC', transparent: true, opacity: 0.85 });
-  const dotGeo = new THREE.CircleGeometry(0.5, 6);
+  // a free spot is ringed with pale pebbles (they read as dots from the Patch zoom, and as stones at ant height)
+  const ringMat = new THREE.MeshStandardMaterial({ color: '#F6EEDB', emissive: '#4A4436', flatShading: true, roughness: 0.8 });
+  disposables.push(ringMat);
 
   function setSpots(region: number, patch: number, spots: Spot[]) {
     const key = `${region}:${patch}`;
@@ -621,8 +734,9 @@ export async function createYardScene(host: HTMLElement, labels: HTMLElement, da
         if (s.spot > 12 && s.spot !== WILDS_SPOT) continue;
         g = new THREE.Group();
         for (let k = 0; k < 14; k++) {
-          const dm = new THREE.Mesh(dotGeo, ringMat); dm.rotation.x = -Math.PI / 2;
-          const a = (k / 14) * Math.PI * 2; dm.position.set(Math.cos(a) * 4.2, 0.3, Math.sin(a) * 4.2);
+          const dm = new THREE.Mesh(prop('pebble'), ringMat);
+          const a = (k / 14) * Math.PI * 2, sc = 0.5 + ((k * 7) % 5) * 0.04;
+          dm.position.set(Math.cos(a) * 4.2, -0.05, Math.sin(a) * 4.2); dm.rotation.y = k * 2.3; dm.scale.set(sc, sc * 0.9, sc);
           g.add(dm);
         }
         const hit = new THREE.Mesh(new THREE.CircleGeometry(5, 12), new THREE.MeshBasicMaterial({ visible: false }));
@@ -951,9 +1065,12 @@ export async function createYardScene(host: HTMLElement, labels: HTMLElement, da
     borderU.uW.value = clamp(d * 0.006, 0.8, 16);
     fillMat.opacity = 0.08 + 0.2 * mid;
     if (borders) borders.visible = d > 30;
-    grass.visible = d < 2400;
+    for (const g of grassMeshes) g.visible = d < 2400;
+    grassU.uTime.value = reduced ? 0 : time;
     grassU.uTarget.value.set(view.x, view.z);
     grassU.uClear.value = d < 260 ? clamp(d * 0.9, 14, 70) : 0;
+    grassU.uCam.value.set(camera.position.x, camera.position.z);
+    grassU.uCamR.value = d < 260 ? clamp(d * 0.7, 6, 60) : 0;
     const swell = 1 + 2.2 * smooth(380, 1400, d); // mounds swell far out, like Civ's cities
     for (const p of places.values()) if (p.big) p.group.scale.setScalar(swell);
     for (const [k, g] of farMounds) { g.visible = !patchPlaces.has(k); g.scale.setScalar(swell); }
@@ -966,6 +1083,8 @@ export async function createYardScene(host: HTMLElement, labels: HTMLElement, da
     antUniforms.uTime.value = time;
     ants.begin();
     const showAnts = d < 420;
+    // true size at ant height, about 3× at the Patch zoom so a column of ants reads on a 1 m patch (Marz, 2 Nov 2026)
+    const antGrow = 1 + 5 * smooth(20, 300, d);
     // the game's clock ticks once a second: run it on smoothly in between, so columns march instead of hopping
     const smoothNow = reduced ? dd.now : nowSeen + Math.min(1500, t0 - nowAt);
     for (const c of columns.values()) {
@@ -977,18 +1096,18 @@ export async function createYardScene(host: HTMLElement, labels: HTMLElement, da
       const lp = c.curve.getPoint(lead);
       place(c.el, lp.x, 8, lp.z, d < 700 && d > 30);
       if (!showAnts) continue;
-      const spacing = 1.3 / c.len;
+      const spacing = (1.3 * antGrow) / c.len;
       for (let i = 0; i < c.n; i++) {
         const k = pr.back ? lead + i * spacing : lead - i * spacing;
         if (k < 0 || k > 1) continue;
         const p = c.curve.getPoint(k), tg = c.curve.getTangent(k);
         if (pr.back) tg.negate();
-        const wob = Math.sin(i * 12.9) * 0.6;
+        const wob = Math.sin(i * 12.9) * 0.6 * antGrow;
         const x = p.x - tg.z * wob, z = p.z + tg.x * wob, y = footY(x, z);
         // nose up out of the crater and over the rim, down the far slope
         const ahead = footY(x + tg.x * 0.3, z + tg.z * 0.3);
         const pitch = y > 0 || ahead > 0 ? clamp(Math.atan2(ahead - y, 0.3), -1.2, 1.2) : 0;
-        ants.ant(c.caste, x, y, z, { pitch, scale: c.caste === 'soldier' ? 0.75 : 0.6, yaw: Math.atan2(-tg.z, tg.x), gait: (k * c.len) / 0.17 * 1.2, color: c.color, cargo: pr.back && c.cargo ? { kind: 'leaf', color: c.cargo } : null });
+        ants.ant(c.caste, x, y, z, { pitch, scale: (c.caste === 'soldier' ? 0.75 : 0.6) * antGrow, yaw: Math.atan2(-tg.z, tg.x), gait: (k * c.len) / 0.17 * 1.2, color: c.color, cargo: pr.back && c.cargo ? { kind: 'leaf', color: c.cargo } : null });
       }
     }
     ants.end();
@@ -1026,7 +1145,6 @@ export async function createYardScene(host: HTMLElement, labels: HTMLElement, da
   }
   resize();
   raf = requestAnimationFrame(frame);
-  for (const g of [hexGeo, blade, dotGeo]) disposables.push(g);
 
   return {
     setRegion,
