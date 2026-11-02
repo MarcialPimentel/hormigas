@@ -1,13 +1,14 @@
 // Army-ant swarms (docs/20-swarms.md). Every player colony has one pending `swarm_spotted` event.
 // When it fires, a swarm sized against what the colony has at home sets off from the patch's wilds and
 // lands warningHours later as a raid. Survivors and their loot move on: nothing comes back.
-import { SWARM, WILDS_SPOT, createRng, isInactive, nextSwarmHours, groundDefensePct, productionPerHour, randomSeed, res, storageCapacity, swarmParty, swarmPrey } from '@hormigas/shared';
-import type { Tx } from '../db';
+import { SWARM, WILDS_SPOT, coordsKey, createRng, isInactive, lvl, nextSwarmHours, groundDefensePct, productionPerHour, randomSeed, res, rollSwarmScouts, storageCapacity, swarmParty, swarmPrey } from '@hormigas/shared';
+import type { Q, Tx } from '../db';
 import { advance, getPlayer, lockColony, saveColony, type Colony } from '../colony';
 import { addReport } from './reports';
 import { recurringColonyEvent } from '../recurring';
 import { gameHoursMs, getWorld } from '../world';
-import { defineMission, launchMission } from './missions';
+import { defineMission, launchMission, type ArrivalOutcome, type Mission } from './missions';
+import { refreshPointsAfterCommit } from './points';
 import { resolveRaid } from './combat';
 import { wildPlayerId } from './nests';
 import { GameError } from '../errors';
@@ -78,3 +79,48 @@ defineMission('swarm', {
     return { home: false };
   },
 });
+
+/** The swarm on its way to a colony, if there is one (there's never more than one at a time). */
+export async function swarmHeadingFor(q: Q, colonyId: number) {
+  const r = await q.query(
+    "SELECT id, units, arrive_at, result FROM missions WHERE type = 'swarm' AND status = 'outbound' AND target_colony_id = $1 ORDER BY arrive_at LIMIT 1",
+    [colonyId],
+  );
+  const row = r.rows[0];
+  return row ? { id: Number(row.id), units: row.units as Record<string, number>, arriveAt: Number(row.arrive_at), scouted: !!row.result?.scouted } : null;
+}
+
+/**
+ * Scouts sent at your own colony while a swarm is coming go out to meet the column (docs/20-swarms.md § Scouting the swarm).
+ * Each one slips past on its own; if any get back, the swarm is scouted: its real size and make-up show on the colony's
+ * swarm card, with live odds. The rest are eaten.
+ */
+export async function scoutSwarm(q: Tx, m: Mission, colony: Colony, at: number): Promise<ArrivalOutcome> {
+  const scouts = lvl(m.units, 'scout');
+  const swarm = await swarmHeadingFor(q, colony.id);
+  const where = { colony: colony.name, colonyId: colony.id, coords: { region: colony.region, patch: colony.patch, spot: colony.spot } };
+  if (!swarm || swarm.arriveAt <= at) {
+    m.result = { swarm: true, gone: true };
+    await addReport(q, m.worldId, m.playerId, 'scout', `Your scouts found no swarm near ${colony.name}`, { swarm: { ...where, gone: true }, scouts, back: scouts, lost: 0 }, at);
+    return { home: true };
+  }
+  const player = await getPlayer(q, m.playerId);
+  const back = rollSwarmScouts(scouts, player.research, createRng(randomSeed()));
+  const lost = scouts - back;
+  if (back > 0) await q.query(`UPDATE missions SET result = coalesce(result, '{}'::jsonb) || '{"scouted": true}'::jsonb WHERE id = $1`, [swarm.id]);
+  const ants = Object.values(swarm.units).reduce((a, b) => a + (b ?? 0), 0);
+  await addReport(
+    q, m.worldId, m.playerId, 'scout',
+    back > 0 ? `Swarm scouted: ${ants.toLocaleString('en')} army ants heading for ${colony.name}` : `Your scouts never came back from the swarm`,
+    { swarm: { ...where, arriveAt: swarm.arriveAt, ...(back > 0 ? { units: swarm.units } : {}) }, scouts, back, lost, key: coordsKey(where.coords) },
+    at,
+  );
+  m.result = { swarm: true, back, lost };
+  if (lost > 0) await refreshPointsAfterCommit(q, m.playerId);
+  if (back === 0) {
+    m.units = {};
+    return { home: false };
+  }
+  m.units = { ...m.units, scout: back };
+  return { home: true };
+}

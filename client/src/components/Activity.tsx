@@ -3,6 +3,7 @@ import { useGame } from '../game';
 import { Countdown, Empty, Trip } from './ui';
 import { fmtCoords } from '../format';
 import { incomingName, pactNote } from '../incoming';
+import { SWARM_ADVICE } from './SwarmIntel';
 import { MISSION_LABEL, type MissionType } from '../nav';
 import type { ReactNode } from 'react';
 
@@ -104,10 +105,8 @@ export function ActivityList({ go, trips = true, quiet = false }: { go: (screen:
         <>
           {i.type === 'swarm' ? (
             <>
-              <strong>Army ant swarm incoming</strong> out of the wilds — {i.unitCount.toLocaleString()} ants
-              <span className="muted small">
-                {' '}It's sized so the army you have at home now usually wins. Keep your soldiers in to fight it and win corpses to haul, or send them away and let it take some unprotected food. It never touches chambers.
-              </span>
+              <strong>Army ant swarm incoming</strong> out of the wilds{i.scouted ? ` — ${i.unitCount.toLocaleString()} ants` : ''}
+              <span className="muted small"> {SWARM_ADVICE}</span>
             </>
           ) : (
             <>

@@ -9,6 +9,8 @@ import { Empty, TRIP_LOAD, tripAnt } from './ui';
 import { useMotion } from '../motion';
 import { incomingName, pactNote } from '../incoming';
 import type { Caste } from '../art/ants';
+import type { Nav } from '../nav';
+import { SWARM_ADVICE, SwarmIntel } from './SwarmIntel';
 
 type Coords = { region: number; patch: number; spot: number };
 /** A row was clicked: show its column. `key` is the patch scene's party key ('m12', 'i7'). */
@@ -67,7 +69,7 @@ function Bar({ x, oneWay, tone, back, caste = 'worker', loads = [], still }: {
   );
 }
 
-export function UnderWay({ onFocus, compact, limit }: { onFocus?: FocusParty; compact?: boolean; limit?: number }) {
+export function UnderWay({ onFocus, compact, limit, go: nav }: { onFocus?: FocusParty; compact?: boolean; limit?: number; go?: Nav }) {
   const { state, colony, act, now } = useGame();
   if (!state || !colony) return null;
   const homes = new Map((state.colonies ?? []).map((c) => [c.id, c]));
@@ -102,7 +104,7 @@ export function UnderWay({ onFocus, compact, limit }: { onFocus?: FocusParty; co
                 {i.hostile && (i.type === 'swarm' || ((i.type === 'raid' || i.type === 'claim') && (i.wild || i.herd))) && (
                   <p className="uw-advice">
                     {i.type === 'swarm'
-                      ? "Sized so the army you have at home now usually wins. Keep your soldiers in to fight it and win corpses to haul, or send them away and let it take some unprotected food. It never touches chambers."
+                      ? SWARM_ADVICE
                       : i.windfall
                         ? "They're coming to fight your ants for the windfall. Send more soldiers to hold it, or call your ants home with a load before they land."
                         : i.herd
@@ -111,8 +113,9 @@ export function UnderWay({ onFocus, compact, limit }: { onFocus?: FocusParty; co
                   </p>
                 )}
                 <p className="uw-sub">
-                  {i.from}{pactNote(i)}{i.unitCount && i.type !== 'scout' ? ` · ${fmtFull(i.unitCount)} ${i.type === 'swarm' ? 'ants' : 'units'}` : ''} → {i.windfall ? 'your windfall' : i.herd ? 'your aphid herd' : homes.get(i.targetColonyId)?.name ?? 'you'}
+                  {i.from}{pactNote(i)}{i.type === 'swarm' ? ` · ${i.scouted ? fmtFull(i.unitCount) : '?'} ants` : i.unitCount && i.type !== 'scout' ? ` · ${fmtFull(i.unitCount)} units` : ''} → {i.windfall ? 'your windfall' : i.herd ? 'your aphid herd' : homes.get(i.targetColonyId)?.name ?? 'you'}
                 </p>
+                {i.type === 'swarm' && <SwarmIntel i={i} go={nav} />}
               </li>
             );
           }

@@ -145,6 +145,8 @@ export interface SurfaceParty {
   n: number;
   /** how many ants the party really has: the 3D nest draws this many, up to its cap */
   units: number;
+  /** an army-ant swarm nobody has scouted: draw its rough size, but don't print a number (docs/20-swarms.md) */
+  unknownSize?: boolean;
   /** cargo when coming home */
   cargo: Resources | null;
   type: string;
@@ -189,7 +191,7 @@ export function surfaceParties(w: number, entranceX: number, c: ServerColony, st
     const n = i.type === 'swarm' ? Math.min(30, Math.max(6, Math.ceil(i.unitCount / 3))) : kind === 'raid' ? Math.min(10, Math.max(3, Math.ceil(i.unitCount / 6))) : 2;
     out.push({
       key: `i${i.id}`, x, lane: lane++, heading: fromLeft ? 1 : -1, kind,
-      n, units: Math.max(n, i.unitCount ?? 0), cargo: null,
+      n, units: Math.max(n, i.unitCount ?? 0), cargo: null, unknownSize: i.type === 'swarm' && !i.scouted,
       type: i.type, outbound: true, endAt: i.arriveAt,
     });
   }

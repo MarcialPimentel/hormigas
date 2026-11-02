@@ -681,7 +681,7 @@ export async function createNestScene(
 
   // ---------- surface parties and diggers (from the server's missions, incoming and build job) ----------
   // A party is drawn at its real size up to a cap: a column a few ants wide that streams on and off the
-  // block's edges; an army-ant swarm is a wide, jostling river. The label gives the true number.
+  // block's edges; an army-ant swarm is a wide, jostling river. The label gives the number once scouts have seen it ("?" before).
   let clock = 0;
   const hash = (i: number, k: number) => {
     const x = Math.sin(i * 12.9898 + k * 78.233) * 43758.5453;
@@ -721,7 +721,7 @@ export async function createNestScene(
       }
       if (p.kind === 'raid') raid = true;
       label(`party-${p.key}`, `nest-trip n3-trip ${p.kind}`, x0, SURF + 1.6, z0,
-        `${esc(partyLabel(p))} · ${p.units.toLocaleString()} · ${fmtDuration(p.endAt - d.now)}`);
+        `${esc(partyLabel(p))} · ${p.unknownSize ? '?' : p.units.toLocaleString()} · ${fmtDuration(p.endAt - d.now)}`);
     }
     alarm.material.opacity = raid ? (reduced ? 0.7 : 0.45 + 0.4 * Math.sin(clock * 7)) : 0;
   }
