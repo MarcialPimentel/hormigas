@@ -364,7 +364,8 @@ export function ResearchTree({ blurbs }: { blurbs: Record<string, string> }) {
                 : st === 'active' ? `learning Lv ${next}`
                 : st === 'locked' ? `needs ${missing[0].name} ${missing[0].need}${missing.length > 1 ? ` +${missing.length - 1}` : ''}`
                 : `next: Lv ${next}${max < Infinity ? ` of ${max}` : ''}`;
-              const dim = lit && !lit.has(id);
+              // researched techs never fade, so you can always see what you own at a glance
+              const dim = lit && !lit.has(id) && level === 0;
               return (
                 <button
                   key={id}
