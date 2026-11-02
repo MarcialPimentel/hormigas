@@ -608,6 +608,21 @@ pre.report-body { white-space: pre-wrap; overflow-x: auto; }
 .forage-odds details .counts { margin-top: 0.4rem; }
 .first-forage { color: var(--leaf-ink); font-weight: 700; margin-bottom: 0.4rem; }
 
+/* ---------- sound ---------- */
+.sound-wrap { position: relative; }
+.sound-btn { display: inline-flex; align-items: center; padding: 0.3rem 0.45rem; }
+.sound-card {
+  position: absolute; right: 0; top: calc(100% + 0.35rem); z-index: 40; width: min(260px, calc(100vw - 2rem));
+  background: var(--wall); border: 1px solid var(--seam); border-radius: var(--r-md); padding: 0.75rem;
+  display: grid; gap: 0.5rem; box-shadow: 0 8px 24px rgba(10, 6, 3, 0.35);
+}
+.sound-row { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
+.sound-row label { font-weight: 700; }
+.sound-card input[type='range'] { width: 100%; accent-color: var(--honey); }
+.sound-card p { margin: 0; }
+/* phones: the speaker isn't at the screen's edge, so the card spans the screen instead of hanging off it */
+@media (max-width: 479px) { .sound-card { position: fixed; top: 3.25rem; left: 1rem; right: 1rem; width: auto; } }
+
 /* ---------- feedback ---------- */
 .topbar-actions { display: flex; align-items: center; gap: 0.25rem; flex: none; }
 .feedback-btn { display: inline-flex; align-items: center; gap: 0.35rem; color: var(--honey-ink); border-color: var(--seam); }

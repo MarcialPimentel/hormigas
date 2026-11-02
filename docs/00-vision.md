@@ -12,6 +12,8 @@ Hormigas is a browser-based, persistent strategy game where you grow an ant king
 
 **Tone:** grounded nature documentary. The colony is drawn like a living field guide: real anatomy, bold silhouettes, no cartoon faces. See [18-art-direction.md](18-art-direction.md).
 
+**Sound:** a soft march made from the ants' own footsteps, following what the colony is doing. See [sound.md](sound.md).
+
 ## Design pillars
 1. **The colony lives while you're away.** Progress never stops. Coming back should always feel rewarding.
 2. **Every loss is recoverable.** Raids sting but never end you. Protected storage, brood, and catch-up rules keep players in the game.
@@ -43,6 +45,7 @@ Decisions Marz made, newest first. Details and the smaller calls live in the lin
 
 | Date | Decision | Why |
 |---|---|---|
+| 2026-11-02 | Background music: a march made from the ants' footsteps. Each 4/4 beat is a tiny three-foot tripod step swinging left/right, under a low soil drum and a sparse wooden marimba tune that keeps rewriting itself. It follows the colony: quiet when nobody's out, fuller while parties walk, faster and tense while a raid or swarm is coming. On by default at half volume, after the first click; a speaker in the top bar turns it off or changes the volume; it pauses in a hidden tab ([sound](sound.md)) | Marz asked for a 4/4, left/right march to match the marching ants. "Tiny feet on soil" (recommended) was picked over a field-drum corps and clockwork ticking because it fits the nature-documentary tone and can be left on for an hour. The tripod step is real ant gait (pillar 4) |
 | 2026-11-02 | **Fog of war**, for everyone on every screen: you see the patches with your colonies and the patches touching them (and where your ants are stationed); patches your ants have reached stay explored and show as last seen, greyed; never-explored patches show only their outline. Only Scouts or foragers surveying the wilds may enter a patch you've never explored. Supercolony mates share sight. Existing players keep what they'd already seen ([22-discovery](22-discovery.md#fog-of-war)) | Marz: like Civilization, but players know the outlines. Exploring gives Scouts a job and makes the map something you uncover. The regions stay separate beds: joining them would suggest border patches are neighbours when crossing regions is a long trip |
 | 2026-11-02 | Whole Yard top view cut to the five beds: it fits them to the window and stops zooming out there; the house, patio, pots, hose, fence and hedge are removed; the Woodpile's log pile moves onto the lawn beside its bed ([art/whole-yard.md](art/whole-yard.md#the-yard-view)) | Marz's playtest: the fake building and huge top level weren't needed, and the log pile hid the Woodpile's patches |
 | 2026-11-02 | Whole Yard models: each bed one continuous painted ground with the hexes as drawn lines; grass as curved, swaying blade clumps; rocks, stepping stones, flowers, shrubs, logs, bark chips, leaves, reeds and tussocks rebuilt in Blender; ants drawn bigger as the camera pulls back ([art/whole-yard.md](art/whole-yard.md#the-models)) | Marz: the floating hexagons and triangle grass looked low effort, and ants were too small to see at the Patch zoom. He picked soft ground + drawn grid and curved blade clumps (recommended) and asked for all four other model groups |
