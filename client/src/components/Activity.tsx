@@ -105,7 +105,7 @@ export function ActivityList({ go, trips = true, quiet = false }: { go: (screen:
         <>
           {i.type === 'swarm' ? (
             <>
-              <strong>Army ant swarm incoming</strong> out of the wilds{i.scouted ? ` — ${i.unitCount.toLocaleString()} ants` : ''}
+              <strong>Army ant swarm incoming</strong> out of the wilds{i.scouted ? ` — ${i.sizeName ? `${i.sizeName.toLowerCase()}, ` : ''}${i.unitCount.toLocaleString()} ants` : ''}
               <span className="muted small"> {SWARM_ADVICE}</span>
             </>
           ) : (

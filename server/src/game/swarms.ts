@@ -1,7 +1,7 @@
 // Army-ant swarms (docs/20-swarms.md). Every player colony has one pending `swarm_spotted` event.
-// When it fires, a swarm sized against what the colony has at home sets off from the patch's wilds and
-// lands warningHours later as a raid. Survivors and their loot move on: nothing comes back.
-import { SWARM, WILDS_SPOT, coordsKey, createRng, isInactive, lvl, nextSwarmHours, groundDefensePct, productionPerHour, randomSeed, res, rollSwarmScouts, storageCapacity, swarmParty, swarmPrey } from '@hormigas/shared';
+// When it fires, the sighting rolls a size (foraging column, war column or great swarm), a swarm of that size is
+// sized against what the colony has at home, sets off from the patch's wilds and lands warningHours later as a raid. Survivors and their loot move on: nothing comes back.
+import { SWARM, WILDS_SPOT, add, coordsKey, createRng, isInactive, lvl, nextSwarmHours, groundDefensePct, productionPerHour, randomSeed, res, rollSwarmScouts, rollSwarmSize, swarmParty, swarmPrey, swarmSize, type SwarmSizeId, type UnitCounts } from '@hormigas/shared';
 import type { Q, Tx } from '../db';
 import { advance, getPlayer, lockColony, saveColony, type Colony } from '../colony';
 import { addReport } from './reports';
@@ -25,8 +25,9 @@ const swarms = recurringColonyEvent('swarm_spotted', {
     if (player.protectedUntil > t || isInactive(pvp, t) || busy.rowCount) return;
 
     const colony = advance(await lockColony(q, colonyId), t);
-    const units = swarmParty({ units: colony.units, defenses: colony.defenses, research: player.research, groundDefensePct: groundDefensePct(colony.terrain) }, randomSeed());
-    await launchSwarm(q, colony, units, t);
+    const size = rollSwarmSize(createRng(randomSeed()));
+    const units = swarmParty({ units: colony.units, defenses: colony.defenses, research: player.research, groundDefensePct: groundDefensePct(colony.terrain) }, randomSeed(), size);
+    await launchSwarm(q, colony, units, t, size.id);
   },
 });
 
@@ -36,32 +37,37 @@ export const scheduleSwarm = swarms.scheduleNext;
 /** Give every player colony without a pending sighting one (startup; covers colonies made before Build 5). */
 export const ensureSwarms = swarms.ensure;
 
-/** Send a swarm at a colony from its patch's wilds, landing SWARM.warningHours from t. */
-export async function launchSwarm(q: Tx, colony: Colony, units: Record<string, number>, t: number) {
+/** Send a swarm at a colony from its patch's wilds, landing SWARM.warningHours from t. Its size stays hidden until scouted. */
+export async function launchSwarm(q: Tx, colony: Colony, units: Record<string, number>, t: number, size: SwarmSizeId = 'foraging') {
   const world = await getWorld(q);
   const wild = await wildPlayerId(q, world.id, t);
   // the swarm comes out of the wilds; the missions table needs an origin colony, so it's anchored on the patch's wild nest (or the target itself)
   const nest = await q.query('SELECT id FROM colonies WHERE world_id = $1 AND region = $2 AND patch = $3 AND npc IS NOT NULL AND spot <= 12 LIMIT 1', [world.id, colony.region, colony.patch]);
   const anchor = { ...colony, id: nest.rows[0]?.id ?? colony.id, spot: WILDS_SPOT } as Colony;
   const target = { region: colony.region, patch: colony.patch, spot: colony.spot };
-  return launchMission(q, {
+  const m = await launchMission(q, {
     worldId: world.id, playerId: wild, type: 'swarm', origin: anchor, target, targetColony: colony,
     units, cargo: res(), speedPct: 100, fuel: 0, departAt: t, arriveAt: t + gameHoursMs(SWARM.warningHours, world.speed), senderName: SWARM.name,
   });
+  await q.query(`UPDATE missions SET result = coalesce(result, '{}'::jsonb) || jsonb_build_object('size', $2::text) WHERE id = $1`, [m.id, size]);
+  m.result = { ...(m.result ?? {}), size };
+  return m;
 }
 
-/** A beaten swarm drops the prey it was carrying at the colony's entrance (docs/20-swarms.md). */
-async function dropPrey(q: Tx, colonyId: number, at: number) {
+/**
+ * A beaten swarm drops the prey it was carrying at the colony's entrance (docs/20-swarms.md): a share of the swarm's
+ * worth in mixed food, at least a few hours of the colony's own production. It may go over the storage cap.
+ */
+async function dropPrey(q: Tx, colonyId: number, swarm: UnitCounts, sizeName: string | undefined, at: number) {
   let c = advance(await lockColony(q, colonyId), at);
   const world = await getWorld(q);
   const perHour = productionPerHour(c.chambers, c.terrain, world.speed, c.research, c.units);
-  const cap = storageCapacity(c.chambers, c.research);
-  const prey = swarmPrey(perHour.foliage + perHour.protein + perHour.nectar, cap.protein - c.resources.protein);
-  if (prey <= 0) return;
-  c = { ...c, resources: { ...c.resources, protein: c.resources.protein + prey } };
+  const prey = swarmPrey(swarm, perHour.foliage + perHour.protein + perHour.nectar);
+  c = { ...c, resources: add(c.resources, prey) };
   await saveColony(q, c);
+  const what = sizeName ? `the ${sizeName.toLowerCase()}` : 'the column';
   await addReport(q, world.id, c.playerId, 'nest_event', 'The swarm dropped its prey', {
-    event: 'swarm_prey', text: 'Your soldiers broke the column. The army ants fled and left behind everything they had been carrying.', found: res(0, prey, 0), colonyId: c.id,
+    event: 'swarm_prey', text: `Your soldiers broke ${what}. The army ants fled and left behind everything they had been carrying.`, found: prey, colonyId: c.id,
   }, at);
 }
 
@@ -71,8 +77,10 @@ defineMission('swarm', {
   },
   async arrive(q, m, at) {
     if (!m.targetColonyId) return { home: false };
-    await resolveRaid(q, m, at, { attackerName: SWARM.name });
-    if ((m.result as { winner?: string } | null)?.winner === 'defender') await dropPrey(q, m.targetColonyId, at);
+    const size = swarmSize((m.result as { size?: string } | null)?.size);
+    const sent = { ...m.units };
+    await resolveRaid(q, m, at, { attackerName: size ? `${SWARM.name} (${size.name.toLowerCase()})` : SWARM.name });
+    if ((m.result as { winner?: string } | null)?.winner === 'defender') await dropPrey(q, m.targetColonyId, sent, size?.name, at);
     // a swarm never goes home: survivors and whatever they took march on
     m.units = {};
     m.cargo = res();
@@ -87,7 +95,7 @@ export async function swarmHeadingFor(q: Q, colonyId: number) {
     [colonyId],
   );
   const row = r.rows[0];
-  return row ? { id: Number(row.id), units: row.units as Record<string, number>, arriveAt: Number(row.arrive_at), scouted: !!row.result?.scouted } : null;
+  return row ? { id: Number(row.id), units: row.units as Record<string, number>, arriveAt: Number(row.arrive_at), scouted: !!row.result?.scouted, size: swarmSize(row.result?.size) } : null;
 }
 
 /**
@@ -111,8 +119,13 @@ export async function scoutSwarm(q: Tx, m: Mission, colony: Colony, at: number):
   const ants = Object.values(swarm.units).reduce((a, b) => a + (b ?? 0), 0);
   await addReport(
     q, m.worldId, m.playerId, 'scout',
-    back > 0 ? `Swarm scouted: ${ants.toLocaleString('en')} army ants heading for ${colony.name}` : `Your scouts never came back from the swarm`,
-    { swarm: { ...where, arriveAt: swarm.arriveAt, ...(back > 0 ? { units: swarm.units } : {}) }, scouts, back, lost, key: coordsKey(where.coords) },
+    back > 0
+      ? `Swarm scouted: ${swarm.size ? `a ${swarm.size.name.toLowerCase()}, ` : ''}${ants.toLocaleString('en')} army ants heading for ${colony.name}`
+      : `Your scouts never came back from the swarm`,
+    {
+      swarm: { ...where, arriveAt: swarm.arriveAt, ...(back > 0 ? { units: swarm.units, ...(swarm.size ? { size: swarm.size.id, sizeName: swarm.size.name, sizeBlurb: swarm.size.blurb } : {}) } : {}) },
+      scouts, back, lost, key: coordsKey(where.coords),
+    },
     at,
   );
   m.result = { swarm: true, back, lost };

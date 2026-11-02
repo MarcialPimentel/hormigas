@@ -2,6 +2,12 @@
 
 _Current as of Build 13 (2026-11-02)._ Newest first. One entry per build, in players' words, built from the merged PRs. Smaller PRs merged between builds are listed with the nearest build.
 
+## Build 14: Swarm sizes (unreleased)
+- **Army-ant swarms come in three sizes now.** Most are a **foraging column** your soldiers should beat for a modest cost, some are a **war column**, a hard fight that costs dearly, and about one in ten is a **great swarm** that could overrun your colony. You don't know which until you scout it: the report and the swarm's card name the size, and the card's odds show how you'd do. A great swarm is the moment to raise soldiers, build defenses or send your army away.
+- **Beating a swarm pays.** The army ants drop their prey: about three-quarters of what the swarm was worth, in Foliage, Protein and Nectar, and never less than 4 hours of your own production. It can go over your storage cap. Before, it was 4 hours of production as Protein only.
+- The smallest swarm is smaller (2 Minor Soldiers), so a small or empty colony meets a lighter party.
+- Battle reports name the swarm's size ("attack by Army ant swarm (war column)").
+
 ## Build 13: Scout the swarm (unreleased)
 - **Scout the swarm.** An army-ant swarm no longer tells you it's sized for you. Its card says an army **roughly the size of your colony** is marching in, and its size shows as "?" until you scout it. Press **Scout the swarm** (or send Scouts at your own colony while it's coming): before they go you see each Scout's chance to slip past, the chance a report gets back, and how many you'll likely lose. More Scouts, Scent Reading and Chemical Mimicry raise the odds; army ants eat the ones they catch. If a report gets back, the card shows the swarm's real size, its Minors and Majors, and your **win / draw / lose odds** with the ants home right now, which change as you raise soldiers or send them away.
 - You can **haul the corpses left at your own colony**. After a fight at your nest, Haul corpses with your own colony as the target used to stop at "That's this colony." Now your Workers go out, gather the Protein and come back after a short trip, like any other haul.

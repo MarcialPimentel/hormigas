@@ -1,7 +1,7 @@
 // Build 5: army-ant swarms (docs/20-swarms.md).
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { FastifyInstance } from 'fastify';
-import { SWARM, defenderWinRate, rollSwarmScouts, roughSwarmSize, swarmOfPacks, swarmParty, swarmScoutChance, swarmScoutOdds } from '@hormigas/shared';
+import { SWARM, createRng, rollSwarmScouts, rollSwarmSize, roughSwarmSize, swarmOdds, swarmOfPacks, swarmOfSize, swarmPacksFor, swarmParty, swarmPrey, swarmScoutChance, swarmScoutOdds, swarmSize, unitsValue } from '@hormigas/shared';
 import { getPool, tx } from '../src/db';
 import { ensureSwarms } from '../src/game/swarms';
 import { setupTest, teardownTest, newPlayer, setColony, setPlayer, type Client } from './helpers';
@@ -40,17 +40,59 @@ beforeAll(async () => {
 afterAll(async () => teardownTest(app));
 
 describe('sizing', () => {
-  it('a colony with nothing at home meets the smallest swarm', () => {
-    expect(swarmParty({ units: {}, defenses: {}, research: {} }, 1)).toEqual(swarmOfPacks(SWARM.minPacks));
+  const home = { units: { minor_soldier: 60, major_soldier: 20, worker: 40 }, defenses: { soil_wall: 1, pit_trap: 10 }, research: {} };
+  const [foraging, war, great] = SWARM.sizes;
+
+  it('a colony with nothing at home meets the smallest party, whatever the size', () => {
+    for (const s of SWARM.sizes) expect(swarmParty({ units: {}, defenses: {}, research: {} }, 1, s)).toEqual(SWARM.smallest);
+    expect(swarmOfSize(0)).toEqual(SWARM.smallest);
   });
 
-  it('a defended colony meets a swarm it beats about 70% of the time', () => {
-    const home = { units: { minor_soldier: 60, major_soldier: 20, worker: 40 }, defenses: { soil_wall: 1, pit_trap: 10 }, research: {} };
-    const party = swarmParty(home, 7);
-    expect(party.minor_soldier).toBeGreaterThan(SWARM.pack.minor_soldier!);
-    const packs = party.minor_soldier! / SWARM.pack.minor_soldier!;
-    expect(defenderWinRate(home, packs, 7)).toBeGreaterThanOrEqual(SWARM.defenderWinRate);
-    expect(defenderWinRate(home, packs + 1, 7)).toBeLessThan(SWARM.defenderWinRate);
+  it('each size is the biggest swarm that still meets its win chance and loss limit', () => {
+    for (const s of SWARM.sizes) {
+      const n = swarmPacksFor(home, s, 7);
+      expect(n).toBeGreaterThan(0);
+      const at = swarmOdds(home, n, 7);
+      expect(at.winRate).toBeGreaterThanOrEqual(s.minWinRate);
+      if (s.maxLossPct != null) expect(at.lossShare * 100).toBeLessThanOrEqual(s.maxLossPct);
+      const next = swarmOdds(home, n + 1, 7);
+      expect(next.winRate < s.minWinRate || (s.maxLossPct != null && next.lossShare * 100 > s.maxLossPct)).toBe(true);
+    }
+  });
+
+  it('foraging column < war column < great swarm, and only the great swarm can beat you', () => {
+    const f = swarmPacksFor(home, foraging, 7), w = swarmPacksFor(home, war, 7), g = swarmPacksFor(home, great, 7);
+    expect(f).toBeLessThan(w);
+    expect(w).toBeLessThan(g);
+    expect(swarmOdds(home, f, 99, 200).winRate).toBeGreaterThan(0.9);
+    expect(swarmOdds(home, w, 99, 200).winRate).toBeGreaterThan(0.85);
+    // near the top one more pack takes about 20 points off the win chance, so a great swarm lands between a coin flip and about 4 in 5
+    const gw = swarmOdds(home, g, 99, 200).winRate;
+    expect(gw).toBeGreaterThan(0.35);
+    expect(gw).toBeLessThan(0.9);
+  });
+
+  it('rolls foraging columns most often and great swarms rarely', () => {
+    const rng = createRng(3);
+    const n: Record<string, number> = { foraging: 0, war: 0, great: 0 };
+    for (let i = 0; i < 10000; i++) n[rollSwarmSize(rng).id]++;
+    for (const s of SWARM.sizes) expect(n[s.id] / 100).toBeCloseTo(s.chance, -1);
+    expect(swarmSize('war')?.name).toBe('War column');
+    expect(swarmSize('nope')).toBeUndefined();
+  });
+
+  it('the prey is a share of the swarm in mixed food, at least a few hours of production', () => {
+    const swarm = swarmOfPacks(10);
+    const worth = Object.values(unitsValue(swarm)).reduce((a, b) => a + b, 0);
+    const p = swarmPrey(swarm, 100);
+    const total = p.foliage + p.protein + p.nectar;
+    expect(total).toBeGreaterThan((worth * SWARM.prey.pctOfWorth) / 100 - 3);
+    expect(total).toBeLessThanOrEqual((worth * SWARM.prey.pctOfWorth) / 100);
+    expect(p.foliage).toBeGreaterThan(p.protein);
+    expect(p.protein).toBeGreaterThan(p.nectar);
+    // a rich colony meeting a small swarm still gets a few hours of its own production
+    const rich = swarmPrey(swarmOfSize(0), 10000);
+    expect(rich.foliage + rich.protein + rich.nectar).toBeGreaterThan(10000 * SWARM.prey.minHours - 3);
   });
 });
 
@@ -93,7 +135,7 @@ describe('in the world', () => {
     await clock.advance(Number(m.arrive_at) - clock.t + 1);
     const rep = (await battles()).at(-1);
     expect(rep.title).toContain(SWARM.name);
-    expect(rep.data.attacker.name).toBe(SWARM.name);
+    expect(['foraging column', 'war column', 'great swarm'].map((n) => `${SWARM.name} (${n})`)).toContain(rep.data.attacker.name);
     const done = (await swarmsAt(c.id))[0];
     expect(done.status).toBe('done');
     expect(Number(rep.data.corpses)).toBeGreaterThan(0);
@@ -128,8 +170,10 @@ describe('in the world', () => {
     expect((await battles()).at(-1).data.winner).toBe('defender');
     const prey = (await getPool().query("SELECT title, data FROM reports WHERE player_id = $1 AND type = 'nest_event' ORDER BY id DESC LIMIT 1", [me.id])).rows[0];
     expect(prey.title).toBe('The swarm dropped its prey');
-    expect(prey.data.found.protein).toBeGreaterThanOrEqual(SWARM.minPrey);
-    expect((await p.get('/api/state')).colony.resources.protein).toBeGreaterThanOrEqual(SWARM.minPrey);
+    const expected = swarmPrey(swarmOfPacks(1), 0);
+    expect(prey.data.found.foliage).toBeGreaterThanOrEqual(expected.foliage);
+    expect(prey.data.found.nectar).toBeGreaterThan(0);
+    expect((await p.get('/api/state')).colony.resources.nectar).toBeGreaterThanOrEqual(expected.nectar);
   });
 
   it('players cannot send swarms', async () => {
@@ -189,10 +233,13 @@ describe('scouting the swarm: in the world', () => {
     await spotNow(c.id);
     const m = (await swarmsAt(c.id)).at(-1);
     // a size that rounds, so the test can tell rough from real
-    await getPool().query('UPDATE missions SET units = $2 WHERE id = $1', [m.id, JSON.stringify(swarmOfPacks(17))]);
+    // every sighting is rolled a size; it stays hidden until scouted
+    expect(SWARM.sizes.map((s) => s.id)).toContain(m.result.size);
+    await getPool().query(`UPDATE missions SET units = $2, result = '{"size": "war"}'::jsonb WHERE id = $1`, [m.id, JSON.stringify(swarmOfPacks(17))]);
     const inc = (await p.get('/api/state')).incoming.find((i: any) => i.type === 'swarm');
     expect(inc.scouted).toBe(false);
     expect(inc.units).toBeUndefined();
+    expect(inc.sizeName).toBeUndefined();
     expect(inc.unitCount).toBe(roughSwarmSize(85));
   });
 
@@ -208,8 +255,9 @@ describe('scouting the swarm: in the world', () => {
 
     const rep = (await getPool().query("SELECT title, data FROM reports WHERE player_id = $1 AND type = 'scout' ORDER BY id DESC LIMIT 1", [me.id])).rows[0];
     // 60 scouts at 30% each: the chance none get back is about one in two billion
-    expect(rep.title).toContain('Swarm scouted: 85 army ants');
+    expect(rep.title).toContain('Swarm scouted: a war column, 85 army ants');
     expect(rep.data.swarm.units).toEqual(swarmOfPacks(17));
+    expect(rep.data.swarm.sizeName).toBe('War column');
     expect(rep.data.back + rep.data.lost).toBe(60);
     expect(rep.data.back).toBeGreaterThan(0);
 
@@ -217,6 +265,7 @@ describe('scouting the swarm: in the world', () => {
     expect(inc.scouted).toBe(true);
     expect(inc.unitCount).toBe(85);
     expect(inc.units).toEqual(swarmOfPacks(17));
+    expect(inc.sizeName).toBe('War column');
 
     // the survivors walk home; the eaten ones don't
     const back = await scoutMission();
@@ -229,7 +278,7 @@ describe('scouting the swarm: in the world', () => {
     const swarm = (await swarmsAt(c.id)).at(-1);
     await setPlayer(me.id, { last_active: Number(swarm.arrive_at) });
     await clock.advance(Number(swarm.arrive_at) - clock.t + 1);
-    expect((await battles()).at(-1).title).toContain(SWARM.name);
+    expect((await battles()).at(-1).title).toContain(`${SWARM.name} (war column)`);
     expect((await swarmsAt(c.id)).at(-1).status).toBe('done');
   });
 });
