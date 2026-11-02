@@ -155,6 +155,23 @@ services:
     cpus: 0.5
     logging: *logging
 
+  # Food Fight (repo: food-fight, deploy/hub/add-to-hub.sh). Serves the page (the game runs in the
+  # browser) on port 8080 inside Docker; Caddy is the only way in. A restart interrupts nothing.
+  # A tiny static server, so it gets a smaller cap than the other games.
+  food-fight:
+    image: ghcr.io/marcialpimentel/food-fight:latest
+    restart: unless-stopped
+    stop_grace_period: 5s
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:8080/healthz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    logging: *logging
+    mem_limit: 128m
+    cpus: 0.25
+
 volumes:
   caddy_data:
   caddy_config:
