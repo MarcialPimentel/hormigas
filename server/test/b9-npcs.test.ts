@@ -4,7 +4,8 @@ import type { FastifyInstance } from 'fastify';
 import { FORMULAS, HERDS, SITE_SPOTS, WILD_SCENTS, groupCargo, herdNectarPerHour, herdStoreCap, nestTargets, regrowHours, total } from '@hormigas/shared';
 import { getPool, tx } from '../src/db';
 import { ensureWildNests } from '../src/game/nests';
-import { setupTest, teardownTest, newPlayer, setColony, setPlayer, calmWildNests, knowAll, type Client } from './helpers';
+import { explore } from '../src/game/fog';
+import { setupTest, teardownTest, newPlayer, setColony, setPlayer, calmWildNests, knowAll, exploreAll, type Client } from './helpers';
 
 let app: FastifyInstance;
 let clock: Awaited<ReturnType<typeof setupTest>>['clock'];
@@ -33,6 +34,7 @@ beforeAll(async () => {
   cb = sb.colony;
   beta = sb.player.id;
   await calmWildNests();
+  await exploreAll(); // these tests are about wild sites, not fog of war
   for (const id of [alpha, beta]) await setPlayer(id, { protected_until: 0, points_total: 100 });
   for (const c of [ca, cb])
     await setColony(c.id, { foliage: 1e6, protein: 1e6, nectar: 1e6, last_updated: clock.t, units: { scout: 10, minor_soldier: 400, major_soldier: 200, worker: 40 } });
@@ -77,6 +79,7 @@ describe('the area fills with wild things', () => {
     const ev = await getPool().query("SELECT count(*)::int AS n FROM events WHERE type = 'nest_raid' AND (payload->>'colonyId')::int = $1", [mound.id]);
     expect(ev.rows[0].n).toBe(0);
     await setColony(ca.id, { units: { winged_queen: 1, scout: 10, minor_soldier: 400, major_soldier: 200, worker: 40 } });
+    await explore(getPool(), alpha, ca.coords.region, 5, clock.t); // an empty patch: explore it first (fog of war)
     const r = await a.post('/api/missions', { colonyId: ca.id, type: 'colonize', target: at(5, SITE_SPOTS.herd), units: { winged_queen: 1 } });
     expect(r.error.code).toBe('bad_target');
   });

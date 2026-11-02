@@ -98,6 +98,22 @@ export interface Spot {
 export const isScent = (c: SpotColony | null | undefined) => !!c && (c.known === 'scent' || c.known === 'familiar');
 
 interface RegionPatch { patch: number; colonies: number; wild: boolean; mine: boolean }
+/** How this player sees a patch (fog of war, docs/22-discovery.md#fog-of-war). */
+export type PatchFog = 'visible' | 'explored' | 'unexplored';
+
+/** Under the patch's name: what fog of war leaves you seeing here. */
+function FogNote({ fog, seenAt }: { fog: PatchFog | null; seenAt: number | null }) {
+  const { state } = useGame();
+  if (fog === 'unexplored')
+    return <p className="fog-note unexplored">You haven't explored this patch. Send Scouts to survey its wilds to see what lives here.</p>;
+  if (fog === 'explored')
+    return (
+      <p className="fog-note explored">
+        Out of sight: shown as your ants last saw it{seenAt && state ? `, ${fmtAgo(state.serverNow - seenAt)} ago` : ''}. Anyone who moved in since stays hidden until you look again.
+      </p>
+    );
+  return null;
+}
 
 export type Coords = { region: number; patch: number; spot: number };
 const same = (a: Coords, b: Coords) => a.region === b.region && a.patch === b.patch && a.spot === b.spot;
@@ -622,13 +638,14 @@ function WorldPicker({ region, patch, onGo }: { region: number; patch: number; o
   const { colony } = useGame();
   const [shown, setShown] = useState(region);
   const [overview, setOverview] = useState<RegionPatch[] | null>(null);
+  const [fogs, setFogs] = useState<Map<number, PatchFog>>(new Map());
   useEffect(() => setShown(region), [region]);
   useEffect(() => {
     let live = true;
     setOverview(null);
     api
       .get(`/api/map/region?region=${shown}`)
-      .then((r) => live && setOverview(r.patches))
+      .then((r) => live && (setOverview(r.patches), setFogs(new Map((r.fog ?? []).map((f: { patch: number; fog: PatchFog }) => [f.patch, f.fog])))))
       .catch(() => live && setOverview([]));
     return () => {
       live = false;
@@ -652,11 +669,12 @@ function WorldPicker({ region, patch, onGo }: { region: number; patch: number; o
             const o = byPatch.get(p);
             const mine = !!o?.mine;
             const lived = (o?.colonies ?? 0) > 0;
-            const desc = mine ? 'your colony' : lived ? `${o!.colonies} ${o!.colonies === 1 ? 'colony' : 'colonies'}` : 'empty';
+            const fog = fogs.get(p) ?? 'visible';
+            const desc = mine ? 'your colony' : fog === 'unexplored' ? 'not explored' : lived ? `${o!.colonies} ${o!.colonies === 1 ? 'colony' : 'colonies'}` : 'empty';
             return (
               <button
                 key={p}
-                className={`rg-cell${lived ? ' lived' : ''}${mine ? ' mine' : ''}${shown === region && p === patch ? ' on' : ''}`}
+                className={`rg-cell${lived ? ' lived' : ''}${mine ? ' mine' : ''}${fog !== 'visible' ? ` fog-${fog}` : ''}${shown === region && p === patch ? ' on' : ''}`}
                 onClick={() => onGo(shown, p)}
                 aria-label={`Patch ${p}: ${desc}`}
                 title={`Patch ${p}: ${desc}`}
@@ -669,7 +687,9 @@ function WorldPicker({ region, patch, onGo }: { region: number; patch: number; o
           <span><i className="rg-cell lived" /> colonies live here</span>
           <span><i className="rg-cell mine" /> your colony</span>
           <span><i className="rg-cell on" /> shown</span>
-          <p>Tap a patch to see it. Colonies there show as scents until you scout them.</p>
+          <span><i className="rg-cell fog-explored" /> out of sight</span>
+          <span><i className="rg-cell fog-unexplored" /> not explored</span>
+          <p>Tap a patch to see it. You see the patches round your colonies; others show as your ants last saw them, or not at all until your Scouts survey them. Colonies show as scents until you scout them.</p>
         </div>
       </div>
     </div>
@@ -732,6 +752,7 @@ export function PatchView({ start, selected, onAct, replay, go: nav, pm: given, 
   const [sel, setSel] = useState<number | null>(null);
   const [world, setWorld] = useState(false);
   const [error, setError] = useState('');
+  const [fog, setFog] = useState<{ fog: PatchFog | null; seenAt: number | null }>({ fog: null, seenAt: null });
   const [jumping, setJumping] = useState(false);
   // in 3D, World opens the Garden; its Region grid button (and 2D mode) shows the grid
   const [grid, setGrid] = useState(false);
@@ -746,7 +767,7 @@ export function PatchView({ start, selected, onAct, replay, go: nav, pm: given, 
     let live = true;
     api
       .get(`/api/map?region=${region}&patch=${patch}`)
-      .then((r) => live && (setSpots(r.spots), setError('')))
+      .then((r) => live && (setSpots(r.spots), setFog({ fog: r.fog ?? null, seenAt: r.seenAt ?? null }), setError('')))
       .catch((e) => live && setError(e.message));
     return () => {
       live = false;
@@ -775,7 +796,7 @@ export function PatchView({ start, selected, onAct, replay, go: nav, pm: given, 
     setJumping(true);
     api
       .get(`/api/map/nearest?region=${region}&patch=${patch}&dir=${dir}`)
-      .then((r) => (r.found ? (go(r.found.region, r.found.patch), setError('')) : setError('No other colonies anywhere yet.')))
+      .then((r) => (r.found ? (go(r.found.region, r.found.patch), setError('')) : setError("No other colonies on the patches you've explored yet. Send Scouts to survey further.")))
       .catch((e) => setError(e.message))
       .finally(() => setJumping(false));
   };
@@ -858,6 +879,7 @@ export function PatchView({ start, selected, onAct, replay, go: nav, pm: given, 
               </button>
             </div>
             {error && <p className="form-error">{error}</p>}
+            {!garden && <FogNote {...fog} />}
           </div>
           {world && grid && <WorldPicker region={region} patch={patch} onGo={(r, p) => (go(r, p), setWorld(false), setGrid(false))} />}
           {stage.deploy}
@@ -894,6 +916,7 @@ export function PatchView({ start, selected, onAct, replay, go: nav, pm: given, 
       </div>
       {world && (!show3d || grid) && <WorldPicker region={region} patch={patch} onGo={(r, p) => (go(r, p), setWorld(false), setGrid(false))} />}
       {error && <p className="form-error">{error}</p>}
+      <FogNote {...fog} />
       <div className={`patch-row${show3d ? ' p3' : ''}`}>
         <button className="btn ghost nearest" onClick={() => nearest(-1)} disabled={jumping} aria-label="Jump to the nearest colony before this patch">
           <span aria-hidden="true">‹</span>

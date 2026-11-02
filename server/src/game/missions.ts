@@ -46,6 +46,7 @@ import { getWorld } from '../world';
 import { refreshPointsAfterCommit } from './points';
 import { notify } from '../realtime';
 import { bump, foodIn } from './stats';
+import { explore, requireExploredFor } from './fog';
 
 export type { MissionType };
 
@@ -218,6 +219,9 @@ export async function sendMission(q: Tx, playerId: number, input: SendInput): Pr
   const retreatPct = type === 'raid' ? Number(input.retreatPct ?? 0) : 0;
   if (!isValidRetreatPct(retreatPct)) throw new GameError('bad_retreat', `Fall back after ${RETREAT_PCTS.filter((p) => p > 0).join('% or ')}% losses, or fight to the end.`);
 
+  // fog of war: into a patch you've never explored, only Scouts or foragers surveying its wilds can go (docs/22-discovery.md)
+  await requireExploredFor(q, playerId, target, (type === 'scout' || type === 'forage') && target.spot === WILDS_SPOT, t);
+
   const world = await getWorld(q);
   const targetColony = target.spot === WILDS_SPOT ? null : await colonyAt(q, world.id, target.region, target.patch, target.spot);
   await rules.validate({ q, player, colony, units, cargo, target, targetColony, t });
@@ -386,6 +390,8 @@ async function arrive(q: Tx, ev: GameEvent<{ missionId: number }>) {
   const rules = RULES.get(m.type);
   if (!rules) throw new Error(`No rules for mission type ${m.type}`);
   const out = await rules.arrive(q, m, ev.due_at);
+  // the party has seen the patch it reached: it's explored, last seen now (fog of war, docs/22-discovery.md)
+  if (m.type !== 'swarm') await explore(q, m.playerId, m.target.region, m.target.patch, ev.due_at);
   const anyone = presentUnits(m.units).length > 0;
   if (out.stay && anyone) {
     m.status = 'holding';

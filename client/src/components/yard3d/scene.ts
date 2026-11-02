@@ -16,6 +16,7 @@ import type { ServerState } from '../../game';
 
 export interface RegionPatch { patch: number; colonies: number; wild: boolean; mine: boolean; ally?: boolean }
 export type Rung = 'yard' | 'region' | 'patch' | 'ground';
+export type PatchFog = 'visible' | 'explored' | 'unexplored';
 export interface YardData { state: ServerState | null; now: number; colonyId: number | null }
 export interface YardHandlers {
   /** a spot was tapped (a mound, a wild site, an empty spot) */
@@ -28,7 +29,9 @@ export interface YardHandlers {
 }
 export interface YardScene {
   setRegion(region: number, patches: RegionPatch[]): void;
-  setSpots(region: number, patch: number, spots: Spot[]): void;
+  setSpots(region: number, patch: number, spots: Spot[], fog?: PatchFog): void;
+  /** fog of war over a region's patches (docs/22-discovery.md#fog-of-war) */
+  setFog(region: number, fog: { patch: number; fog: PatchFog }[]): void;
   setSelected(at: Coords | null): void;
   /** fly the camera to a place, at a level */
   flyTo(at: { region: number; patch: number; spot?: number }, rung: Rung): void;
@@ -128,9 +131,41 @@ export async function createYardScene(host: HTMLElement, labels: HTMLElement, da
   const world = new THREE.Group();
   scene.add(world);
   const disposables: { dispose(): void }[] = [];
+  // ---------- fog of war (docs/22-discovery.md#fog-of-war): one map of the patches, red = never explored (a dark,
+  // drifting mist), green = out of sight (greyed and dimmed). Everything standing on the ground is shaded by it; the
+  // hex lines aren't, so every patch's outline still shows.
+  const fogU = { uFogTex: { value: null as THREE.Texture | null }, uFogBox: { value: new THREE.Vector4(0, 0, 1, 1) }, uFogTime: { value: 0 } };
+  function fogify<M extends THREE.Material>(m: M): M {
+    const prev = m.onBeforeCompile.bind(m), key = m.onBeforeCompile.toString();
+    m.onBeforeCompile = (sh, r) => {
+      prev(sh, r);
+      Object.assign(sh.uniforms, fogU);
+      sh.vertexShader = 'uniform vec4 uFogBox;\nvarying vec2 vFogUv;\n' + sh.vertexShader.replace(
+        '#include <project_vertex>',
+        `#include <project_vertex>
+        vec4 fogWp = vec4(transformed, 1.0);
+        #ifdef USE_INSTANCING
+        fogWp = instanceMatrix * fogWp;
+        #endif
+        fogWp = modelMatrix * fogWp;
+        vFogUv = (fogWp.xz - uFogBox.xy) / uFogBox.zw;`,
+      );
+      sh.fragmentShader = 'uniform sampler2D uFogTex;\nuniform float uFogTime;\nvarying vec2 vFogUv;\n' + sh.fragmentShader.replace(
+        '#include <dithering_fragment>',
+        `vec2 fogK = texture2D(uFogTex, vFogUv).rg;
+        float fogN = 0.82 + 0.18 * sin(vFogUv.x * 95.0 + uFogTime * 0.35) * sin(vFogUv.y * 70.0 - uFogTime * 0.28);
+        vec3 fogGrey = vec3(dot(gl_FragColor.rgb, vec3(0.3, 0.59, 0.11)));
+        gl_FragColor.rgb = mix(gl_FragColor.rgb, mix(fogGrey, vec3(0.7, 0.71, 0.7), 0.2) * 0.78, fogK.g * 0.9);
+        gl_FragColor.rgb = mix(gl_FragColor.rgb, vec3(0.21, 0.24, 0.28) * fogN, fogK.r * 0.86);
+        #include <dithering_fragment>`,
+      );
+    };
+    m.customProgramCacheKey = () => key + '|fog';
+    return m;
+  }
   const mats = new Map<string, THREE.MeshStandardMaterial>();
   const mat = (color: string) => {
-    if (!mats.has(color)) mats.set(color, new THREE.MeshStandardMaterial({ color, flatShading: true, roughness: 0.9 }));
+    if (!mats.has(color)) mats.set(color, fogify(new THREE.MeshStandardMaterial({ color, flatShading: true, roughness: 0.9 })));
     return mats.get(color)!;
   };
   const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), e3 = new THREE.Euler(), v = new THREE.Vector3(), s3 = new THREE.Vector3(), col = new THREE.Color();
@@ -152,6 +187,7 @@ export async function createYardScene(host: HTMLElement, labels: HTMLElement, da
   const propMat = new THREE.MeshStandardMaterial({ vertexColors: true, flatShading: true, roughness: 0.9 });
   /** thin things seen from both sides: petals, leaves, reeds */
   const propMat2 = new THREE.MeshStandardMaterial({ vertexColors: true, flatShading: true, roughness: 0.9, side: THREE.DoubleSide });
+  fogify(propMat); fogify(propMat2);
   disposables.push(propMat, propMat2);
 
   // ---------- tiles
@@ -250,8 +286,43 @@ export async function createYardScene(host: HTMLElement, labels: HTMLElement, da
       }
     }, 1);
     tex.wrapS = tex.wrapT = THREE.ClampToEdgeWrapping; tex.anisotropy = 8;
-    flat(W, D, new THREE.MeshStandardMaterial({ map: tex, roughness: 1 }), b.cx, 0, b.cz);
+    flat(W, D, fogify(new THREE.MeshStandardMaterial({ map: tex, roughness: 1 })), b.cx, 0, b.cz);
   }
+  const fogState = new Map<string, PatchFog>(); // "r:p" → how you see it; unknown = in sight until the server says
+  const FOGBOX = { x: bx0 - 40, z: bz0 - 40, w: bx1 - bx0 + 80, d: bz1 - bz0 + 80 };
+  const fogCanvas = document.createElement('canvas');
+  fogCanvas.width = 1024; fogCanvas.height = Math.round((1024 * FOGBOX.d) / FOGBOX.w);
+  const fogTex = new THREE.CanvasTexture(fogCanvas);
+  fogTex.colorSpace = THREE.NoColorSpace; fogTex.flipY = false;
+  disposables.push(fogTex);
+  fogU.uFogTex.value = fogTex;
+  fogU.uFogBox.value.set(FOGBOX.x, FOGBOX.z, FOGBOX.w, FOGBOX.d);
+  let fogDirty = true;
+  function paintFog() {
+    fogDirty = false;
+    const g = fogCanvas.getContext('2d')!, k = fogCanvas.width / FOGBOX.w;
+    g.filter = 'none';
+    g.fillStyle = '#000'; g.fillRect(0, 0, fogCanvas.width, fogCanvas.height);
+    g.filter = `blur(${Math.max(1, HR * 0.08 * k)}px)`;
+    for (const t of tiles) {
+      const f = fogState.get(`${t.region}:${t.patch}`);
+      if (!f || f === 'visible') continue;
+      g.fillStyle = f === 'unexplored' ? '#F00' : '#0F0';
+      g.beginPath();
+      for (let i = 0; i < 6; i++) {
+        const a = (i / 6) * Math.PI * 2, r = HR * 1.06;
+        const x = (t.x + Math.sin(a) * r - FOGBOX.x) * k, y = (t.z + Math.cos(a) * r - FOGBOX.z) * k;
+        if (i) g.lineTo(x, y); else g.moveTo(x, y);
+      }
+      g.closePath(); g.fill();
+    }
+    fogTex.needsUpdate = true;
+  }
+  function setFog(region: number, fog: { patch: number; fog: PatchFog }[]) {
+    for (const f of fog) fogState.set(`${region}:${f.patch}`, f.fog);
+    fogDirty = true;
+  }
+
   // a low brick edge with a pale coping round every bed (Marz's pick, 1 Nov 2026)
   const EDGE = { w: 20, top: 4 };
   {
@@ -333,6 +404,7 @@ export async function createYardScene(host: HTMLElement, labels: HTMLElement, da
       transformed.y *= (uClear > 0.0 ? gK : 1.0) * gC;`,
     );
   };
+  fogify(grassMat);
   disposables.push(grassMat);
   const kindOf = (r: number) => REGIONS[r - 1].kind;
   /** big dressing that reads from the top and gives way to the real grass and flowers up close */
@@ -418,7 +490,7 @@ export async function createYardScene(host: HTMLElement, labels: HTMLElement, da
     }
     const g = new THREE.BufferGeometry();
     g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setIndex(idx); g.computeVertexNormals();
-    const water = new THREE.MeshStandardMaterial({ color: '#4FA3C7', roughness: 0.2, metalness: 0.1, side: THREE.DoubleSide });
+    const water = fogify(new THREE.MeshStandardMaterial({ color: '#4FA3C7', roughness: 0.2, metalness: 0.1, side: THREE.DoubleSide }));
     world.add(new THREE.Mesh(g, water));
     // the creek rises in a spring pool and ends in a pond, both ringed with stones, so it never stops mid-bed
     for (const [k, r] of [[0, 44], [1, 54]] as const) {
@@ -510,7 +582,7 @@ export async function createYardScene(host: HTMLElement, labels: HTMLElement, da
     g.computeVertexNormals();
     return g;
   });
-  const moundMat = new THREE.MeshStandardMaterial({ vertexColors: true, flatShading: true, roughness: 0.95 });
+  const moundMat = fogify(new THREE.MeshStandardMaterial({ vertexColors: true, flatShading: true, roughness: 0.95 }));
   // each mound's height map (soil, twigs, stones), so parties climb out of the crater and over the mound rather than
   // walking out of its middle at ground level. A 3×3 median keeps a thin twig from making the ants hop.
   const HM_CELL = 0.25, HM_N = 104, HM_HALF = (HM_N * HM_CELL) / 2;
@@ -623,10 +695,10 @@ export async function createYardScene(host: HTMLElement, labels: HTMLElement, da
   selRing.rotation.x = -Math.PI / 2; selRing.visible = false; selRing.renderOrder = 3;
   world.add(selRing);
   // a free spot is ringed with pale pebbles (they read as dots from the Patch zoom, and as stones at ant height)
-  const ringMat = new THREE.MeshStandardMaterial({ color: '#F6EEDB', emissive: '#4A4436', flatShading: true, roughness: 0.8 });
+  const ringMat = fogify(new THREE.MeshStandardMaterial({ color: '#F6EEDB', emissive: '#4A4436', flatShading: true, roughness: 0.8 }));
   disposables.push(ringMat);
 
-  function setSpots(region: number, patch: number, spots: Spot[]) {
+  function setSpots(region: number, patch: number, spots: Spot[], fog?: PatchFog) {
     const key = `${region}:${patch}`;
     clearPatch(key);
     const list: Place[] = [];
@@ -680,7 +752,7 @@ export async function createYardScene(host: HTMLElement, labels: HTMLElement, da
       world.add(g);
       const place: Place = { key: `${region}:${patch}:${s.spot}`, at, group: g, top, mine, big };
       if (stage >= 0) moundSpots.set(place.key, { x: p.x, z: p.z, stage });
-      if (html) place.el = tag(cls, html);
+      if (html) place.el = tag(cls + (fog === 'explored' ? ' fogged' : ''), html);
       places.set(place.key, place);
       list.push(place);
     }
@@ -999,6 +1071,8 @@ export async function createYardScene(host: HTMLElement, labels: HTMLElement, da
     if (dd.now !== nowSeen) { nowSeen = dd.now; nowAt = t0; }
     // ants
     antUniforms.uTime.value = time;
+    if (fogDirty) paintFog();
+    fogU.uFogTime.value = reduced ? 0 : time;
     ants.begin();
     const showAnts = d < 420;
     // true size at ant height, about 3× at the Patch zoom so a column of ants reads on a 1 m patch (Marz, 2 Nov 2026)
@@ -1043,6 +1117,7 @@ export async function createYardScene(host: HTMLElement, labels: HTMLElement, da
     for (const [k, el] of dots) {
       const [r, pp] = k.split(':').map(Number), t = tileAt(r, pp);
       el.classList.toggle('far', d > 1500); // from the top, wild nests go quiet and players stand out
+      el.classList.toggle('fogged', fogState.get(k) === 'explored');
       place(el, t.x, 6, t.z, d >= 900 || (d >= 250 && !patchPlaces.has(k)));
       el.style.transform = `translate(-50%, -50%) translate(${el.dataset.x}px, ${el.dataset.y}px)`;
       if (d < 900 && patchPlaces.has(k)) el.style.display = 'none';
@@ -1066,6 +1141,7 @@ export async function createYardScene(host: HTMLElement, labels: HTMLElement, da
 
   return {
     setRegion,
+    setFog,
     setSpots,
     setSelected,
     flyTo(at, rung) {

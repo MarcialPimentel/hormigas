@@ -1,7 +1,7 @@
 # 22 — Scents and Discovery
 
 **Version:** 0.1
-**Code:** `shared/src/discovery.ts` (rules), `server/src/game/discovery.ts` (the record), migration `008_known_colonies.sql`
+**Code:** `shared/src/discovery.ts` (rules), `server/src/game/discovery.ts` (the record), migration `008_known_colonies.sql`; fog of war in `shared/src/fog.ts`, `server/src/game/fog.ts`, migration `016_fog_of_war.sql`
 
 ## Why
 Two playtest notes from Marz (29 Oct 2026): the map was hard to read, and anyone could raid a colony they had never seen by typing its coordinates. Hormigas now works like discovery in Civilization: **you have to meet someone before you can deal with them**. Ants find each other by smell, so a colony you haven't met is a **scent**.
@@ -25,6 +25,25 @@ Every colony you don't own is, to you, one of three things:
 - **Wild nests** follow the same rules: the nest in your patch starts as a red scent, and the founding tasks already ask you to scout it before raiding it.
 - **Army-ant swarms** don't count: they have no home to remember.
 - Scents show on every patch, so players can still find each other. Only scouting reveals who's there.
+
+## Fog of war
+Added 2 Nov 2026 (Marz: "treat it like Civilization, except players should know the outlines"). Scents say *who* is in a patch; fog says whether you can see the patch at all. Every patch is, to you, one of three things:
+
+| State | Which patches | What you see |
+|---|---|---|
+| **In sight** | Patches with your colonies and the patches touching them, and patches where your ants are stationed: soldiers holding an ally's colony, ants tending an aphid herd or holding a windfall. Supercolony mates share their sight | Everything, as before fog |
+| **Explored** (out of sight) | A patch your ants have reached before | As you last saw it, greyed: the colonies that were there then (scents or known, by the usual rules), and nothing that comes and goes (windfalls, corpse fields, parties). A colony founded since stays hidden until you look again |
+| **Never explored** | Everything else | Only the patch's outline and its region's ground, under mist, plus its wilds so you can send Scouts |
+
+- **Exploring:** any party of yours that reaches a patch explores it, last seen at the moment it arrives. To just go and look, **Scout the patch's wilds** (spot 13); Scouts and foragers are the only ones who may go to a patch you've never explored. Anything else there (a raid, a transport, founding a colony, scouting a particular spot) is refused: "You haven't explored that patch yet. Send Scouts to survey its wilds first."
+- **Touching patches** are the hexes next to a patch inside its region, as the Whole Yard draws them: rows of 10, odd rows shifted right (`patchNeighbours` in `shared/src/fog.ts`). Regions don't share neighbours: crossing to another region is still a long trip.
+- **Explored is forever** (like known): a patch never goes back to never-explored. Supercolony mates share their explored patches as well as their sight.
+- **The server enforces it** for every screen: the patch (`/api/map`, with `fog` and `seenAt`), the region grid and the Garden (`/api/map/region`: counts only for explored patches, as last seen, plus each patch's `fog`), and the Nearest buttons (`/api/map/nearest`: explored patches only). Phones and the classic screens see exactly what the Whole Yard sees.
+- Incoming raids and scouts are still announced as before, wherever they come from.
+- **On the live world (migration 016):** everyone keeps what they had already seen, as it is now: every patch their ants had reached, and every patch holding a colony they had scouted. Patches round their own colonies are always in sight.
+![Fog on the Whole Yard: in sight round the nest, explored patches greyed, the rest under mist](art/whole-yard/fog-region.jpg)
+
+- **The record:** `explored_patches (player_id, region, patch, seen_at)`, written only through `server/src/game/fog.ts` (`explore`, `sightOf`, `fogOf`, `requireExploredFor`).
 
 ## The shared record (for other builds)
 One table, `known_colonies`, one row per player and colony they know anything about:
@@ -71,5 +90,6 @@ The map API (`/api/map`) sends each colony with `known` and `kind` (`'player' | 
 - **Players are placed together:** see [11-world](11-world.md#starting-placement).
 
 ## Open Questions
-- Should scents in far-off patches be hidden too (fog), revealed by surveying a patch's wilds? Proposal: not until the world is busy enough that the map gets crowded.
+- ~~Should scents in far-off patches be hidden too (fog)?~~ Yes: fog of war, 2 Nov 2026 (see above).
+- Should a scout's whole route explore the patches it walks through, not only its target? Proposal: later, once routes are drawn across patches on the map.
 - Should a very old scout report fade the colony back to "familiar"? Proposal: no. The report's age already says how stale it is.

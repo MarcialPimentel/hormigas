@@ -334,6 +334,12 @@ input:focus, textarea:focus { border-color: var(--honey-ink); outline: none; }
 .rg-cell.lived { background: #c98b52; opacity: 1; }
 .rg-cell.mine { background: #e8b23a; opacity: 1; }
 .rg-cell.on { outline: 2px solid var(--sand); outline-offset: 1px; opacity: 1; }
+/* fog of war (docs/22-discovery.md#fog-of-war): out of sight is greyed, never explored is dark */
+.rg-cell.fog-explored { filter: grayscale(0.85) brightness(0.85); }
+.rg-cell.fog-unexplored { background: #2e3438; opacity: 0.9; }
+.fog-note { margin: 0.4rem 0; padding: 0.45rem 0.7rem; border-radius: 8px; font-size: 0.86rem; line-height: 1.35; }
+.fog-note.unexplored { background: #2e3438; color: #eef1f2; }
+.fog-note.explored { background: color-mix(in srgb, var(--sand) 35%, transparent); color: inherit; }
 .rg-cell:hover, .rg-cell:focus-visible { opacity: 1; outline: 2px solid var(--leaf-ink); outline-offset: 1px; }
 .region-legend { display: grid; gap: 0.25rem; max-width: 18rem; }
 .region-legend span { display: flex; align-items: center; gap: 0.4rem; }
@@ -1054,3 +1060,6 @@ pre.report-body { white-space: pre-wrap; overflow-x: auto; }
 .digest h3 { font-size: 0.95rem; margin: 0; display: flex; gap: 0.5rem; align-items: baseline; flex-wrap: wrap; }
 .digest p { margin: 0; }
 .unit-buy .count-form input { width: 5.5rem; flex: none; }
+
+/* fog of war on the Whole Yard: colonies on a patch out of sight show as last seen, greyed */
+.ybanner.fogged, .ydot.fogged { filter: grayscale(0.9) brightness(0.9); opacity: 0.7; }
