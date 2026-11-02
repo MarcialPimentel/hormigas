@@ -12,6 +12,8 @@ Hormigas is a browser-based, persistent strategy game where you grow an ant king
 
 **Tone:** grounded nature documentary. The colony is drawn like a living field guide: real anatomy, bold silhouettes, no cartoon faces. See [18-art-direction.md](18-art-direction.md).
 
+**Sound:** a soft march made from the ants' own footsteps, following what the colony is doing. See [sound.md](sound.md).
+
 ## Design pillars
 1. **The colony lives while you're away.** Progress never stops. Coming back should always feel rewarding.
 2. **Every loss is recoverable.** Raids sting but never end you. Protected storage, brood, and catch-up rules keep players in the game.
@@ -43,6 +45,7 @@ Decisions Marz made, newest first. Details and the smaller calls live in the lin
 
 | Date | Decision | Why |
 |---|---|---|
+| 2026-11-02 | Background music: a march made from the ants' footsteps. Each 4/4 beat is a tiny three-foot tripod step swinging left/right, under a low soil drum and a sparse wooden marimba tune that keeps rewriting itself. It follows the colony: quiet when nobody's out, fuller while parties walk, faster and tense while a raid or swarm is coming. On by default at half volume, after the first click; a speaker in the top bar turns it off or changes the volume; it pauses in a hidden tab ([sound](sound.md)) | Marz asked for a 4/4, left/right march to match the marching ants. "Tiny feet on soil" (recommended) was picked over a field-drum corps and clockwork ticking because it fits the nature-documentary tone and can be left on for an hour. The tripod step is real ant gait (pillar 4) |
 | 2026-11-02 | Whole Yard top view cut to the five beds: it fits them to the window and stops zooming out there; the house, patio, pots, hose, fence and hedge are removed; the Woodpile's log pile moves onto the lawn beside its bed ([art/whole-yard.md](art/whole-yard.md#the-yard-view)) | Marz's playtest: the fake building and huge top level weren't needed, and the log pile hid the Woodpile's patches |
 | 2026-11-02 | Whole Yard models: each bed one continuous painted ground with the hexes as drawn lines; grass as curved, swaying blade clumps; rocks, stepping stones, flowers, shrubs, logs, bark chips, leaves, reeds and tussocks rebuilt in Blender; ants drawn bigger as the camera pulls back ([art/whole-yard.md](art/whole-yard.md#the-models)) | Marz: the floating hexagons and triangle grass looked low effort, and ants were too small to see at the Patch zoom. He picked soft ground + drawn grid and curved blade clumps (recommended) and asked for all four other model groups |
 | 2026-11-01 | Whole Yard top view cleaned up as a tidy garden: the five beds on a striped lawn, each with a low brick edge and its own ground, stepping stones between them, a wooden sign per bed (name, colony count, "You"), your colony as a honey pin, wild nests faint from the top; the back of the house, patio pots, a fence and hedge all round ([art/whole-yard.md](art/whole-yard.md#the-yard-view)) | Marz picked option 2 (brick edges and stepping stones) of three previews. The old view read as tiles on a table: unnamed beds, look-alike colours and 34 red wild marks hiding your colony |

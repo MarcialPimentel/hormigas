@@ -34,6 +34,7 @@ _Current as of Build 11 (2026-10-30)._ Every doc, its role and its status. The n
 | [24-npcs.md](24-npcs.md) | System | current | More wild things: aphid herds, termite mounds, spider dens, new nest species |
 | [25-windfalls.md](25-windfalls.md) | System | current | Windfalls: contested food in the wilds, claimed by fighting for it |
 | [26-come-back.md](26-come-back.md) | System | current | Colony needs (daily tasks), the Field Journal and titles, Yesterday in the colony |
+| [sound.md](sound.md) | Sound | current | The marching music: what plays when, controls, how it's made, recordings and licences |
 | [playtest.md](playtest.md) | **Playtesting** | current | How to play the current build, test with two players, report feedback |
 | [DEPLOY.md](DEPLOY.md) | **Deploy** | current | How a merge reaches players, rollbacks, everyday commands, rebuilding the server (general terms) |
 | [art/3d-exploration.md](art/3d-exploration.md) | Art reference | reference | The approved 3D nest exploration (2026-10-28) and its mock-up |
