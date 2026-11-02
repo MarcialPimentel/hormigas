@@ -65,6 +65,22 @@ The top zoom (approved 1 Nov 2026, option 2 of three previews; built in `yard3d/
 - **Hex lines** are thin cream lines, not dark ones.
 - **Round the yard:** the back of the house (door, windows, downpipe, an outside tap with the hose coiled on the lawn), pots on the patio, a board fence and a hedge on the other three sides, and lawn out to the horizon instead of open sky.
 
+## The models
+
+Every zoom's ground and plants (approved 2 Nov 2026; Marz picked soft ground with a drawn grid, curved grass clumps, and Blender versions of the rocks, stones, flowers, shrubs, logs, bark, reeds and tussocks):
+
+![The models, from Blender](whole-yard/props-preview.jpg)
+
+![Region before](whole-yard/models-region-before.jpg) ![Region after](whole-yard/models-region-after.jpg)
+
+![Ant height before](whole-yard/models-ground-before.jpg) ![Ant height after](whole-yard/models-ground-after.jpg)
+
+- **No more hex slabs.** Each bed is one continuous ground, painted at about 1 px per cm with its own surface: mown stripes, dark crumbly soil, mossy bank with gravel, orange bark chips, long grass with dry patches, and a damp shaded rim inside the brick edge. The hexes are only the thin lines drawn on top, strong far out and fading up close.
+- **Grass is clumps of curved blades**, dark at the root and light at the tip, that sway in the wind (still with motion off): short on the lawn and among the bark chips, medium in the flowerbed and on the creek bank, tall in the Long Grass, each bed's tinted to its ground. Close in, grass round the spot you look at and round the camera lies down, so no clump fills the screen.
+- **Built in Blender** by `docs/art/whole-yard/props.blend.py` (run it the same way as the mound script). It writes `client/src/components/yard3d/props.json` (18 models, about 2,350 triangles in all) and the preview sheet above. The game draws thousands of copies of each.
+- **The rest:** garden flowers on stems with coloured petals; flowering shrubs; weathered rocks (one mossy) round the creek, its pools and the litter; irregular stepping stones; ridged logs with ringed ends; curled bark chips; fallen leaves; creek reeds with cattails; Long Grass tussocks with straw seed heads. A free spot is a ring of pale pebbles, not flat white hexagons.
+- **Ants grow as you pull back:** true size at ant height, about 3× at the Patch zoom, so a column reads on a 1 m patch. Only the drawing changes.
+
 ## Decisions for Marz
 
 1. Direction: the Whole Yard (Civ's look, today's rules and clock)?
