@@ -3,6 +3,7 @@ import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import type { FastifyInstance } from 'fastify';
 import { getPool } from '../src/db';
 import { setupTest, teardownTest, newPlayer, type Client } from './helpers';
+import { explore } from '../src/game/fog';
 
 let app: FastifyInstance;
 let a: Client;
@@ -28,10 +29,15 @@ describe('region overview', () => {
     expect(home).toMatchObject({ mine: true, wild: true, colonies: 1 });
   });
 
-  it("shows another player's patch without saying who lives there", async () => {
+  it("hides another player's patch until you've explored it, then shows it without saying who lives there", async () => {
+    const before = await a.get(`/api/map/region?region=${far.region}`);
+    expect(before.patches.find((x: any) => x.patch === far.patch)).toBeUndefined();
+    expect(before.fog.find((x: any) => x.patch === far.patch).fog).toBe('unexplored');
+    await explore(getPool(), (await a.get('/api/state')).player.id, far.region, far.patch, 9e15);
     const r = await a.get(`/api/map/region?region=${far.region}`);
     const p = r.patches.find((x: any) => x.patch === far.patch);
     expect(p).toEqual({ patch: far.patch, colonies: 1, wild: false, mine: false, ally: false });
+    expect(r.fog.find((x: any) => x.patch === far.patch).fog).toBe('explored');
   });
 
   it('marks the patches where your supercolony mates live, and only for members', async () => {
@@ -68,6 +74,7 @@ describe('nearest colony', () => {
   });
 
   it('never lands on your own colony or on the patch you are looking at', async () => {
+    await explore(getPool(), (await b.get('/api/state')).player.id, ca.coords.region, ca.coords.patch, 9e15);
     const r = await b.get(`/api/map/nearest?region=${far.region}&patch=${far.patch}&dir=1`);
     expect(r.found).toEqual({ region: ca.coords.region, patch: ca.coords.patch });
     const self = await a.get(`/api/map/nearest?region=${far.region}&patch=${far.patch}&dir=1`);

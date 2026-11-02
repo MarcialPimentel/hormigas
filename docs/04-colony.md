@@ -66,9 +66,9 @@ Small surprises inside the nest, so a check-in isn't always exactly what you lef
 
 - **Two to four a day** per colony (every 6–12 h at world speed ×1, ÷ world speed), offline too. Was every 16–32 h until 1 Nov 2026 (more action, [00-vision](00-vision.md#decision-log)). Each colony has one pending `nest_event` in the event queue; it re-arms itself after firing.
 - **Only good or harmless.** Risk stays in forage, where the player chose it; a random loss with no counterplay feels bad in an idle game (pillar 2).
-  - Gifts: a lost beetle (Protein), an aphid boom (Nectar), a gust of leaves (Foliage). Each is **about two hours of that resource's production** (at least 40), never into full storage: a full resource's gifts are skipped, and a gift is capped to what fits.
+  - Gifts: a lost beetle (Protein), an aphid boom (Nectar), a gust of leaves (Foliage). Each is **about two hours of that colony's production of that resource** (so it follows the gathering multiplier, [03-economy](03-economy.md#production)), at least 40 × the multiplier (80 now), never into full storage: a full resource's gifts are skipped, and a gift is capped to what fits (the report says so). A young colony's gifts are small because its production is.
   - Harmless moments: rain drumming on the soil, a neighbouring nest's nuptial flight, diggers breaking into an old empty tunnel. Flavour only, and only 15% of events (85% are gifts).
-- Each event files a report with flavour text, and plays a short animation in the Nest View if the game is open.
+- Each event files a report with flavour text, naming the colony it happened in (title and body), and plays a short animation in the Nest View if the game is open.
 - **Inactive players get none** (same rule as raids: 7 days without logging in), so abandoned colonies don't pile up free loot. The timer keeps running.
 - About +6% of each resource's daily income (about 2.3 gifts a day, each 2 h of one resource; was about +1%). Not power, and the same for everyone (pillar 3).
 

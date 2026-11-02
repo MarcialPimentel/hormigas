@@ -38,7 +38,7 @@ export function BattleReport({ data, onReplay }: { data: any; onReplay?: () => v
       {onReplay && canReplay() && (
         <p>
           <button type="button" className="btn small" onClick={onReplay}>
-            Replay on the patch
+            Watch the battle
           </button>
         </p>
       )}

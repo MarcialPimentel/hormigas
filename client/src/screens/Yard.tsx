@@ -1,13 +1,14 @@
 // The Whole Yard (preview, docs/art/whole-yard.md): the game on one map. Zoom from the whole yard down to ant height;
 // double-click one of your mounds to dive into its nest. The buttons on the left open what used to be screens
-// (Chambers, Brood Hall, Research, Missions) as panels over the map, for whichever colony you cycle to.
+// (Chambers, Brood Hall, Research, Missions) as panels over the map, for whichever colony you cycle to; Allies, Reports, Rankings and the
+// Field Journal cover the whole player, so they open without the colony switcher.
 // Computers only; it ships behind the ?preview=yard switch (client/src/preview.ts).
 import { Suspense, lazy, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { WORLD } from '@hormigas/shared';
 import { api } from '../api';
 import { useGame } from '../game';
 import { useMotion } from '../motion';
-import { fmtCoords } from '../format';
+import { fmtCoords, fmtFull } from '../format';
 import { leaveYardPreview } from '../preview';
 import { SpotCard, type Coords, type Spot } from '../components/Patch';
 import { UnderWay } from '../components/UnderWay';
@@ -15,23 +16,36 @@ import { Chambers } from './Chambers';
 import { Brood } from './Brood';
 import { Research } from './Research';
 import { SendMission } from './Missions';
+import { Rankings } from './Rankings';
+import { Reports } from './Reports';
+import { Allies } from './Allies';
+import { Journal } from './Journal';
 import { MISSION_LABEL, type MissionType, type Nav } from '../nav';
-import type { Rung, YardScene } from '../components/yard3d/scene';
+import type { BattleView, Rung, YardScene } from '../components/yard3d/scene';
 
 const NestHome = lazy(() => import('../components/NestHome').then((m) => ({ default: m.NestHome })));
-type PanelId = 'chambers' | 'brood' | 'research' | 'missions';
+type PanelId = 'chambers' | 'brood' | 'research' | 'missions' | 'allies' | 'reports' | 'ranks' | 'journal';
+const PANEL_IDS: PanelId[] = ['chambers', 'brood', 'research', 'missions', 'allies', 'reports', 'ranks', 'journal'];
+/** Panels about the whole player rather than one colony: no colony switcher in their header. */
+const PLAYER_PANELS: PanelId[] = ['research', 'allies', 'reports', 'ranks', 'journal'];
+/** Panels that take the map's full width (the tech tree, the journal's pages). */
+const WIDE_PANELS: PanelId[] = ['research', 'journal'];
 
 const I = (d: string) => (
   <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
     <path d={d} />
   </svg>
 );
-const RAIL: { id: PanelId | 'nest'; label: string; icon: ReactNode }[] = [
+const RAIL: { id: PanelId | 'nest'; label: string; icon: ReactNode; gap?: boolean }[] = [
   { id: 'nest', label: 'Nest', icon: I('M3 11c3-6 15-6 18 0M5 11v8h14v-8M9 19v-4a3 3 0 0 1 6 0v4') },
   { id: 'chambers', label: 'Chambers', icon: I('M12 3v4M12 7c-4 0-7 2-7 5s3 5 7 5 7-2 7-5-3-5-7-5ZM12 17v4M5 12H2M22 12h-3') },
   { id: 'brood', label: 'Brood Hall', icon: I('M12 4c2 0 3 1.5 3 3.5S14 11 12 11 9 9.5 9 7.5 10 4 12 4ZM8 20c0-4 2-6 4-6s4 2 4 6M6 9 3 7M18 9l3-2M6 15l-3 1M18 15l3 1') },
   { id: 'research', label: 'Research', icon: I('M9 3h6M10 3v6l-5 9a2 2 0 0 0 2 3h10a2 2 0 0 0 2-3l-5-9V3M8 15h8') },
   { id: 'missions', label: 'Missions', icon: I('M4 18c4-1 6-5 8-9s5-5 8-5M16 4h4v4M4 18l2 2') },
+  { id: 'allies', label: 'Allies', icon: I('M8 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM16 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM2 20c0-3 3-5 6-5s6 2 6 5M12 15.5c1-.3 2.4-.5 4-.5 3 0 6 2 6 5'), gap: true },
+  { id: 'reports', label: 'Reports', icon: I('M6 3h9l4 4v14H6zM14 3v5h5M9 12h7M9 16h7') },
+  { id: 'ranks', label: 'Rankings', icon: I('M8 21V11M16 21V7M12 21V3M4 21h16') },
+  { id: 'journal', label: 'Journal', icon: I('M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3V4ZM5 17a3 3 0 0 1 3-3h11M9 8h6') },
 ];
 const RUNGS: { id: Rung; label: string }[] = [
   { id: 'yard', label: 'Yard' },
@@ -40,6 +54,35 @@ const RUNGS: { id: Rung; label: string }[] = [
   { id: 'ground', label: 'Ground' },
 ];
 const same = (a: { region: number; patch: number }, b: { region: number; patch: number }) => a.region === b.region && a.patch === b.patch;
+
+/** The card under a battle being acted out on the map: who fought whom, the round, who's still standing, the end. */
+function BattleCard({ b, onAgain, onClose }: { b: BattleView; onAgain: () => void; onClose: () => void }) {
+  const { plan: p, moment: m } = b;
+  const youAttack = p.perspective === 'attacker';
+  const won = p.winner === 'attacker' && p.fellBackAfter == null;
+  const over = m.phase === 'outcome' || m.phase === 'done';
+  const status = !over
+    ? m.phase === 'approach' ? 'The raiders march in…' : `Round ${m.round} of ${p.rounds}`
+    : p.fellBackAfter != null ? `The raiders fell back after round ${p.fellBackAfter}.`
+      : p.winner === 'draw' ? 'Draw: both sides still standing.'
+        : won ? (youAttack ? 'Your raiders broke the defense.' : 'The defense was overrun.')
+          : youAttack ? 'Your raiders were wiped out.' : 'The defense held.';
+  const good = over && p.winner !== 'draw' && won === youAttack;
+  return (
+    <div className="yard-battle" role="status" aria-live="polite">
+      <div className="yard-battle-sides">
+        <span><b>{p.attacker.name}</b> {fmtFull(m.attackers)}<small> / {fmtFull(p.attacker.start)}</small></span>
+        <i aria-hidden="true">⚔</i>
+        <span><b>{p.defender.name}</b> {fmtFull(m.defenders)}<small> / {fmtFull(p.defender.start)}</small></span>
+      </div>
+      <p className={over ? (good ? 'good' : p.winner === 'draw' ? '' : 'bad') : ''}>{status}</p>
+      <div className="yard-battle-actions">
+        <button type="button" className="btn primary small" onClick={onAgain}>Watch again</button>
+        <button type="button" className="btn ghost small" onClick={onClose}>Close</button>
+      </div>
+    </div>
+  );
+}
 
 export function Yard({ go }: { go: Nav }) {
   const { state, colony, now, selectColony } = useGame();
@@ -58,6 +101,11 @@ export function Yard({ go }: { go: Nav }) {
   const [deploy, setDeploy] = useState<{ type: MissionType; target: Coords } | null>(null);
   const [look, setLook] = useState<{ region: number; patch: number } | null>(null);
   const [spots, setSpots] = useState<Record<string, Spot[]>>({});
+  // a battle report being acted out on the map (Watch the battle, from Reports), and that report to watch again
+  const [battle, setBattle] = useState<BattleView | null>(null);
+  const watched = useRef<unknown>(null);
+  // asked for before the map had loaded: played as soon as it has
+  const waiting = useRef<unknown>(null);
   const handlers = useRef({ pick: (_: Coords) => {}, dive: (_: Coords) => {} });
 
   // the scene lives as long as the screen
@@ -70,12 +118,15 @@ export function Yard({ go }: { go: Nav }) {
           onDive: (at) => handlers.current.dive(at),
           onLook: (region, patch) => setLook({ region, patch }),
           onRung: setRung,
+          onBattle: setBattle,
         }, reduced),
       )
       .then((s) => {
         if (dead) return s.dispose();
         sceneRef.current = s;
         setReady(true);
+        if (waiting.current) s.playBattle(waiting.current);
+        waiting.current = null;
       })
       .catch(() => !dead && setFailed(true));
     return () => {
@@ -88,12 +139,13 @@ export function Yard({ go }: { go: Nav }) {
   useEffect(() => sceneRef.current?.setReduced(reduced), [reduced]);
 
   // every region's patches: who lives where (the borders, the far-out squares)
+  const sightKey = `${(state?.missions ?? []).map((m: { id: number; status: string }) => `${m.id}:${m.status}`).join(',')}|${state?.unreadReports ?? 0}|${state?.colonies?.length ?? 0}`;
   useEffect(() => {
     if (!ready) return;
     let dead = false;
     const load = () => {
       for (let r = 1; r <= WORLD.regions; r++)
-        api.get(`/api/map/region?region=${r}`).then((x) => !dead && sceneRef.current?.setRegion(r, x.patches)).catch(() => {});
+        api.get(`/api/map/region?region=${r}`).then((x) => { if (dead) return; sceneRef.current?.setRegion(r, x.patches); sceneRef.current?.setFog(r, x.fog ?? []); }).catch(() => {});
     };
     load();
     const t = window.setInterval(load, 60_000);
@@ -101,7 +153,8 @@ export function Yard({ go }: { go: Nav }) {
       dead = true;
       window.clearInterval(t);
     };
-  }, [ready]);
+    // and again when a party arrives or comes home: it may have explored a patch (fog of war)
+  }, [ready, sightKey]);
 
   // a patch's spots: your colonies' patches, the one you're looking at, the one you tapped
   const homes = useMemo(() => (state?.colonies ?? []).map((c) => ({ region: c.coords.region, patch: c.coords.patch })), [state?.colonies]);
@@ -119,7 +172,7 @@ export function Yard({ go }: { go: Nav }) {
         .get(`/api/map?region=${w.region}&patch=${w.patch}`)
         .then((r) => {
           if (dead) return;
-          sceneRef.current?.setSpots(w.region, w.patch, r.spots);
+          sceneRef.current?.setSpots(w.region, w.patch, r.spots, r.fog);
           setSpots((s) => ({ ...s, [`${w.region}:${w.patch}`]: r.spots }));
         })
         .catch(() => {});
@@ -146,6 +199,7 @@ export function Yard({ go }: { go: Nav }) {
     const mine = state?.colonies.find((c) => c.coords.region === at.region && c.coords.patch === at.patch && c.coords.spot === at.spot);
     if (mine && mine.id !== colony?.id) selectColony(mine.id);
     setPanel(null);
+    sceneRef.current?.stopBattle();
     setNest(true);
   };
   const surface = () => {
@@ -154,13 +208,43 @@ export function Yard({ go }: { go: Nav }) {
   };
   const dive = () => {
     if (!colony) return;
+    sceneRef.current?.stopBattle();
     sceneRef.current?.flyTo(colony.coords, 'ground');
     window.setTimeout(() => setNest(true), reduced ? 100 : 1200);
   };
   // the nest's own links ("Up to the patch", "All chambers") open the yard's panels instead of other screens
   const nestNav: Nav = (id, p) => {
     if (id === 'missions') return surface();
-    if (id === 'chambers' || id === 'brood' || id === 'research') return setNest(false), setPanel(id);
+    if (PANEL_IDS.includes(id as PanelId)) return setNest(false), setPanel(id as PanelId);
+    go(id, p);
+  };
+  // links inside the panels (a report's "show on map", an ally's colony): fly there or open the send card, not another screen
+  const panelNav: Nav = (id, p) => {
+    // a report's "Watch the battle": act it out on the map where it was fought
+    // (the rail stays up inside a nest: come back up to the map first, or it all happens behind the nest)
+    if (id === 'missions' && p?.replay) {
+      watched.current = p.replay;
+      setPanel(null);
+      setNest(false);
+      setDeploy(null);
+      setSel(null);
+      if (!sceneRef.current) waiting.current = p.replay;
+      sceneRef.current?.setSelected(null);
+      sceneRef.current?.playBattle(p.replay);
+      return;
+    }
+    if (id === 'missions' && (p?.view || p?.target)) {
+      const at = p.target ?? { ...p.view, spot: 0 };
+      setPanel(null);
+      setNest(false);
+      sceneRef.current?.flyTo(at, 'patch');
+      if (p.target) {
+        handlers.current.pick(p.target);
+        if (p.type) setDeploy({ type: p.type, target: p.target });
+      }
+      return;
+    }
+    if (PANEL_IDS.includes(id as PanelId)) return setPanel(id as PanelId);
     go(id, p);
   };
   const cycle = (dir: 1 | -1) => {
@@ -185,6 +269,12 @@ export function Yard({ go }: { go: Nav }) {
 
   if (!state || !colony) return null;
   const selSpot = sel ? spots[`${sel.region}:${sel.patch}`]?.find((s) => s.spot === sel.spot) : null;
+  const badges: Partial<Record<PanelId, [number, string]>> = {
+    missions: [(state.incoming ?? []).filter((i: any) => i.hostile).length, 'raids coming'],
+    allies: [state.player.pendingDiplomacy ?? 0, 'waiting for you'],
+    reports: [state.unreadReports ?? 0, 'unread'],
+    journal: [state.journal?.fresh ?? 0, 'new pages'],
+  };
   const colonyTitle = (
     <div className="yard-cycle">
       {state.colonies.length > 1 && (
@@ -220,25 +310,33 @@ export function Yard({ go }: { go: Nav }) {
           <button
             key={b.id}
             type="button"
-            className={(b.id === 'nest' ? nest : panel === b.id) ? 'on' : ''}
+            className={[(b.id === 'nest' ? nest : panel === b.id) ? 'on' : '', b.gap ? 'gap' : ''].filter(Boolean).join(' ') || undefined}
             aria-pressed={b.id === 'nest' ? nest : panel === b.id}
             onClick={() => (b.id === 'nest' ? (nest ? surface() : dive()) : setPanel((p) => (p === b.id ? null : (b.id as PanelId))))}
           >
             {b.icon}
             <span>{b.id === 'nest' && nest ? 'Up' : b.label}</span>
+            {b.id !== 'nest' && (badges[b.id]?.[0] ?? 0) > 0 && (
+              <i className="rail-badge" aria-label={`${badges[b.id]![0]} ${badges[b.id]![1]}`}>{badges[b.id]![0]}</i>
+            )}
           </button>
         ))}
       </nav>
 
-      {panel && panel !== 'research' && (
-        <aside className="yard-panel" aria-label={RAIL.find((r) => r.id === panel)?.label}>
+      {panel && (
+        <aside className={`yard-panel${WIDE_PANELS.includes(panel) ? ' wide' : ''}`} aria-label={RAIL.find((r) => r.id === panel)?.label}>
           <div className="yard-panel-head">
-            {colonyTitle}
+            {PLAYER_PANELS.includes(panel) ? <b>{RAIL.find((r) => r.id === panel)?.label}</b> : colonyTitle}
             <button type="button" className="btn ghost small" onClick={() => setPanel(null)} aria-label="Close">×</button>
           </div>
           <div className="yard-panel-body">
             {panel === 'chambers' && <Chambers />}
             {panel === 'brood' && <Brood />}
+            {panel === 'research' && <Research />}
+            {panel === 'allies' && <Allies go={panelNav} />}
+            {panel === 'reports' && <Reports go={panelNav} />}
+            {panel === 'ranks' && <Rankings />}
+            {panel === 'journal' && <Journal />}
             {panel === 'missions' && (
               <div className="stack">
                 <div className="row-actions">
@@ -247,17 +345,6 @@ export function Yard({ go }: { go: Nav }) {
                 <UnderWay onFocus={(_, at) => sceneRef.current?.flyTo(at, 'patch')} />
               </div>
             )}
-          </div>
-        </aside>
-      )}
-      {panel === 'research' && (
-        <aside className="yard-panel wide" aria-label="Research">
-          <div className="yard-panel-head">
-            <b>Research</b>
-            <button type="button" className="btn ghost small" onClick={() => setPanel(null)} aria-label="Close">×</button>
-          </div>
-          <div className="yard-panel-body">
-            <Research />
           </div>
         </aside>
       )}
@@ -314,7 +401,14 @@ export function Yard({ go }: { go: Nav }) {
           {deploy && <p className="muted small yard-hint">{MISSION_LABEL[deploy.type]}: pick the ants and send. The column walks the map.</p>}
         </div>
       )}
-      {!nest && <p className="yard-help" aria-hidden="true">Scroll to zoom · drag to move · right-drag or Q/E to turn · double-click your mound to go inside</p>}
+      {!nest && battle && (
+        <BattleCard
+          b={battle}
+          onAgain={() => watched.current && sceneRef.current?.playBattle(watched.current)}
+          onClose={() => sceneRef.current?.stopBattle()}
+        />
+      )}
+      {!nest && !battle && <p className="yard-help" aria-hidden="true">Scroll to zoom · drag to move · right-drag or Q/E to turn · double-click your mound to go inside</p>}
     </div>
   );
 }
