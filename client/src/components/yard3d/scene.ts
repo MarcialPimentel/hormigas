@@ -11,6 +11,7 @@ import moundsUrl from './mounds.json?url';
 import propsUrl from './props.json?url';
 import { CHITIN, antUniforms, createAnts, type Ants } from '../nest3d/ants3d';
 import { tripProgress } from '../UnderWay';
+import { TIMING, drawnFor, momentAt, planBattle, replayLength, type BattlePlan, type ReplayMoment } from '../patch3d/battle';
 import type { Spot, Coords } from '../Patch';
 import type { ServerState } from '../../game';
 
@@ -26,7 +27,11 @@ export interface YardHandlers {
   /** the camera is close over this patch: load its spots */
   onLook: (region: number, patch: number) => void;
   onRung: (r: Rung) => void;
+  /** a battle replay moved on (a new round, new losses), or ended (null) */
+  onBattle?: (b: BattleView | null) => void;
 }
+/** What a battle replay shows right now, for the card over the map. */
+export interface BattleView { plan: BattlePlan; moment: ReplayMoment }
 export interface YardScene {
   setRegion(region: number, patches: RegionPatch[]): void;
   setSpots(region: number, patch: number, spots: Spot[], fog?: PatchFog): void;
@@ -36,6 +41,9 @@ export interface YardScene {
   /** fly the camera to a place, at a level */
   flyTo(at: { region: number; patch: number; spot?: number }, rung: Rung): void;
   wholeYard(): void;
+  /** act a battle report out where it was fought; false if the report has nothing to show (no rounds) */
+  playBattle(report: unknown): boolean;
+  stopBattle(): void;
   setReduced(r: boolean): void;
   dispose(): void;
 }
@@ -871,6 +879,138 @@ export async function createYardScene(host: HTMLElement, labels: HTMLElement, da
     }
   }
 
+  // ---------- battles: a report acted out where it was fought (Watch the battle, from Reports)
+  // The server fought it already; this only shows its numbers (patch3d/battle.ts reads the report): both sides meet
+  // in front of the target's mound, the dead fall on their backs round by round, then the winners press on or the
+  // losers walk away. Up to FIGHT_CAP ants a side stand for the real numbers.
+  interface Fight { plan: BattlePlan; startedAt: number; at: THREE.Vector3; dx: number; dz: number; na: number; nd: number; seen: string }
+  let fight: Fight | null = null;
+  const FIGHT_CAP = 140;
+  const fhash = (i: number, s: number) => { const x = Math.sin(i * 127.1 + s * 311.7) * 43758.5453; return x - Math.floor(x); };
+  const DUST = 70;
+  const dustPos = new Float32Array(DUST * 3), dustLife = new Float32Array(DUST).fill(1);
+  const dustGeo = new THREE.BufferGeometry();
+  dustGeo.setAttribute('position', new THREE.BufferAttribute(dustPos, 3));
+  const dustTex = (() => {
+    const c = document.createElement('canvas');
+    c.width = c.height = 64;
+    const g = c.getContext('2d')!;
+    const gr = g.createRadialGradient(32, 32, 0, 32, 32, 32);
+    gr.addColorStop(0, 'rgba(255,255,255,1)');
+    gr.addColorStop(1, 'rgba(255,255,255,0)');
+    g.fillStyle = gr;
+    g.fillRect(0, 0, 64, 64);
+    return new THREE.CanvasTexture(c);
+  })();
+  disposables.push(dustTex);
+  const dustMat = new THREE.PointsMaterial({ map: dustTex, color: '#D8C29A', size: 1.6, transparent: true, opacity: 0.35, depthWrite: false });
+  const dust = new THREE.Points(dustGeo, dustMat);
+  dust.visible = false;
+  dust.frustumCulled = false;
+  world.add(dust);
+
+  function playBattle(report: unknown) {
+    const plan = planBattle(report);
+    if (!plan) return false;
+    const at = spotAt(plan.target);
+    // the raiders come in from the side of the colony they marched from
+    const from = plan.origin ? spotAt(plan.origin) : null;
+    let dx = from ? from.x - at.x : 1, dz = from ? from.z - at.z : 0;
+    if (Math.hypot(dx, dz) < 1) { dx = 1; dz = 0; }
+    const l = Math.hypot(dx, dz);
+    dx /= l; dz /= l;
+    fight = { plan, startedAt: performance.now(), at, dx, dz, na: Math.min(FIGHT_CAP, Math.max(1, plan.attacker.start)), nd: Math.min(FIGHT_CAP, Math.max(1, plan.defender.start)), seen: '' };
+    dustLife.fill(1);
+    // frame it from the side, a little behind the defenders, close enough to see each ant
+    const ox = -dz - dx * 0.45, oz = dx - dz * 0.45;
+    let yaw = Math.atan2(ox, oz);
+    while (yaw - goal.yaw > Math.PI) yaw -= Math.PI * 2;
+    while (yaw - goal.yaw < -Math.PI) yaw += Math.PI * 2;
+    fly({ x: at.x + dx * 10, z: at.z + dz * 10, yaw, dist: 60 }, 1.8);
+    return true;
+  }
+  function stopBattle() {
+    if (!fight) return;
+    fight = null;
+    dust.visible = false;
+    h.onBattle?.(null);
+  }
+  // the two sides must read apart at a glance: yours light amber, theirs near black (army ants keep their deep red)
+  const YOURS = '#D99245', THEIRS = '#3A2A22';
+  function drawBattle(dt: number, antGrow: number, show: boolean) {
+    if (!fight) return;
+    const f = fight, p = f.plan;
+    // timed by the real clock, so a slow frame rate doesn't stretch the fight; reduced motion shows the end at once
+    const elapsed = (performance.now() - f.startedAt) / 1000;
+    const m = momentAt(p, reduced ? replayLength(p) : elapsed);
+    const seen = `${m.phase}:${m.round}:${m.attackers}:${m.defenders}`;
+    if (seen !== f.seen) { f.seen = seen; h.onBattle?.({ plan: p, moment: m }); }
+    if (elapsed > replayLength(p) + TIMING.linger) return stopBattle();
+    if (!show) { dust.visible = false; return; } // too far out to see ants
+    const g = Math.min(antGrow, 4); // spread the ranks as the ants grow, so they don't pile up when zoomed out
+    const mound = moundSpots.get(`${p.target.region}:${p.target.patch}:${p.target.spot}`);
+    const front = (mound ? MOUNDS[mound.stage].r * 1.05 : 4) + 1.5 * g;
+    // the front line runs across the raiders' path, `front` out from the mound
+    const fx = f.at.x + f.dx * front, fz = f.at.z + f.dz * front, nx = -f.dz, nz = f.dx;
+    const aliveA = drawnFor(m.attackers, p.attacker.start, f.na), aliveD = drawnFor(m.defenders, p.defender.start, f.nd);
+    const attackersWon = p.winner === 'attacker' && p.fellBackAfter == null;
+    const attackersLeave = !attackersWon && p.winner !== 'draw';
+    const ko = m.phase === 'outcome' || m.phase === 'done' ? ease(Math.min(1, m.k)) : 0;
+    const youAttack = p.perspective === 'attacker';
+    const attColor = p.attacker.swarm ? undefined : youAttack ? YOURS : THEIRS;
+    const defColor = youAttack ? THEIRS : YOURS;
+    const faceIn = Math.atan2(f.dz, -f.dx), faceOut = Math.atan2(-f.dz, f.dx);
+    const fighting = m.phase === 'fight';
+    const side = (n: number, alive: number, attacker: boolean) => {
+      const s = attacker ? p.attacker : p.defender;
+      const wide = (s.swarm ? 8 : 5) * g;
+      for (let j = 0; j < n; j++) {
+        // the last ants in the list stand at the front, so they fall first
+        const u = 1 - (j + 0.5) / n;
+        const dep = -Math.log(1 - 0.99 * u) * (s.swarm ? 2.2 : 1.6) * g;
+        const lat = (fhash(j, attacker ? 7 : 8) * 2 - 1) * (wide * Math.exp(-dep / (5 * g)) + 0.8 * g);
+        const dead = j >= alive;
+        let off = 0, yaw = attacker ? faceIn : faceOut;
+        if (!dead) {
+          if (m.phase === 'approach') off = (1 - ease(m.k)) * (attacker ? 16 * g : -front);
+          if (attacker && attackersWon) off = -ko * front * 0.7;
+          if (attacker && attackersLeave) { off = ko * 16 * g; yaw = faceOut; }
+          if (!attacker && attackersWon) off = -ko * (front + dep); // survivors pull back into the nest
+        }
+        // defenders who made it back inside go down the entrance
+        if (!attacker && !dead && attackersWon && ko > 0.85) continue;
+        const along = (attacker ? 1 : -1) * (0.4 * g + dep) + off;
+        const lunge = fighting && !dead && dep < 2 * g && !reduced ? Math.sin(time * 9 + j) * 0.18 * g * (attacker ? -1 : 1) : 0;
+        const x = fx + f.dx * (along + lunge) + nx * lat, z = fz + f.dz * (along + lunge) + nz * lat;
+        const caste = s.swarm ? (j % 9 === 4 ? 'army_major' : 'army') : fhash(j, 9) < s.soldiers ? 'soldier' : 'worker';
+        ants.ant(caste, x, footY(x, z), z, {
+          scale: (caste === 'worker' ? 0.6 : caste === 'army_major' ? 0.9 : 0.75) * antGrow,
+          yaw: yaw + (dead ? fhash(j, 10) * 2 - 1 : lunge),
+          flip: dead,
+          step: dead || reduced ? 0 : 17,
+          color: attacker ? attColor : defColor,
+        });
+      }
+    };
+    side(f.na, aliveA, true);
+    side(f.nd, aliveD, false);
+    // dust over the front line while they fight
+    dust.visible = fighting && !reduced;
+    if (!dust.visible) return;
+    dustMat.size = 1.6 * g;
+    for (let i = 0; i < DUST; i++) {
+      dustLife[i] += dt * (0.6 + fhash(i, 1) * 0.6);
+      if (dustLife[i] >= 1) {
+        dustLife[i] = 0;
+        const lat = (fhash(i, Math.floor(performance.now() / 300)) * 2 - 1) * 6 * g, fwd = (fhash(i, 31) - 0.5) * 2 * g;
+        const x = fx + nx * lat + f.dx * fwd, z = fz + nz * lat + f.dz * fwd;
+        dustPos[i * 3] = x; dustPos[i * 3 + 1] = footY(x, z) + 0.2; dustPos[i * 3 + 2] = z;
+      }
+      dustPos[i * 3 + 1] += dt * 0.4 * g;
+    }
+    dustGeo.attributes.position.needsUpdate = true;
+  }
+
   // ---------- camera: one orbit rig, one zoom from the whole yard to ant height
   const view = { x: 0, z: 0, yaw: -0.3, dist: 2900 };
   const goal = { ...view };
@@ -1103,6 +1243,7 @@ export async function createYardScene(host: HTMLElement, labels: HTMLElement, da
         ants.ant(c.caste, x, y, z, { pitch, scale: (c.caste === 'soldier' ? 0.75 : 0.6) * antGrow, yaw: Math.atan2(-tg.z, tg.x), gait: (k * c.len) / (0.17 * antGrow) * 1.2, color: c.color, cargo: pr.back && c.cargo ? { kind: 'leaf', color: c.cargo } : null });
       }
     }
+    drawBattle(dt, antGrow, showAnts);
     ants.end();
     // labels
     for (const p of places.values()) if (p.el) {
@@ -1151,6 +1292,8 @@ export async function createYardScene(host: HTMLElement, labels: HTMLElement, da
       fly({ x: rung === 'patch' ? t.x : p.x, z: (rung === 'patch' ? t.z : p.z) + (rung === 'ground' ? 6 : 0), dist: RUNG_D[rung] });
     },
     wholeYard: () => fly(homeView()),
+    playBattle,
+    stopBattle,
     setReduced: (r) => (reduced = r),
     dispose() {
       cancelAnimationFrame(raf);

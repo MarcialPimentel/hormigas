@@ -1002,6 +1002,16 @@ pre.report-body { white-space: pre-wrap; overflow-x: auto; }
 .yard-needs b { font: 700 0.95rem/1.15 var(--font-display); color: #FFD27A; }
 .yard-needs.danger { border-color: var(--danger); }
 .yard-needs.danger b { color: #FFB1A6; }
+.yard-battle { position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%); z-index: 4; display: grid; gap: 6px; justify-items: center; min-width: 340px; max-width: calc(100% - 220px); padding: 10px 16px; background: #2B1D13; color: #FBF6EA; border: 2px solid var(--honey); border-radius: 14px; box-shadow: var(--float-shadow); font: 0.85rem/1.25 var(--font-body); }
+.yard-battle-sides { display: flex; align-items: baseline; gap: 12px; white-space: nowrap; }
+.yard-battle-sides b { font: 700 0.95rem/1.15 var(--font-display); color: #FFD27A; margin-right: 4px; }
+.yard-battle-sides small { opacity: 0.6; }
+.yard-battle-sides i { font-style: normal; opacity: 0.7; }
+.yard-battle p { margin: 0; font-weight: 700; }
+.yard-battle p.good { color: #A8E07A; }
+.yard-battle p.bad { color: #FFB1A6; }
+.yard-battle-actions { display: flex; gap: 6px; }
+.yard-battle .btn.ghost { color: #FBF6EA; }
 .yard-help { position: absolute; left: 50%; bottom: 10px; transform: translateX(-50%); z-index: 2; margin: 0; padding: 4px 12px; border-radius: 999px; background: rgba(43, 29, 19, 0.7); color: #FBF6EA; font-size: 0.75rem; white-space: nowrap; pointer-events: none; }
 /* banners over colonies, Civ style: level, name, points */
 .ybanner { position: absolute; left: 0; top: 0; display: flex; align-items: stretch; white-space: nowrap; font: 0.76rem/1 var(--font-body); color: #FBF6EA; border-radius: 7px; overflow: hidden; box-shadow: 0 3px 10px rgba(20, 12, 6, 0.35); border: 1.5px solid #2B1D13; background: #6E4A2E; }

@@ -8,7 +8,7 @@ import { WORLD } from '@hormigas/shared';
 import { api } from '../api';
 import { useGame } from '../game';
 import { useMotion } from '../motion';
-import { fmtCoords } from '../format';
+import { fmtCoords, fmtFull } from '../format';
 import { leaveYardPreview } from '../preview';
 import { SpotCard, type Coords, type Spot } from '../components/Patch';
 import { UnderWay } from '../components/UnderWay';
@@ -21,7 +21,7 @@ import { Reports } from './Reports';
 import { Allies } from './Allies';
 import { Journal } from './Journal';
 import { MISSION_LABEL, type MissionType, type Nav } from '../nav';
-import type { Rung, YardScene } from '../components/yard3d/scene';
+import type { BattleView, Rung, YardScene } from '../components/yard3d/scene';
 
 const NestHome = lazy(() => import('../components/NestHome').then((m) => ({ default: m.NestHome })));
 type PanelId = 'chambers' | 'brood' | 'research' | 'missions' | 'allies' | 'reports' | 'ranks' | 'journal';
@@ -55,6 +55,35 @@ const RUNGS: { id: Rung; label: string }[] = [
 ];
 const same = (a: { region: number; patch: number }, b: { region: number; patch: number }) => a.region === b.region && a.patch === b.patch;
 
+/** The card under a battle being acted out on the map: who fought whom, the round, who's still standing, the end. */
+function BattleCard({ b, onAgain, onClose }: { b: BattleView; onAgain: () => void; onClose: () => void }) {
+  const { plan: p, moment: m } = b;
+  const youAttack = p.perspective === 'attacker';
+  const won = p.winner === 'attacker' && p.fellBackAfter == null;
+  const over = m.phase === 'outcome' || m.phase === 'done';
+  const status = !over
+    ? m.phase === 'approach' ? 'The raiders march in…' : `Round ${m.round} of ${p.rounds}`
+    : p.fellBackAfter != null ? `The raiders fell back after round ${p.fellBackAfter}.`
+      : p.winner === 'draw' ? 'Draw: both sides still standing.'
+        : won ? (youAttack ? 'Your raiders broke the defense.' : 'The defense was overrun.')
+          : youAttack ? 'Your raiders were wiped out.' : 'The defense held.';
+  const good = over && p.winner !== 'draw' && won === youAttack;
+  return (
+    <div className="yard-battle" role="status" aria-live="polite">
+      <div className="yard-battle-sides">
+        <span><b>{p.attacker.name}</b> {fmtFull(m.attackers)}<small> / {fmtFull(p.attacker.start)}</small></span>
+        <i aria-hidden="true">⚔</i>
+        <span><b>{p.defender.name}</b> {fmtFull(m.defenders)}<small> / {fmtFull(p.defender.start)}</small></span>
+      </div>
+      <p className={over ? (good ? 'good' : p.winner === 'draw' ? '' : 'bad') : ''}>{status}</p>
+      <div className="yard-battle-actions">
+        <button type="button" className="btn primary small" onClick={onAgain}>Watch again</button>
+        <button type="button" className="btn ghost small" onClick={onClose}>Close</button>
+      </div>
+    </div>
+  );
+}
+
 export function Yard({ go }: { go: Nav }) {
   const { state, colony, now, selectColony } = useGame();
   const { reduced } = useMotion();
@@ -72,6 +101,9 @@ export function Yard({ go }: { go: Nav }) {
   const [deploy, setDeploy] = useState<{ type: MissionType; target: Coords } | null>(null);
   const [look, setLook] = useState<{ region: number; patch: number } | null>(null);
   const [spots, setSpots] = useState<Record<string, Spot[]>>({});
+  // a battle report being acted out on the map (Watch the battle, from Reports), and that report to watch again
+  const [battle, setBattle] = useState<BattleView | null>(null);
+  const watched = useRef<unknown>(null);
   const handlers = useRef({ pick: (_: Coords) => {}, dive: (_: Coords) => {} });
 
   // the scene lives as long as the screen
@@ -84,6 +116,7 @@ export function Yard({ go }: { go: Nav }) {
           onDive: (at) => handlers.current.dive(at),
           onLook: (region, patch) => setLook({ region, patch }),
           onRung: setRung,
+          onBattle: setBattle,
         }, reduced),
       )
       .then((s) => {
@@ -162,6 +195,7 @@ export function Yard({ go }: { go: Nav }) {
     const mine = state?.colonies.find((c) => c.coords.region === at.region && c.coords.patch === at.patch && c.coords.spot === at.spot);
     if (mine && mine.id !== colony?.id) selectColony(mine.id);
     setPanel(null);
+    sceneRef.current?.stopBattle();
     setNest(true);
   };
   const surface = () => {
@@ -170,6 +204,7 @@ export function Yard({ go }: { go: Nav }) {
   };
   const dive = () => {
     if (!colony) return;
+    sceneRef.current?.stopBattle();
     sceneRef.current?.flyTo(colony.coords, 'ground');
     window.setTimeout(() => setNest(true), reduced ? 100 : 1200);
   };
@@ -181,7 +216,17 @@ export function Yard({ go }: { go: Nav }) {
   };
   // links inside the panels (a report's "show on map", an ally's colony): fly there or open the send card, not another screen
   const panelNav: Nav = (id, p) => {
-    if (id === 'missions' && !p?.replay && (p?.view || p?.target)) {
+    // a report's "Watch the battle": act it out on the map where it was fought
+    if (id === 'missions' && p?.replay) {
+      watched.current = p.replay;
+      setPanel(null);
+      setDeploy(null);
+      setSel(null);
+      sceneRef.current?.setSelected(null);
+      sceneRef.current?.playBattle(p.replay);
+      return;
+    }
+    if (id === 'missions' && (p?.view || p?.target)) {
       const at = p.target ?? { ...p.view, spot: 0 };
       setPanel(null);
       sceneRef.current?.flyTo(at, 'patch');
@@ -348,7 +393,14 @@ export function Yard({ go }: { go: Nav }) {
           {deploy && <p className="muted small yard-hint">{MISSION_LABEL[deploy.type]}: pick the ants and send. The column walks the map.</p>}
         </div>
       )}
-      {!nest && <p className="yard-help" aria-hidden="true">Scroll to zoom · drag to move · right-drag or Q/E to turn · double-click your mound to go inside</p>}
+      {!nest && battle && (
+        <BattleCard
+          b={battle}
+          onAgain={() => watched.current && sceneRef.current?.playBattle(watched.current)}
+          onClose={() => sceneRef.current?.stopBattle()}
+        />
+      )}
+      {!nest && !battle && <p className="yard-help" aria-hidden="true">Scroll to zoom · drag to move · right-drag or Q/E to turn · double-click your mound to go inside</p>}
     </div>
   );
 }
