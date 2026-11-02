@@ -9,7 +9,7 @@ Builds on [sunlit-microcosm.md](sunlit-microcosm.md) (the scale ladder, approved
 
 | | Call |
 |---|---|
-| Structure | **One map, one zoom:** Yard (≈30 m) → Region (≈5 m) → Patch (≈1 m) → Ground (≈6 cm), on one screen. Double-click your mound to dive into the nest. |
+| Structure | **One map, one zoom:** Yard (the five beds) → Region (≈5 m) → Patch (≈1 m) → Ground (≈6 cm), on one screen. Double-click your mound to dive into the nest. |
 | Look | **Civilization's map grammar:** patches as hex tiles far out, scent borders, mist over unexplored ground, mounds that grow, banners, a "Needs you" button. |
 | Rules | **Civ's look, OGame's clock.** No turns, no unit micro, nothing about the server rules changes. |
 | Technology | Grow the Three.js Garden and Patch scenes into one scene with level-of-detail rules; the nest stays its own scene, joined by the dive. |
@@ -63,7 +63,9 @@ The top zoom (approved 1 Nov 2026, option 2 of three previews; built in `yard3d/
 - **A sign per bed:** a wooden plant marker with the bed's name and how many colonies live there; beds where you live are brighter and say **You**. Click one to fly to that bed.
 - **Markers:** your colony is a honey pin with a slow pulse (still with motion off); allies and rivals get a cream ring so they read on any bed; wild nests shrink to faint specks from the top and come back at Region.
 - **Hex lines** are thin cream lines, not dark ones.
-- **Round the yard:** the back of the house (door, windows, downpipe, an outside tap with the hose coiled on the lawn), pots on the patio, a board fence and a hedge on the other three sides, and lawn out to the horizon instead of open sky.
+- **Just the beds (2 Nov 2026):** the top view fits the five beds and their signs to the window, and you can't pull back further. The house, patio, pots, hose, fence and hedge are gone (Marz: the fake building and the huge top level weren't needed); striped lawn runs out to the horizon. The Woodpile's logs are stacked on the lawn beside its bed, so they never hide a patch.
+
+![The top view, just the beds](whole-yard/yard-view-tight.jpg)
 
 ## The models
 
