@@ -4,6 +4,7 @@ _Current as of Build 13 (2026-11-02)._ Newest first. One entry per build, in pla
 
 ## Build 13: Scout the swarm (unreleased)
 - **Scout the swarm.** An army-ant swarm no longer tells you it's sized for you. Its card says an army **roughly the size of your colony** is marching in, and its size shows as "?" until you scout it. Press **Scout the swarm** (or send Scouts at your own colony while it's coming): before they go you see each Scout's chance to slip past, the chance a report gets back, and how many you'll likely lose. More Scouts, Scent Reading and Chemical Mimicry raise the odds; army ants eat the ones they catch. If a report gets back, the card shows the swarm's real size, its Minors and Majors, and your **win / draw / lose odds** with the ants home right now, which change as you raise soldiers or send them away.
+- You can **haul the corpses left at your own colony**. After a fight at your nest, Haul corpses with your own colony as the target used to stop at "That's this colony." Now your Workers go out, gather the Protein and come back after a short trip, like any other haul.
 - Research tree: techs you already own stay bright when you hover another research. Before, hovering faded everything off that research's path, so you had to mouse over to see what you'd unlocked.
 
 ## Build 12: Reasons to come back — 2026-11-01

@@ -252,7 +252,8 @@ export function SendMission({ type, setType, target, setTarget, onClose, onSent 
   for (const r of ['foliage', 'protein'] as const) if (cargoAmounts[r] > colony.resources[r]) problems.push(`Not enough ${RESOURCE_LABEL[r]} to load.`);
   if (used >= max) problems.push(noSlotsMessage(pool, max));
   if (type === 'scout' && ownTarget && !swarmAt) problems.push("You don't need to scout your own colony. When an army ant swarm is coming, Scouts sent here go out to meet it.");
-  else if (!scoutingSwarm && valid && target.region === colony.coords.region && target.patch === colony.coords.patch && target.spot === colony.coords.spot) problems.push("That's this colony.");
+  // hauling at home is fine: a fight at your own nest leaves corpses on your own doorstep
+  else if (!scoutingSwarm && type !== 'haul' && valid && target.region === colony.coords.region && target.patch === colony.coords.patch && target.spot === colony.coords.spot) problems.push("That's this colony.");
   if (type === 'colonize') {
     const flying = missions.filter((m) => m.type === 'colonize' && m.status === 'outbound').length;
     const cap = maxColonies(research);
