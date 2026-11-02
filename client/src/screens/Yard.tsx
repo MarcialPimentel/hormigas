@@ -104,6 +104,8 @@ export function Yard({ go }: { go: Nav }) {
   // a battle report being acted out on the map (Watch the battle, from Reports), and that report to watch again
   const [battle, setBattle] = useState<BattleView | null>(null);
   const watched = useRef<unknown>(null);
+  // asked for before the map had loaded: played as soon as it has
+  const waiting = useRef<unknown>(null);
   const handlers = useRef({ pick: (_: Coords) => {}, dive: (_: Coords) => {} });
 
   // the scene lives as long as the screen
@@ -123,6 +125,8 @@ export function Yard({ go }: { go: Nav }) {
         if (dead) return s.dispose();
         sceneRef.current = s;
         setReady(true);
+        if (waiting.current) s.playBattle(waiting.current);
+        waiting.current = null;
       })
       .catch(() => !dead && setFailed(true));
     return () => {
@@ -217,11 +221,14 @@ export function Yard({ go }: { go: Nav }) {
   // links inside the panels (a report's "show on map", an ally's colony): fly there or open the send card, not another screen
   const panelNav: Nav = (id, p) => {
     // a report's "Watch the battle": act it out on the map where it was fought
+    // (the rail stays up inside a nest: come back up to the map first, or it all happens behind the nest)
     if (id === 'missions' && p?.replay) {
       watched.current = p.replay;
       setPanel(null);
+      setNest(false);
       setDeploy(null);
       setSel(null);
+      if (!sceneRef.current) waiting.current = p.replay;
       sceneRef.current?.setSelected(null);
       sceneRef.current?.playBattle(p.replay);
       return;
@@ -229,6 +236,7 @@ export function Yard({ go }: { go: Nav }) {
     if (id === 'missions' && (p?.view || p?.target)) {
       const at = p.target ?? { ...p.view, spot: 0 };
       setPanel(null);
+      setNest(false);
       sceneRef.current?.flyTo(at, 'patch');
       if (p.target) {
         handlers.current.pick(p.target);

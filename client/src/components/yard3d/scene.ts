@@ -827,7 +827,8 @@ export async function createYardScene(host: HTMLElement, labels: HTMLElement, da
   beds.forEach((b) => signText(b.region));
 
   // ---------- parties: columns of real ants up close, a thread far out
-  const ants: Ants = createAnts(world, { worker: 700, soldier: 400, army: 300, army_major: 20, queen: 4, alate: 10 }, true);
+  // room for a swarm's column (200 army ants) and a battle replay (140 a side) at once
+  const ants: Ants = createAnts(world, { worker: 700, soldier: 400, army: 450, army_major: 30, queen: 4, alate: 10 }, true);
   interface Column { key: string; from: THREE.Vector3; to: THREE.Vector3; curve: THREE.QuadraticBezierCurve3; len: number; thread: THREE.Line; rib: THREE.Mesh; color: string; caste: 'worker' | 'soldier' | 'army'; n: number; el: HTMLDivElement; prog: (now: number) => { d: number; back: boolean } | null; cargo?: string }
   const columns = new Map<string, Column>();
   const sumUnits = (u?: Record<string, number>) => Object.values(u ?? {}).reduce((a, b) => a + (b ?? 0), 0);
@@ -883,7 +884,7 @@ export async function createYardScene(host: HTMLElement, labels: HTMLElement, da
   // The server fought it already; this only shows its numbers (patch3d/battle.ts reads the report): both sides meet
   // in front of the target's mound, the dead fall on their backs round by round, then the winners press on or the
   // losers walk away. Up to FIGHT_CAP ants a side stand for the real numbers.
-  interface Fight { plan: BattlePlan; startedAt: number; at: THREE.Vector3; dx: number; dz: number; na: number; nd: number; seen: string }
+  interface Fight { plan: BattlePlan; startedAt: number; at: THREE.Vector3; dx: number; dz: number; na: number; nd: number; seen: string; sentAt: number }
   let fight: Fight | null = null;
   const FIGHT_CAP = 140;
   const fhash = (i: number, s: number) => { const x = Math.sin(i * 127.1 + s * 311.7) * 43758.5453; return x - Math.floor(x); };
@@ -919,7 +920,7 @@ export async function createYardScene(host: HTMLElement, labels: HTMLElement, da
     if (Math.hypot(dx, dz) < 1) { dx = 1; dz = 0; }
     const l = Math.hypot(dx, dz);
     dx /= l; dz /= l;
-    fight = { plan, startedAt: performance.now(), at, dx, dz, na: Math.min(FIGHT_CAP, Math.max(1, plan.attacker.start)), nd: Math.min(FIGHT_CAP, Math.max(1, plan.defender.start)), seen: '' };
+    fight = { plan, startedAt: performance.now(), at, dx, dz, na: Math.min(FIGHT_CAP, Math.max(1, plan.attacker.start)), nd: Math.min(FIGHT_CAP, Math.max(1, plan.defender.start)), seen: '', sentAt: 0 };
     dustLife.fill(1);
     // frame it from the side, a little behind the defenders, close enough to see each ant
     const ox = -dz - dx * 0.45, oz = dx - dz * 0.45;
@@ -943,8 +944,14 @@ export async function createYardScene(host: HTMLElement, labels: HTMLElement, da
     // timed by the real clock, so a slow frame rate doesn't stretch the fight; reduced motion shows the end at once
     const elapsed = (performance.now() - f.startedAt) / 1000;
     const m = momentAt(p, reduced ? replayLength(p) : elapsed);
-    const seen = `${m.phase}:${m.round}:${m.attackers}:${m.defenders}`;
-    if (seen !== f.seen) { f.seen = seen; h.onBattle?.({ plan: p, moment: m }); }
+    // tell the card: at once for a new phase or round, otherwise a few times a second (in a big fight the counts
+    // change nearly every frame, and each update re-renders the whole yard screen)
+    const step = `${m.phase}:${m.round}`, counts = `${m.attackers}:${m.defenders}`, t0 = performance.now();
+    if (step !== f.seen.split('|')[0] || (counts !== f.seen.split('|')[1] && t0 - f.sentAt > 200)) {
+      f.seen = `${step}|${counts}`;
+      f.sentAt = t0;
+      h.onBattle?.({ plan: p, moment: m });
+    }
     if (elapsed > replayLength(p) + TIMING.linger) return stopBattle();
     if (!show) { dust.visible = false; return; } // too far out to see ants
     const g = Math.min(antGrow, 4); // spread the ranks as the ants grow, so they don't pile up when zoomed out
