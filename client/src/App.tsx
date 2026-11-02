@@ -18,7 +18,8 @@ import { FeedbackButton } from './components/Feedback';
 import { SoundButton } from './components/SoundButton';
 import { useMarch } from './audio/useSound';
 import type { Nav } from './nav';
-import { yardPreview } from './preview';
+import { phone3dPreview, yardPreview } from './preview';
+import { FpsMeter } from './components/FpsMeter';
 
 // The Whole Yard preview (docs/art/whole-yard.md): only with ?preview=yard, only on computers, loaded when opened.
 const Yard = lazy(() => import('./screens/Yard').then((m) => ({ default: m.Yard })));
@@ -134,6 +135,7 @@ export function App() {
         ))}
       </nav>
       <main className="content">{current.render(nav)}</main>
+      {phone3dPreview && <FpsMeter />}
       <div className="toasts" aria-live="polite">
         {toasts.map((t) => (
           <div key={t.id} className={`toast ${t.kind}`}>

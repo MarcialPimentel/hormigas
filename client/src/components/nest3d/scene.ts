@@ -945,11 +945,38 @@ export async function createNestScene(
   };
   canvas.addEventListener('wheel', onWheel, { passive: false });
 
+  // two fingers pinch to zoom (phones); a pinch is never a tap
+  const touches = new Map<number, { x: number; y: number }>();
+  let pinch = 0;
   const onDown = (e: PointerEvent) => {
+    if (e.pointerType === 'touch') {
+      touches.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (touches.size === 2) {
+        const [a, b] = [...touches.values()];
+        pinch = Math.hypot(a.x - b.x, a.y - b.y);
+        drag = null;
+        canvas.setPointerCapture?.(e.pointerId);
+        return;
+      }
+    }
     drag = { x: e.clientX, y: e.clientY, sx: e.clientX, sy: e.clientY, t: performance.now() };
     canvas.setPointerCapture?.(e.pointerId);
   };
+  const endTouch = (e: PointerEvent) => {
+    touches.delete(e.pointerId);
+    if (touches.size < 2) pinch = 0;
+  };
   const onMove = (e: PointerEvent) => {
+    if (touches.has(e.pointerId)) touches.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (pinch && touches.size === 2) {
+      const [a, b] = [...touches.values()];
+      const d = Math.hypot(a.x - b.x, a.y - b.y);
+      const r = canvas.getBoundingClientRect();
+      zoomAt(d / pinch, (a.x + b.x) / 2 - r.left, (a.y + b.y) / 2 - r.top);
+      pinch = d;
+      if (reduced) step(0);
+      return;
+    }
     if (!drag) {
       if (e.pointerType !== 'mouse') return;
       // zoomed in, the ants under the pointer come first: point at one for her name
@@ -973,6 +1000,7 @@ export async function createNestScene(
     drag.y = e.clientY;
   };
   const onUp = (e: PointerEvent) => {
+    endTouch(e);
     if (drag && Math.hypot(e.clientX - drag.sx, e.clientY - drag.sy) < 8 && performance.now() - drag.t < 500) {
       const r = canvas.getBoundingClientRect();
       const ant = antUnder(e.clientX - r.left, e.clientY - r.top);
@@ -994,7 +1022,11 @@ export async function createNestScene(
   canvas.addEventListener('pointerdown', onDown);
   canvas.addEventListener('pointermove', onMove);
   canvas.addEventListener('pointerup', onUp);
-  canvas.addEventListener('pointercancel', () => (drag = null));
+  const onCancel = (e: PointerEvent) => {
+    endTouch(e);
+    drag = null;
+  };
+  canvas.addEventListener('pointercancel', onCancel);
   const onLeaveCanvas = () => {
     hover = null;
   };
@@ -1028,6 +1060,9 @@ export async function createNestScene(
   io.observe(host);
   let raf = 0, last = performance.now(), sinceStill = 1;
   function step(dt: number) {
+    // zoomed in, a finger moves around the nest instead of scrolling the page
+    const touch = zGoal.z > 1.02 ? 'none' : '';
+    if (canvas.style.touchAction !== touch) canvas.style.touchAction = touch;
     const d = get();
     seen.clear();
     const mdt = reduced ? 0 : dt;

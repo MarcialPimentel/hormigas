@@ -5,12 +5,14 @@ import { lazy, Suspense, useState } from 'react';
 import { NestView } from './NestView';
 import type { Nav } from '../nav';
 import type { Inset } from './nest3d/scene';
+import { phone3dPreview } from '../preview';
 
 const Nest3D = lazy(() => import('./nest3d/Nest3D').then((m) => ({ default: m.Nest3D })));
 const KEY = 'hormigas.nest';
 type View = '3d' | '2d';
 
-const finePointer = () => typeof matchMedia !== 'undefined' && matchMedia('(pointer: fine)').matches;
+// the phone 3D test (?preview=phone3d) lets a touch screen pick 3D too
+const finePointer = () => phone3dPreview || (typeof matchMedia !== 'undefined' && matchMedia('(pointer: fine)').matches);
 
 function savedView(): View {
   try {
