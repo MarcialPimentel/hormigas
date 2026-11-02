@@ -936,8 +936,7 @@ export async function createYardScene(host: HTMLElement, labels: HTMLElement, da
     dust.visible = false;
     h.onBattle?.(null);
   }
-  // the two sides must read apart at a glance: yours light amber, theirs near black (army ants keep their deep red)
-  const YOURS = '#D99245', THEIRS = '#3A2A22';
+  // your ants keep their own colours; the other side is raider red, like a hostile column (Marz, 2 Nov 2026)
   function drawBattle(dt: number, antGrow: number, show: boolean) {
     if (!fight) return;
     const f = fight, p = f.plan;
@@ -964,8 +963,8 @@ export async function createYardScene(host: HTMLElement, labels: HTMLElement, da
     const attackersLeave = !attackersWon && p.winner !== 'draw';
     const ko = m.phase === 'outcome' || m.phase === 'done' ? ease(Math.min(1, m.k)) : 0;
     const youAttack = p.perspective === 'attacker';
-    const attColor = p.attacker.swarm ? undefined : youAttack ? YOURS : THEIRS;
-    const defColor = youAttack ? THEIRS : YOURS;
+    const attColor = p.attacker.swarm || youAttack ? undefined : CHITIN.raider;
+    const defColor = youAttack ? CHITIN.raider : undefined;
     const faceIn = Math.atan2(f.dz, -f.dx), faceOut = Math.atan2(-f.dz, f.dx);
     const fighting = m.phase === 'fight';
     const side = (n: number, alive: number, attacker: boolean) => {
