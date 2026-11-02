@@ -37,7 +37,10 @@ const nestEvents = recurringColonyEvent('nest_event', {
       c = { ...c, resources: { ...c.resources, [roll.resource]: c.resources[roll.resource] + roll.amount } };
     }
     await saveColony(q, c);
-    await addReport(q, ev.world_id, c.playerId, 'nest_event', def.title, { event: roll.event, text: def.text, found: gift, colonyId: c.id }, t);
+    const coords = { region: c.region, patch: c.patch, spot: c.spot };
+    await addReport(q, ev.world_id, c.playerId, 'nest_event', `${def.title} (${c.name})`, {
+      event: roll.event, text: def.text, found: gift, full: roll.full, colonyId: c.id, colony: c.name, coords,
+    }, t);
     if (roll.resource && roll.amount > 0) await bump(q, c.playerId, 'gifts');
   },
 });

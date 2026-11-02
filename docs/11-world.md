@@ -5,7 +5,7 @@
 
 ## One world (for now)
 - All players share a single persistent world.
-- Every record in the database carries a `world_id` anyway, so seasonal or extra worlds can be added later without a rewrite.
+- Every record in the database carries a `world_id` anyway, so extra worlds could be added later without a rewrite. The world itself never resets ([27-living-world](27-living-world.md)).
 
 ## Coordinates
 `Region : Patch : Spot` — e.g. `2:47:9`

@@ -13,8 +13,10 @@
 5. **Supporter options are fine:** a one-time "founder" purchase or optional subscription that gives only cosmetics and recognition.
 6. **No randomized paid rewards** (no loot boxes).
 
+7. **Prizes are earned, never sold:** there are no seasonal worlds to sell a pass for (the world never resets, [27-living-world](27-living-world.md)), and the Nuptial Flight's prizes and titles come only from play.
+
 ## Why
 The game is inspired by a classic that lost player trust through creeping pay-to-win. Fairness is a pillar (see [00-vision](00-vision.md#design-pillars)) and a selling point.
 
 ## Open Questions
-- Is a cosmetic seasonal pass compatible with "one persistent world"? Revisit if seasons are added.
+- None open. (A seasonal pass was asked about; there are no seasonal worlds, see principle 7.)
