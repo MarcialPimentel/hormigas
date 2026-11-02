@@ -13,6 +13,7 @@ import { fmtAgo, fmtCoords, fmtDuration, fmtNum } from '../format';
 import { Trip } from './ui';
 import { incomingName } from '../incoming';
 import { ENABLED_MISSIONS, MISSION_LABEL, type MissionType } from '../nav';
+import { phone3dPreview } from '../preview';
 
 const can = (t: MissionType) => ENABLED_MISSIONS.includes(t);
 
@@ -21,7 +22,8 @@ const Patch3D = lazy(() => import('./patch3d/Patch3D').then((m) => ({ default: m
 const Garden3D = lazy(() => import('./patch3d/Garden3D').then((m) => ({ default: m.Garden3D })));
 const VIEW_KEY = 'hormigas.patch';
 type PatchMode = '3d' | '2d';
-const finePointer = () => typeof matchMedia !== 'undefined' && matchMedia('(pointer: fine)').matches;
+// the phone 3D test (?preview=phone3d) lets a touch screen pick 3D too
+const finePointer = () => phone3dPreview || (typeof matchMedia !== 'undefined' && matchMedia('(pointer: fine)').matches);
 function savedMode(): PatchMode {
   try {
     const v = localStorage.getItem(VIEW_KEY);

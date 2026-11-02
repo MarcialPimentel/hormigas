@@ -8,6 +8,7 @@ import { useGame } from '../../game';
 import { setMotionPref, useMotion, type MotionPref } from '../../motion';
 import type { Nav } from '../../nav';
 import { ChamberPopover, ChamberSheet } from '../ChamberSheet';
+import { phone3dPreview } from '../../preview';
 import { MAX_ZOOM, PICK_ZOOM, createNestScene, type Inset, type Layout, type NestScene } from './scene';
 
 const NEXT_MOTION: Record<MotionPref, MotionPref> = { auto: 'on', on: 'off', off: 'auto' };
@@ -109,7 +110,15 @@ export function Nest3D({ nav, onFail, onSwitch, fill, inset }: { nav: Nav; onFai
 
   if (!colony) return null;
   // the hint follows what you can do at this zoom: ants can be met once they're big enough to point at
-  const hint = !fill
+  const hint = !fill && phone3dPreview
+    ? ant
+      ? 'Tap her again to let her go'
+      : zoom >= PICK_ZOOM
+        ? 'Tap an ant to meet her · drag to move · pinch out'
+        : zoom > 1.02
+          ? 'Pinch in closer to meet the ants · drag to move'
+          : 'Pinch in to watch the ants work · drag to turn · tap a chamber'
+    : !fill
     ? 'Drag to turn the nest · tap a chamber · tap the entrance to send a party'
     : ant
       ? 'Click her again, or Esc, to let her go'
@@ -142,7 +151,7 @@ export function Nest3D({ nav, onFail, onSwitch, fill, inset }: { nav: Nav; onFai
         <p className="sr-only" aria-live="polite">
           {ant ? `${ant.name}, ${ant.caste}: ${ant.job}` : ''}
         </p>
-        {fill && (
+        {(fill || phone3dPreview) && (
           <div className="n3-zoom" role="group" aria-label="Zoom">
             <button type="button" onClick={() => sceneRef.current?.zoomBy(1.4)} disabled={zoom >= MAX_ZOOM} aria-label="Zoom in" title="Zoom in (or scroll)">
               +
