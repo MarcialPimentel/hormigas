@@ -1,6 +1,6 @@
 # The Whole Yard: Hormigas as a 3D 4X on one map
 
-**Status:** approved as a preview, 1 Nov 2026: Marz asked to ship it behind a switch to playtest, with Chambers, Brood Hall and Research as panels over the map and phones left on today's screens. Built in `client/src/screens/Yard.tsx` and `client/src/components/yard3d/scene.ts`; open with `?preview=yard`. Mist and border bonuses are still open.
+**Status:** approved as a preview, 1 Nov 2026: Marz asked to ship it behind a switch to playtest, with Chambers, Brood Hall and Research as panels over the map and phones left on today's screens. Built in `client/src/screens/Yard.tsx` and `client/src/components/yard3d/scene.ts`; open with `?preview=yard`. Mist became fog of war on 2 Nov 2026 ([22-discovery](../22-discovery.md#fog-of-war)); border bonuses are still open.
 **Mock-up:** [whole-yard-mockup.html](whole-yard-mockup.html) (open in a browser; published as "Hormigas Whole Yard"). Sources in [whole-yard/](whole-yard/): edit `page.src.html` and `scene.js`, then run `python docs/art/whole-yard/build.py`. The mounds come from a Blender script: `"C:/Program Files/Blender Foundation/Blender 5.2/blender.exe" -b -P docs/art/whole-yard/mounds.blend.py` writes `mounds.json` and `mounds-preview.png`.
 
 Builds on [sunlit-microcosm.md](sunlit-microcosm.md) (the scale ladder, approved 30 Oct) and the cartoon ants (#123). Palette and type are unchanged.
@@ -87,7 +87,7 @@ Every zoom's ground and plants (approved 2 Nov 2026; Marz picked soft ground wit
 
 1. Direction: the Whole Yard (Civ's look, today's rules and clock)?
 2. Hex tiles: grid far out only, fading up close (recommended), or hexes at every zoom?
-3. Mist: fog of war over never-seen patches (small server change)?
+3. ~~Mist: fog of war over never-seen patches?~~ Done, 2 Nov 2026, for every player and screen: in sight round your colonies, explored patches greyed as last seen, never-explored patches under a dark drifting mist with only their outlines ([22-discovery](../22-discovery.md#fog-of-war)). The beds stay separate: joining them would make border patches look like neighbours when crossing regions is a long trip (Marz).
 4. Scent borders: art only for now (recommended), or a bonus for owned ground later?
 5. Playtest path: preview switch on the live game for your browser only (recommended)?
 6. Phones: computers first; phones keep today's screens until step 5 (recommended)?
