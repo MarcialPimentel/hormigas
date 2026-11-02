@@ -1008,6 +1008,22 @@ pre.report-body { white-space: pre-wrap; overflow-x: auto; }
 .ydot.ally { background: #46C9B8; }
 .ydot.rival { background: #B08660; }
 .ydot.wild { background: #C4473A; width: 8px; height: 8px; }
+/* from the top: a cream ring so every mark reads on any bed; yours is a big honey pin; wild nests go quiet */
+.ydot.far { box-shadow: 0 0 0 1.5px rgba(255, 246, 220, 0.9), 0 2px 4px rgba(20, 12, 6, 0.35); }
+.ydot.you.far { width: 18px; height: 18px; border-radius: 50%; border-width: 2.5px; box-shadow: 0 0 0 2.5px #FFF6DC, 0 3px 8px rgba(20, 12, 6, 0.45); z-index: 1; }
+.ydot.you.far::after { content: ''; position: absolute; inset: -9px; border-radius: 50%; border: 2px solid #F2B21F; animation: ypulse 2.2s ease-out infinite; }
+@keyframes ypulse { from { transform: scale(0.6); opacity: 0.9; } to { transform: scale(1.4); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .ydot.you.far::after { animation: none; opacity: 0.6; } }
+.ydot.wild.far { width: 5px; height: 5px; border-width: 1px; opacity: 0.6; box-shadow: none; }
+/* a wooden plant-marker sign at the front of each bed (Yard zoom) */
+.ysign { position: absolute; left: 0; top: 0; display: grid; gap: 2px; padding: 5px 10px 6px; white-space: nowrap; pointer-events: auto; cursor: pointer; background: #C9945A; color: #2B1D13; border: 2px solid #2B1D13; border-radius: 6px 6px 3px 3px; box-shadow: inset 0 -3px 0 rgba(43, 29, 19, 0.18), 0 4px 10px rgba(20, 12, 6, 0.35); text-align: center; }
+.ysign::after { content: ''; position: absolute; left: 50%; top: 100%; width: 6px; height: 12px; margin-left: -3px; background: #8C5E33; border: 2px solid #2B1D13; border-top: 0; }
+.ysign b { font: 700 0.92rem/1.1 var(--font-display); }
+.ysign span { font: 600 0.7rem/1.1 var(--font-body); display: flex; gap: 5px; justify-content: center; align-items: center; }
+.ysign i { font-style: normal; font-weight: 700; background: #F2B21F; border: 1.5px solid #2B1D13; border-radius: 999px; padding: 0 5px; }
+.ysign.home { background: #E0AE5C; }
+.ysign:hover { background: #D9A468; }
+.ysign.home:hover { background: #EBBC6C; }
 
 /* ---------- Brood Hall: your army first, then compact rows to raise more (details behind the arrow) */
 .army { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.35rem; }
