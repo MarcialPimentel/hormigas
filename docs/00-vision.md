@@ -12,12 +12,17 @@ Hormigas is a browser-based, persistent strategy game where you grow an ant king
 
 **Tone:** grounded nature documentary. The colony is drawn like a living field guide: real anatomy, bold silhouettes, no cartoon faces. See [18-art-direction.md](18-art-direction.md).
 
+**Sound:** a soft march made from the ants' own footsteps, following what the colony is doing. See [sound.md](sound.md).
+
 ## Design pillars
 1. **The colony lives while you're away.** Progress never stops. Coming back should always feel rewarding.
 2. **Every loss is recoverable.** Raids sting but never end you. Protected storage, brood, and catch-up rules keep players in the game.
 3. **Fair by design.** No pay-to-win. Skill, timing and planning beat spending.
 4. **The ant fantasy *is* the mechanics.** Every system maps to real ant behavior (foraging, corpse hauling, castes, pheromone trails). If a mechanic doesn't fit ants, rethink the mechanic.
 5. **Readable depth.** Simple rules, deep interactions. The game explains its own systems — no external simulators needed.
+
+## The long game
+There's no ending and no reset: the world is one living place. The long game is big moments that come round again (the Great Nuptial Flight, planned) and goals that last (the Field Journal; landmarks, planned). Players fight over brood, food and places, not to end each other's colonies. See [27-living-world](27-living-world.md).
 
 ## Target player
 - Liked classic browser strategy / idle games and want that loop without the pay-to-win.
@@ -32,6 +37,7 @@ Browser-first (desktop + mobile browser). No install.
 - Not a pay-to-win or gacha game.
 - Not a detailed nest *simulation*: the art shows what the colony is doing, but there's no per-ant simulation or micro-management.
 - Not multiple worlds/servers at launch — one world.
+- Not a game that resets: no wipes, no fresh worlds. Players keep what they build ([27-living-world](27-living-world.md)).
 
 ## Inspirations
 - Classic persistent browser strategy (offline progression, raids, fleetsaving).
@@ -43,6 +49,12 @@ Decisions Marz made, newest first. Details and the smaller calls live in the lin
 
 | Date | Decision | Why |
 |---|---|---|
+| 2026-11-02 | **No world resets, ever:** Hormigas is one living world, and colonies, chambers, ants and research are never wiped. The long game comes from moments that come round again and goals that last, proposed in [27-living-world](27-living-world.md) as ideas [#144](https://github.com/MarcialPimentel/hormigas/issues/144) (the Great Nuptial Flight, a recurring finale), [#143](https://github.com/MarcialPimentel/hormigas/issues/143) (a world calendar) and [#145](https://github.com/MarcialPimentel/hormigas/issues/145) (landmarks). Replaces the roadmap's "Seasons with fresh worlds" | Marz found little reason to keep going once resources ran high and asked what the end goal should be. A Travian-style reset was floated; players reacted strongly against it: they want a living game and to keep their stuff |
+| 2026-11-02 | Background music: a march made from the ants' footsteps. Each 4/4 beat is a tiny three-foot tripod step swinging left/right, under a low soil drum and a sparse wooden marimba tune that keeps rewriting itself. It follows the colony: quiet when nobody's out, fuller while parties walk, faster and tense while a raid or swarm is coming. On by default at half volume, after the first click; a speaker in the top bar turns it off or changes the volume; it pauses in a hidden tab ([sound](sound.md)) | Marz asked for a 4/4, left/right march to match the marching ants. "Tiny feet on soil" (recommended) was picked over a field-drum corps and clockwork ticking because it fits the nature-documentary tone and can be left on for an hour. The tripod step is real ant gait (pillar 4) |
+| 2026-11-02 | **Fog of war**, for everyone on every screen: you see the patches with your colonies and the patches touching them (and where your ants are stationed); patches your ants have reached stay explored and show as last seen, greyed; never-explored patches show only their outline. Only Scouts or foragers surveying the wilds may enter a patch you've never explored. Supercolony mates share sight. Existing players keep what they'd already seen ([22-discovery](22-discovery.md#fog-of-war)) | Marz: like Civilization, but players know the outlines. Exploring gives Scouts a job and makes the map something you uncover. The regions stay separate beds: joining them would suggest border patches are neighbours when crossing regions is a long trip |
+| 2026-11-02 | Whole Yard top view cut to the five beds: it fits them to the window and stops zooming out there; the house, patio, pots, hose, fence and hedge are removed; the Woodpile's log pile moves onto the lawn beside its bed ([art/whole-yard.md](art/whole-yard.md#the-yard-view)) | Marz's playtest: the fake building and huge top level weren't needed, and the log pile hid the Woodpile's patches |
+| 2026-11-02 | Whole Yard models: each bed one continuous painted ground with the hexes as drawn lines; grass as curved, swaying blade clumps; rocks, stepping stones, flowers, shrubs, logs, bark chips, leaves, reeds and tussocks rebuilt in Blender; ants drawn bigger as the camera pulls back ([art/whole-yard.md](art/whole-yard.md#the-models)) | Marz: the floating hexagons and triangle grass looked low effort, and ants were too small to see at the Patch zoom. He picked soft ground + drawn grid and curved blade clumps (recommended) and asked for all four other model groups |
+| 2026-11-01 | Whole Yard top view cleaned up as a tidy garden: the five beds on a striped lawn, each with a low brick edge and its own ground, stepping stones between them, a wooden sign per bed (name, colony count, "You"), your colony as a honey pin, wild nests faint from the top; the back of the house, patio pots, a fence and hedge all round ([art/whole-yard.md](art/whole-yard.md#the-yard-view)) | Marz picked option 2 (brick edges and stepping stones) of three previews. The old view read as tiles on a table: unnamed beds, look-alike colours and 34 red wild marks hiding your colony |
 | 2026-11-01 | Build 12, reasons to come back: **colony needs** (3 daily tasks from what you can do, no streaks, unfinished ones keep 2 days, one swap a day, each pays 1.5 h of your own production), a **Field Journal** of achievements (discovery, deeds and hidden oddities; sketch → full entry → coloured plate; counted across all colonies, never tied to a ground; cosmetic titles shown in the Rankings) and **Yesterday in the colony** ([26-come-back](26-come-back.md), [#124](https://github.com/MarcialPimentel/hormigas/issues/124)) | After the founding tasks nothing shaped a player's day. Paying in your own production keeps it fair (pillar 3); no streaks keeps absence unpunished (pillar 2). Marz: achievements must be reachable eventually, with a field-journal look |
 | 2026-11-01 | Diapause (vacation mode) moves to the backlog; no weekly rankings | Marz: with four players, vacation protection is the last thing needed; weekly rankings not wanted |
 | 2026-11-01 | Brood Hall reworked: your army first (home / out / raising, defenses), then compact raise rows with details behind an arrow; larval digestion moves to the Brood Hall's chamber card in the nest ([03-economy](03-economy.md#larval-digestion-protein--nectar)) | Playtest of the Whole Yard panel: the long rows scrolled sideways and squeezed their text, and digestion is a chamber job, not a troop choice |

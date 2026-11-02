@@ -1,6 +1,6 @@
 {
   "_version": "0.1",
-  "_note": "Small random events inside the nest, docs/04-colony.md (Nest events). Only good or harmless. Times are hours at world speed 1 (divide by world speed). A gift is giftHours of the colony's current production of that resource (at least minGift), never more than fits in storage. Colonies of inactive players get no events.",
+  "_note": "Small random events inside the nest, docs/04-colony.md (Nest events). Only good or harmless. Times are hours at world speed 1 (divide by world speed). A gift is giftHours of the colony's current production of that resource (at least minGift × the gathering multiplier in formulas.json; production already includes it), never more than fits in storage. Colonies of inactive players get no events.",
   "everyHours": [6, 12],
   "giftHours": 2,
   "minGift": 40,

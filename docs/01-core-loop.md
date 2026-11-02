@@ -28,6 +28,9 @@ Return → collect results (reports, finished builds, returned foragers)
 
 ## Week loop
 - Bigger goals: a new chamber tier, a new caste, founding a second colony (nuptial flight), climbing the rankings.
+
+## Cycle loop (planned)
+- A world calendar loops spring → winter in the one world; each cycle ends in the **Great Nuptial Flight**, a race to raise winged queens that anyone can raid. Nothing resets but the race ([27-living-world](27-living-world.md)).
 - Social layer: truces, supercolonies and holding position at an ally's nest ([23-supercolonies](23-supercolonies.md)); coordinated raids next.
 
 ## Loss and recovery loop

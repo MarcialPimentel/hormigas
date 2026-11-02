@@ -15,6 +15,8 @@ import { Allies } from './screens/Allies';
 import { Journal } from './screens/Journal';
 import { FeedbackAdmin } from './screens/FeedbackAdmin';
 import { FeedbackButton } from './components/Feedback';
+import { SoundButton } from './components/SoundButton';
+import { useMarch } from './audio/useSound';
 import type { Nav } from './nav';
 import { yardPreview } from './preview';
 
@@ -62,6 +64,8 @@ export function App() {
     if (isAdmin) api.get('/api/admin/feedback').then((r) => setOpenFeedback(r.open)).catch(() => {});
   }, [isAdmin]);
   const onFeedbackCount = useCallback((n: number) => setOpenFeedback(n), []);
+  // Background music: the colony's march, once the game has loaded (docs/sound.md).
+  useMarch(loggedIn && state ? state : null);
   const nav: Nav = (id, p) => {
     setScreen(id);
     setParams(p);
@@ -106,6 +110,7 @@ export function App() {
           )}
         </div>
         <div className="topbar-actions">
+          <SoundButton />
           <FeedbackButton screen={current.id} />
           <button
             className="btn ghost small"

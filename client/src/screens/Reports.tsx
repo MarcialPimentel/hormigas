@@ -39,17 +39,43 @@ export function Counts({ counts, empty = 'None' }: { counts?: Record<string, num
   );
 }
 
-export function ResLine({ r }: { r?: Record<string, number> }) {
+export function ResLine({ r, hideZero }: { r?: Record<string, number>; hideZero?: boolean }) {
   if (!r) return null;
   return (
     <span className="cost">
-      {RESOURCE_IDS.map((k) => (
+      {RESOURCE_IDS.filter((k) => !hideZero || (r[k] ?? 0) !== 0).map((k) => (
         <span key={k} className="cost-item" title={RESOURCE_LABEL[k]}>
           <ResDot r={k} />
           {fmtFull(r[k] ?? 0)}
         </span>
       ))}
     </span>
+  );
+}
+
+/** Something small that happened in one of your colonies. Older reports only saved the colony's id. */
+function NestEventReport({ d }: { d: any }) {
+  const { state } = useGame();
+  const known = state?.colonies.find((c) => c.id === d.colonyId);
+  const name = d.colony ?? known?.name;
+  const coords = d.coords ?? known?.coords;
+  const gifted = d.found && RESOURCE_IDS.some((k) => d.found[k] > 0);
+  return (
+    <div className="report-body">
+      {name && (
+        <p className="muted small">
+          In {name}
+          {coords ? ` (${fmtCoords(coords)})` : ''}
+        </p>
+      )}
+      <p>{d.text}</p>
+      {gifted && (
+        <p>
+          Added to {name ? `${name}'s` : 'your'} stores: <ResLine r={d.found} hideZero />
+          {d.full && <span className="muted small"> (the stores were nearly full, so that's all that fit)</span>}
+        </p>
+      )}
+    </div>
   );
 }
 
@@ -290,16 +316,7 @@ function ReportBody({ r, go }: { r: Report; go?: Nav }) {
         </div>
       );
     case 'nest_event':
-      return (
-        <div className="report-body">
-          <p>{d.text}</p>
-          {d.found && RESOURCE_IDS.some((k) => d.found[k] > 0) && (
-            <p>
-              Added to your stores: <ResLine r={d.found} />
-            </p>
-          )}
-        </div>
-      );
+      return <NestEventReport d={d} />;
     default:
       return <pre className="report-body small">{JSON.stringify(d, null, 2)}</pre>;
   }

@@ -334,6 +334,12 @@ input:focus, textarea:focus { border-color: var(--honey-ink); outline: none; }
 .rg-cell.lived { background: #c98b52; opacity: 1; }
 .rg-cell.mine { background: #e8b23a; opacity: 1; }
 .rg-cell.on { outline: 2px solid var(--sand); outline-offset: 1px; opacity: 1; }
+/* fog of war (docs/22-discovery.md#fog-of-war): out of sight is greyed, never explored is dark */
+.rg-cell.fog-explored { filter: grayscale(0.85) brightness(0.85); }
+.rg-cell.fog-unexplored { background: #2e3438; opacity: 0.9; }
+.fog-note { margin: 0.4rem 0; padding: 0.45rem 0.7rem; border-radius: 8px; font-size: 0.86rem; line-height: 1.35; }
+.fog-note.unexplored { background: #2e3438; color: #eef1f2; }
+.fog-note.explored { background: color-mix(in srgb, var(--sand) 35%, transparent); color: inherit; }
 .rg-cell:hover, .rg-cell:focus-visible { opacity: 1; outline: 2px solid var(--leaf-ink); outline-offset: 1px; }
 .region-legend { display: grid; gap: 0.25rem; max-width: 18rem; }
 .region-legend span { display: flex; align-items: center; gap: 0.4rem; }
@@ -601,6 +607,21 @@ pre.report-body { white-space: pre-wrap; overflow-x: auto; }
 .forage-odds details summary { cursor: pointer; color: var(--muted); }
 .forage-odds details .counts { margin-top: 0.4rem; }
 .first-forage { color: var(--leaf-ink); font-weight: 700; margin-bottom: 0.4rem; }
+
+/* ---------- sound ---------- */
+.sound-wrap { position: relative; }
+.sound-btn { display: inline-flex; align-items: center; padding: 0.3rem 0.45rem; }
+.sound-card {
+  position: absolute; right: 0; top: calc(100% + 0.35rem); z-index: 40; width: min(260px, calc(100vw - 2rem));
+  background: var(--wall); border: 1px solid var(--seam); border-radius: var(--r-md); padding: 0.75rem;
+  display: grid; gap: 0.5rem; box-shadow: 0 8px 24px rgba(10, 6, 3, 0.35);
+}
+.sound-row { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
+.sound-row label { font-weight: 700; }
+.sound-card input[type='range'] { width: 100%; accent-color: var(--honey); }
+.sound-card p { margin: 0; }
+/* phones: the speaker isn't at the screen's edge, so the card spans the screen instead of hanging off it */
+@media (max-width: 479px) { .sound-card { position: fixed; top: 3.25rem; left: 1rem; right: 1rem; width: auto; } }
 
 /* ---------- feedback ---------- */
 .topbar-actions { display: flex; align-items: center; gap: 0.25rem; flex: none; }
@@ -954,10 +975,13 @@ pre.report-body { white-space: pre-wrap; overflow-x: auto; }
 .yard-loading { position: absolute; inset: 0; display: grid; place-items: center; color: #2B1D13; font-weight: 700; }
 .yard-nest { position: absolute; inset: 0; z-index: 3; background: var(--soil); }
 .yard-nest > .nest.fill { height: 100%; border: 0; border-radius: 0; }
-.yard-rail { position: absolute; left: 12px; top: 12px; z-index: 5; display: flex; flex-direction: column; gap: 6px; }
+.yard-rail { position: absolute; left: 12px; top: 12px; z-index: 5; display: flex; flex-direction: column; gap: 6px; max-height: calc(100% - 24px); overflow-y: auto; padding: 5px 6px 5px 0; scrollbar-width: none; }
 .yard-rail button { width: 72px; display: grid; justify-items: center; gap: 3px; padding: 9px 4px 7px; background: var(--wall); color: var(--sand); border: 1px solid var(--seam); border-radius: 12px; font: 700 0.72rem/1.1 var(--font-body); cursor: pointer; box-shadow: var(--float-shadow); }
 .yard-rail button:hover { border-color: var(--honey); }
 .yard-rail button.on { background: var(--honey); color: #2B1D13; border-color: var(--honey); }
+.yard-rail button { position: relative; }
+.yard-rail button.gap { margin-top: 10px; }
+.rail-badge { position: absolute; top: -5px; right: -5px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px; background: var(--danger); color: #fff; font: 700 0.7rem/18px var(--font-body); font-style: normal; }
 .yard-panel { position: absolute; left: 96px; top: 12px; bottom: 12px; width: min(480px, calc(100% - 520px)); min-width: 360px; z-index: 4; display: flex; flex-direction: column; background: var(--soil); border: 1px solid var(--seam); border-radius: var(--r-md); box-shadow: var(--float-shadow); }
 .yard-panel.wide { width: auto; min-width: 0; right: 12px; top: 56px; }
 .yard-panel-head { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; padding: 0.5rem 0.6rem 0.5rem 0.9rem; border-bottom: 1px solid var(--seam); }
@@ -978,6 +1002,16 @@ pre.report-body { white-space: pre-wrap; overflow-x: auto; }
 .yard-needs b { font: 700 0.95rem/1.15 var(--font-display); color: #FFD27A; }
 .yard-needs.danger { border-color: var(--danger); }
 .yard-needs.danger b { color: #FFB1A6; }
+.yard-battle { position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%); z-index: 4; display: grid; gap: 6px; justify-items: center; min-width: 340px; max-width: calc(100% - 220px); padding: 10px 16px; background: #2B1D13; color: #FBF6EA; border: 2px solid var(--honey); border-radius: 14px; box-shadow: var(--float-shadow); font: 0.85rem/1.25 var(--font-body); }
+.yard-battle-sides { display: flex; align-items: baseline; gap: 12px; white-space: nowrap; }
+.yard-battle-sides b { font: 700 0.95rem/1.15 var(--font-display); color: #FFD27A; margin-right: 4px; }
+.yard-battle-sides small { opacity: 0.6; }
+.yard-battle-sides i { font-style: normal; opacity: 0.7; }
+.yard-battle p { margin: 0; font-weight: 700; }
+.yard-battle p.good { color: #A8E07A; }
+.yard-battle p.bad { color: #FFB1A6; }
+.yard-battle-actions { display: flex; gap: 6px; }
+.yard-battle .btn.ghost { color: #FBF6EA; }
 .yard-help { position: absolute; left: 50%; bottom: 10px; transform: translateX(-50%); z-index: 2; margin: 0; padding: 4px 12px; border-radius: 999px; background: rgba(43, 29, 19, 0.7); color: #FBF6EA; font-size: 0.75rem; white-space: nowrap; pointer-events: none; }
 /* banners over colonies, Civ style: level, name, points */
 .ybanner { position: absolute; left: 0; top: 0; display: flex; align-items: stretch; white-space: nowrap; font: 0.76rem/1 var(--font-body); color: #FBF6EA; border-radius: 7px; overflow: hidden; box-shadow: 0 3px 10px rgba(20, 12, 6, 0.35); border: 1.5px solid #2B1D13; background: #6E4A2E; }
@@ -1005,6 +1039,22 @@ pre.report-body { white-space: pre-wrap; overflow-x: auto; }
 .ydot.ally { background: #46C9B8; }
 .ydot.rival { background: #B08660; }
 .ydot.wild { background: #C4473A; width: 8px; height: 8px; }
+/* from the top: a cream ring so every mark reads on any bed; yours is a big honey pin; wild nests go quiet */
+.ydot.far { box-shadow: 0 0 0 1.5px rgba(255, 246, 220, 0.9), 0 2px 4px rgba(20, 12, 6, 0.35); }
+.ydot.you.far { width: 18px; height: 18px; border-radius: 50%; border-width: 2.5px; box-shadow: 0 0 0 2.5px #FFF6DC, 0 3px 8px rgba(20, 12, 6, 0.45); z-index: 1; }
+.ydot.you.far::after { content: ''; position: absolute; inset: -9px; border-radius: 50%; border: 2px solid #F2B21F; animation: ypulse 2.2s ease-out infinite; }
+@keyframes ypulse { from { transform: scale(0.6); opacity: 0.9; } to { transform: scale(1.4); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .ydot.you.far::after { animation: none; opacity: 0.6; } }
+.ydot.wild.far { width: 5px; height: 5px; border-width: 1px; opacity: 0.6; box-shadow: none; }
+/* a wooden plant-marker sign at the front of each bed (Yard zoom) */
+.ysign { position: absolute; left: 0; top: 0; display: grid; gap: 2px; padding: 5px 10px 6px; white-space: nowrap; pointer-events: auto; cursor: pointer; background: #C9945A; color: #2B1D13; border: 2px solid #2B1D13; border-radius: 6px 6px 3px 3px; box-shadow: inset 0 -3px 0 rgba(43, 29, 19, 0.18), 0 4px 10px rgba(20, 12, 6, 0.35); text-align: center; }
+.ysign::after { content: ''; position: absolute; left: 50%; top: 100%; width: 6px; height: 12px; margin-left: -3px; background: #8C5E33; border: 2px solid #2B1D13; border-top: 0; }
+.ysign b { font: 700 0.92rem/1.1 var(--font-display); }
+.ysign span { font: 600 0.7rem/1.1 var(--font-body); display: flex; gap: 5px; justify-content: center; align-items: center; }
+.ysign i { font-style: normal; font-weight: 700; background: #F2B21F; border: 1.5px solid #2B1D13; border-radius: 999px; padding: 0 5px; }
+.ysign.home { background: #E0AE5C; }
+.ysign:hover { background: #D9A468; }
+.ysign.home:hover { background: #EBBC6C; }
 
 /* ---------- Brood Hall: your army first, then compact rows to raise more (details behind the arrow) */
 .army { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.35rem; }
@@ -1035,3 +1085,6 @@ pre.report-body { white-space: pre-wrap; overflow-x: auto; }
 .digest h3 { font-size: 0.95rem; margin: 0; display: flex; gap: 0.5rem; align-items: baseline; flex-wrap: wrap; }
 .digest p { margin: 0; }
 .unit-buy .count-form input { width: 5.5rem; flex: none; }
+
+/* fog of war on the Whole Yard: colonies on a patch out of sight show as last seen, greyed */
+.ybanner.fogged, .ydot.fogged { filter: grayscale(0.9) brightness(0.9); opacity: 0.7; }

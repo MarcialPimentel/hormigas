@@ -905,11 +905,14 @@ export async function createNestScene(
     ray.setFromCamera(ndc, camera);
     return ray.intersectObjects(taps, false)[0]?.object ?? null;
   };
-  // keep a zoomed view over the block: the further in, the further it may move from the middle
+  // keep a zoomed view over the block: the further in, the further it may move from the middle. Upward it may rise
+  // past the top of the block (SKY), so zoomed right in you can watch the surface: the guards round the entrance and
+  // a raid marching in through the grass.
+  const SKY = 4;
   const clampPan = () => {
     const k = 1 - 1 / zGoal.z;
     zGoal.x = THREE.MathUtils.clamp(zGoal.x, -(W / 2) * k, (W / 2) * k);
-    zGoal.y = THREE.MathUtils.clamp(zGoal.y, -(H / 2) * k, (H / 2) * k);
+    zGoal.y = THREE.MathUtils.clamp(zGoal.y, -(H / 2) * k, (H / 2 + SKY) * k);
   };
   let zoomShown = 1;
   const api: { onZoom?: (z: number) => void } = {};
