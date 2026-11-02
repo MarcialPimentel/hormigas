@@ -15,6 +15,7 @@ import { leftOf } from '../nestScene';
 import type { Spot, SpotColony } from '../Patch';
 import { moveKeys } from './keys';
 import { TIMING, drawnFor, momentAt, planBattle, replayLength, type BattlePlan } from './battle';
+import { makePath, pitchAhead, pointAlong, type Path } from '../three/path';
 
 export interface PatchData {
   colony: ServerColony | null;
@@ -810,7 +811,7 @@ uniform vec3 uSpots[SIGHT_SPOTS];
   }, !coarse);
   disposables.push(ants);
   const SWARM_CAP = Math.round(1500 * CAP), PARTY_CAP = Math.round(300 * CAP);
-  interface Trail { key: string; mesh: THREE.Mesh; pts: THREE.Vector3[]; lens: number[]; total: number; lead?: THREE.Vector3 }
+  interface Trail extends Path { key: string; mesh: THREE.Mesh; lead?: THREE.Vector3 }
   const trails = new Map<string, Trail>();
   const trailGroup = new THREE.Group();
   scene.add(trailGroup);
@@ -840,8 +841,6 @@ uniform vec3 uSpots[SIGHT_SPOTS];
       const x = u * u * a.x + 2 * u * t * cx + t * t * b.x, z = u * u * a.z + 2 * u * t * cz + t * t * b.z;
       pts.push(new THREE.Vector3(x, footY(x, z), z));
     }
-    const lens = [0];
-    for (let i = 1; i < pts.length; i++) lens.push(lens[i - 1] + pts[i].distanceTo(pts[i - 1]));
     // the scent trail itself: a faint ribbon on the ground in the party's colour
     const pos: number[] = [], idx: number[] = [];
     for (let i = 0; i < pts.length; i++) {
@@ -856,20 +855,13 @@ uniform vec3 uSpots[SIGHT_SPOTS];
     g.setIndex(idx);
     const mesh = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.32, depthWrite: false, side: THREE.DoubleSide }));
     trailGroup.add(mesh);
-    const t: Trail = { key: k, mesh, pts, lens, total: lens[lens.length - 1] };
+    const t: Trail = { key: k, mesh, ...makePath(pts) };
     trails.set(key, t);
     return t;
   }
   const at = new THREE.Vector3(), dir = new THREE.Vector3();
   function along(t: Trail, d: number) {
-    d = Math.max(0, Math.min(t.total, d));
-    let i = 1;
-    while (i < t.lens.length - 1 && t.lens[i] < d) i++;
-    const a = t.pts[i - 1], b = t.pts[i];
-    const k = (d - t.lens[i - 1]) / ((t.lens[i] - t.lens[i - 1]) || 1);
-    at.lerpVectors(a, b, k);
-    dir.subVectors(b, a);
-    return at;
+    return pointAlong(t, d, at, dir);
   }
 
   const clamp01 = (v: number) => Math.max(0, Math.min(1, v));
@@ -879,8 +871,7 @@ uniform vec3 uSpots[SIGHT_SPOTS];
   /** Nose up or down to follow a mound's slope (and steeply up out of its entrance); flat ground stays level. */
   function slope(x: number, z: number, fx: number, fz: number) {
     if (moundY(x, z) === -Infinity && moundY(x + fx * 0.12, z + fz * 0.12) === -Infinity) return 0;
-    const dy = footY(x + fx * 0.12, z + fz * 0.12) - footY(x, z);
-    return Math.max(-1.3, Math.min(1.3, Math.atan2(dy, 0.12)));
+    return pitchAhead(footY, x, z, fx, fz, 0.12, 1.3);
   }
   interface Column {
     key: string;
