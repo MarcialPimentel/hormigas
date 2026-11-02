@@ -19,10 +19,11 @@ _Current as of Build 11 (2026-10-30)._ Hormigas has no GitHub milestones: each b
 | — | Alliances, stage A ([#68](https://github.com/MarcialPimentel/hormigas/issues/68)) | done |
 | 9 | More wild things ([#67](https://github.com/MarcialPimentel/hormigas/issues/67)) | done |
 | 10 | Castes with a purpose ([#80](https://github.com/MarcialPimentel/hormigas/issues/80)) | done |
-| 11 | The full roster ([#83](https://github.com/MarcialPimentel/hormigas/issues/83)) | **current** (live) |
+| 11 | The full roster ([#83](https://github.com/MarcialPimentel/hormigas/issues/83)) | done |
 | — | Between builds, live and listed under Build 12 in the CHANGELOG: dig plan ([#94](https://github.com/MarcialPimentel/hormigas/pull/94)), forage slots per colony ([#99](https://github.com/MarcialPimentel/hormigas/pull/99)), gathering ×2 ([#107](https://github.com/MarcialPimentel/hormigas/pull/107)), meeting the ants in the 3D nest ([#108](https://github.com/MarcialPimentel/hormigas/pull/108), [#110](https://github.com/MarcialPimentel/hormigas/pull/110)), grass that clears from view ([#109](https://github.com/MarcialPimentel/hormigas/pull/109), [#112](https://github.com/MarcialPimentel/hormigas/pull/112)), fights pay in loot ([#111](https://github.com/MarcialPimentel/hormigas/pull/111)), the Media Worker ([#116](https://github.com/MarcialPimentel/hormigas/pull/116)), Nuptial Flight per level ([#118](https://github.com/MarcialPimentel/hormigas/pull/118)), ground strengths and weaknesses ([#120](https://github.com/MarcialPimentel/hormigas/pull/120)), parties leave through the entrance ([#121](https://github.com/MarcialPimentel/hormigas/pull/121)), windfalls and livelier random events ([#122](https://github.com/MarcialPimentel/hormigas/pull/122)) ([25-windfalls](25-windfalls.md)), cartoon ants ([#123](https://github.com/MarcialPimentel/hormigas/pull/123)) | done (live) |
-| 12 | Reasons to come back: colony needs, the Field Journal, Yesterday in the colony ([#124](https://github.com/MarcialPimentel/hormigas/issues/124), [26-come-back](26-come-back.md)) | in review |
-| — | Background music: the colony marches to its own footsteps ([#139](https://github.com/MarcialPimentel/hormigas/pull/139), [sound](sound.md)) | in review |
+| 12 | Reasons to come back: colony needs, the Field Journal, Yesterday in the colony ([#124](https://github.com/MarcialPimentel/hormigas/issues/124), [26-come-back](26-come-back.md)) | **current** (live) |
+| — | Background music: the colony marches to its own footsteps ([#139](https://github.com/MarcialPimentel/hormigas/pull/139), [sound](sound.md)) | done (live) |
+| 13 | Scout the swarm: the swarm's size hidden until scouted, Scouts sent out to meet it with visible odds, live battle odds once scouted ([20-swarms](20-swarms.md)) | in review |
 | v1 | Supercolonies stage B, joint raids on spider dens, more defenses | later |
 
 ## Guiding rule

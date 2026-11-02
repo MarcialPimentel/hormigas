@@ -1,8 +1,11 @@
 # Hormigas — Changelog
 
-_Current as of Build 11 (2026-10-30)._ Newest first. One entry per build, in players' words, built from the merged PRs. Smaller PRs merged between builds are listed with the nearest build.
+_Current as of Build 13 (2026-11-02)._ Newest first. One entry per build, in players' words, built from the merged PRs. Smaller PRs merged between builds are listed with the nearest build.
 
-## Build 12: Reasons to come back (unreleased)
+## Build 13: Scout the swarm (unreleased)
+- **Scout the swarm.** An army-ant swarm no longer tells you it's sized for you. Its card says an army **roughly the size of your colony** is marching in, and its size shows as "?" until you scout it. Press **Scout the swarm** (or send Scouts at your own colony while it's coming): before they go you see each Scout's chance to slip past, the chance a report gets back, and how many you'll likely lose. More Scouts, Scent Reading and Chemical Mimicry raise the odds; army ants eat the ones they catch. If a report gets back, the card shows the swarm's real size, its Minors and Majors, and your **win / draw / lose odds** with the ants home right now, which change as you raise soldiers or send them away.
+
+## Build 12: Reasons to come back — 2026-11-01
 - Whole Yard: **Watch the battle** works again. In Reports, the replay button only opened an empty Missions panel; now it flies the map down to the mound where the battle was fought and acts it out from the report: both sides march in, ants fall on their backs round by round to the report's exact numbers, then the winners press on or the losers walk away. Your ants keep their usual colours and the enemy's are raider red, and a card under the map counts the rounds and who's still standing, with **Watch again** and **Close**. It works from inside a nest too: the view comes back up to the map first. (The button was called "Replay on the patch"; in the classic screens it still opens the Missions war room.)
 - Nest event reports say which colony they happened in, show only the resource that arrived, and say when full stores held a gift back. The smallest gift doubled to 80, in line with ×2 gathering.
 - **Music:** the colony now marches to its own footsteps. After your first click, a soft 4/4 march plays: every beat is a tiny three-legged ant step, swinging left, right, left, right, over a low soil drum and a wooden marimba tune that keeps changing. It's quiet when nobody's out, fuller while your ants are walking, and faster when a raid or swarm is coming at you. The speaker in the top bar turns it off or changes the volume, and it pauses when the tab is in the background ([#139](https://github.com/MarcialPimentel/hormigas/pull/139)).
