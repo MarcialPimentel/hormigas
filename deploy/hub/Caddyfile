@@ -27,3 +27,9 @@ sunk-cost.marz.gg {
 	encode gzip
 	reverse_proxy sunk-cost:8080
 }
+
+# SCRAM (repo: scram). The game container serves both the page and the WebSocket.
+scram.marz.gg {
+	encode gzip
+	reverse_proxy scram:8791
+}
