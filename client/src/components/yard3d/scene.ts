@@ -159,7 +159,6 @@ export async function createYardScene(host: HTMLElement, labels: HTMLElement, da
   for (let r = 1; r <= NREG; r++) for (let p = 1; p <= PER; p++) tiles.push({ region: r, patch: p, ...tileAt(r, p) });
   const bounds = { x0: Infinity, x1: -Infinity, z0: Infinity, z1: -Infinity };
   for (const t of tiles) { bounds.x0 = Math.min(bounds.x0, t.x); bounds.x1 = Math.max(bounds.x1, t.x); bounds.z0 = Math.min(bounds.z0, t.z); bounds.z1 = Math.max(bounds.z1, t.z); }
-  const X0 = bounds.x0 - 170, X1 = bounds.x1 + 170, ZB = bounds.z0 - 190, ZF = bounds.z1 + 210;
 
   // ---------- the yard round the beds: a mown lawn, paths, the back of the house and its patio, a fence all round
   const GY = -2.5; // the lawn sits just under the beds
@@ -293,69 +292,6 @@ export async function createYardScene(host: HTMLElement, labels: HTMLElement, da
       world.add(sm);
     }
   }
-  // the back of the house: rendered wall on a plinth, a door, windows, a downpipe and an outside tap
-  const WX = (X0 + X1) / 2, WW = X1 - X0 + 900, WF = ZB - 360;
-  const wall = new THREE.Mesh(new THREE.BoxGeometry(WW, 900, 120), mat('#EBDDC2'));
-  wall.position.set(WX, 450 + GY, ZB - 420); wall.receiveShadow = true;
-  const plinth = new THREE.Mesh(new THREE.BoxGeometry(WW, 50, 130), mat('#B9A588'));
-  plinth.position.set(WX, 25 + GY, ZB - 420);
-  world.add(wall, plinth);
-  const onWall = (w: number, hgt: number, x: number, y: number, color: string, depth = 8) => {
-    const m = new THREE.Mesh(new THREE.BoxGeometry(w, hgt, depth), mat(color));
-    m.position.set(x, y, WF + depth / 2); world.add(m); return m;
-  };
-  const doorX = X0 + (X1 - X0) * 0.38;
-  onWall(130, 240, doorX, 120 + GY, '#F4EEE2', 6); onWall(104, 222, doorX, 112 + GY, '#4F7F86', 12);
-  onWall(8, 8, doorX + 38, 112 + GY, '#E2B13C', 18);
-  for (const [fx, fy] of [[0.12, 300], [0.62, 300], [0.86, 300], [0.12, 680], [0.38, 680], [0.62, 680], [0.86, 680]]) {
-    onWall(190, 150, X0 + (X1 - X0) * fx, fy + GY, '#F4EEE2', 6);
-    onWall(168, 128, X0 + (X1 - X0) * fx, fy + GY, '#8FB5C6', 10);
-    onWall(204, 12, X0 + (X1 - X0) * fx, fy - 80 + GY, '#D8CCB6', 22);
-  }
-  const pipe = new THREE.Mesh(new THREE.CylinderGeometry(6, 6, 900, 8), mat('#6E6A62'));
-  pipe.position.set(X0 + (X1 - X0) * 0.74, 450 + GY, WF + 10);
-  const gully = new THREE.Mesh(new THREE.BoxGeometry(40, 10, 40), mat('#6E6A62'));
-  gully.position.set(pipe.position.x, GY + 5, WF + 20);
-  world.add(pipe, gully);
-  const lawnBed = beds[0];
-  const tapX = lawnBed.cx + 180;
-  onWall(10, 26, tapX, 70 + GY, '#B9922F', 14); onWall(18, 6, tapX, 82 + GY, '#B9922F', 18);
-  // patio slabs along the wall
-  for (let j = 0; j * 150 < WW - 300; j++) for (let k = 0; k < 2; k++) {
-    const sl = new THREE.Mesh(new THREE.BoxGeometry(146, 5, 146), mat((j + k) % 2 ? '#CDBFA6' : '#C2B399'));
-    sl.position.set(WX - WW / 2 + 150 + j * 150, GY + 2, WF + 78 + k * 150); sl.receiveShadow = true;
-    world.add(sl);
-  }
-  // a timber fence round the other three sides
-  const FZ0 = WF, FZ1 = ZF + 260, FX0 = X0 - 200, FX1 = X1 + 200;
-  const runs: [number, number, number, number][] = [[FX0, FZ0, FX0, FZ1], [FX1, FZ0, FX1, FZ1], [FX0, FZ1, FX1, FZ1]];
-  const boardN = runs.reduce((n, [ax, az, bx, bz]) => n + Math.ceil(Math.hypot(bx - ax, bz - az) / 15), 0);
-  const boards = new THREE.InstancedMesh(new THREE.BoxGeometry(13, 170, 3), mat('#A58663'), boardN);
-  let bn = 0;
-  const pf = rng(11);
-  for (const [ax, az, bx, bz] of runs) {
-    const len = Math.hypot(bx - ax, bz - az), n = Math.ceil(len / 15), yaw = Math.atan2(bx - ax, bz - az) + Math.PI / 2;
-    for (let i = 0; i < n; i++) {
-      const k = (i + 0.5) / n;
-      boards.setMatrixAt(bn, m4.compose(v.set(lerp(ax, bx, k), 85 + GY, lerp(az, bz, k)), q.setFromEuler(e3.set(0, yaw, 0)), s3.set(1, 0.97 + pf() * 0.06, 1)));
-      boards.setColorAt(bn++, col.set('#A58663').offsetHSL(0, 0, (pf() - 0.5) * 0.08));
-    }
-  }
-  boards.castShadow = true;
-  world.add(boards);
-  // a hedge beyond the fence closes the yard in
-  const hedge = new THREE.InstancedMesh(new THREE.IcosahedronGeometry(90, 1), mat('#3F6E36'), 120);
-  let hn = 0;
-  for (const [ax, az, bx, bz] of runs) {
-    const len = Math.hypot(bx - ax, bz - az), n = Math.ceil(len / 120);
-    const ox = ax === bx ? Math.sign(ax - WX) * 130 : 0, oz = az === bz ? 130 : 0;
-    for (let i = 0; i <= n && hn < 120; i++) {
-      const k = i / n;
-      hedge.setMatrixAt(hn++, m4.compose(v.set(lerp(ax, bx, k) + ox, 90 + GY, lerp(az, bz, k) + oz), q.setFromEuler(e3.set(pf(), pf(), pf())), s3.set(1, 1.3 + pf() * 0.3, 1)));
-    }
-  }
-  hedge.count = hn;
-  world.add(hedge);
 
   // ---------- region dressing: what makes each bed read from far away
   const tilesOf = (r: number) => tiles.filter((t) => t.region === r);
@@ -458,34 +394,14 @@ export async function createYardScene(host: HTMLElement, labels: HTMLElement, da
     world.add(shrubs, bloom);
     farDress.push(shrubs, bloom);
   }
-  // terracotta pots on the patio
-  {
-    const pr = rng(5);
-    const pots: [number, number, number][] = [[X0 + 40, 70, 0], [X0 + 190, 48, 1], [X0 + 300, 36, 2], [X1 - 80, 60, 3], [X1 - 210, 40, 4]];
-    for (const [x, r, i] of pots) {
-      const z = ZB - 300 + (i % 2) * 60;
-      const pot = new THREE.Mesh(new THREE.CylinderGeometry(r, r * 0.74, r * 1.5, 14), mat('#C46A3F'));
-      pot.position.set(x, GY + r * 0.75 + 5, z); pot.castShadow = true;
-      const rim = new THREE.Mesh(new THREE.TorusGeometry(r, r * 0.11, 6, 18), mat('#B45E36'));
-      rim.rotation.x = Math.PI / 2; rim.position.set(x, GY + r * 1.5 + 5, z);
-      const leaf = new THREE.Mesh(new THREE.IcosahedronGeometry(r * 0.95, 1), mat(i % 2 ? '#4C8A3A' : '#5E9A3E'));
-      leaf.position.set(x, GY + r * 1.5 + r * 0.55, z); leaf.scale.y = 0.8; leaf.castShadow = true;
-      world.add(pot, rim, leaf);
-      for (let k = 0; k < 6; k++) {
-        const f = new THREE.Mesh(new THREE.IcosahedronGeometry(r * 0.16, 0), mat(['#F2A0C4', '#FFD84D', '#FF8A5C'][i % 3]));
-        const a = pr() * Math.PI * 2;
-        f.position.set(x + Math.cos(a) * r * 0.7, leaf.position.y + r * 0.35, z + Math.sin(a) * r * 0.7);
-        world.add(f);
-      }
-    }
-  }
   if (NREG >= 4) {
-    const g = tileAt(4, 56);
-    for (let i = 0; i < 9; i++) {
-      const r = 18 + R() * 8, len = 240 + R() * 120;
+    // the log pile is stacked on the lawn beside the bed, so it never hides a patch (Marz, 2 Nov 2026)
+    const wb = beds[3], px = wb.x1 + EDGE.w + 110;
+    for (const [layer, n] of [[0, 4], [1, 3], [2, 2]]) for (let j = 0; j < n; j++) {
+      const r = 19 + R() * 4, len = 240 + R() * 110;
       const lg = new THREE.Mesh(prop('log'), propMat);
-      lg.scale.set(len / 300, r / 22, r / 22); lg.rotation.set(R() * 6.3, 0.2 + (R() - 0.5) * 0.3, 0, 'YXZ');
-      lg.position.set(g.x - 120 + (i % 3) * 40, 20 + Math.floor(i / 3) * 34, g.z - 160 + (i % 3) * 46);
+      lg.scale.set(len / 300, r / 22, r / 22); lg.rotation.set(R() * 6.3, Math.PI / 2 + (R() - 0.5) * 0.12, 0, 'YXZ');
+      lg.position.set(px + (j - (n - 1) / 2) * 44, GY + 21 + layer * 37, wb.cz + (R() - 0.5) * 40);
       lg.castShadow = lg.receiveShadow = true;
       world.add(lg);
     }
@@ -526,16 +442,6 @@ export async function createYardScene(host: HTMLElement, labels: HTMLElement, da
   if (NREG >= 5) {
     // tussocks with straw seed heads: the Long Grass reads as a meadow, not a second lawn
     farDress.push(scatter(prop('tussock'), grassMat, 260, inBed(5, 10), (t) => { const sc = 0.85 + R() * 0.4; return m4.compose(v.set(t.x, 0, t.z), q.setFromEuler(e3.set((R() - 0.5) * 0.2, R() * 6.3, (R() - 0.5) * 0.2)), s3.set(sc, sc * (0.75 + R() * 0.5), sc)); }));
-  }
-  {
-    // the garden hose runs from the outside tap across the patio and lies coiled on the lawn behind the Backyard bed
-    const b = lawnBed, wy = GY + 4;
-    const coil = { x: b.x1 - 140, z: b.z0 - 100 };
-    const pts = [new THREE.Vector3(tapX, 66 + GY, WF + 12), new THREE.Vector3(tapX, wy + 4, WF + 22), new THREE.Vector3(tapX + 20, wy, WF + 200), new THREE.Vector3(coil.x - 90, wy, coil.z - 40), new THREE.Vector3(coil.x - 30, wy, coil.z - 50)];
-    for (let i = 0; i <= 30; i++) { const a = (i / 30) * Math.PI * 5, r = 44 - i * 0.6; pts.push(new THREE.Vector3(coil.x + Math.sin(a) * r, wy + (i % 10 < 5 ? 0 : 2), coil.z - Math.cos(a) * r)); }
-    const hose = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 220, 5, 6), mat('#2FA14A'));
-    hose.castShadow = true;
-    world.add(hose);
   }
 
   // ---------- hex lines: strong far out, gone up close
@@ -896,9 +802,17 @@ export async function createYardScene(host: HTMLElement, labels: HTMLElement, da
   // ---------- camera: one orbit rig, one zoom from the whole yard to ant height
   const view = { x: 0, z: 0, yaw: -0.3, dist: 2900 };
   const goal = { ...view };
-  const DMIN = 4, DMAX = 4300;
   const pitchFor = (dd: number) => (dd < 160 ? lerp(0.2, 0.9, smooth(4, 160, dd)) : lerp(0.9, 1.02, smooth(160, 1500, dd)));
-  const homeView = () => ({ x: (X0 + X1) / 2, z: (ZB + ZF) / 2 + 120, yaw: -0.3, dist: 2900 });
+  // the top view is just the five beds (Marz, 2 Nov 2026): it fits them, their signs and the log pile to the window,
+  // and you can't pull back any further than that
+  const FRAME = { x0: bx0 - 40, x1: bx1 + 300, z0: bz0 - 10, z1: bz1 + 230 };
+  function fitDist() {
+    const tv = Math.tan((camera.fov * Math.PI) / 360), th = tv * camera.aspect;
+    return Math.max((FRAME.x1 - FRAME.x0) / (2 * th), ((FRAME.z1 - FRAME.z0) * Math.sin(1.02)) / (2 * tv)) * 1.12;
+  }
+  const DMIN = 4;
+  let DMAX = fitDist();
+  const homeView = () => ({ x: (FRAME.x0 + FRAME.x1) / 2 - 20, z: (FRAME.z0 + FRAME.z1) / 2, yaw: 0, dist: fitDist() });
   Object.assign(view, homeView()); Object.assign(goal, view);
   type Tw = { t: number; dur: number; fn: (k: number) => void; done?: () => void };
   const tweens: Tw[] = [];
@@ -913,7 +827,7 @@ export async function createYardScene(host: HTMLElement, labels: HTMLElement, da
       Object.assign(view, goal);
     }, done);
   }
-  const RUNG_D: Record<Rung, number> = { yard: 2900, region: 900, patch: 140, ground: 14 };
+  const RUNG_D: Record<Rung, number> = { yard: DMAX, region: 900, patch: 140, ground: 14 };
   const rungOf = (dd: number): Rung => (dd > 1500 ? 'yard' : dd > 330 ? 'region' : dd > 40 ? 'patch' : 'ground');
 
   // ---------- input
@@ -1025,6 +939,10 @@ export async function createYardScene(host: HTMLElement, labels: HTMLElement, da
     if (!W || !H) return false;
     renderer.setSize(W, H, false);
     camera.aspect = W / H; camera.updateProjectionMatrix();
+    // a new window shape changes how far back the whole yard is; from the top, re-fit it
+    const atTop = goal.dist >= DMAX * 0.97;
+    DMAX = RUNG_D.yard = fitDist();
+    if (atTop || goal.dist > DMAX) { tweens.length = 0; Object.assign(goal, homeView()); Object.assign(view, goal); }
     return true;
   }
   const ro = new ResizeObserver(resize);
@@ -1047,7 +965,7 @@ export async function createYardScene(host: HTMLElement, labels: HTMLElement, da
       if (keys.has('q')) goal.yaw += dt * 1.4;
       if (keys.has('e')) goal.yaw -= dt * 1.4;
     }
-    goal.x = clamp(goal.x, X0, X1); goal.z = clamp(goal.z, ZB - 300, ZF);
+    goal.x = clamp(goal.x, FRAME.x0, FRAME.x1); goal.z = clamp(goal.z, FRAME.z0, FRAME.z1);
     const a = 1 - Math.pow(0.0005, dt);
     for (const k of ['x', 'z', 'yaw'] as const) view[k] = lerp(view[k], goal[k], a);
     view.dist = Math.exp(lerp(Math.log(view.dist), Math.log(goal.dist), a));
