@@ -318,6 +318,58 @@ export async function createYardScene(host: HTMLElement, labels: HTMLElement, da
     return g;
   });
   const moundMat = new THREE.MeshStandardMaterial({ vertexColors: true, flatShading: true, roughness: 0.95 });
+  // each mound's height map (soil, twigs, stones), so parties climb out of the crater and over the mound rather than
+  // walking out of its middle at ground level. A 3×3 median keeps a thin twig from making the ants hop.
+  const HM_CELL = 0.25, HM_N = 104, HM_HALF = (HM_N * HM_CELL) / 2;
+  const moundHeights = MOUNDS.map((m) => {
+    const hm = new Float32Array(HM_N * HM_N);
+    const p = m.pos;
+    for (let i = 0; i + 8 < p.length; i += 9) {
+      const ax = p[i], ay = p[i + 1], az = p[i + 2], bx = p[i + 3], by = p[i + 4], bz = p[i + 5], cx = p[i + 6], cy = p[i + 7], cz = p[i + 8];
+      const det = (bz - cz) * (ax - cx) + (cx - bx) * (az - cz);
+      if (Math.abs(det) < 1e-9) continue;
+      const x0 = Math.max(0, Math.floor((Math.min(ax, bx, cx) + HM_HALF) / HM_CELL)), x1 = Math.min(HM_N - 1, Math.ceil((Math.max(ax, bx, cx) + HM_HALF) / HM_CELL));
+      const z0 = Math.max(0, Math.floor((Math.min(az, bz, cz) + HM_HALF) / HM_CELL)), z1 = Math.min(HM_N - 1, Math.ceil((Math.max(az, bz, cz) + HM_HALF) / HM_CELL));
+      for (let iz = z0; iz <= z1; iz++) for (let ix = x0; ix <= x1; ix++) {
+        const x = ix * HM_CELL - HM_HALF, z = iz * HM_CELL - HM_HALF;
+        const u = ((bz - cz) * (x - cx) + (cx - bx) * (z - cz)) / det, v = ((cz - az) * (x - cx) + (ax - cx) * (z - cz)) / det, w = 1 - u - v;
+        if (u < -1e-4 || v < -1e-4 || w < -1e-4) continue;
+        const y = u * ay + v * by + w * cy, k = iz * HM_N + ix;
+        if (y > hm[k]) hm[k] = y;
+      }
+    }
+    const out = new Float32Array(HM_N * HM_N), nine: number[] = [];
+    for (let iz = 0; iz < HM_N; iz++) for (let ix = 0; ix < HM_N; ix++) {
+      nine.length = 0;
+      for (let dz = -1; dz <= 1; dz++) for (let dx = -1; dx <= 1; dx++) nine.push(hm[clamp(iz + dz, 0, HM_N - 1) * HM_N + clamp(ix + dx, 0, HM_N - 1)]);
+      out[iz * HM_N + ix] = nine.sort((a, b) => a - b)[4];
+    }
+    return out;
+  });
+  /** Height of mound `stage` at (lx, lz) from its centre; near the middle it drops away into the entrance. */
+  function moundHeight(stage: number, lx: number, lz: number) {
+    const hm = moundHeights[stage];
+    const fx = (lx + HM_HALF) / HM_CELL, fz = (lz + HM_HALF) / HM_CELL;
+    const ix = Math.floor(fx), iz = Math.floor(fz);
+    if (ix < 0 || iz < 0 || ix >= HM_N - 1 || iz >= HM_N - 1) return 0;
+    const tx = fx - ix, tz = fz - iz, k = iz * HM_N + ix;
+    let y = (hm[k] * (1 - tx) + hm[k + 1] * tx) * (1 - tz) + (hm[k + HM_N] * (1 - tx) + hm[k + HM_N + 1] * tx) * tz;
+    const hole = MOUNDS[stage].r * 0.12, r = Math.hypot(lx, lz);
+    if (r < hole) y -= (hole - r) * 2.5;
+    return y;
+  }
+  /** Every mound on the loaded patches, by place key. */
+  const moundSpots = new Map<string, { x: number; z: number; stage: number }>();
+  /** Where an ant's feet go at (x, z): the ground, or a mound where there is one. */
+  function footY(x: number, z: number) {
+    let y = 0;
+    for (const m of moundSpots.values()) {
+      const R = MOUNDS[m.stage].r * 1.3;
+      if (Math.abs(x - m.x) > R || Math.abs(z - m.z) > R) continue;
+      y = Math.max(y, moundHeight(m.stage, x - m.x, z - m.z) + 0.04);
+    }
+    return y;
+  }
   const stageFor = (points?: number) => ((points ?? 0) < 400 ? 0 : (points ?? 0) < 3000 ? 1 : 2);
   interface Place { key: string; at: Coords; group: THREE.Group; el?: HTMLDivElement; top: number; mine: boolean; big: boolean }
   const places = new Map<string, Place>(); // per patch "r:p" → its things
@@ -332,6 +384,7 @@ export async function createYardScene(host: HTMLElement, labels: HTMLElement, da
       p.el?.remove();
       p.group.traverse((o) => { const i = taps.indexOf(o); if (i >= 0) taps.splice(i, 1); });
       places.delete(p.key);
+      moundSpots.delete(p.key);
     }
     patchPlaces.delete(key);
   }
@@ -385,7 +438,7 @@ export async function createYardScene(host: HTMLElement, labels: HTMLElement, da
       const at = { region, patch, spot: s.spot };
       const p = spotAt(at);
       const c = s.colony;
-      let g: THREE.Group, html = '', cls = '', top = 8, mine = false, big = false;
+      let g: THREE.Group, html = '', cls = '', top = 8, mine = false, big = false, stage = -1;
       if (!c) {
         if (s.spot > 12 && s.spot !== WILDS_SPOT) continue;
         g = new THREE.Group();
@@ -400,7 +453,7 @@ export async function createYardScene(host: HTMLElement, labels: HTMLElement, da
       } else if (c.kind === 'player' && !(c.known === 'scent' || c.known === 'familiar')) {
         mine = !!c.mine;
         const who: Owner = c.mine ? 'you' : c.relation === 'ally' ? 'ally' : c.inactive ? 'inactive' : 'rival';
-        const stage = stageFor(c.points);
+        stage = stageFor(c.points);
         g = flagged(stage, OWN[who]);
         top = MOUNDS[stage].h + 16;
         big = true;
@@ -417,7 +470,7 @@ export async function createYardScene(host: HTMLElement, labels: HTMLElement, da
         stain.rotation.x = -Math.PI / 2; stain.position.y = 0.3; g.add(stain);
         cls = 'ybanner scent'; html = `<b>${c.kind === 'player' ? 'Ant scent' : 'Wild scent'}</b>`; top = 18;
       } else if (c.wild?.kind === 'nest' || (c.kind === 'wild' && !c.herd && !c.windfall && !c.wild?.kind)) {
-        g = flagged(1, OWN.wild); top = MOUNDS[1].h + 16; big = true;
+        g = flagged(1, OWN.wild); top = MOUNDS[1].h + 16; big = true; stage = 1;
         cls = 'ybanner wild'; html = `<i>!</i><b>${esc(c.wild?.species ?? c.name)}</b>${c.wild ? `<span>Lv ${c.wild.level}</span>` : ''}`;
       } else {
         g = siteModel(c);
@@ -428,6 +481,7 @@ export async function createYardScene(host: HTMLElement, labels: HTMLElement, da
       g.traverse((o) => { o.userData.at = at; if ((o as THREE.Mesh).isMesh) taps.push(o); });
       world.add(g);
       const place: Place = { key: `${region}:${patch}:${s.spot}`, at, group: g, top, mine, big };
+      if (stage >= 0) moundSpots.set(place.key, { x: p.x, z: p.z, stage });
       if (html) place.el = tag(cls, html);
       places.set(place.key, place);
       list.push(place);
@@ -478,7 +532,7 @@ export async function createYardScene(host: HTMLElement, labels: HTMLElement, da
 
   // ---------- parties: columns of real ants up close, a thread far out
   const ants: Ants = createAnts(world, { worker: 700, soldier: 400, army: 300, army_major: 20, queen: 4, alate: 10 }, true);
-  interface Column { key: string; from: THREE.Vector3; to: THREE.Vector3; curve: THREE.QuadraticBezierCurve3; len: number; thread: THREE.Line; rib: THREE.Mesh; color: string; caste: 'worker' | 'soldier' | 'army'; n: number; el: HTMLDivElement; prog: () => { d: number; back: boolean } | null; cargo?: string }
+  interface Column { key: string; from: THREE.Vector3; to: THREE.Vector3; curve: THREE.QuadraticBezierCurve3; len: number; thread: THREE.Line; rib: THREE.Mesh; color: string; caste: 'worker' | 'soldier' | 'army'; n: number; el: HTMLDivElement; prog: (now: number) => { d: number; back: boolean } | null; cargo?: string }
   const columns = new Map<string, Column>();
   const sumUnits = (u?: Record<string, number>) => Object.values(u ?? {}).reduce((a, b) => a + (b ?? 0), 0);
   function syncColumns() {
@@ -494,7 +548,7 @@ export async function createYardScene(host: HTMLElement, labels: HTMLElement, da
         key: `m${m.id}`, from: spotAt(m.origin), to: spotAt(m.target), color: m.type === 'transport' || m.type === 'relocate' ? CHITIN.worker : soldiers ? CHITIN.soldier : CHITIN.worker,
         caste: soldiers ? 'soldier' : 'worker', n: Math.min(60, Math.max(3, Math.round(Math.sqrt(sumUnits(m.units)) * 3))),
         label: `${m.type[0].toUpperCase()}${m.type.slice(1)} · ${sumUnits(m.units).toLocaleString('en')}`,
-        prog: () => { const p = tripProgress(m, data().now); return p.oneWay ? { d: p.x, back: false } : { d: p.x <= 0.5 ? p.x * 2 : 2 - p.x * 2, back: p.x > 0.5 }; },
+        prog: (now) => { const p = tripProgress(m, now); return p.oneWay ? { d: p.x, back: false } : { d: p.x <= 0.5 ? p.x * 2 : 2 - p.x * 2, back: p.x > 0.5 }; },
         cargo: m.cargo && sumUnits(m.cargo) > 0 ? '#7FC24A' : undefined,
       });
     }
@@ -506,7 +560,7 @@ export async function createYardScene(host: HTMLElement, labels: HTMLElement, da
         key: `i${i.id}`, from: spotAt(i.origin), to: spotAt(target), color: swarm ? CHITIN.army : i.hostile ? CHITIN.raider : CHITIN.worker,
         caste: swarm ? 'army' : i.hostile ? 'soldier' : 'worker', n: Math.min(swarm ? 200 : 60, Math.max(4, Math.round(Math.sqrt(i.unitCount ?? 30) * 3))),
         label: swarm ? `Army ants · ${(i.unitCount ?? 0).toLocaleString('en')}` : i.hostile ? `${i.type === 'raid' ? 'Raid' : 'Scouts'} from ${i.from}` : `Delivery from ${i.from}`,
-        prog: () => ({ d: clamp((data().now - i.departAt) / Math.max(1, i.arriveAt - i.departAt), 0, 1), back: false }),
+        prog: (now) => ({ d: clamp((now - i.departAt) / Math.max(1, i.arriveAt - i.departAt), 0, 1), back: false }),
       });
     }
     for (const [k, c] of columns) if (!want.has(k)) { world.remove(c.thread, c.rib); c.thread.geometry.dispose(); c.rib.geometry.dispose(); c.el.remove(); columns.delete(k); }
@@ -716,10 +770,12 @@ export async function createYardScene(host: HTMLElement, labels: HTMLElement, da
     antUniforms.uTime.value = time;
     ants.begin();
     const showAnts = d < 420;
+    // the game's clock ticks once a second: run it on smoothly in between, so columns march instead of hopping
+    const smoothNow = reduced ? dd.now : nowSeen + Math.min(1500, t0 - nowAt);
     for (const c of columns.values()) {
       c.thread.visible = d > 250; (c.thread.material as THREE.LineDashedMaterial).opacity = smooth(250, 700, d) * 0.9;
       c.rib.visible = d < 900;
-      const pr = c.prog();
+      const pr = c.prog(smoothNow);
       if (!pr) continue;
       const lead = clamp(pr.d, 0, 1);
       const lp = c.curve.getPoint(lead);
@@ -732,7 +788,11 @@ export async function createYardScene(host: HTMLElement, labels: HTMLElement, da
         const p = c.curve.getPoint(k), tg = c.curve.getTangent(k);
         if (pr.back) tg.negate();
         const wob = Math.sin(i * 12.9) * 0.6;
-        ants.ant(c.caste, p.x - tg.z * wob, 0, p.z + tg.x * wob, { scale: c.caste === 'soldier' ? 0.75 : 0.6, yaw: Math.atan2(-tg.z, tg.x), gait: (k * c.len) / 0.17 * 1.2, color: c.color, cargo: pr.back && c.cargo ? { kind: 'leaf', color: c.cargo } : null });
+        const x = p.x - tg.z * wob, z = p.z + tg.x * wob, y = footY(x, z);
+        // nose up out of the crater and over the rim, down the far slope
+        const ahead = footY(x + tg.x * 0.3, z + tg.z * 0.3);
+        const pitch = y > 0 || ahead > 0 ? clamp(Math.atan2(ahead - y, 0.3), -1.2, 1.2) : 0;
+        ants.ant(c.caste, x, y, z, { pitch, scale: c.caste === 'soldier' ? 0.75 : 0.6, yaw: Math.atan2(-tg.z, tg.x), gait: (k * c.len) / 0.17 * 1.2, color: c.color, cargo: pr.back && c.cargo ? { kind: 'leaf', color: c.cargo } : null });
       }
     }
     ants.end();
@@ -761,7 +821,6 @@ export async function createYardScene(host: HTMLElement, labels: HTMLElement, da
       }
     }
     renderer.render(scene, camera);
-    void nowAt;
   }
   resize();
   raf = requestAnimationFrame(frame);
