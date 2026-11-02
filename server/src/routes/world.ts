@@ -1,11 +1,12 @@
 // Map, missions and reports routes.
 import type { FastifyInstance } from 'fastify';
 import {
-  WORLD, SPECIES, SCENT_NAME, WILD_SCENTS, HERDS, MAX_SPOT, isInactive, isNewPlayerProtected, corpseFieldAmount, nestLevelFor, isHerdState,
+  WORLD, WILDS_SPOT, SPECIES, SCENT_NAME, WILD_SCENTS, HERDS, MAX_SPOT, isInactive, isNewPlayerProtected, corpseFieldAmount, nestLevelFor, isHerdState,
   herdNectarPerHour, herdStoreCap, herdHoneydewAt, speciesKind, type ScentHint, isWindfallState, WINDFALLS, type WindfallState,
 } from '@hormigas/shared';
 import { leaderOf } from '../game/nests';
 import { knowledgeOf, type KnownEntry } from '../game/discovery';
+import { fogOf, showsThrough, sightOf } from '../game/fog';
 import { relationsOf, supercolonyTags } from '../game/diplomacy';
 import type { RelationInfo } from '@hormigas/shared';
 import { getPool, tx } from '../db';
@@ -128,14 +129,20 @@ export async function worldRoutes(app: FastifyInstance) {
     const q = getPool();
     const world = await getWorld(q);
     const t = now();
+    // fog of war (docs/22-discovery.md#fog-of-war): a patch never explored shows only its outline; one explored but out
+    // of sight shows the colonies that were there when you last saw it, and nothing that comes and goes
+    const f = fogOf(await sightOf(q, req.playerId, t), region, patch);
+    // only the wilds show, so you can send Scouts to survey them
+    if (f.fog === 'unexplored') return { region, patch, fog: f.fog, seenAt: null, spots: [{ spot: WILDS_SPOT, colony: null, corpses: 0 }] };
     const r = await q.query(
-      `SELECT c.id, c.name, c.spot, c.player_id, c.npc, c.units, c.foliage, c.protein, c.nectar, p.username, p.points_total, p.protected_until, p.last_active,
+      `SELECT c.id, c.name, c.spot, c.player_id, c.npc, c.units, c.foliage, c.protein, c.nectar, c.created_at, p.username, p.points_total, p.protected_until, p.last_active,
               (SELECT tp.username FROM players tp WHERE tp.id = (c.npc->'tender'->>'playerId')::int) AS tender_name
          FROM colonies c JOIN players p ON p.id = c.player_id
         WHERE c.world_id = $1 AND c.region = $2 AND c.patch = $3 ORDER BY c.spot`,
       [world.id, region, patch],
     );
-    const hasCorpses = (await q.query("SELECT to_regclass('corpse_fields') IS NOT NULL AS ok")).rows[0].ok;
+    if (f.fog === 'explored') r.rows = r.rows.filter((x: any) => x.player_id === req.playerId || (!isWindfallState(x.npc) && showsThrough(f, Number(x.created_at))));
+    const hasCorpses = f.fog === 'visible' && (await q.query("SELECT to_regclass('corpse_fields') IS NOT NULL AS ok")).rows[0].ok;
     const corpses = hasCorpses
       ? (await q.query('SELECT spot, protein, created_at FROM corpse_fields WHERE world_id = $1 AND region = $2 AND patch = $3', [world.id, region, patch])).rows
       : [];
@@ -159,28 +166,49 @@ export async function worldRoutes(app: FastifyInstance) {
         corpses: corpse ? corpseFieldAmount(corpse.protein, corpse.created_at, t) : 0,
       });
     }
-    return { region, patch, spots };
+    return { region, patch, fog: f.fog, seenAt: f.seenAt, spots };
   });
 
-  /** Which patches of a region have colonies: counts only, so players can find each other without seeing more. */
+  /**
+   * Which patches of a region have colonies: counts only, so players can find each other without seeing more. Under
+   * fog of war (docs/22-discovery.md#fog-of-war) only explored patches are counted, as they were when last seen, and
+   * every patch says how this player sees it.
+   */
   app.get('/api/map/region', async (req) => {
     const region = Number((req.query as any).region);
     if (!(Number.isInteger(region) && region >= 1 && region <= WORLD.regions)) throw new GameError('bad_coords', 'That region does not exist.');
-    const world = await getWorld(getPool());
-    const r = await getPool().query(
-      `SELECT patch,
-              count(*) FILTER (WHERE npc IS NULL)::int AS colonies,
-              bool_or(npc IS NOT NULL) AS wild,
-              bool_or(npc IS NULL AND player_id = $3) AS mine,
-              -- a supercolony mate lives here: the Garden lights it teal (docs/23-supercolonies.md)
-              bool_or(npc IS NULL AND player_id <> $3 AND player_id IN (
+    const q = getPool();
+    const world = await getWorld(q);
+    const sight = await sightOf(q, req.playerId, now());
+    const r = await q.query(
+      `SELECT patch, player_id, npc IS NOT NULL AS wild, created_at,
+              (npc IS NULL AND player_id <> $3 AND player_id IN (
                 SELECT o.player_id FROM supercolony_members me
                   JOIN supercolony_members o ON o.supercolony_id = me.supercolony_id
                  WHERE me.player_id = $3 AND me.status = 'member' AND o.status = 'member')) AS ally
-         FROM colonies WHERE world_id = $1 AND region = $2 GROUP BY patch ORDER BY patch`,
+         FROM colonies WHERE world_id = $1 AND region = $2 ORDER BY patch`,
       [world.id, region, req.playerId],
     );
-    return { region, patches: r.rows.map((x: any) => ({ patch: x.patch, colonies: x.colonies, wild: x.wild, mine: x.mine, ally: !!x.ally })) };
+    const fog: Record<number, { fog: string; seenAt: number | null }> = {};
+    for (let p = 1; p <= WORLD.patchesPerRegion; p++) fog[p] = fogOf(sight, region, p);
+    const by = new Map<number, { patch: number; colonies: number; wild: boolean; mine: boolean; ally: boolean }>();
+    for (const x of r.rows) {
+      const f = fogOf(sight, region, x.patch);
+      if (x.player_id !== req.playerId && !showsThrough(f, Number(x.created_at))) continue;
+      const e = by.get(x.patch) ?? { patch: x.patch, colonies: 0, wild: false, mine: false, ally: false };
+      if (x.wild) e.wild = true;
+      else {
+        e.colonies++;
+        if (x.player_id === req.playerId) e.mine = true;
+        if (x.ally) e.ally = true;
+      }
+      by.set(x.patch, e);
+    }
+    return {
+      region,
+      patches: [...by.values()].filter((e) => e.colonies > 0 || e.wild),
+      fog: Object.entries(fog).map(([p, f]) => ({ patch: Number(p), fog: f.fog, seenAt: f.seenAt })),
+    };
   });
 
   /**
@@ -198,17 +226,17 @@ export async function worldRoutes(app: FastifyInstance) {
     const world = await getWorld(q);
     const P = WORLD.patchesPerRegion;
     const here = (region - 1) * P + patch;
-    const idx = `((region - 1) * ${P} + patch)`;
-    const pick = async (where: string, args: number[]) =>
-      (
-        await q.query(
-          `SELECT region, patch FROM colonies
-            WHERE world_id = $1 AND npc IS NULL AND player_id <> $2 AND ${where}
-            ORDER BY ${idx} ${dir > 0 ? 'ASC' : 'DESC'} LIMIT 1`,
-          [world.id, req.playerId, ...args],
-        )
-      ).rows[0];
-    const row = (await pick(`${idx} ${dir > 0 ? '>' : '<'} $3`, [here])) ?? (await pick(`${idx} <> $3`, [here]));
+    // only colonies you could see on the map: in sight, or on an explored patch as you last saw it (fog of war)
+    const sight = await sightOf(q, req.playerId, now());
+    const r = await q.query(
+      'SELECT region, patch, created_at FROM colonies WHERE world_id = $1 AND npc IS NULL AND player_id <> $2',
+      [world.id, req.playerId],
+    );
+    const idxs = [...new Set(r.rows.filter((x: any) => showsThrough(fogOf(sight, x.region, x.patch), Number(x.created_at)))
+      .map((x: any) => (x.region - 1) * P + x.patch))].sort((a, b) => a - b);
+    const others = idxs.filter((i) => i !== here);
+    const next = dir > 0 ? others.find((i) => i > here) ?? others[0] : [...others].reverse().find((i) => i < here) ?? others[others.length - 1];
+    const row = next === undefined ? null : { region: Math.floor((next - 1) / P) + 1, patch: ((next - 1) % P) + 1 };
     return { found: row ? { region: row.region, patch: row.patch } : null };
   });
 

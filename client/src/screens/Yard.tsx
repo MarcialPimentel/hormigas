@@ -102,12 +102,13 @@ export function Yard({ go }: { go: Nav }) {
   useEffect(() => sceneRef.current?.setReduced(reduced), [reduced]);
 
   // every region's patches: who lives where (the borders, the far-out squares)
+  const sightKey = `${(state?.missions ?? []).map((m: { id: number; status: string }) => `${m.id}:${m.status}`).join(',')}|${state?.unreadReports ?? 0}|${state?.colonies?.length ?? 0}`;
   useEffect(() => {
     if (!ready) return;
     let dead = false;
     const load = () => {
       for (let r = 1; r <= WORLD.regions; r++)
-        api.get(`/api/map/region?region=${r}`).then((x) => !dead && sceneRef.current?.setRegion(r, x.patches)).catch(() => {});
+        api.get(`/api/map/region?region=${r}`).then((x) => { if (dead) return; sceneRef.current?.setRegion(r, x.patches); sceneRef.current?.setFog(r, x.fog ?? []); }).catch(() => {});
     };
     load();
     const t = window.setInterval(load, 60_000);
@@ -115,7 +116,8 @@ export function Yard({ go }: { go: Nav }) {
       dead = true;
       window.clearInterval(t);
     };
-  }, [ready]);
+    // and again when a party arrives or comes home: it may have explored a patch (fog of war)
+  }, [ready, sightKey]);
 
   // a patch's spots: your colonies' patches, the one you're looking at, the one you tapped
   const homes = useMemo(() => (state?.colonies ?? []).map((c) => ({ region: c.coords.region, patch: c.coords.patch })), [state?.colonies]);
@@ -133,7 +135,7 @@ export function Yard({ go }: { go: Nav }) {
         .get(`/api/map?region=${w.region}&patch=${w.patch}`)
         .then((r) => {
           if (dead) return;
-          sceneRef.current?.setSpots(w.region, w.patch, r.spots);
+          sceneRef.current?.setSpots(w.region, w.patch, r.spots, r.fog);
           setSpots((s) => ({ ...s, [`${w.region}:${w.patch}`]: r.spots }));
         })
         .catch(() => {});

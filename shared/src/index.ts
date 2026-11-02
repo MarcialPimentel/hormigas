@@ -26,3 +26,4 @@ export * from './digPlan';
 export * from './stats';
 export * from './needs';
 export * from './journal';
+export * from './fog';

@@ -96,9 +96,22 @@ export async function calmNestEvents() {
  * Call again after new players or colonies appear.
  */
 export async function knowAll() {
+  await exploreAll();
   await getPool().query(
     `INSERT INTO known_colonies (player_id, colony_id, via, first_at, discovered_at)
      SELECT p.id, c.id, 'scouted', 0, 0 FROM players p JOIN colonies c ON c.player_id <> p.id WHERE NOT p.is_npc
      ON CONFLICT (player_id, colony_id) DO UPDATE SET discovered_at = 0`,
+  );
+}
+
+/**
+ * Every player has explored every patch that holds anything, and still sees it as it is now (fog of war,
+ * docs/22-discovery.md), for tests that aren't about fog. Call again after new colonies appear in new patches.
+ */
+export async function exploreAll() {
+  await getPool().query(
+    `INSERT INTO explored_patches (player_id, region, patch, seen_at)
+     SELECT p.id, c.region, c.patch, 9000000000000000 FROM players p CROSS JOIN (SELECT DISTINCT region, patch FROM colonies) c WHERE NOT p.is_npc
+     ON CONFLICT (player_id, region, patch) DO UPDATE SET seen_at = EXCLUDED.seen_at`,
   );
 }
