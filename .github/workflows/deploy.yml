@@ -126,7 +126,7 @@ jobs:
             docker image rm "$IMAGE:$DEPLOY_SHA" > /dev/null   # drop the extra tag so old builds don't pile up on disk
             docker compose up -d hormigas
 
-            # Docker's health check (deploy/hub/docker-compose.yml) calls /api/health every 30 s,
+            # Docker's health check (docker-compose.yml in the hub repo, MarcialPimentel/hub) calls /api/health every 30 s,
             # which needs the server up and its database reachable.
             wait_healthy() {
               for _ in $(seq 1 36); do   # up to 3 minutes
