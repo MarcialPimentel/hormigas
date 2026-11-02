@@ -4,11 +4,13 @@ import { RELATION_NAMES, type Relation } from '@hormigas/shared';
 
 const INCOMING: Record<string, string> = { swarm: 'Army ant swarm', raid: 'Raid', scout: 'Enemy scouts', hold: 'Allied soldiers', transport: 'Delivery' };
 
-export type IncomingLike = { type: string; pact?: Relation | null };
+export type IncomingLike = { type: string; pact?: Relation | null; scouted?: boolean; sizeName?: string };
 
 export function incomingName(i: IncomingLike): string {
   if (i.pact && i.type === 'scout') return 'Visiting scouts';
   if (i.pact && i.type === 'raid') return 'Raid (turns back)';
+  // a scouted swarm says which size it is (docs/20-swarms.md)
+  if (i.type === 'swarm' && i.scouted && i.sizeName) return `${INCOMING.swarm}: ${i.sizeName.toLowerCase()}`;
   return INCOMING[i.type] ?? i.type;
 }
 

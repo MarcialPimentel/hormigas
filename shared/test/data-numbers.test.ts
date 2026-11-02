@@ -35,11 +35,16 @@ describe('data numbers', () => {
   it('swarm numbers make sense', () => {
     expect(SWARM.everyHours[0]).toBeLessThanOrEqual(SWARM.everyHours[1]);
     expect(SWARM.warningHours).toBeGreaterThan(0);
-    expect(SWARM.minPacks).toBeGreaterThanOrEqual(1);
+    expect(SWARM.minPacks).toBeGreaterThanOrEqual(0);
     expect(SWARM.minPacks).toBeLessThanOrEqual(SWARM.maxPacks);
-    expect(SWARM.defenderWinRate).toBeGreaterThan(0);
-    expect(SWARM.defenderWinRate).toBeLessThanOrEqual(1);
-    for (const id of Object.keys(SWARM.pack)) expect(CASTES[id as keyof typeof CASTES], id).toBeTruthy();
+    for (const id of [...Object.keys(SWARM.pack), ...Object.keys(SWARM.smallest)]) expect(CASTES[id as keyof typeof CASTES], id).toBeTruthy();
+    // three sizes whose chances add up to 100, each a little harder than the one before
+    expect(SWARM.sizes.map((s) => s.id)).toEqual(['foraging', 'war', 'great']);
+    expect(SWARM.sizes.reduce((a, s) => a + s.chance, 0)).toBe(100);
+    for (const s of SWARM.sizes) expect(s.minWinRate).toBeGreaterThan(0), expect(s.minWinRate).toBeLessThanOrEqual(1);
+    expect(SWARM.sizes[0].minWinRate).toBeGreaterThanOrEqual(SWARM.sizes[1].minWinRate);
+    expect(SWARM.sizes[1].minWinRate).toBeGreaterThan(SWARM.sizes[2].minWinRate);
+    expect(SWARM.prey.pctOfWorth).toBeGreaterThan(0);
   });
 
   it('the formula numbers the code reads are present', () => {

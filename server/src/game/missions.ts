@@ -29,6 +29,7 @@ import {
   WILDS_SPOT,
   SWARM,
   roughSwarmSize,
+  swarmSize,
   isHeldState,
   type CasteId,
   type MissionType,
@@ -526,7 +527,10 @@ export function missionView(m: Mission) {
 function incomingSize(row: { type: string; units: Record<string, number>; result: any }) {
   const n = Object.values(row.units).reduce((a, b) => a + b, 0);
   if (row.type !== 'swarm') return { unitCount: n };
-  return row.result?.scouted ? { unitCount: n, scouted: true, units: row.units } : { unitCount: roughSwarmSize(n), scouted: false };
+  if (!row.result?.scouted) return { unitCount: roughSwarmSize(n), scouted: false };
+  // once scouted, the size it was rolled as (foraging column, war column, great swarm) shows too
+  const size = swarmSize(row.result?.size);
+  return { unitCount: n, scouted: true, units: row.units, ...(size ? { size: size.id, sizeName: size.name, sizeBlurb: size.blurb } : {}) };
 }
 
 /** Hostile or friendly missions heading to the player's colonies (attacker's units hidden unless scouts). */

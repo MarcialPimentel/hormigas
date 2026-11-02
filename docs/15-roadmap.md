@@ -24,6 +24,7 @@ _Current as of Build 11 (2026-10-30)._ Hormigas has no GitHub milestones: each b
 | 12 | Reasons to come back: colony needs, the Field Journal, Yesterday in the colony ([#124](https://github.com/MarcialPimentel/hormigas/issues/124), [26-come-back](26-come-back.md)) | **current** (live) |
 | — | Background music: the colony marches to its own footsteps ([#139](https://github.com/MarcialPimentel/hormigas/pull/139), [sound](sound.md)) | done (live) |
 | 13 | Scout the swarm: the swarm's size hidden until scouted, Scouts sent out to meet it with visible odds, live battle odds once scouted ([20-swarms](20-swarms.md)) | in review |
+| 14 | Swarm sizes: foraging column, war column or great swarm, hidden until scouted; beating one pays 75% of its worth in mixed food ([20-swarms](20-swarms.md)) | in review |
 | v1 | Supercolonies stage B, joint raids on spider dens, more defenses | later |
 
 ## Guiding rule

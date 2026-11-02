@@ -167,7 +167,9 @@ function SwarmScoutReport({ d }: { d: any }) {
   return (
     <div className="report-body">
       <p>
-        Your scouts got close to the column heading for {s.colony} ({fmtCoords(s.coords)}): <strong>{fmtFull(n)} army ants</strong>, {swarmMakeUp(s.units)}. It lands at{' '}
+        Your scouts got close to the column heading for {s.colony} ({fmtCoords(s.coords)}):{' '}
+        {s.sizeName ? <>a <strong>{s.sizeName.toLowerCase()}</strong> ({s.sizeBlurb}) of </> : null}
+        <strong>{fmtFull(n)} army ants</strong>, {swarmMakeUp(s.units)}. It lands at{' '}
         {fmtClock(s.arriveAt)}.{lost}
       </p>
       <p className="muted small">Its size and your live odds against it are on its card under Under way. They change as you raise soldiers or send them away.</p>

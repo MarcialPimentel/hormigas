@@ -1,6 +1,6 @@
 // An army-ant swarm on its way (docs/20-swarms.md): what the colony knows about it, and Scouting the swarm.
-// Until scouts reach it, all you know is that it's roughly the size of your colony. Once they do, its real size and
-// make-up show here with live odds against the ants you have at home right now.
+// Until scouts reach it, you don't know which of the three sizes it is (foraging column, war column, great swarm).
+// Once they do, its size, real count and make-up show here with live odds against the ants you have at home right now.
 import { useMemo } from 'react';
 import { CASTES, SWARM, groundDefensePct, presentUnits, previewBattle, swarmScoutOdds, type CasteId, type ResearchLevels, type UnitCounts } from '@hormigas/shared';
 import { useGame } from '../game';
@@ -9,7 +9,7 @@ import type { Nav } from '../nav';
 
 /** The swarm card's line before it's scouted: no numbers, just the choice. */
 export const SWARM_ADVICE =
-  'An army roughly the size of your colony is marching in from the wilds. Keep your soldiers home to fight it and win corpses to haul, or send them away and let it take some unprotected food. It never touches chambers.';
+  "Army ants are marching in from the wilds. Most are foraging columns your soldiers can handle, some are war columns that cost dearly, and now and then a great swarm comes that could overrun your colony. Beat it to keep its prey and haul the corpses, or send your soldiers away and let it take some unprotected food. It never touches chambers.";
 
 const plural = (id: CasteId, n: number) => `${fmtFull(n)} ${CASTES[id].name}${n === 1 ? '' : 's'}`;
 /** "68 Minor Soldiers and 17 Major Soldiers" */
@@ -37,6 +37,11 @@ export function SwarmIntel({ i, go }: { i: any; go?: Nav }) {
   return (
     <div className="uw-swarm">
       <p className="small">
+        {i.sizeName ? (
+          <>
+            It's a <strong>{i.sizeName.toLowerCase()}</strong>, {i.sizeBlurb}.{' '}
+          </>
+        ) : null}
         Your scouts saw <strong>{fmtFull(i.unitCount)} army ants</strong>: {swarmMakeUp(i.units ?? {})}.
       </p>
       {colony.id === i.targetColonyId ? (
