@@ -1,6 +1,6 @@
 // The Whole Yard (preview, docs/art/whole-yard.md): the game on one map. Zoom from the whole yard down to ant height;
 // double-click one of your mounds to dive into its nest. The buttons on the left open what used to be screens
-// (Chambers, Brood Hall, Research, Missions) as panels over the map, for whichever colony you cycle to; Rankings and the
+// (Chambers, Brood Hall, Research, Missions) as panels over the map, for whichever colony you cycle to; Allies, Reports, Rankings and the
 // Field Journal cover the whole player, so they open without the colony switcher.
 // Computers only; it ships behind the ?preview=yard switch (client/src/preview.ts).
 import { Suspense, lazy, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
@@ -17,14 +17,17 @@ import { Brood } from './Brood';
 import { Research } from './Research';
 import { SendMission } from './Missions';
 import { Rankings } from './Rankings';
+import { Reports } from './Reports';
+import { Allies } from './Allies';
 import { Journal } from './Journal';
 import { MISSION_LABEL, type MissionType, type Nav } from '../nav';
 import type { Rung, YardScene } from '../components/yard3d/scene';
 
 const NestHome = lazy(() => import('../components/NestHome').then((m) => ({ default: m.NestHome })));
-type PanelId = 'chambers' | 'brood' | 'research' | 'missions' | 'ranks' | 'journal';
+type PanelId = 'chambers' | 'brood' | 'research' | 'missions' | 'allies' | 'reports' | 'ranks' | 'journal';
+const PANEL_IDS: PanelId[] = ['chambers', 'brood', 'research', 'missions', 'allies', 'reports', 'ranks', 'journal'];
 /** Panels about the whole player rather than one colony: no colony switcher in their header. */
-const PLAYER_PANELS: PanelId[] = ['research', 'ranks', 'journal'];
+const PLAYER_PANELS: PanelId[] = ['research', 'allies', 'reports', 'ranks', 'journal'];
 /** Panels that take the map's full width (the tech tree, the journal's pages). */
 const WIDE_PANELS: PanelId[] = ['research', 'journal'];
 
@@ -39,7 +42,9 @@ const RAIL: { id: PanelId | 'nest'; label: string; icon: ReactNode; gap?: boolea
   { id: 'brood', label: 'Brood Hall', icon: I('M12 4c2 0 3 1.5 3 3.5S14 11 12 11 9 9.5 9 7.5 10 4 12 4ZM8 20c0-4 2-6 4-6s4 2 4 6M6 9 3 7M18 9l3-2M6 15l-3 1M18 15l3 1') },
   { id: 'research', label: 'Research', icon: I('M9 3h6M10 3v6l-5 9a2 2 0 0 0 2 3h10a2 2 0 0 0 2-3l-5-9V3M8 15h8') },
   { id: 'missions', label: 'Missions', icon: I('M4 18c4-1 6-5 8-9s5-5 8-5M16 4h4v4M4 18l2 2') },
-  { id: 'ranks', label: 'Rankings', icon: I('M8 21V11M16 21V7M12 21V3M4 21h16'), gap: true },
+  { id: 'allies', label: 'Allies', icon: I('M8 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM16 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM2 20c0-3 3-5 6-5s6 2 6 5M12 15.5c1-.3 2.4-.5 4-.5 3 0 6 2 6 5'), gap: true },
+  { id: 'reports', label: 'Reports', icon: I('M6 3h9l4 4v14H6zM14 3v5h5M9 12h7M9 16h7') },
+  { id: 'ranks', label: 'Rankings', icon: I('M8 21V11M16 21V7M12 21V3M4 21h16') },
   { id: 'journal', label: 'Journal', icon: I('M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3V4ZM5 17a3 3 0 0 1 3-3h11M9 8h6') },
 ];
 const RUNGS: { id: Rung; label: string }[] = [
@@ -169,7 +174,22 @@ export function Yard({ go }: { go: Nav }) {
   // the nest's own links ("Up to the patch", "All chambers") open the yard's panels instead of other screens
   const nestNav: Nav = (id, p) => {
     if (id === 'missions') return surface();
-    if (id === 'chambers' || id === 'brood' || id === 'research') return setNest(false), setPanel(id);
+    if (PANEL_IDS.includes(id as PanelId)) return setNest(false), setPanel(id as PanelId);
+    go(id, p);
+  };
+  // links inside the panels (a report's "show on map", an ally's colony): fly there or open the send card, not another screen
+  const panelNav: Nav = (id, p) => {
+    if (id === 'missions' && !p?.replay && (p?.view || p?.target)) {
+      const at = p.target ?? { ...p.view, spot: 0 };
+      setPanel(null);
+      sceneRef.current?.flyTo(at, 'patch');
+      if (p.target) {
+        handlers.current.pick(p.target);
+        if (p.type) setDeploy({ type: p.type, target: p.target });
+      }
+      return;
+    }
+    if (PANEL_IDS.includes(id as PanelId)) return setPanel(id as PanelId);
     go(id, p);
   };
   const cycle = (dir: 1 | -1) => {
@@ -194,7 +214,12 @@ export function Yard({ go }: { go: Nav }) {
 
   if (!state || !colony) return null;
   const selSpot = sel ? spots[`${sel.region}:${sel.patch}`]?.find((s) => s.spot === sel.spot) : null;
-  const fresh = state.journal?.fresh ?? 0;
+  const badges: Partial<Record<PanelId, [number, string]>> = {
+    missions: [(state.incoming ?? []).filter((i: any) => i.hostile).length, 'raids coming'],
+    allies: [state.player.pendingDiplomacy ?? 0, 'waiting for you'],
+    reports: [state.unreadReports ?? 0, 'unread'],
+    journal: [state.journal?.fresh ?? 0, 'new pages'],
+  };
   const colonyTitle = (
     <div className="yard-cycle">
       {state.colonies.length > 1 && (
@@ -236,7 +261,9 @@ export function Yard({ go }: { go: Nav }) {
           >
             {b.icon}
             <span>{b.id === 'nest' && nest ? 'Up' : b.label}</span>
-            {b.id === 'journal' && fresh > 0 && <i className="rail-badge" aria-label={`${fresh} new pages`}>{fresh}</i>}
+            {b.id !== 'nest' && (badges[b.id]?.[0] ?? 0) > 0 && (
+              <i className="rail-badge" aria-label={`${badges[b.id]![0]} ${badges[b.id]![1]}`}>{badges[b.id]![0]}</i>
+            )}
           </button>
         ))}
       </nav>
@@ -251,6 +278,8 @@ export function Yard({ go }: { go: Nav }) {
             {panel === 'chambers' && <Chambers />}
             {panel === 'brood' && <Brood />}
             {panel === 'research' && <Research />}
+            {panel === 'allies' && <Allies go={panelNav} />}
+            {panel === 'reports' && <Reports go={panelNav} />}
             {panel === 'ranks' && <Rankings />}
             {panel === 'journal' && <Journal />}
             {panel === 'missions' && (
