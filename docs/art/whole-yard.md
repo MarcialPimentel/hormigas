@@ -52,6 +52,19 @@ Builds on [sunlit-microcosm.md](sunlit-microcosm.md) (the scale ladder, approved
 4. Blender kit: growing mounds, landmarks, region dressing, the master ant.
 5. Make it the main screen for everyone (Marz's call after playtests), then phones.
 
+## The Yard view
+
+The top zoom (approved 1 Nov 2026, option 2 of three previews; built in `yard3d/scene.ts`):
+
+![Before](whole-yard/yard-view-before.jpg) ![After](whole-yard/yard-view-after.jpg)
+
+- **A tidy garden seen from upstairs.** A lawn mown in stripes, the five beds 1.5 m apart (drawing only: travel times don't change), each with a low brick edge and a pale coping, stepping stones across the lawn between them.
+- **Every bed its own ground:** striped lawn (The Backyard), dark soil with flower clumps (The Old Garden), mossy bank with the creek running from a spring pool to a pond and reeds (Creekside), orange bark chips with the log pile (The Woodpile), deep green with tussocks and straw seed heads (The Long Grass). The big clumps, reeds and tussocks only show from the top; closer in, the real grass and flowers take over.
+- **A sign per bed:** a wooden plant marker with the bed's name and how many colonies live there; beds where you live are brighter and say **You**. Click one to fly to that bed.
+- **Markers:** your colony is a honey pin with a slow pulse (still with motion off); allies and rivals get a cream ring so they read on any bed; wild nests shrink to faint specks from the top and come back at Region.
+- **Hex lines** are thin cream lines, not dark ones.
+- **Round the yard:** the back of the house (door, windows, downpipe, an outside tap with the hose coiled on the lawn), pots on the patio, a board fence and a hedge on the other three sides, and lawn out to the horizon instead of open sky.
+
 ## Decisions for Marz
 
 1. Direction: the Whole Yard (Civ's look, today's rules and clock)?
