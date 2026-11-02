@@ -1,6 +1,6 @@
 # Hormigas — Deploy
 
-_Current as of Build 11 (2026-10-30)._
+_Current as of Build 11 (2026-10-30); hub parts moved to the hub repo on 2026-11-02._
 
 Hormigas is live at **https://hormigas.marz.gg**. It runs on a small cloud server (the "hub") that can host several of Marz's projects side by side.
 
@@ -22,23 +22,9 @@ Browser ── https://hormigas.marz.gg ──▶ DNS record for the subdomain
                           └─ (other projects' containers)
 ```
 
-### Other projects share the hub
+### The hub
 
-The hub also runs containers for other projects (for example Guildie's live rooms). Those projects deploy their own containers from their own repos; **Hormigas deploys leave them alone** and only run `docker compose up -d hormigas`. If another project's container stops, Hormigas is unaffected. If you change another project's block in the server's `docker-compose.yml` or `Caddyfile`, copy the change into `deploy/hub/` here too.
-
-Every service has a memory cap (`mem_limit`), the games also a CPU cap (`cpus`), and every service keeps at most 30 MB of logs (the shared `x-logging` settings at the top of the file), so one project can't starve the others or fill the disk. Give any new service the same three lines. No game service publishes `ports:`: Docker-published ports skip the server's firewall, so Caddy stays the only way in.
-
-The files that define the hub are in [`deploy/`](../deploy/). The copy on the server is the one that runs. It also has a `.env` with the real passwords, which never leaves the server.
-
-| File | What it does |
-|---|---|
-| `deploy/setup-droplet.sh` | One-time server prep: Docker, 2 GB swap, firewall (SSH/HTTP/HTTPS only), automatic security updates, a non-root deploy user, the hub folder |
-| `deploy/hub/docker-compose.yml` | The containers: `caddy`, `db`, `hormigas` and the other projects' services |
-| `deploy/hub/Caddyfile` | Which domain goes to which container |
-| `deploy/hub/.env.example` | Variable names for `.env` (database passwords, world name, optional feedback key, and other projects' settings) |
-| `deploy/hub/postgres-init/01-hormigas.sh` | Creates the `hormigas` database and user on the database's very first start |
-| `deploy/hub/add-database.sh` | Creates a database and user for another project |
-| `deploy/hub/backup.sh` | Dumps every database to the hub's `backups/` folder, keeps 7 days (nightly cron) |
+The server's own setup (Caddy, the shared database, every game's service, backups, the one-time server script and how to rebuild it) lives in the private **hub repo, [MarcialPimentel/hub](https://github.com/MarcialPimentel/hub)**, along with the hosting guide that used to be here. Hormigas deploys leave the other games alone and only run `docker compose up -d hormigas`. If you change the server's `docker-compose.yml` or `Caddyfile`, copy the change into the hub repo.
 
 ## How a change goes live
 
@@ -97,7 +83,7 @@ Besides the in-game Feedback screen (admins only), feedback can be read on a pri
 It's off until a key is set. To turn it on (once):
 
 1. Make up a phrase of 16+ characters with no spaces, e.g. four random words joined by dashes plus a number. Don't reuse a password: anyone with the link can read the feedback, including player names.
-2. On the server, in the hub folder: make sure `docker-compose.yml` passes `FEEDBACK_KEY: ${HORMIGAS_FEEDBACK_KEY:-}` to `hormigas` (deploys don't update this file; copy the line from `deploy/hub/docker-compose.yml`), add `HORMIGAS_FEEDBACK_KEY=YOUR-PHRASE` to `.env`, then run `docker compose up -d hormigas`.
+2. On the server, in the hub folder: make sure `docker-compose.yml` passes `FEEDBACK_KEY: ${HORMIGAS_FEEDBACK_KEY:-}` to `hormigas` (deploys don't update this file; copy the line from the hub repo's `docker-compose.yml`), add `HORMIGAS_FEEDBACK_KEY=YOUR-PHRASE` to `.env`, then run `docker compose up -d hormigas`.
 3. Open the link and bookmark it. Keep it with the other private hosting notes on your PC (never in the repo). A wrong or missing key gets a plain "not found".
 
 To change the key (say it leaked), edit `.env` and run `docker compose up -d hormigas` again.
@@ -109,30 +95,9 @@ To change the key (say it leaked), edit `.env` and run `docker compose up -d hor
 - **Every deploy backs up the game database first** (see above). Backups still live on the server itself, so they don't survive losing the server; turn on the host's server backups or copy `backups/` elsewhere for that ([#88](https://github.com/MarcialPimentel/hormigas/issues/88)).
 - The production image already sets `NODE_ENV=production`, which turns on secure cookies, trusted proxy headers (Caddy is the proxy) and speed ×1.
 
-## Adding another project to the hub
+## Adding a game, or rebuilding the hub
 
-1. Add a service to `docker-compose.yml` (image, environment, `restart: unless-stopped`).
-2. Add a block to the `Caddyfile`: `name.marz.gg { reverse_proxy service:port }`.
-3. If it needs a database, run `./add-database.sh name` and put the printed password in `.env`.
-4. Add a DNS record for `name.marz.gg` at the domain's DNS provider, pointing at the hub (details in Marz's private hosting notes).
-5. Run `docker compose up -d`. Caddy fetches the HTTPS certificate on its own.
-
-Copy the changes back into `deploy/hub/` in the project's repo so the reference copy stays in sync. Latency-sensitive real-time games, such as an RTS, should get their own server rather than share this one.
-
-## Rebuilding the hub from scratch
-
-The exact commands (addresses, users, folders) are in Marz's private hosting notes. In outline:
-
-1. Create a small Ubuntu 24.04 server with an SSH key (2 GB RAM is enough).
-2. Point the DNS records for the hub's subdomains at it.
-3. Run `deploy/setup-droplet.sh` on it once as the admin user.
-4. Copy `deploy/hub/` to the hub folder, then make the scripts readable: `chmod 755 postgres-init *.sh postgres-init/*.sh`. Copying from Windows can leave `postgres-init` unreadable to Postgres, and its first start then crash-loops.
-5. `cp .env.example .env`, fill in passwords with `openssl rand -hex 24` (hex keeps them safe inside a database URL), and run `chmod 600 .env`. Other projects' settings are copied from those projects, not generated here.
-6. Authorise the GitHub deploy key for the deploy user, and update the `DROPLET_HOST` secret.
-7. `docker compose up -d`, then restore the latest backup if you're moving an existing world.
-8. Add the nightly backup cron job for `backup.sh`.
-
-The Postgres init script only runs when the data volume is empty. If the first start fails, fix the cause, then `docker compose down && docker volume rm hub_db_data` before trying again. This is only safe while the volume holds no game data.
+See the hub repo's README and `docs/hosting.md`.
 
 ## Other hosts
 
