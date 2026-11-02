@@ -81,7 +81,7 @@ Every zoom's ground and plants (approved 2 Nov 2026; Marz picked soft ground wit
 - **Grass is clumps of curved blades**, dark at the root and light at the tip, that sway in the wind (still with motion off): short on the lawn and among the bark chips, medium in the flowerbed and on the creek bank, tall in the Long Grass, each bed's tinted to its ground. Close in, grass round the spot you look at and round the camera lies down, so no clump fills the screen.
 - **Built in Blender** by `docs/art/whole-yard/props.blend.py` (run it the same way as the mound script). It writes `client/src/components/yard3d/props.json` (18 models, about 2,350 triangles in all) and the preview sheet above. The game draws thousands of copies of each.
 - **The rest:** garden flowers on stems with coloured petals; flowering shrubs; weathered rocks (one mossy) round the creek, its pools and the litter; irregular stepping stones; ridged logs with ringed ends; curled bark chips; fallen leaves; creek reeds with cattails; Long Grass tussocks with straw seed heads. A free spot is a ring of pale pebbles, not flat white hexagons.
-- **Ants grow as you pull back:** true size at ant height, about 3× at the Patch zoom, so a column reads on a 1 m patch. Only the drawing changes.
+- **Ants grow as you pull back:** true size at ant height, about 7× at the Patch zoom and up to 25× further out (2 Nov: 3× was still too small), so a column reads like a unit on the map; they show until the Region zoom. Only the drawing changes.
 
 ## Decisions for Marz
 
