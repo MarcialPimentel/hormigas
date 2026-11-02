@@ -897,6 +897,8 @@ uniform vec3 uSpots[SIGHT_SPOTS];
     label: string;
     tone: string;
     endsAt: number;
+    /** an army-ant swarm nobody has scouted: no number on its label */
+    unknownSize?: boolean;
     holding?: boolean;
     /** how fast k changes, per ms (negative heading home) */
     rate: number;
@@ -935,7 +937,7 @@ uniform vec3 uSpots[SIGHT_SPOTS];
         caste: (n) => (swarm ? (n % 5 === 2 ? 'army_major' : 'army') : i.type === 'raid' || i.type === 'hold' ? 'soldier' : 'worker'),
         color: swarm ? undefined : hostile ? CHITIN.raider : i.type === 'hold' ? '#3FA79E' : FLAG.other,
         trail: hostile ? '#C4473A' : i.type === 'hold' ? FLAG.ally : FLAG.other, cargo: [],
-        label: what, tone: hostile ? 'raid' : 'ours', endsAt: i.arriveAt,
+        label: what, tone: hostile ? 'raid' : 'ours', endsAt: i.arriveAt, unknownSize: swarm && !i.scouted,
         rate: i.departAt ? 1 / Math.max(1, i.arriveAt - i.departAt) : 0,
       });
     }
@@ -1005,7 +1007,7 @@ uniform vec3 uSpots[SIGHT_SPOTS];
       along(t, Math.max(0, lead));
       t.lead = (t.lead ?? new THREE.Vector3()).copy(at);
       const time = c.endsAt ? ` · ${fmtDuration(Math.max(0, c.endsAt - d.now))}` : '';
-      label(`party-${c.key}`, `nest-trip p3-trip ${c.tone}`, at.x, at.y + 1.4, at.z, `${esc(c.label)} · ${c.units.toLocaleString()}${time}`);
+      label(`party-${c.key}`, `nest-trip p3-trip ${c.tone}`, at.x, at.y + 1.4, at.z, `${esc(c.label)} · ${c.unknownSize ? '?' : c.units.toLocaleString()}${time}`);
     }
     for (const [k, t] of trails) {
       if (live.has(k)) continue;

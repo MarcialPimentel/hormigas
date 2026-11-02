@@ -28,6 +28,7 @@ import {
   validCoords,
   WILDS_SPOT,
   SWARM,
+  roughSwarmSize,
   isHeldState,
   type CasteId,
   type MissionType,
@@ -518,10 +519,20 @@ export function missionView(m: Mission) {
   };
 }
 
+/**
+ * How big an incoming party looks. A swarm shows only a rough size until the colony's scouts reach it; then its
+ * real size and make-up, for the live odds on its card (docs/20-swarms.md § Scouting the swarm).
+ */
+function incomingSize(row: { type: string; units: Record<string, number>; result: any }) {
+  const n = Object.values(row.units).reduce((a, b) => a + b, 0);
+  if (row.type !== 'swarm') return { unitCount: n };
+  return row.result?.scouted ? { unitCount: n, scouted: true, units: row.units } : { unitCount: roughSwarmSize(n), scouted: false };
+}
+
 /** Hostile or friendly missions heading to the player's colonies (attacker's units hidden unless scouts). */
 export async function incomingMissions(q: Q, playerId: number) {
   const r = await q.query(
-    `SELECT m.id, m.type, m.player_id, m.depart_at, m.arrive_at, m.target_colony_id, m.origin_region, m.origin_patch, m.origin_spot, m.units,
+    `SELECT m.id, m.type, m.player_id, m.depart_at, m.arrive_at, m.target_colony_id, m.origin_region, m.origin_patch, m.origin_spot, m.units, m.result,
             CASE WHEN m.type = 'swarm' THEN $2 WHEN p.is_npc THEN o.name ELSE p.username END AS username, p.is_npc,
             c.npc->>'kind' IN ('herd', 'windfall') AS at_herd, c.npc->>'kind' = 'windfall' AS at_windfall, c.region AS t_region, c.patch AS t_patch, c.spot AS t_spot
        FROM missions m JOIN colonies c ON c.id = m.target_colony_id JOIN players p ON p.id = m.player_id
@@ -552,7 +563,7 @@ export async function incomingMissions(q: Q, playerId: number) {
       herd: row.at_herd ? { region: row.t_region, patch: row.t_patch, spot: row.t_spot } : null,
       /** the held site is a windfall, not an aphid herd (docs/25-windfalls.md) */
       windfall: !!row.at_windfall,
-      unitCount: Object.values(row.units as Record<string, number>).reduce((a, b) => a + b, 0),
+      ...incomingSize(row),
     };
   });
 }

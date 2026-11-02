@@ -43,6 +43,7 @@ import { discover, requireKnown, smelledBy } from './discovery';
 import { areAllies, relationOf } from './diplomacy';
 import { DIPLOMACY_MESSAGES } from '@hormigas/shared';
 import { bump } from './stats';
+import { scoutSwarm, swarmHeadingFor } from './swarms';
 
 defineMission('transport', {
   async validate({ q, targetColony, colony, player }) {
@@ -116,16 +117,21 @@ defineMission('hold', {
 });
 
 defineMission('scout', {
-  async validate({ targetColony, player, units, target }) {
+  async validate({ q, targetColony, player, units, target }) {
     // only Scouts may go: checked from MISSION_TYPES before this runs
     if (target.spot === WILDS_SPOT) return; // surveying the wilds is always allowed
     if (!targetColony) throw new GameError('bad_target', 'There is no colony there to scout.');
-    if (targetColony.playerId === player.id) throw new GameError('bad_target', "You don't need to scout your own colony.");
+    if (targetColony.playerId === player.id && !targetColony.npc) {
+      // a swarm is coming: scouts go out to meet the column (docs/20-swarms.md § Scouting the swarm)
+      if (await swarmHeadingFor(q, targetColony.id)) return;
+      throw new GameError('bad_target', "You don't need to scout your own colony. When an army ant swarm is coming, Scouts sent here go out to meet it.");
+    }
   },
   async arrive(q, m, at) {
     if (m.target.spot === WILDS_SPOT) return surveyWilds(q, m, at);
     if (!m.targetColonyId) return { home: true };
     const found = await getColony(q, m.targetColonyId);
+    if (!found.npc && found.playerId === m.playerId) return scoutSwarm(q, m, found, at);
     const target = found.npc ? await syncNest(q, await lockColony(q, found.id), at) : advance(found, at);
     const attacker = await getPlayer(q, m.playerId);
     // at an aphid herd or a windfall, the ants holding it (if any) are the ones who might spot the scouts (docs/24-npcs.md)

@@ -1,7 +1,7 @@
 // Build 5: army-ant swarms (docs/20-swarms.md).
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { FastifyInstance } from 'fastify';
-import { SWARM, defenderWinRate, swarmOfPacks, swarmParty } from '@hormigas/shared';
+import { SWARM, defenderWinRate, rollSwarmScouts, roughSwarmSize, swarmOfPacks, swarmParty, swarmScoutChance, swarmScoutOdds } from '@hormigas/shared';
 import { getPool, tx } from '../src/db';
 import { ensureSwarms } from '../src/game/swarms';
 import { setupTest, teardownTest, newPlayer, setColony, setPlayer, type Client } from './helpers';
@@ -136,5 +136,100 @@ describe('in the world', () => {
     await setColony(c.id, { units: { minor_soldier: 5 }, nectar: 1000, last_updated: clock.t });
     const r = await p.post('/api/missions', { colonyId: c.id, type: 'swarm', target: { ...c.coords, spot: 1 }, units: { minor_soldier: 1 } });
     expect(r.ok).not.toBe(true);
+  });
+});
+
+// Build 13: Scouting the swarm (docs/20-swarms.md § Scouting the swarm).
+describe('scouting the swarm: the odds', () => {
+  it('each scout slips past with a base chance, more with Scent Reading and Chemical Mimicry, up to a cap', () => {
+    expect(swarmScoutChance({})).toBeCloseTo(SWARM.scouting.basePct / 100);
+    const s = SWARM.scouting;
+    expect(swarmScoutChance({ scent_reading: 2, chemical_mimicry: 1 } as any)).toBeCloseTo((s.basePct + 2 * s.perScentReadingPct + s.perMimicryPct) / 100);
+    expect(swarmScoutChance({ scent_reading: 20, chemical_mimicry: 3 } as any)).toBeCloseTo(s.maxPct / 100);
+  });
+
+  it('more scouts make a report likelier but lose more scouts', () => {
+    expect(swarmScoutOdds(0, {}).reportChance).toBe(0);
+    const one = swarmScoutOdds(1, {}), five = swarmScoutOdds(5, {});
+    expect(one.reportChance).toBeCloseTo(swarmScoutChance({}));
+    expect(five.reportChance).toBeGreaterThan(one.reportChance);
+    expect(five.reportChance).toBeCloseTo(1 - Math.pow(1 - swarmScoutChance({}), 5));
+    expect(five.expectedLost).toBeGreaterThan(one.expectedLost);
+  });
+
+  it('rolls each scout on its own', () => {
+    expect(rollSwarmScouts(5, {}, () => 0.99)).toBe(0);
+    expect(rollSwarmScouts(5, {}, () => 0)).toBe(5);
+    let i = 0;
+    expect(rollSwarmScouts(4, {}, () => [0.1, 0.9, 0.2, 0.8][i++])).toBe(2);
+  });
+
+  it('an unscouted swarm shows only a rough size', () => {
+    expect(roughSwarmSize(5)).toBe(5);
+    expect(roughSwarmSize(89)).toBe(90);
+    expect(roughSwarmSize(1234)).toBe(1000);
+    expect(roughSwarmSize(1750)).toBe(2000);
+  });
+});
+
+describe('scouting the swarm: in the world', () => {
+  const scoutMission = async () => (await p.get('/api/state')).missions.find((m: any) => m.type === 'scout');
+
+  it('scouting your own colony with no swarm coming is refused', async () => {
+    expect(await swarmsAt(c.id).then((r) => r.filter((m: any) => m.status === 'outbound'))).toHaveLength(0);
+    await setColony(c.id, { units: { scout: 60 }, defenses: {}, nectar: 5000, last_updated: clock.t });
+    const r = await p.post('/api/missions', { colonyId: c.id, type: 'scout', target: c.coords, units: { scout: 1 } });
+    expect(r.ok).not.toBe(true);
+    expect(JSON.stringify(r)).toContain('swarm');
+  });
+
+  it('before scouting, the colony sees only a rough size and no make-up', async () => {
+    await setColony(c.id, { units: { scout: 60, minor_soldier: 80, major_soldier: 30 }, defenses: {}, nectar: 5000, last_updated: clock.t });
+    await setPlayer(me.id, { last_active: clock.t });
+    await spotNow(c.id);
+    const m = (await swarmsAt(c.id)).at(-1);
+    // a size that rounds, so the test can tell rough from real
+    await getPool().query('UPDATE missions SET units = $2 WHERE id = $1', [m.id, JSON.stringify(swarmOfPacks(17))]);
+    const inc = (await p.get('/api/state')).incoming.find((i: any) => i.type === 'swarm');
+    expect(inc.scouted).toBe(false);
+    expect(inc.units).toBeUndefined();
+    expect(inc.unitCount).toBe(roughSwarmSize(85));
+  });
+
+  it('scouts sent at the colony meet the swarm: a report with its real size, and the card shows it', async () => {
+    const sent = await p.post('/api/missions', { colonyId: c.id, type: 'scout', target: c.coords, units: { scout: 60 } });
+    expect(sent.ok ?? true).not.toBe(false);
+    const mission = await scoutMission();
+    expect(mission).toBeTruthy();
+    const swarm = (await swarmsAt(c.id)).at(-1);
+    expect(mission.arriveAt).toBeLessThan(Number(swarm.arrive_at));
+    await setPlayer(me.id, { last_active: mission.arriveAt });
+    await clock.advance(mission.arriveAt - clock.t + 1);
+
+    const rep = (await getPool().query("SELECT title, data FROM reports WHERE player_id = $1 AND type = 'scout' ORDER BY id DESC LIMIT 1", [me.id])).rows[0];
+    // 60 scouts at 30% each: the chance none get back is about one in two billion
+    expect(rep.title).toContain('Swarm scouted: 85 army ants');
+    expect(rep.data.swarm.units).toEqual(swarmOfPacks(17));
+    expect(rep.data.back + rep.data.lost).toBe(60);
+    expect(rep.data.back).toBeGreaterThan(0);
+
+    const inc = (await p.get('/api/state')).incoming.find((i: any) => i.type === 'swarm');
+    expect(inc.scouted).toBe(true);
+    expect(inc.unitCount).toBe(85);
+    expect(inc.units).toEqual(swarmOfPacks(17));
+
+    // the survivors walk home; the eaten ones don't
+    const back = await scoutMission();
+    await setPlayer(me.id, { last_active: back.returnAt });
+    await clock.advance(back.returnAt - clock.t + 1);
+    expect((await p.get('/api/state')).colony.units.scout ?? 0).toBe(rep.data.back);
+  });
+
+  it('the scouted swarm still lands as a normal battle', async () => {
+    const swarm = (await swarmsAt(c.id)).at(-1);
+    await setPlayer(me.id, { last_active: Number(swarm.arrive_at) });
+    await clock.advance(Number(swarm.arrive_at) - clock.t + 1);
+    expect((await battles()).at(-1).title).toContain(SWARM.name);
+    expect((await swarmsAt(c.id)).at(-1).status).toBe('done');
   });
 });

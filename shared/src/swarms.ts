@@ -1,7 +1,7 @@
 // Army-ant swarms (docs/20-swarms.md): a roaming enemy that visits every player colony now and then,
 // announced hours ahead, and sized so a colony that keeps its army home usually wins.
 import { NPC_DATA } from './data';
-import type { DefenseCounts, ResearchLevels, UnitCounts } from './economy';
+import { researchSum, type DefenseCounts, type ResearchLevels, type UnitCounts } from './economy';
 import { simulateBattle } from './combat';
 import { createRng, type Rng } from './rng';
 
@@ -16,6 +16,7 @@ export const SWARM = NPC_DATA.swarm as unknown as {
   maxPacks: number;
   defenderWinRate: number;
   trials: number;
+  scouting: { basePct: number; perScentReadingPct: number; perMimicryPct: number; maxPct: number };
 };
 
 /** Hours (world speed 1) until a colony's next swarm is spotted, picked uniformly from everyHours. */
@@ -71,3 +72,40 @@ export function swarmParty(target: SwarmTarget, seed: number): UnitCounts {
   return swarmOfPacks(lo);
 }
 
+
+// ---------- scouting the swarm (docs/20-swarms.md § Scouting the swarm) ----------
+
+/**
+ * Chance one Scout slips up to the column and gets back: a base, plus Scent Reading and Chemical Mimicry
+ * (army ants are nearly blind and hunt by smell), up to a cap.
+ */
+export function swarmScoutChance(research: ResearchLevels | undefined): number {
+  const s = SWARM.scouting;
+  const pct = s.basePct + s.perScentReadingPct * researchSum(research, 'scoutLevel') + s.perMimicryPct * researchSum(research, 'scoutStealth');
+  return Math.min(s.maxPct, pct) / 100;
+}
+
+/**
+ * What sending `scouts` Scouts at a swarm looks like before they go: each one rolls on its own, the report
+ * comes back if at least one makes it, and the rest are eaten.
+ */
+export function swarmScoutOdds(scouts: number, research: ResearchLevels | undefined): { perScout: number; reportChance: number; expectedLost: number } {
+  const perScout = swarmScoutChance(research);
+  const n = Math.max(0, Math.floor(scouts));
+  return { perScout, reportChance: n > 0 ? 1 - Math.pow(1 - perScout, n) : 0, expectedLost: n * (1 - perScout) };
+}
+
+/** How many of `scouts` Scouts get back from the swarm, rolling each on its own. */
+export function rollSwarmScouts(scouts: number, research: ResearchLevels | undefined, rng: Rng): number {
+  const p = swarmScoutChance(research);
+  let back = 0;
+  for (let i = 0; i < scouts; i++) if (rng() < p) back++;
+  return back;
+}
+
+/** An unscouted swarm's size as the colony sees it: rounded to one figure (89 → 90, 1,234 → 1,000). */
+export function roughSwarmSize(n: number): number {
+  if (n < 10) return Math.max(0, Math.round(n));
+  const step = Math.pow(10, Math.floor(Math.log10(n)));
+  return Math.round(n / step) * step;
+}
