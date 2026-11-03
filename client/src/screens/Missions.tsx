@@ -211,7 +211,7 @@ export function SendMission({ type, setType, target, setTarget, onClose, onSent 
   const dist = valid ? distance(colony.coords, target) : 0;
   const speed = groupSpeed(chosen, research);
   const oneWay = speed > 0 && valid ? travelSeconds(dist, speed, speedPct, state.world.speed) : 0;
-  const fuel = speed > 0 && valid ? missionFuel(chosen, dist, speedPct) : 0;
+  const fuel = speed > 0 && valid ? missionFuel(chosen, dist) : 0;
   const pool = rules.slot;
   const missions: any[] = state.missions ?? [];
   const { used, max } = missionSlotUsage(missions, pool, research, colony.id);
@@ -513,7 +513,7 @@ export function SendMission({ type, setType, target, setTarget, onClose, onSent 
         </dl>
         <p className="muted small">
           Fuel is taken from your Nectar once, when the party leaves, and covers the whole trip; your Nectar per hour doesn't change. It grows with how many
-          ants you send (soldiers drink more than workers, scouts hardly any), how far they go, and how fast.
+          ants you send (soldiers drink more than workers, scouts hardly any) and how far they go. Speed only changes when they get home.
         </p>
 
         {problems.length > 0 && presentUnits(chosen).length > 0 && (

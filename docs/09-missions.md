@@ -64,8 +64,7 @@ It gives Scouts a job that doesn't depend on neighbors, and lets a player in an 
 ## Army saving (the core skill)
 Units at home are at risk while you're offline. The counter-play is sending your army on a long Transport/Relocate/Forage mission timed to return when you're back. The UI should support this directly:
 - **"Return at…"** time picker on the mission screen (auto-calculates speed %).
-- Speed slider (10%–100%) — slower = less fuel, longer trip.
+- Speed slider (10%–100%): slower means a longer trip, for timing only. Fuel is the same at every speed (Marz, 2 Nov 2026, [03-economy](03-economy.md#mission-fuel)).
 
 ## Open Questions
 - Should Forage roll events by terrain (creek → rainstorm more likely)?
-- Can missions be sent at reduced speed to save Nectar? Proposal: yes, fuel scales with speed².

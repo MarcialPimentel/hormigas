@@ -97,11 +97,11 @@ export function travelSeconds(dist: number, slowestSpeed: number, speedPct: numb
   return Math.max(1, Math.round(t / worldSpeed));
 }
 
-/** Nectar consumed for the whole trip (paid at departure). */
-export function missionFuel(units: UnitCounts, dist: number, speedPct: number): number {
+/** Nectar consumed for the whole trip (paid at departure). Speed doesn't change it. */
+export function missionFuel(units: UnitCounts, dist: number): number {
   let use = 0;
   for (const id of presentUnits(units)) use += (units[id] ?? 0) * CASTES[id].nectarUse;
-  const fuel = ((use * dist) / T.fuelDivisor) * Math.pow(speedPct / 100 + 1, 2);
+  const fuel = (use * dist) / T.fuelDivisor;
   return Math.max(1, Math.round(fuel));
 }
 

@@ -2,6 +2,9 @@
 
 _Current as of Build 13 (2026-11-02)._ Newest first. One entry per build, in players' words, built from the merged PRs. Smaller PRs merged between builds are listed with the nearest build.
 
+## Between builds (unreleased)
+- **Mission fuel no longer depends on speed, and costs about twice as much as a full-speed trip did.** Fuel was cheap next to what colonies gather since gathering doubled, and sending ants slowly to save it meant waiting up to 10 times longer to save a few hundred Nectar. Now the speed slider and **Return at…** only change when your ants get home, and fuel grows only with how many ants you send and how far they go. A raid in your own patch with 30 Major Soldiers and 20 Acid Sprayers costs about 650 Nectar (it was about 320 at full speed); a first raid on the wild nest next door with 8 Minor Soldiers is about 40.
+
 ## Build 14: Swarm sizes (unreleased)
 - **Army-ant swarms come in three sizes now.** Most are a **foraging column** your soldiers should beat for a modest cost, some are a **war column**, a hard fight that costs dearly, and about one in ten is a **great swarm** that could overrun your colony. You don't know which until you scout it: the report and the swarm's card name the size, and the card's odds show how you'd do. A great swarm is the moment to raise soldiers, build defenses or send your army away.
 - **Beating a swarm pays.** The army ants drop their prey: about three-quarters of what the swarm was worth, in Foliage, Protein and Nectar, and never less than 4 hours of your own production. It can go over your storage cap. Before, it was 4 hours of production as Protein only.
