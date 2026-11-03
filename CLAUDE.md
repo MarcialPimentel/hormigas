@@ -37,6 +37,7 @@ Needs Node 22+ and Docker (for local Postgres).
 | `npm run typecheck` | Type-check every package |
 | `npm run sim` | Milestone pacing simulation (`npm run sim -- 5` for ×5) |
 | `npm run combat` | Balance tables from the real combat code: castes against each other, raids on defenses, fair armies against every wild nest (`-- castes`, `-- defenses`, `-- nests`; `--budget`, `--runs`) |
+| `npm run trailer` | Re-render the trailer from the real game into `art/trailer/` (a separate local trailer world; see `docs/trailer.md`) |
 | `npm run build` then `npm start` | Production mode, one server on :3000 |
 
 Run `npm run typecheck` and `npm test` before calling work done. CI runs both, plus the build, on every push and PR. After changing `castes.json`, `defenses.json`, `npc.json` or `combat.ts`, also run `npm run combat`.

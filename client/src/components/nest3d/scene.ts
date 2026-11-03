@@ -867,6 +867,8 @@ export async function createNestScene(
   // zoom (1 = whole block) and how far the view has moved across the face of the block, eased toward their goals
   const zm = { z: 1, x: 0, y: 0 }, zGoal = { z: 1, x: 0, y: 0 };
   const view = { yaw: 0.3, pitch: 0.16 }, goal = { ...view };
+  // the trailer tools (tools/trailer) move the camera by hand; development builds only (set each frame, see the yard)
+  const devHook = import.meta.env.DEV ? { view, goal, zm, zGoal } : null;
   let dist = 80;
   let inset: Inset = { left: 0, right: 0, top: 0, bottom: 0 };
   function fit() {
@@ -1153,6 +1155,7 @@ export async function createNestScene(
   }
   function frame(t: number) {
     raf = requestAnimationFrame(frame);
+    if (devHook) (window as any).__nest3d = devHook;
     const dt = Math.min(0.05, (t - last) / 1000);
     last = t;
     if (!visible || document.hidden) return;

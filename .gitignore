@@ -7,3 +7,6 @@ coverage/
 
 # Claude Code worktrees (one folder per parallel session)
 .claude/worktrees/
+
+# trailer tools: captured frames and scratch renders
+tools/trailer/cache/

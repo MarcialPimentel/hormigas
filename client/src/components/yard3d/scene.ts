@@ -1050,6 +1050,9 @@ export async function createYardScene(host: HTMLElement, labels: HTMLElement, da
     }, done);
   }
   const RUNG_D: Record<Rung, number> = { yard: DMAX, region: 900, patch: 140, ground: 14 };
+  // the trailer tools (tools/trailer) fly the camera by hand; development builds only (set each frame, so it is always
+  // the live scene's, not one React mounted and threw away)
+  const devHook = import.meta.env.DEV ? { view, goal, tileAt, spotAt, fly, homeView, playBattle } : null;
   const rungOf = (dd: number): Rung => (dd > 1500 ? 'yard' : dd > 330 ? 'region' : dd > 40 ? 'patch' : 'ground');
 
   // ---------- input
@@ -1173,6 +1176,7 @@ export async function createYardScene(host: HTMLElement, labels: HTMLElement, da
   let last = performance.now(), nowAt = performance.now(), nowSeen = 0;
   function frame() {
     raf = requestAnimationFrame(frame);
+    if (devHook) (window as any).__yard = devHook;
     if (document.hidden) return;
     if ((!W || !H) && !resize()) return;
     const t0 = performance.now(), dt = Math.min((t0 - last) / 1000, 0.05);

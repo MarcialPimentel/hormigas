@@ -33,6 +33,8 @@ All in the client, in `client/src/audio/`. Sound only reacts to the game state t
 - `useSound.ts`: wakes audio on the first click or key, pauses it when the tab is hidden, and picks the march from the game state (`marchFor`).
 - `components/SoundButton.tsx`: the speaker and its card.
 
+The trailer's soundtrack is this same march, rendered offline to follow the edit (`tools/trailer/music.mjs`, [trailer.md](trailer.md)).
+
 Each footstep plays a recorded step pitched up ×1.7 into tiny feet. If the recordings don't load (old Safari can't play `.ogg`), a code-made tick plays instead, so the march never goes missing.
 
 ## Recordings
