@@ -3,6 +3,7 @@
 _Current as of Build 13 (2026-11-02)._ Newest first. One entry per build, in players' words, built from the merged PRs. Smaller PRs merged between builds are listed with the nearest build.
 
 ## Between builds (unreleased)
+- **Termite mounds explain how to beat them.** The raid screen now shows a wild target's field-guide line under the mission, for every scouted wild nest, mound and den. For termites it says what works: their armour shrugs off small bites, so Minor Soldiers, Acid Sprayers and Trap-jaw Ants die in droves, while Major Soldiers, Slave-makers, Supermajors and Rhinoceros Beetles punch through, and a few Bullet Ants or Assassin Bugs can't get through so many. Termite Workers and Termite Soldiers also say this in their own descriptions.
 - **Mission fuel no longer depends on speed, and costs about twice as much as a full-speed trip did.** Fuel was cheap next to what colonies gather since gathering doubled, and sending ants slowly to save it meant waiting up to 10 times longer to save a few hundred Nectar. Now the speed slider and **Return at…** only change when your ants get home, and fuel grows only with how many ants you send and how far they go. A raid in your own patch with 30 Major Soldiers and 20 Acid Sprayers costs about 650 Nectar (it was about 320 at full speed); a first raid on the wild nest next door with 8 Minor Soldiers is about 40.
 
 ## Build 14: Swarm sizes (unreleased)

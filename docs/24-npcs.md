@@ -68,6 +68,12 @@ They follow every wild-nest rule (levels 1–6, 24 h regrowth, gentle raids back
 
 ### Termite mound
 - A colony of **Termite Workers** (soft, many) and **Termite Soldiers** (armoured, hit hard against Minor Soldiers and Workers). It has a Soil Wall, Pit Traps and, at higher tiers, Acid Sentries.
+- **How to beat it** (from `npm run combat`, each caste alone at a fair army's spend):
+  - Termite stats: Workers attack 2, guard 15, health 60; Soldiers attack 50, guard 40, health 160 (frenzy ×3 on Workers and Scouts, ×2 on Minor Soldiers).
+  - Guard soaks the first part of each hit every round, so small hitters waste most of their bite. Minor Soldiers, Acid Sprayers and Trap-jaw Ants win but lose 60–85% of the army; Acid Sprayers alone often lose at tier 1.
+  - Heavy hitters punch through: Major Soldiers lose about a quarter, Slave-makers under 10%, Supermajors and Rhinoceros Beetles almost nothing.
+  - Few big hunters fail: Bullet Ants and Assassin Bugs kill one termite per strike and can't get through hundreds behind walls and pits.
+  - No player caste *counters* termites in frenzy terms, so the battle preview shows no counter hint; the mound's `style` line (shown on the raid screen) carries this advice instead.
 - **Three tiers**, by the area leader's points: 0, 600 and 1,500 (`levels[].minPoints`).
 - **A big store, mostly Foliage** (chewed wood): tier 1 holds 40k Foliage, 20k Protein and 3k Nectar. That's over three times a level-4 wild nest.
 - **Regrows over 72 h** instead of 24, so it's a target you come back to about weekly.
