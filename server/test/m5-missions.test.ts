@@ -39,7 +39,7 @@ describe('map', () => {
 describe('transport', () => {
   it('delivers cargo, pays fuel, returns units', async () => {
     const dist = distance(ca.coords, cb.coords);
-    const fuel = missionFuel({ worker: 10 }, dist, 100);
+    const fuel = missionFuel({ worker: 10 }, dist);
     const r = await a.post('/api/missions', {
       colonyId: ca.id, type: 'transport', target: cb.coords, units: { worker: 10 }, cargo: { foliage: 5000, protein: 0, nectar: 100 }, speedPct: 100,
     });
