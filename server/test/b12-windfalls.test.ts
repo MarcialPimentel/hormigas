@@ -3,7 +3,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { FastifyInstance } from 'fastify';
 import { SITE_SPOTS, WINDFALLS, groupCargo, windfallPile, type WindfallKind } from '@hormigas/shared';
 import { getPool } from '../src/db';
-import { setupTest, teardownTest, newPlayer, setColony, setPlayer, type Client } from './helpers';
+import { setupTest, teardownTest, newPlayer, newPlayerBeside, setColony, setPlayer, type Client } from './helpers';
 
 let app: FastifyInstance;
 let clock: Awaited<ReturnType<typeof setupTest>>['clock'];
@@ -44,7 +44,7 @@ async function dropNow(patch: number, opts: { kind?: WindfallKind; guards?: Reco
 beforeAll(async () => {
   ({ app, clock } = await setupTest());
   a = await newPlayer(app, 'alpha');
-  b = await newPlayer(app, 'beta');
+  b = await newPlayerBeside(app, 'beta', a); // a patch-mate, to raid and scout next door
   const sa = await a.get('/api/state');
   ca = sa.colony;
   alpha = sa.player.id;

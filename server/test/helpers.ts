@@ -6,6 +6,7 @@ import { setClock, resetClock } from '../src/clock';
 import { clearWorldCache } from '../src/world';
 import { clearBoostCache } from '../src/game/boost';
 import { processDueEvents } from '../src/events';
+import { TERRAIN, STARTING_TERRAIN, SITE_SPOTS, WORLD, wildThingsAround } from '@hormigas/shared';
 
 export const TEST_DB = process.env.TEST_DATABASE_URL ?? 'postgres://hormigas:hormigas@localhost:5432/hormigas_test';
 
@@ -57,6 +58,35 @@ export async function newPlayer(app: FastifyInstance, username: string): Promise
     post: (url, body) => call('POST', url, body ?? {}),
     patch: (url, body) => call('PATCH', url, body ?? {}),
   };
+}
+
+/**
+ * Register a player and move their first colony onto a free Grassland spot in `host`'s patch.
+ * Real sign-ups never share a patch (docs/11-world.md); many tests still want two players side by side.
+ * Wild things that only the newcomer's real patch brought are removed, so the area looks as if they spawned here.
+ */
+export async function newPlayerBeside(app: FastifyInstance, username: string, host: Client): Promise<Client> {
+  const at = (await host.get('/api/state')).colony.coords;
+  const who = await newPlayer(app, username);
+  const mine = (await who.get('/api/state')).colony;
+  const pool = getPool();
+  const taken = (await pool.query('SELECT spot FROM colonies WHERE region = $1 AND patch = $2', [at.region, at.patch])).rows.map((r) => r.spot);
+  const spot = TERRAIN[STARTING_TERRAIN].spots.find((s) => !taken.includes(s));
+  if (spot === undefined) throw new Error(`no free Grassland spot in ${at.region}:${at.patch}`);
+  await pool.query('UPDATE colonies SET region = $2, patch = $3, spot = $4 WHERE id = $1', [mine.id, at.region, at.patch, spot]);
+  // keep only the wild things some player's patch calls for
+  const homes = (await pool.query('SELECT DISTINCT c.region, c.patch FROM colonies c JOIN players p ON p.id = c.player_id WHERE NOT p.is_npc')).rows;
+  const wanted = new Set(homes.flatMap((h) => wildThingsAround(h.region, h.patch).map((w) => `${w.region}:${w.patch}:${w.thing}`)));
+  const thingAt = (spot: number) =>
+    spot <= WORLD.spotsPerPatch ? 'nest' : (Object.entries(SITE_SPOTS).find(([, s]) => s === spot)?.[0] ?? 'other');
+  const wild = (await pool.query('SELECT id, region, patch, spot FROM colonies WHERE npc IS NOT NULL')).rows;
+  const extra = wild.filter((c) => !wanted.has(`${c.region}:${c.patch}:${thingAt(c.spot)}`)).map((c) => c.id);
+  if (extra.length) {
+    await pool.query("DELETE FROM events WHERE (payload->>'colonyId')::int = ANY($1)", [extra]);
+    await pool.query('DELETE FROM known_colonies WHERE colony_id = ANY($1)', [extra]);
+    await pool.query('DELETE FROM colonies WHERE id = ANY($1)', [extra]);
+  }
+  return who;
 }
 
 /** Directly set colony fields for test setup. */

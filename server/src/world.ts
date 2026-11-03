@@ -1,4 +1,4 @@
-import { WORLD, TERRAIN, STARTING_TERRAIN, INACTIVE_AFTER_MS, randInt, createRng, randomSeed } from '@hormigas/shared';
+import { WORLD, TERRAIN, STARTING_TERRAIN, INACTIVE_AFTER_MS, randInt, createRng, randomSeed, distance } from '@hormigas/shared';
 import type { Q } from './db';
 import { config } from './config';
 import { now } from './clock';
@@ -36,12 +36,12 @@ export function clearWorldCache() {
 }
 
 /**
- * Pick a starting spot (docs/11-world.md, "Starting placement"): players should meet.
- * 1. Join a patch where active players live and a Grassland spot is free, up to `playersPerPatch` players.
- *    Emptiest first, so lone players get neighbours first; then the patch with the weakest leader
- *    (a newcomer faces a smaller wild nest), then world order.
- * 2. Otherwise open the next empty patch after the newest player's home, so new patches sit side by side.
- * 3. Otherwise any patch with a free Grassland spot.
+ * Pick a starting spot (docs/11-world.md, "Starting placement"): neighbours, but never patch-mates.
+ * Sharing a patch made new players fight over the same wild nest, herd and forage.
+ * 1. A patch with no players (wild things are fine) as close as possible to an active player,
+ *    by real travel distance. Ties go to world order.
+ * 2. With no active players, the next patch without players after the newest player's home.
+ * 3. Only when every patch has players: any patch with a free Grassland spot.
  */
 export async function pickStartingSpot(q: Q, worldId: number): Promise<{ region: number; patch: number; spot: number; baseSpace: number }> {
   const rng = createRng(randomSeed());
@@ -56,8 +56,7 @@ export async function pickStartingSpot(q: Q, worldId: number): Promise<{ region:
   const r = await q.query(
     `SELECT c.region, c.patch, array_agg(c.spot) AS spots,
             count(DISTINCT c.player_id) FILTER (WHERE NOT p.is_npc)::int AS players,
-            count(DISTINCT c.player_id) FILTER (WHERE NOT p.is_npc AND p.last_active > $2)::int AS active,
-            coalesce(max(p.points_total) FILTER (WHERE NOT p.is_npc), 0)::int AS top
+            count(DISTINCT c.player_id) FILTER (WHERE NOT p.is_npc AND p.last_active > $2)::int AS active
        FROM colonies c JOIN players p ON p.id = c.player_id
       WHERE c.world_id = $1 GROUP BY c.region, c.patch`,
     [worldId, now() - INACTIVE_AFTER_MS],
@@ -67,19 +66,30 @@ export async function pickStartingSpot(q: Q, worldId: number): Promise<{ region:
     patch: x.patch as number,
     players: x.players as number,
     active: x.active as number,
-    top: x.top as number,
     free: startSpots.filter((s) => !(x.spots as number[]).includes(s)),
   }));
-
-  // 1. join players
-  const joinable = patches
-    .filter((p) => p.active > 0 && p.players < WORLD.playersPerPatch && p.free.length > 0)
-    .sort((a, b) => a.players - b.players || a.top - b.top || idx(a.region, a.patch) - idx(b.region, b.patch));
-  if (joinable[0]) return place(joinable[0].region, joinable[0].patch, joinable[0].free);
-
-  // 2. a fresh patch beside the newest player
   // patches holding only wild things (nests, herds, mounds, dens: docs/24-npcs.md) are still open for players
   const used = new Set(patches.filter((p) => p.players > 0).map((p) => idx(p.region, p.patch)));
+  const freeIn = (i: number) => {
+    const p = patches.find((x) => idx(x.region, x.patch) === i);
+    return p ? p.free : startSpots;
+  };
+
+  // 1. the empty patch closest to an active player
+  const homes = patches.filter((p) => p.active > 0).map((p) => ({ region: p.region, patch: p.patch, spot: 1 }));
+  if (homes.length) {
+    let best = 0;
+    let bestD = Infinity;
+    for (let i = 1; i <= total; i++) {
+      if (used.has(i) || freeIn(i).length === 0) continue;
+      const here = { ...at(i), spot: 1 };
+      const d = Math.min(...homes.map((h) => distance(h, here)));
+      if (d < bestD) [best, bestD] = [i, d];
+    }
+    if (best) return place(at(best).region, at(best).patch, freeIn(best));
+  }
+
+  // 2. a fresh patch beside the newest player
   const newest = await q.query(
     `SELECT c.region, c.patch FROM colonies c JOIN players p ON p.id = c.player_id
       WHERE c.world_id = $1 AND NOT p.is_npc ORDER BY p.created_at DESC, c.id ASC LIMIT 1`,
@@ -88,10 +98,10 @@ export async function pickStartingSpot(q: Q, worldId: number): Promise<{ region:
   const from = newest.rows[0] ? idx(newest.rows[0].region, newest.rows[0].patch) : 0;
   for (let k = 1; k <= total; k++) {
     const i = ((from + k - 1) % total) + 1;
-    if (!used.has(i)) return place(at(i).region, at(i).patch, startSpots);
+    if (!used.has(i) && freeIn(i).length > 0) return place(at(i).region, at(i).patch, freeIn(i));
   }
 
-  // 3. anywhere with room
+  // 3. every patch has players: anywhere with room
   const any = patches.find((p) => p.free.length > 0);
   if (any) return place(any.region, any.patch, any.free);
   throw new GameError('world_full', 'The world is full. Please try again later.', 503);

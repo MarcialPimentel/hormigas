@@ -5,7 +5,7 @@ import { FORMULAS, HERDS, SITE_SPOTS, WILD_SCENTS, groupCargo, herdNectarPerHour
 import { getPool, tx } from '../src/db';
 import { ensureWildNests } from '../src/game/nests';
 import { explore } from '../src/game/fog';
-import { setupTest, teardownTest, newPlayer, setColony, setPlayer, calmWildNests, knowAll, exploreAll, type Client } from './helpers';
+import { setupTest, teardownTest, newPlayer, newPlayerBeside, setColony, setPlayer, calmWildNests, knowAll, exploreAll, type Client } from './helpers';
 
 let app: FastifyInstance;
 let clock: Awaited<ReturnType<typeof setupTest>>['clock'];
@@ -25,7 +25,7 @@ const herdAt = (patch: number) => at(patch, SITE_SPOTS.herd);
 beforeAll(async () => {
   ({ app, clock } = await setupTest());
   a = await newPlayer(app, 'alpha');
-  b = await newPlayer(app, 'beta');
+  b = await newPlayerBeside(app, 'beta', a); // a patch-mate, to raid and scout next door
   const sa = await a.get('/api/state');
   ca = sa.colony;
   alpha = sa.player.id;
