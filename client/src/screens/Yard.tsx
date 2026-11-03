@@ -342,7 +342,7 @@ export function Yard({ go }: { go: Nav }) {
                 <div className="row-actions">
                   <button type="button" className="btn primary small" onClick={() => setDeploy({ type: 'transport', target: sel ?? colony.coords })}>Send ants…</button>
                 </div>
-                <UnderWay onFocus={(_, at) => sceneRef.current?.flyTo(at, 'patch')} go={go} />
+                <UnderWay onFocus={(_, at) => sceneRef.current?.flyTo(at, 'patch')} go={panelNav} />
               </div>
             )}
           </div>
