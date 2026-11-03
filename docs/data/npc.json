@@ -75,7 +75,7 @@
     "termite": {
       "kind": "mound", "name": "Termites", "nest": "Termite Mound", "terrains": [],
       "_note": "A termite mound (docs/24-npcs.md): a rich, heavily defended mid-game target on its own wild site. Its tier follows the area's strongest active player (minPoints), never drops. Regrows slowly and never raids.",
-      "style": "A fortress of armoured soldiers and walls, packed with chewed wood. Bring a big army of Major Soldiers and plenty of carriers.",
+      "style": "Armoured fortress: soft Termite Workers and armoured Termite Soldiers behind walls and pits, packed with chewed wood. The armour shrugs off small bites, so Minor Soldiers, Acid Sprayers and Trap-jaw Ants die in droves. Send heavy hitters (Major Soldiers, Slave-makers, Supermajors, Rhinoceros Beetles) and plenty of carriers. A few Bullet Ants or Assassin Bugs can't get through so many.",
       "regrowHours": 72,
       "raids": false,
       "levels": [

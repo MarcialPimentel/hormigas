@@ -384,6 +384,8 @@ export function SendMission({ type, setType, target, setTarget, onClose, onSent 
           ))}
         </div>
         <p className="muted small">{MISSION_HELP[type]}</p>
+        {/* a scouted wild nest, mound or den: its field-guide line, what it's strong and weak against (docs/data/npc.json style) */}
+        {type === 'raid' && targetSpot?.colony?.wild?.style && <p className="small counter-hint">{targetSpot.colony.wild.style}</p>}
 
         <div className="target-notes">
           {type === 'scout' && target.spot === WILDS_SPOT && (
