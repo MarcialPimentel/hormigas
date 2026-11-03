@@ -62,8 +62,9 @@
     "baseSeconds": 10,
     "timeScale": 3500,
     "speedPct": "10..100",
-    "nectarFuel": "sum(unitCount * nectarUse) * distance / fuelDivisor * (speedPct/100 + 1)^2",
-    "fuelDivisor": 35000
+    "_fuelNote": "Fuel ignores speed (Marz, 2 Nov 2026): the speed slider and Return at only change when the party gets home. The divisor was 35000 with a (speedPct/100 + 1)^2 speed factor (4x at full speed); 4375 is twice that full-speed price, to keep up with gathering x2 (docs/03-economy.md#mission-fuel).",
+    "nectarFuel": "sum(unitCount * nectarUse) * distance / fuelDivisor",
+    "fuelDivisor": 4375
   },
   "scouting": {
     "detectionFormula": "min(1, detectionPerUnitPerScout * defenderUnits * scouts * detectionScentBase^(theirScentReading - yourScentReading))",

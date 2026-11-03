@@ -40,8 +40,20 @@ The tiniest leafcutter workers weed and tend the fungus garden. Each Gardener Mi
 - Compute-don't-tick: production uses the minims at home when the colony was last settled, and minims hatching in the Brood Hall while the player is away are paid from the moment they hatch (`syncColony`), so away time is never paid at the wrong rate. A test checks one big jump equals many small steps.
 
 ## Mission fuel
-- Every mission consumes Nectar based on distance, unit count and unit type.
+- Every mission consumes Nectar based on distance, unit count and unit type: `sum(count × nectarUse) × distance ÷ 4,375`, paid once when the party leaves (`formulas.json` → `travel`).
+- **Speed doesn't change it** (Marz, 2 Nov 2026). The speed slider and Return at… only decide when the party gets home ([09-missions](09-missions.md#army-saving-the-core-skill)).
 - Makes Nectar strategically important and turns distance into a real cost.
+- **Why the change:** fuel used to be `÷ 35,000 × (speed% + 1)²`, so 4× at full speed and 1.21× at 10%. It never followed gathering ×2 (30 Oct 2026), and a raid in your own patch cost 10–60 minutes of Nectar. Slowing down saved at most 70% of that small cost for a trip 10× as long, so the choice had no bearing. The new divisor is twice the old full-speed price.
+- **What it costs now** (Aphid Pasture 8 makes about 340 Nectar an hour, Pasture 10 about 520):
+
+| Mission | Fuel |
+|---|---|
+| 8 Minor Soldiers to the wild nest next door | ~37 |
+| 10 Workers foraging your own wilds | ~23 |
+| 30 Majors + 20 Acid Sprayers, raid in your patch | ~650 |
+| 30 Majors, raid in the next patch | ~1,440 |
+
+- If Nectar runs short for raiders, larval digestion (below) turns surplus Protein, much of it from battles, into Nectar. Tune `fuelDivisor` from playtest.
 
 ## Larval digestion (Protein → Nectar)
 Adult ants can't swallow solid food. Workers feed protein to the larvae, which digest it and feed liquid food back to the colony. In Hormigas that is the Brood Hall's exchange:
