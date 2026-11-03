@@ -4,6 +4,7 @@
 //    saves every frame. Captions are drawn on top, in the game's own fonts.
 // 3. The game's march is rendered offline to fit the edit (music.mjs), and ffmpeg puts it all together.
 // Needs Docker's Postgres running (docker compose -p hormigas up -d) and nothing else on port 3100.
+// --vertical makes the 15-second 9:16 cut for phones and social posts instead (hormigas_trailer_vertical_1080x1920.mp4).
 
 import { execFileSync } from 'node:child_process';
 import { mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
@@ -13,11 +14,13 @@ import { HIDE, LOCAL } from './shots.mjs';
 import { renderMusic } from './music.mjs';
 import { prepareWorld } from './world.mjs';
 
-const W = 1920, H = 1080;
-const TMP = join(HERE, 'cache', 'trailer');
+const args = process.argv.slice(2);
+const V = args.includes('--vertical'); // the 15-second 9:16 cut
+const W = V ? 1080 : 1920, H = V ? 1920 : 1080;
+const TMP = join(HERE, 'cache', V ? 'vertical' : 'trailer');
 mkdirSync(TMP, { recursive: true });
 for (const f of readdirSync(TMP)) rmSync(join(TMP, f), { recursive: true, force: true }); // last run's frames
-const only = process.argv[2]; // capture a single shot by name, to check it (no edit)
+const only = args.find((a) => !a.startsWith('--')); // capture a single shot by name, to check it (no edit)
 
 const world = await prepareWorld();
 const { server, url } = await startClient();
@@ -26,7 +29,9 @@ const browser = await launch();
 // ---------- the page ----------
 const CAPTION_CSS = `#__cap{position:fixed;left:50%;bottom:8.5%;transform:translateX(-50%);z-index:9999;font:700 54px/1.1 'Bricolage Grotesque',sans-serif;
 letter-spacing:-.01em;color:#f6ecd6;background:rgba(35,26,20,.86);border-left:10px solid #e8b23a;border-radius:10px;padding:16px 34px 20px;white-space:nowrap;
-box-shadow:0 10px 40px rgba(0,0,0,.35);transition:none}#__cap:empty{display:none}`;
+box-shadow:0 10px 40px rgba(0,0,0,.35);transition:none}#__cap:empty{display:none}`
+  // portrait: bigger, wrapping evenly, near the top (clear of the action, and below the strip phone apps cover)
+  + (V ? `#__cap{top:12%;bottom:auto;font-size:64px;white-space:normal;text-wrap:balance;width:max-content;max-width:84%;text-align:center;padding:18px 36px 24px}` : '');
 const page = await openGame(browser, url, { w: W, h: H, local: LOCAL });
 await page.evaluate(({ hide, css }) => {
   window.__TRAILER_HIDE = hide;
@@ -98,10 +103,12 @@ const shots = {};
 const want = (n) => !only || only === n;
 
 // columns marching out of Red Hill, seen from just above the patch
-if (want('march')) shots.march = await shot('march', 4.5, {
-  cam: (k) => yardCam(lerpObj({ x: home.x + 22, z: home.z + 8, yaw: -0.55, dist: 140 }, { x: home.x + 34, z: home.z + 12, yaw: -0.3, dist: 95 }, soft(k))),
-  caps: [[0.4, 4.5, 'Send columns out to forage, herd and raid']],
+if (want('march')) shots.march = await shot('march', V ? 2.5 : 4.5, {
+  cam: (k) => yardCam(lerpObj({ x: home.x + 22, z: home.z + 8, yaw: -0.55, dist: V ? 125 : 140 }, { x: home.x + 34, z: home.z + 12, yaw: -0.3, dist: V ? 100 : 95 }, soft(k))),
+  caps: [[V ? 0.2 : 0.4, 99, V ? 'Send columns out to forage and raid' : 'Send columns out to forage, herd and raid']],
 });
+// the same last frame without its caption: the background of the vertical cut's cards
+if (V && want('march')) await page.screenshot({ path: join(TMP, 'wide.jpg'), type: 'jpeg', quality: 93 });
 // cold open: at ant height beside the mound
 if (want('open')) {
   await extraCss('.yard-labels{display:none!important}');
@@ -117,10 +124,10 @@ if (want('open')) {
   }, { a: world.home.coords, b: to });
   const yaw = Math.atan2(-d.z, d.x);
   const at = (s) => ({ x: home.x + d.x * s, z: home.z + d.z * s });
-  shots.open = await shot('open', 4, {
+  shots.open = await shot('open', V ? 2.5 : 4, {
     pre: 3,
     cam: (k) => yardCam(lerpObj({ ...at(12), yaw: yaw - 0.75, dist: 13 }, { ...at(14), yaw: yaw - 0.35, dist: 9 }, soft(k))),
-    caps: [[1.2, 4, 'Grow an ant kingdom from a single queen']],
+    caps: [[V ? 0.5 : 1.2, 99, 'Grow an ant kingdom from a single queen']],
   });
   await extraCss('');
 }
@@ -134,31 +141,31 @@ if (want('battle')) {
   if (!ok) throw new Error('no battle report to replay');
   await tick(page, 1 / FPS, 40); // the camera's flight in, uncaptured
   await extraCss('.yard-labels{display:none!important}');
-  shots.battle = await shot('battle', 7, { pre: 0.2, caps: [[0.3, 7, 'Raid your rivals. Haul home their dead.']] });
+  shots.battle = await shot('battle', V ? 3.5 : 7, { pre: 0.2, caps: [[0.3, 99, 'Raid your rivals. Haul home their dead.']] });
   await extraCss('');
   await page.evaluate(() => document.querySelector('.yard-battle .btn.ghost')?.click());
 }
 // from the patch out to the whole yard
-if (want('pullback')) shots.pullback = await shot('pullback', 5, {
+if (!V && want('pullback')) shots.pullback = await shot('pullback', 5, {
   cam: (k) => yardCam(lerpObj({ x: home.x + 40, z: home.z + 20, yaw: -0.5, dist: 170 }, { x: top.x, z: top.z, yaw: 0, dist: top.dist }, ease(k))),
   caps: [[1.6, 5, 'One living world that grows while you’re away']],
 });
 // the same last frame without its caption: the background of the title and end cards
-if (want('pullback')) await page.screenshot({ path: join(TMP, 'wide.jpg'), type: 'jpeg', quality: 93 });
+if (!V && want('pullback')) await page.screenshot({ path: join(TMP, 'wide.jpg'), type: 'jpeg', quality: 93 });
 // inside the nest: the slab, then a chamber up close
 if (want('nest') || want('nestclose')) {
   await page.evaluate(() => document.querySelector('.yard-rail button').click());
   await until(page, () => !!window.__nest3d);
   await extraCss('.nest-motion,.n3-hint,.n3-zoom,.n3-fit{display:none!important}');
   await settle(page, 3);
-  if (want('nest')) shots.nest = await shot('nest', 4, {
+  if (!V && want('nest')) shots.nest = await shot('nest', 4, {
     cam: (k) => nestCam({ ...lerpObj({ z: 1, x: 0, y: 0, yaw: -0.3 }, { z: 1.25, x: 0, y: -1, yaw: 0.3 }, soft(k), ['z']), pitch: 0.16 }),
     caps: [[0.5, 4, 'Dig chambers. Raise the castes.']],
   });
   await extraCss('.nest-motion,.n3-hint,.n3-zoom,.n3-fit,.n3-labels{display:none!important}');
-  if (want('nestclose')) shots.nestclose = await shot('nestclose', 3.5, {
+  if (want('nestclose')) shots.nestclose = await shot('nestclose', V ? 2.5 : 3.5, {
     cam: (k) => nestCam({ ...lerpObj({ z: 2.6, x: -9, y: 4, yaw: 0.25 }, { z: 3.3, x: -8, y: 3.5, yaw: 0.05 }, soft(k), ['z']), pitch: 0.16 }),
-    caps: [[0.3, 3.5, 'Every ant at work, while you’re away']],
+    caps: [[0.3, 99, V ? 'Dig chambers. Raise the castes.' : 'Every ant at work, while you’re away']],
   });
 }
 await page.close();
@@ -176,11 +183,11 @@ if (only) {
 <style>html,body{margin:0;width:${W}px;height:${H}px;overflow:hidden;background:#231a14}
 .bg{position:absolute;inset:-40px;background:url(data:image/jpeg;base64,${bg}) center/cover;filter:blur(${blur}px) saturate(.85) brightness(.62)}
 .c{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:28px}
-.logo{display:flex;align-items:center;gap:34px}.logo svg{width:150px;height:150px;filter:drop-shadow(0 12px 30px rgba(0,0,0,.45))}
-.word{font:800 190px/1 'Bricolage Grotesque';letter-spacing:-.035em;color:#e8b23a;text-shadow:0 10px 40px rgba(0,0,0,.5)}
-.tag{font:700 46px/1.2 'Bricolage Grotesque';color:#f6ecd6;text-shadow:0 4px 18px rgba(0,0,0,.6)}
+.logo{display:flex;align-items:center;gap:34px;flex-direction:${V ? 'column' : 'row'}}.logo svg{width:${V ? 220 : 150}px;height:${V ? 220 : 150}px;filter:drop-shadow(0 12px 30px rgba(0,0,0,.45))}
+.word{font:800 ${V ? 200 : 190}px/1 'Bricolage Grotesque';letter-spacing:-.035em;color:#e8b23a;text-shadow:0 10px 40px rgba(0,0,0,.5)}
+.tag{font:700 ${V ? 60 : 46}px/1.2 'Bricolage Grotesque';color:#f6ecd6;max-width:86%;text-align:center;text-shadow:0 4px 18px rgba(0,0,0,.6)}
 .lines{display:flex;flex-direction:column;align-items:center;gap:16px;margin-top:18px}
-.lines span{font:700 44px/1.2 'Bricolage Grotesque';color:#f6ecd6;background:rgba(35,26,20,.82);border-left:9px solid #e8b23a;border-radius:10px;padding:10px 30px 14px}
+.lines span{font:700 ${V ? 56 : 44}px/1.2 'Bricolage Grotesque';color:#f6ecd6;background:rgba(35,26,20,.82);border-left:9px solid #e8b23a;border-radius:10px;padding:10px 30px 14px}
 .lines span.url{color:#231a14;background:#e8b23a;border-left-color:#f6ecd6}</style>
 <div class="bg"></div><div class="c"><div class="logo">${mark}<div class="word">Hormigas</div></div>${lines}</div>`);
     await p.evaluate(() => document.fonts.ready);
@@ -189,12 +196,18 @@ if (only) {
     await p.close();
   };
   await card(join(TMP, 'title.png'), { blur: 6, lines: '<div class="tag">A persistent strategy game about an ant colony</div>' });
-  await card(join(TMP, 'end.png'), { blur: 14, lines: '<div class="lines"><span>Free in your browser. No pay-to-win.</span><span class="url">hormigas.marz.gg</span></div>' });
+  await card(join(TMP, 'end.png'), { blur: 14, lines: V
+    ? '<div class="lines"><span>Free in your browser.</span><span>No pay-to-win.</span><span class="url">hormigas.marz.gg</span></div>'
+    : '<div class="lines"><span>Free in your browser. No pay-to-win.</span><span class="url">hormigas.marz.gg</span></div>' });
 
   // ---------- the edit ----------
-  const seq = [
-    { v: shots.open }, { still: join(TMP, 'title.png'), secs: 2.6 }, { v: shots.nest }, { v: shots.nestclose },
-    { v: shots.march }, { v: shots.battle }, { v: shots.pullback }, { still: join(TMP, 'end.png'), secs: 4.5 },
+  // cue: where the music changes, relative to that piece's start
+  const seq = V ? [
+    { v: shots.open, cue: [0, 'idle'] }, { still: join(TMP, 'title.png'), secs: 1.5 }, { v: shots.nestclose, cue: [-0.3, 'march'] },
+    { v: shots.march }, { v: shots.battle, cue: [-0.4, 'tense'] }, { still: join(TMP, 'end.png'), secs: 2.5, cue: [-0.2, 'march'] },
+  ] : [
+    { v: shots.open, cue: [0, 'idle'] }, { still: join(TMP, 'title.png'), secs: 2.6 }, { v: shots.nest, cue: [-0.5, 'march'] }, { v: shots.nestclose },
+    { v: shots.march }, { v: shots.battle, cue: [-0.6, 'tense'] }, { v: shots.pullback, cue: [-0.3, 'march'] }, { still: join(TMP, 'end.png'), secs: 4.5 },
   ];
   const ff = (...args) => execFileSync('ffmpeg', ['-loglevel', 'error', '-y', ...args], { stdio: 'inherit' });
   const segs = [];
@@ -206,7 +219,8 @@ if (only) {
     starts.push(at);
     at += secs;
     const vin = s.v ? ['-framerate', String(FPS), '-i', join(s.v.dir, '%05d.jpg')] : ['-loop', '1', '-framerate', String(FPS), '-t', String(secs), '-i', s.still];
-    const vf = s.still ? `fade=t=in:d=0.35,fade=t=out:st=${secs - 0.4}:d=0.4,format=yuv420p` : i === 0 ? 'fade=t=in:d=0.6,format=yuv420p' : 'format=yuv420p';
+    const fin = V ? 0.25 : 0.35, fout = V ? 0.3 : 0.4;
+    const vf = s.still ? `fade=t=in:d=${fin},fade=t=out:st=${secs - fout}:d=${fout},format=yuv420p` : i === 0 ? `fade=t=in:d=${V ? 0.3 : 0.6},format=yuv420p` : 'format=yuv420p';
     ff(...vin, '-vf', vf, '-c:v', 'libx264', '-preset', 'slow', '-crf', '18', '-r', String(FPS), '-pix_fmt', 'yuv420p', out);
     segs.push(out);
   });
@@ -215,14 +229,16 @@ if (only) {
 
   // music that follows the edit: quiet under the open and the title, marching from the nest on, tense for the raid
   const total = at;
-  await renderMusic(browser, url, [[0, 'idle'], [starts[2] - 0.5, 'march'], [starts[5] - 0.6, 'tense'], [starts[6] - 0.3, 'march']], total + 1, join(TMP, 'music.wav'));
+  const cues = seq.flatMap((s, i) => (s.cue ? [[Math.max(0, starts[i] + s.cue[0]), s.cue[1]]] : []));
+  await renderMusic(browser, url, cues, total + 1, join(TMP, 'music.wav'));
+  const name = V ? 'hormigas_trailer_vertical_1080x1920' : 'hormigas_trailer_1080p30';
   mkdirSync(OUT, { recursive: true });
   ff('-i', join(TMP, 'video.mp4'), '-i', join(TMP, 'music.wav'),
-    '-af', `loudnorm=I=-16:TP=-1.5:LRA=11,afade=t=out:st=${total - 2.5}:d=2.5`, '-c:v', 'copy', '-c:a', 'aac', '-b:a', '192k', '-ar', '48000',
-    '-t', String(total), '-movflags', '+faststart', join(OUT, 'hormigas_trailer_1080p30.mp4'));
+    '-af', `loudnorm=I=-16:TP=-1.5:LRA=11,afade=t=out:st=${total - (V ? 1.5 : 2.5)}:d=${V ? 1.5 : 2.5}`, '-c:v', 'copy', '-c:a', 'aac', '-b:a', '192k', '-ar', '48000',
+    '-t', String(total), '-movflags', '+faststart', join(OUT, `${name}.mp4`));
   // a poster frame for the page that embeds it
-  ff('-i', join(TMP, 'title.png'), '-q:v', '3', join(OUT, 'hormigas_trailer_poster.jpg'));
-  console.log(`wrote the trailer: ${total.toFixed(1)} s`);
+  ff('-i', join(TMP, 'title.png'), '-q:v', '3', join(OUT, V ? `${name}_poster.jpg` : 'hormigas_trailer_poster.jpg'));
+  console.log(`wrote ${name}: ${total.toFixed(1)} s`);
 }
 
 await browser.close();

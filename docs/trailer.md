@@ -17,6 +17,21 @@ A ~35-second trailer for Hormigas, captured from the real game: `art/trailer/hor
 | 7 | Pull back from the patch to the whole yard | 5 | One living world that grows while you're away |
 | 8 | End card | 4.5 | Free in your browser. No pay-to-win. · hormigas.marz.gg |
 
+### The 15-second vertical cut
+
+For phones and social posts (TikTok, Reels, Shorts): `art/trailer/hormigas_trailer_vertical_1080x1920.mp4` (1080×1920, 9:16), with a poster `hormigas_trailer_vertical_1080x1920_poster.jpg`. It's captured fresh in portrait (not cropped from the wide trailer) from the same world, with the same music and fewer, shorter shots:
+
+| # | Shot | Seconds | Caption |
+|---|---|---|---|
+| 1 | Ant height beside Red Hill, a column streaming out | 2.5 | Grow an ant kingdom from a single queen |
+| 2 | Title card, the mark above the wordmark | 1.5 | |
+| 3 | Close on the nest's upper chambers | 2.5 | Dig chambers. Raise the castes. |
+| 4 | Columns marching out across the patch | 2.5 | Send columns out to forage and raid |
+| 5 | The raid on the neighbour | 3.5 | Raid your rivals. Haul home their dead. |
+| 6 | End card | 2.5 | Free in your browser. No pay-to-win. · hormigas.marz.gg |
+
+Captions sit near the top, clear of the action and of the bottom fifth that phone apps cover with their own buttons and text.
+
 Captions carry the pitch with the sound off (most sites autoplay muted), in the game's own fonts and colours. They only claim what the game does today, and lean on the pillars: the colony lives while you're away (1), fair by design (3), the ant fantasy is the mechanics (4).
 
 **Music:** the march from [sound.md](sound.md), rendered offline to follow the edit: the quiet "idle" march under the open and title, the full "march" from the nest on, "tense" for the raid, back to "march" for the pull-back, faded out under the end card. It's seeded, so every render plays the same tune.
@@ -33,7 +48,9 @@ Captions carry the pitch with the sound off (most sites autoplay muted), in the 
 
 Two tiny game-code hooks make the camera drivable, both **development builds only** (stripped from production, like the music's `__march` hook): `window.__yard` in the Whole Yard scene and `window.__nest3d` in the 3D nest.
 
-`node tools/trailer/capture.mjs <shot>` captures just one shot (`open`, `march`, `battle`, `pullback`, `nest`, `nestclose`) into `tools/trailer/cache/trailer/<shot>/` without editing, to check a change quickly.
+`npm run trailer -- --vertical` makes the vertical cut instead (frames in `tools/trailer/cache/vertical/`).
+
+`node tools/trailer/capture.mjs <shot>` (add `--vertical` for portrait) captures just one shot (`open`, `march`, `battle`, `pullback`, `nest`, `nestclose`) into `tools/trailer/cache/trailer/<shot>/` without editing, to check a change quickly.
 
 ## Re-rendering
 
@@ -42,5 +59,5 @@ Re-render after art changes the trailer shows (the Whole Yard, the 3D nest, the 
 The file is about 45 MB, committed directly like Papercut's. If re-renders grow the repo too much, move it to a GitHub release.
 
 ## Open Questions
-- Where will it be shown first (the login page, the itch.io page, Marz's site, social posts)? A 15-second cut for social posts is a quick follow-up from the same frames.
+- Where will it be shown first (the login page, the itch.io page, Marz's site, social posts)?
 - Should the login page embed it?
