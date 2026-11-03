@@ -67,3 +67,24 @@ A new combat *mechanic* (like the Soil Wall's shield or the Narrow Tunnel's chok
 - **Migrations run on startup against the live world.** Write them to be safe on existing data. Never drop or rewrite player data without a plan, and back up first (`./backup.sh` on the server).
 - World speed is fixed when a world is created (production ×1). Changing `WORLD_SPEED` does nothing to an existing world.
 - **Never commit secrets or private infrastructure details:** no IP addresses, passwords, `.env` files, private keys or key file paths. GitHub secrets hold `DROPLET_HOST` and `DROPLET_SSH_KEY`; real passwords live only in the server's `.env`. Marz keeps the private details (server address, folders, users, DNS, SSH keys, access steps) in git-ignored notes (`CLAUDE.local.md` § Hosting (private)) and shares them in sessions that need server access.
+
+## Ship and build notes
+
+_Read by the `ship`, `next-build` and `prod-run` skills, which keep no per-game notes of their own. Keep this section current when the deploy or build process changes._
+
+### Shipping (merge, deploy, live check)
+
+- **Default branch:** `main`. **Merge style:** squash.
+- **Deploy:** "CI" (`ci.yml`) runs on push to `main`; when it succeeds, "Deploy" (`deploy.yml`, a `workflow_run` trigger) builds the Docker image, pushes it to GHCR and restarts the app on the DigitalOcean droplet. So wait for CI on the merge commit, then for the Deploy run that follows it (`gh run list --workflow deploy.yml --limit 3`, pick the one whose `headSha` is the merge commit).
+- **Live check:** `curl -s https://hormigas.marz.gg/api/health` must return `{"ok":true}`. The health endpoint has **no build number**, so the proof that the new code is live is: the Deploy run for the merge commit succeeded **and** health is ok afterwards. Say so in the report ("deploy succeeded and the server is healthy; the server doesn't report its build, so I can't confirm the exact version from outside").
+- **Playtest link:** https://hormigas.marz.gg
+
+### Planning and building the next build
+
+- **Where the next build comes from:** issues labelled `build`, titled "Build N: …" (the lowest-numbered open one that hasn't shipped). Each build issue says how it works, e.g. "starts with the screen audit (sub-issue); Marz picks which items make the build". Other candidates are issues labelled `status: planned` or `status: accepted`; `status: idea` / `discussing` / `parked` need Marz's yes first, and never build `status: rejected`. Build issues have sub-issues holding the actual items (list them with the `sub_issues` API). `docs/15-roadmap.md`'s "Suggested build order" and `docs/16-milestones.md` are the historical MVP plan (M1–M9, all built); use them only for background.
+- **Playtest feedback** lives in the game's admin Feedback screen (in the database), which you can't read. Ask Marz to check it under "Your side".
+- **Check:** past build PRs closed the sub-issues but not the build issue itself (#28, #29 stayed open after #36, #37). A build issue whose sub-issues are all closed and whose PR merged is done: offer to close it. New build PRs must say `Closes #<build issue>` too.
+- **Branch / PR:** `build/<n>-<slug>`, one PR for the build (it ships as a single deploy), one commit per issue, `Closes #N` for the build issue and each included issue. PR title `Build N: <name>`. Squash-merged.
+- **Before the PR:** `npm run typecheck` and `npm test` (needs the database: `docker compose up -d`). For anything touching pacing, timers or the economy, also `npm run sim`.
+- **Docs in the same PR:** the matching numbered design doc in `docs/` (e.g. `03-economy.md`), and the build issue's test checklist written out in the PR.
+- **Watch for:** never commit secrets or server details (no IPs, `.env`, key paths).
