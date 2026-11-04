@@ -5,7 +5,7 @@
 import * as THREE from 'three';
 import data from './aphid-herd.json';
 import { toonBands } from '../nest3d/ants3d';
-import { inkPropMaterial, mergeParts, toonPropMaterial, type PropPart, type VertexBend } from './toonProp';
+import { inkPropMaterial, mergeParts, toonPropMaterial, type PropPart, type VertexBend } from './toonModel';
 
 type Part = PropPart & { two: boolean };
 type Perch = { p: number[]; n: number[] };

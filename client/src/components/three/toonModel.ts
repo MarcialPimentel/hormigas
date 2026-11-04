@@ -1,7 +1,13 @@
-// Props drawn like the ants (the Meshy grasshopper and aphid herd): flat parts coloured per vertex, three toon
-// bands, a gloss spot, the warm rim and a dark ink outline. Each prop's data file is a list of parts made in Blender.
+// Meshy models drawn like the ants: three flat toon bands, a gloss spot, the warm rim and a dark ink outline.
+// Each model was made with Meshy and coloured per part in Blender (art/meshy/<name>/), then stored as parts in a
+// JSON file here. A part flagged `wing` (thin and see-through) is two-sided and gets no outline.
+//  - the dead grasshopper windfall (docs/25-windfalls.md): on its back, legs in the air, X eyes
+//  - the termite mound (docs/24-npcs.md): a tall clay spire with buttress ridges and arched entrances
+//  - the aphid herd (docs/24-npcs.md) builds on the helpers here in aphidHerd.ts: a poppy with aphids on it
 import * as THREE from 'three';
-import { antUniforms } from '../nest3d/ants3d';
+import grasshopper from './grasshopper.json';
+import termiteMound from './termite-mound.json';
+import { antUniforms, toonBands } from '../nest3d/ants3d';
 
 export type PropPart = { name: string; color: string; p: number[]; i: number[] };
 
@@ -72,3 +78,39 @@ export function inkPropMaterial(key: string, width = 0.012, b?: VertexBend) {
   m.customProgramCacheKey = () => key + '-ink' + (b ? '|' + b.key : '');
   return m;
 }
+
+type Part = PropPart & { wing: boolean };
+type ModelData = { parts: Part[] };
+type Wrap = <M extends THREE.Material>(m: M) => M;
+
+/**
+ * One set of geometry and materials per scene; `make()` hands out a copy of the model standing on y = 0.
+ * `wrap` lets a scene add its own shader bits (the Whole Yard's fog of war) to every material.
+ */
+function createToonModel(data: ModelData, wrap: Wrap) {
+  const parts = data.parts;
+  const body = mergeParts(parts.filter((p) => !p.wing));
+  const wings = mergeParts(parts.filter((p) => p.wing));
+  const bands = toonBands();
+  const bodyMat = wrap(toonPropMaterial(bands, THREE.FrontSide, 'toon-model'));
+  const wingMat = wrap(toonPropMaterial(bands, THREE.DoubleSide, 'toon-model-wing'));
+  const ink = wrap(inkPropMaterial('toon-model'));
+  return {
+    make(shadows = true) {
+      const g = new THREE.Group();
+      const b = new THREE.Mesh(body, bodyMat), w = new THREE.Mesh(wings, wingMat), o = new THREE.Mesh(body, ink);
+      b.castShadow = w.castShadow = shadows;
+      b.receiveShadow = w.receiveShadow = shadows;
+      g.add(b, w, o);
+      return g;
+    },
+    dispose() {
+      for (const d of [body, wings, bands, bodyMat, wingMat, ink]) d.dispose();
+    },
+  };
+}
+
+/** The dead grasshopper: 1 unit nose to tail, head towards +z. */
+export const createGrasshoppers = (wrap: Wrap = (m) => m) => createToonModel(grasshopper as ModelData, wrap);
+/** The termite mound: 1 unit tall, about 1.15 across its base. */
+export const createTermiteMounds = (wrap: Wrap = (m) => m) => createToonModel(termiteMound as ModelData, wrap);
