@@ -6,7 +6,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { FastifyInstance } from 'fastify';
 import { DIPLOMACY_MESSAGES, SUPERCOLONY_MAX_MEMBERS, scentFadeMs, truceNoticeMs } from '@hormigas/shared';
 import { getPool } from '../src/db';
-import { setupTest, teardownTest, newPlayer, setColony, setPlayer, calmWildNests, type Client } from './helpers';
+import { setupTest, teardownTest, newPlayer, newPlayerBeside, setColony, setPlayer, calmWildNests, type Client } from './helpers';
 
 let app: FastifyInstance;
 let clock: Awaited<ReturnType<typeof setupTest>>['clock'];
@@ -34,7 +34,9 @@ const rearm = async () => { for (const col of [ca, cb, cc, cd]) await setColony(
 
 beforeAll(async () => {
   ({ app, clock } = await setupTest());
-  [a, b, c, d] = [await newPlayer(app, 'ant'), await newPlayer(app, 'bee'), await newPlayer(app, 'cricket'), await newPlayer(app, 'dung')];
+  a = await newPlayer(app, 'ant');
+  // four patch-mates, so everyone is in contact
+  [b, c, d] = [await newPlayerBeside(app, 'bee', a), await newPlayerBeside(app, 'cricket', a), await newPlayerBeside(app, 'dung', a)];
   const states = await Promise.all([a, b, c, d].map((p) => p.get('/api/state')));
   [ca, cb, cc, cd] = states.map((s) => s.colony);
   [ida, idb, idc, idd] = states.map((s) => s.player.id);

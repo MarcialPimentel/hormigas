@@ -847,7 +847,6 @@ pre.report-body { white-space: pre-wrap; overflow-x: auto; }
 .mbar.friend .mbar-fill { background: #3FC2B8; }
 .mbar-tick { position: absolute; left: 50%; top: -4px; bottom: -4px; width: 2px; margin-left: -1px; background: currentColor; opacity: 0.45; }
 .mbar-party { position: absolute; bottom: 3px; display: flex; gap: 2px; transition: left 1s linear; }
-.mbar-party.back { transform: scaleX(-1); }
 .mbar-party i { display: block; line-height: 0; }
 .mbar-party i svg { display: block; overflow: visible; }
 @media (prefers-reduced-motion: reduce) { .mbar-fill, .mbar-party { transition: none; } }

@@ -11,11 +11,14 @@ import type { ServerColony, ServerState } from '../../game';
 import type { Caste } from '../../art/ants';
 import { fmtDuration } from '../../format';
 import { CHITIN, antUniforms, createAnts, type CargoKind } from '../nest3d/ants3d';
+import { colonyMoundHeights, createColonyMounds, createGrasshoppers, createTermiteMounds } from '../three/toonModel';
+import { createAphidHerds } from '../three/aphidHerd';
 import { leftOf } from '../nestScene';
 import type { Spot, SpotColony } from '../Patch';
 import { moveKeys } from './keys';
 import { TIMING, drawnFor, momentAt, planBattle, replayLength, type BattlePlan } from './battle';
 import { makePath, pitchAhead, pointAlong, type Path } from '../three/path';
+import { MARCH } from '../three/march';
 
 export interface PatchData {
   colony: ServerColony | null;
@@ -129,6 +132,12 @@ export async function createPatchScene(
   scene.fog = new THREE.Fog('#B8DCEA', 70, 190);
   const camera = new THREE.PerspectiveCamera(40, 1, 0.05, 600);
   const disposables: { dispose(): void }[] = [];
+  const hoppers = createGrasshoppers(), termites = createTermiteMounds();
+  // colony mounds by owner: your own a touch lighter (fresh-dug), wild ones a touch darker
+  const moundTones = { mine: createColonyMounds(undefined, 0.03), other: createColonyMounds(), wild: createColonyMounds(undefined, -0.04) };
+  disposables.push(hoppers, termites, moundTones.mine, moundTones.other, moundTones.wild);
+  const herds = createAphidHerds();
+  disposables.push(herds);
   const keep = <T extends { dispose(): void }>(x: T) => (disposables.push(x), x);
   const matCache = new Map<string, THREE.MeshStandardMaterial>();
   const mat = (hex: string, extra: THREE.MeshStandardMaterialParameters = {}) => {
@@ -463,7 +472,6 @@ uniform vec3 uSpots[SIGHT_SPOTS];
   const spotDisposables: { dispose(): void }[] = [];
   /** Kept until the next patch is shown. */
   const sk = <T extends { dispose(): void }>(x: T) => (spotDisposables.push(x), x);
-  const holeGeo = keep(new THREE.CircleGeometry(0.22, 12));
   const bareGeo = keep(new THREE.CircleGeometry(2.6, 28));
   const bareMat = keep(new THREE.MeshStandardMaterial({ color: '#B89A6A', roughness: 1, transparent: true, opacity: 0.75, depthWrite: false }));
   // a dotted circle on the ground where you can act but nothing stands: empty spots and the wilds.
@@ -501,29 +509,10 @@ uniform vec3 uSpots[SIGHT_SPOTS];
   const plumes: { line: THREE.Mesh; base: THREE.Vector3; phase: number }[] = [];
   const hitMat = keep(new THREE.MeshBasicMaterial({ visible: false }));
   const tapGeo = keep(new THREE.CylinderGeometry(2.1, 2.1, 3.5, 12));
-  // the mound: a low dome of dug-out soil with a shallow crater on top round the entrance. The profile runs from the
-  // outer edge up over the rim and down into the crater, so the outside of the dome is the side you see.
-  const MOUND = { R: 2.1, rim: 0.42, hole: 0.2, H: 0.75, dip: 0.26 };
-  const moundGeo = (() => {
-    const { R, rim, hole, H, dip } = MOUND;
-    const pts: THREE.Vector2[] = [];
-    for (let i = 0; i <= 18; i++) {
-      const u = i / 18;
-      pts.push(new THREE.Vector2(R - (R - rim) * u, H * Math.pow(Math.sin((u * Math.PI) / 2), 1.6)));
-    }
-    for (let i = 1; i <= 4; i++) pts.push(new THREE.Vector2(rim - (rim - hole) * (i / 4), H - dip * Math.sin(((i / 4) * Math.PI) / 2)));
-    const g = keep(new THREE.LatheGeometry(pts, 32));
-    // lumps of carried-out soil, so it isn't a perfect bowl (hashed by position, so the seam stays closed)
-    const pos = g.attributes.position;
-    for (let i = 0; i < pos.count; i++) {
-      const x = pos.getX(i), z = pos.getZ(i), r = Math.hypot(x, z);
-      if (r < hole + 0.03 || r > R - 0.05) continue;
-      const n = Math.sin(Math.round(x * 1000) * 0.012989 + Math.round(z * 1000) * 0.078233) * 43758.5453;
-      pos.setY(i, pos.getY(i) + (n - Math.floor(n) - 0.5) * 0.09 * smooth(0, 0.6, (R - r) / R));
-    }
-    g.computeVertexNormals();
-    return g;
-  })();
+  // the mound: the Meshy colony mound's smallest stage (art/meshy/colony-mound/), a low dome of cocoa soil clods round
+  // a crater with the entrance in the middle, stretched to R across and H tall
+  const MOUND = { R: 2.1, H: 0.85 };
+  const moundSurface = colonyMoundHeights(0);
   const flagGeo = (() => {
     const s = new THREE.Shape();
     s.moveTo(0, 0);
@@ -547,18 +536,13 @@ uniform vec3 uSpots[SIGHT_SPOTS];
   let moundsVer = 0;
   /** The mound's surface at (x, z), or −∞ off every mound. Inside the entrance it drops away down the hole. */
   function moundY(x: number, z: number) {
-    const { R, rim, hole, H, dip } = MOUND;
+    const { R, H } = MOUND;
     let best = -Infinity;
     for (const m of mounds) {
-      const dx = x - m.x, dz = z - m.z;
-      if (Math.abs(dx) > R * m.s || Math.abs(dz) > R * m.s) continue;
-      const r = Math.hypot(dx, dz) / m.s;
-      if (r >= R) continue;
-      let h: number;
-      if (r <= hole) h = H - dip - (hole - r) * 4;
-      else if (r <= rim) h = H - dip * Math.sin((((rim - r) / (rim - hole)) * Math.PI) / 2);
-      else h = H * Math.pow(Math.sin((((R - r) / (R - rim)) * Math.PI) / 2), 1.6);
-      best = Math.max(best, m.y + h * m.s);
+      const dx = x - m.x, dz = z - m.z, w = R * m.s * 1.2;
+      if (Math.abs(dx) > w || Math.abs(dz) > w) continue;
+      const h = moundSurface(dx / (R * m.s), dz / (R * m.s));
+      if (h > 0.005 || Math.hypot(dx, dz) < R * m.s * 0.2) best = Math.max(best, m.y + h * H * m.s);
     }
     return best;
   }
@@ -568,7 +552,7 @@ uniform vec3 uSpots[SIGHT_SPOTS];
     return m === -Infinity ? gH(x, z) : Math.max(gH(x, z), m + 0.035);
   };
 
-  function addMound(x: number, z: number, color: string, flag: string | null, scale = 1) {
+  function addMound(x: number, z: number, tone: keyof typeof moundTones, flag: string | null, scale = 1) {
     const y = gH(x, z);
     mounds.push({ x, z, y: y - 0.05, s: scale });
     // the ground the colony has cleared around its entrance
@@ -577,16 +561,10 @@ uniform vec3 uSpots[SIGHT_SPOTS];
     bare.position.set(x, y + 0.02, z);
     bare.scale.setScalar(scale);
     spotGroup.add(bare);
-    const m = new THREE.Mesh(moundGeo, mat(color, { roughness: 1, flatShading: true }));
+    const m = moundTones[tone].make(0, !coarse);
     m.position.set(x, y - 0.05, z);
-    m.scale.setScalar(scale);
-    spotGroup.add(shadow(m));
-    // the entrance, at the bottom of the crater
-    const hole = new THREE.Mesh(holeGeo, mat('#140E0A'));
-    hole.scale.setScalar(scale);
-    hole.rotation.x = -Math.PI / 2;
-    hole.position.set(x, y - 0.05 + (MOUND.H - MOUND.dip) * scale + 0.01, z);
-    spotGroup.add(hole);
+    m.scale.set(MOUND.R * scale, MOUND.H * scale, MOUND.R * scale);
+    spotGroup.add(m);
     if (flag) {
       const p = new THREE.Mesh(pole, mat('#3A2A1C'));
       p.position.set(x + 0.9 * scale, y + 0.2, z - 0.4);
@@ -622,35 +600,22 @@ uniform vec3 uSpots[SIGHT_SPOTS];
       return;
     }
     if (c.herd) {
-      // aphids on a stem
-      const stem = new THREE.Mesh(sk(new THREE.CylinderGeometry(0.08, 0.12, 5, 6).translate(0, 2.5, 0)), mat('#5E8A2E'));
-      stem.position.set(x, y, z);
-      stem.rotation.z = 0.08;
-      spotGroup.add(shadow(stem));
-      const leaf = new THREE.Mesh(sk(new THREE.SphereGeometry(1, 10, 6).scale(1.1, 0.06, 0.5).translate(1.1, 0, 0)), mat('#7DB043', { side: THREE.DoubleSide }));
-      leaf.position.set(x, y + 3.2, z);
-      leaf.rotation.set(0, 0.6, 0.3);
-      spotGroup.add(shadow(leaf));
-      const aphid = sk(new THREE.SphereGeometry(0.15, 10, 8).scale(1, 0.75, 0.75));
-      for (let i = 0; i < 12; i++) {
-        const a = new THREE.Mesh(aphid, mat('#B5E04A', { roughness: 0.35, emissive: '#5C8E1A', emissiveIntensity: 0.2 }));
-        a.position.set(x + Math.sin(i) * 0.12, y + 0.8 + i * 0.33, z + Math.cos(i * 1.7) * 0.12);
-        spotGroup.add(a);
-      }
-      if (c.herd.tended) addMound(x + 1.6, z + 1, '#C8A06A', c.herd.yours ? FLAG.mine : FLAG.other, 0.4);
+      // the Meshy poppy, with more aphids feeding on it the bigger the herd
+      const h = herds.make(c.herd.level, !coarse);
+      h.scale.setScalar(5.5);
+      h.position.set(x, y, z);
+      h.rotation.y = 0.4;
+      spotGroup.add(h);
+      if (c.herd.tended) addMound(x + 2.2, z + 1.2, c.herd.yours ? 'mine' : 'other', c.herd.yours ? FLAG.mine : FLAG.other, 0.4);
       return;
     }
     if (c.wild?.kind === 'mound') {
-      // a termite tower, cracked and lumpy
-      const tower = new THREE.Mesh(sk(new THREE.ConeGeometry(1.5, 6, 9, 5)), mat('#A47E55', { flatShading: true, roughness: 1 }));
-      tower.position.set(x, y + 3, z);
-      const tp = tower.geometry.attributes.position;
-      for (let i = 0; i < tp.count; i++) tp.setX(i, tp.getX(i) * (1 + 0.15 * Math.sin(tp.getY(i) * 3 + i)));
-      tower.geometry.computeVertexNormals();
-      spotGroup.add(shadow(tower));
-      const spire = new THREE.Mesh(sk(new THREE.ConeGeometry(0.6, 2.4, 7)), mat('#B58C5E', { flatShading: true }));
-      spire.position.set(x + 0.9, y + 1.2, z + 0.4);
-      spotGroup.add(shadow(spire));
+      // the Meshy termite mound: a tall clay spire with buttress ridges and arched entrances
+      const t = termites.make(!coarse);
+      t.scale.setScalar(6);
+      t.position.set(x, y, z);
+      t.rotation.y = 0.6;
+      spotGroup.add(t);
       return;
     }
     if (c.wild?.kind === 'den') {
@@ -673,7 +638,7 @@ uniform vec3 uSpots[SIGHT_SPOTS];
       }
       return;
     }
-    addMound(x, z, '#8C6A48', c.wild ? FLAG.wild : null, 0.9);
+    addMound(x, z, 'wild', c.wild ? FLAG.wild : null, 0.9);
   }
 
   /** A windfall in the wilds (docs/25-windfalls.md): food big enough that colonies march for it, with a flag when held. */
@@ -701,8 +666,15 @@ uniform vec3 uSpots[SIGHT_SPOTS];
         l.rotation.set(0.2 * (i % 2 ? 1 : -1), i * 0.9, 0.15);
         spotGroup.add(shadow(l));
       }
+    } else if (w.kind === 'grasshopper') {
+      // the Meshy grasshopper, on its back with its legs in the air
+      const h = hoppers.make(!coarse);
+      h.scale.setScalar(5.5);
+      h.position.set(x, y, z);
+      h.rotation.y = 0.3 - Math.PI / 2;
+      spotGroup.add(h);
     } else {
-      // a dead grasshopper or lizard on its side: long body, legs in the air
+      // a dead lizard on its side: long body, legs in the air
       const lizard = w.kind === 'lizard';
       const len = lizard ? 7 : 4;
       const body = new THREE.Mesh(sk(new THREE.CapsuleGeometry(lizard ? 0.55 : 0.45, len, 6, 12)), mat(lizard ? '#8C8A4E' : '#9DAA45', { roughness: 0.7 }));
@@ -757,7 +729,7 @@ uniform vec3 uSpots[SIGHT_SPOTS];
       const scent = !!c && (c.known === 'scent' || c.known === 'familiar');
       if (c && scent) addPlume(x, z, flagColor(c));
       else if (c && isSiteSpot(s.spot)) addSite(c, x, z);
-      else if (c) addMound(x, z, c.mine ? '#C8A06A' : c.kind === 'wild' ? '#8C6A48' : '#B08A5C', flagColor(c), c.mine ? 1.45 : 1.25);
+      else if (c) addMound(x, z, c.mine ? 'mine' : c.kind === 'wild' ? 'wild' : 'other', flagColor(c), c.mine ? 1.45 : 1.25);
       if (s.corpses > 0) {
         // the dead of an old fight, on their backs where they fell (protein for whoever hauls them)
         for (let i = 0; i < Math.min(60, 4 + Math.round(Math.log2(s.corpses + 1) * 3)); i++) {
@@ -867,7 +839,7 @@ uniform vec3 uSpots[SIGHT_SPOTS];
   const clamp01 = (v: number) => Math.max(0, Math.min(1, v));
   // legs are tied to the ground covered: one tripod cycle per STRIDE, so the feet don't slide. A column that creeps
   // (a long trip at world speed ×1) still steps at least MIN_STEP radians a second, slowly, rather than freezing.
-  const STRIDE = 0.17, MIN_STEP = 4;
+  const MIN_STEP = 4;
   /** Nose up or down to follow a mound's slope (and steeply up out of its entrance); flat ground stays level. */
   function slope(x: number, z: number, fx: number, fz: number) {
     if (moundY(x, z) === -Infinity && moundY(x + fx * 0.12, z + fz * 0.12) === -Infinity) return 0;
@@ -943,7 +915,8 @@ uniform vec3 uSpots[SIGHT_SPOTS];
       const t = trailFor(c.key, c.from, c.to, c.trail, hash(c.key.length, Number(c.key.slice(1))) < 0.5 ? 1 : -1);
       const swarm = c.caste(0) === 'army' || c.caste(2) === 'army_major';
       const lanes = Math.min(swarm ? 9 : 4, Math.max(1, Math.round(Math.sqrt(c.n / (swarm ? 5 : 12)))));
-      const gap = swarm ? 0.3 : 0.46;
+      const M = MARCH.patch, STRIDE = M.stride;
+      const gap = swarm ? M.swarmGap : M.gap;
       const lead = c.k * t.total;
       // how fast the column really moves (world units a second), and the slow floor for its legs
       const legs = (Math.abs(c.rate) * 1000 * t.total) / STRIDE * Math.PI * 2;
@@ -977,8 +950,8 @@ uniform vec3 uSpots[SIGHT_SPOTS];
         if (c.holding) dd = t.total - (row % 12) * 0.3;
         if (dd < 0) continue;
         along(t, dd);
-        const side = (lane - (lanes - 1) / 2) * (swarm ? 0.34 : 0.3) + (hash(i, 4) - 0.5) * 0.18;
-        const wob = reduced ? 0 : Math.sin(clock * (swarm ? 3.3 : 1.8) + i * 1.37) * (swarm ? 0.12 : 0.05);
+        const side = (lane - (lanes - 1) / 2) * (swarm ? 0.34 : M.laneWidth) + (hash(i, 4) - 0.5) * 0.18;
+        const wob = reduced ? 0 : Math.sin(clock * (swarm ? 3.3 : 1.8) + i * 1.37) * (swarm ? 0.12 : M.wobble);
         const tl = Math.hypot(dir.x, dir.z) || 1, nx = -dir.z / tl, nz = dir.x / tl;
         const x = at.x + nx * (side + wob), z = at.z + nz * (side + wob);
         // heading home when the party is on its way back (k falls), else toward the target
@@ -989,7 +962,7 @@ uniform vec3 uSpots[SIGHT_SPOTS];
         const fx = (back ? -dir.x : dir.x) / tl, fz = (back ? -dir.z : dir.z) / tl;
         ants.ant(caste, x, footY(x, z), z, {
           // ants3d's body is about 0.9 long: scale it to 5 mm
-          scale: (ANT / 0.9) * (caste === 'soldier' ? 1.15 : caste === 'army_major' ? 1.3 : caste === 'alate' ? 1.5 : 1),
+          scale: (ANT / 0.9) * (caste === 'soldier' ? M.soldierSize : caste === 'army_major' ? 1.3 : caste === 'alate' ? 1.5 : 1),
           yaw, pitch: slope(x, z, fx, fz), color: c.color,
           ...(reduced || c.holding ? { step: 0 } : { gait: gait(back ? t.total - dd : dd, i) }),
           cargo: r ? { kind: LOAD[r], color: CARGO[r] } : null,
@@ -1522,6 +1495,7 @@ uniform vec3 uSpots[SIGHT_SPOTS];
     const d = reduced ? raw : { ...raw, now: tickNow + Math.min(1500, performance.now() - tickAt) };
     seen.clear();
     clock += reduced ? 0 : dt;
+    herds.tick(clock);
     antUniforms.uTime.value = clock;
     grassU.uTime.value = clock;
     // a view that opened hidden or at zero size measures itself again once it has one

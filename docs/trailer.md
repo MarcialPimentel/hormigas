@@ -34,7 +34,7 @@ Captions sit near the top, clear of the action and of the bottom fifth that phon
 
 Captions carry the pitch with the sound off (most sites autoplay muted), in the game's own fonts and colours. They only claim what the game does today, and lean on the pillars: the colony lives while you're away (1), fair by design (3), the ant fantasy is the mechanics (4).
 
-**Music:** the march from [sound.md](sound.md), rendered offline to follow the edit: the quiet "idle" march under the open and title, the full "march" from the nest on, "tense" for the raid, back to "march" for the pull-back, faded out under the end card. It's seeded, so every render plays the same tune.
+**Music:** the march from [sound.md](sound.md), rendered offline to follow the edit: the quiet "idle" march under the open and title, the full "march" from the nest on, "tense" for the raid, back to "march" for the pull-back, faded out under the end card. It's seeded, so every render plays the same tune. (Since 4 Nov the game plays Marz's Suno songs instead and `march.ts` is gone, so `music.mjs` must be switched to the songs before the next re-render.)
 
 ## How it's made
 

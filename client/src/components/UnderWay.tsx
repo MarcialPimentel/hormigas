@@ -39,7 +39,10 @@ export function tripProgress(m: { status: string; departAt: number; arriveAt: nu
   return { x: 0.5 + back * 0.5, phase: 'back' as const, oneWay };
 }
 
-/** The party itself walks along the bar: a few small ants, facing home on the way back, carrying what they found. */
+/**
+ * The party itself walks along the bar: a few small ants, carrying what they found on the way back. The bar
+ * fills left to right for the whole trip (out to the tick, then home), so the ants always face right.
+ */
 const ANT_PX = 24;
 const PARTY_W = 3 * (ANT_PX + 2) + 4;
 function Bar({ x, oneWay, tone, back, caste = 'worker', loads = [], still }: {
@@ -60,7 +63,7 @@ function Bar({ x, oneWay, tone, back, caste = 'worker', loads = [], still }: {
         {!oneWay && <span className="mbar-tick" aria-hidden="true" />}
       </span>
       {/* the whole party stays on the bar: it slides across the room the bar has left over */}
-      <span className={`mbar-party${back ? ' back' : ''}`} style={{ left: `calc((100% - ${PARTY_W}px) * ${x.toFixed(4)})` }} aria-hidden="true">
+      <span className="mbar-party" style={{ left: `calc((100% - ${PARTY_W}px) * ${x.toFixed(4)})` }} aria-hidden="true">
         {[0, 1, 2].map((i) => (
           <i key={i} dangerouslySetInnerHTML={{ __html: tripAnt(caste, i, walk, tone === 'hostile' && caste !== 'army', loads.length ? TRIP_LOAD[loads[i % loads.length]] : undefined, ANT_PX) }} />
         ))}
@@ -126,9 +129,9 @@ export function UnderWay({ onFocus, compact, limit, go: nav }: { onFocus?: Focus
           const ends = p.phase === 'out' ? m.arriveAt : p.phase === 'back' ? m.returnAt : null;
           const verb = p.phase === 'holding' ? (m.type === 'tend' ? 'Tending' : 'Holding') : p.phase === 'out' ? (p.oneWay ? 'Arrives' : 'There') : 'Home';
           const go = click(`m${m.id}`, from?.coords ?? colony.coords, m.target);
-          // your own colonies by name; anywhere else by its coordinates
+          // where they're going by name (the server names what's there); coordinates only as a last resort
           const mine = (state.colonies ?? []).find((c) => c.coords.region === m.target.region && c.coords.patch === m.target.patch && c.coords.spot === m.target.spot);
-          const where = mine?.name ?? fmtCoords(m.target);
+          const where = mine?.name ?? m.targetName ?? fmtCoords(m.target);
           const what = Object.entries(m.units as Record<string, number>).filter(([, c]) => c > 0).sort((a, b) => b[1] - a[1]).slice(0, 2)
             .map(([id, c]) => `${fmtFull(c)} ${(CASTES as Record<string, { name: string }>)[id]?.name ?? id}`).join(', ');
           return (

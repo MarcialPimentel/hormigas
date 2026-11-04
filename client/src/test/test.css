@@ -1,0 +1,53 @@
+/* The test scene (/?test): the map and the ant lineup on the left, the menu on the right. */
+.ts { position: fixed; inset: 0; display: grid; grid-template-columns: minmax(0, 1fr) 340px; background: var(--soil); color: var(--sand); font-family: var(--font-body); }
+.ts-main { display: grid; grid-template-rows: minmax(0, 1fr) auto; min-width: 0; min-height: 0; }
+.ts-map-wrap { position: relative; min-height: 0; }
+.ts-map { position: absolute; inset: 0; height: auto; min-height: 0; border-radius: 0; }
+.ts-patch-host { position: absolute; inset: 0; }
+.ts-loading { position: absolute; inset: 0; display: grid; place-items: center; color: #2b1d13; font-weight: 700; pointer-events: none; }
+.ts-badge { position: absolute; left: 10px; bottom: 10px; z-index: 6; padding: 4px 12px; border-radius: 999px; background: rgba(43, 29, 19, 0.8); color: #fbf6ea; font-size: 0.75rem; pointer-events: none; }
+.ts-badge b { color: var(--honey); margin-right: 4px; }
+
+.ts-lineup { position: relative; height: 240px; border-top: 2px solid var(--seam); overflow: hidden; }
+.ts-lineup-canvas { display: block; width: 100%; height: 100%; }
+.ts-lineup-labels { position: absolute; inset: 0; pointer-events: none; }
+.ts-lineup-tag { position: absolute; left: 0; top: 0; white-space: nowrap; font: 700 0.66rem/1 var(--font-body); color: #2b1d13; background: rgba(251, 246, 234, 0.85); padding: 2px 6px; border-radius: 6px; }
+.ts-lineup-tag.row { background: #2b1d13; color: #ffd27a; font-size: 0.72rem; padding: 3px 8px; }
+.ts-lineup-note { position: absolute; left: 10px; top: 6px; font-size: 0.68rem; color: #5a4636; }
+
+.ts-panel { overflow-y: auto; border-left: 1px solid var(--seam); background: var(--wall); padding: 0.5rem 0.75rem 2rem; }
+.ts-panel section { padding: 0.6rem 0; border-bottom: 1px solid var(--seam); display: grid; gap: 0.45rem; }
+.ts-panel h2 { margin: 0; font: 700 0.95rem/1.2 var(--font-display); color: var(--honey); }
+.ts-panel h3 { margin: 0.3rem 0 0.3rem; font-size: 0.78rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+.ts-row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.ts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.ts-grid .btn { text-align: left; }
+.ts-panel .btn[aria-pressed='true'] { background: var(--honey); border-color: var(--honey); color: #2a1d0b; }
+.ts-seg { display: flex; gap: 2px; padding: 3px; background: var(--soil); border-radius: 10px; }
+.ts-seg button { flex: 1; border: 0; background: transparent; color: var(--sand); font: 700 0.85rem/1 var(--font-display); padding: 7px; border-radius: 8px; cursor: pointer; }
+.ts-seg button[aria-pressed='true'] { background: var(--honey); color: #2b1d13; }
+.ts-field, .ts-knob { display: grid; grid-template-columns: 6.5rem minmax(0, 1fr) auto auto; gap: 6px; align-items: center; font-size: 0.82rem; }
+.ts-field select { grid-column: 2 / -1; }
+.ts-field input[type='range'], .ts-knob input[type='range'] { width: 100%; accent-color: var(--honey); }
+.ts-field output, .ts-knob output { font-variant-numeric: tabular-nums; min-width: 3.2rem; text-align: right; }
+.ts-knob output small { color: var(--muted); font-size: 0.65rem; }
+.ts-knob.changed span { color: var(--honey); font-weight: 700; }
+.ts-knob .btn { padding: 0 0.3rem; }
+.ts-check { display: flex; gap: 6px; align-items: center; font-size: 0.85rem; }
+.ts-seed { display: flex; gap: 4px; align-items: center; font-size: 0.8rem; }
+.ts-seed input { width: 4.5rem; }
+.ts-muted { margin: 0; color: var(--muted); font-size: 0.82rem; }
+.ts-parties { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; max-height: 220px; overflow-y: auto; }
+.ts-parties li { display: grid; grid-template-columns: 10px minmax(0, 1fr) auto auto auto; gap: 6px; align-items: center; font-size: 0.8rem; }
+.ts-pname { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ts-phase { color: var(--muted); font-variant-numeric: tabular-nums; }
+.ts-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--honey); }
+.ts-dot.in { background: var(--danger); }
+.ts-copied { margin: 0; white-space: pre-wrap; font-size: 0.72rem; background: var(--soil); padding: 0.5rem; border-radius: 6px; cursor: pointer; }
+
+@media (max-width: 820px) {
+  .ts { position: static; display: block; }
+  .ts-main { height: 70vh; }
+  .ts-lineup { height: 200px; }
+  .ts-panel { border-left: 0; }
+}

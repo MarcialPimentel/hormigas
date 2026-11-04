@@ -5,58 +5,18 @@
 // eyes and an ink outline drawn as a slightly bigger inside-out copy of the same ants (one more draw call).
 import * as THREE from 'three';
 import type { Caste } from '../../art/ants';
+import ANT from './ant.json';
 
 const V3 = (x: number, y: number, z: number) => new THREE.Vector3(x, y, z);
-const UP = V3(0, 1, 0);
 const clamp = (x: number, a: number, b: number) => Math.max(a, Math.min(b, x));
 
-// how finely the shapes are cut: 1 for crowds, 2 for the few ants seen up close in a chamber
-let fine = 1;
-function ell(sx: number, sy: number, sz: number, x: number, y: number, z: number, rz = 0) {
-  const g = new THREE.SphereGeometry(1, 9 * fine, 6 * fine);
-  g.scale(sx, sy, sz);
-  g.rotateZ(rz);
-  g.translate(x, y, z);
-  return g;
-}
-function seg(a: THREE.Vector3, b: THREE.Vector3, r: number, r2 = r * 0.75) {
-  const d = new THREE.Vector3().subVectors(b, a);
-  const g = new THREE.CylinderGeometry(r2, r, d.length(), fine > 1 ? 8 : 5, 1, true);
-  g.applyQuaternion(new THREE.Quaternion().setFromUnitVectors(UP, d.normalize()));
-  const m = a.clone().add(b).multiplyScalar(0.5);
-  g.translate(m.x, m.y, m.z);
-  return g;
-}
-type LegFn = (x: number, y: number, z: number) => [number, number];
-type Part = { g: THREE.BufferGeometry; lf?: LegFn; tone?: number };
 /**
- * Merge the parts into one geometry; `aLeg` says which tripod a leg vertex swings with and how far from the hip
- * it is, `aTone` darkens a part's chitin (the eyes).
+ * The ant's parts, built in Blender (art/meshy/hero-ant/build_ant.py, exported by export_ant.py): game axes, ×10000
+ * positions, ×1000 normals, triangles, and a tone per vertex (eyes dark, gaster bands pale). `close` is the finer
+ * one for the few ants seen up close in a chamber, `crowd` the light one for everything else.
  */
-function merge(parts: Part[]) {
-  const pos: number[] = [], nor: number[] = [], leg: number[] = [], tone: number[] = [];
-  for (const { g, lf, tone: t = 1 } of parts) {
-    const G = g.index ? g.toNonIndexed() : g;
-    const P = G.attributes.position, N = G.attributes.normal;
-    for (let i = 0; i < P.count; i++) {
-      const x = P.getX(i), y = P.getY(i), z = P.getZ(i);
-      pos.push(x, y, z);
-      nor.push(N.getX(i), N.getY(i), N.getZ(i));
-      const l = lf ? lf(x, y, z) : [0, 0];
-      leg.push(l[0], l[1]);
-      tone.push(t);
-    }
-    G.dispose();
-    g.dispose();
-  }
-  const geo = new THREE.BufferGeometry();
-  geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
-  geo.setAttribute('normal', new THREE.Float32BufferAttribute(nor, 3));
-  geo.setAttribute('aLeg', new THREE.Float32BufferAttribute(leg, 2));
-  geo.setAttribute('aTone', new THREE.Float32BufferAttribute(tone, 1));
-  geo.computeBoundingSphere();
-  return geo;
-}
+type PartData = { p: number[]; n: number[]; i: number[]; t?: number[] };
+const PARTS = ANT as unknown as Record<'close' | 'crowd', Record<string, PartData>>;
 
 interface Shape {
   head?: number;
@@ -67,51 +27,73 @@ interface Shape {
   nodes?: 1 | 2;
   sickle?: boolean;
 }
+// the points the castes stretch about (they match the Blender layout)
+const NECK = V3(0.13, 0.16, 0);
+const GASTER_C = V3(-0.275, 0.175, 0), GASTER_PIVOT = V3(-0.175, 0.11, 0);
+const JAW_BASE_X = 0.255;
+const HIP_X = [0.085, 0.03, -0.025], HIP_Y = 0.13, HIP_Z = 0.035;
+
 /** Gaster, petiole, mesosoma, head, mandibles, elbowed antennae, six legs. Faces +x, feet at y = 0, about 0.9 long. */
 export function antGeometry(o: Shape = {}, detail = 1) {
-  fine = detail;
-  try {
-    return antParts(o);
-  } finally {
-    fine = 1;
-  }
-}
-function antParts(o: Shape) {
   const head = o.head ?? 1, gas = o.gaster ?? 1, jaw = o.jaw ?? 1, slim = o.slim ?? 1, legK = o.legs ?? 1;
-  const parts: Part[] = [];
-  const body = (g: THREE.BufferGeometry) => parts.push({ g });
-  body(ell(0.2 * gas, 0.14 * gas * slim, 0.15 * gas * slim, -0.27 - 0.1 * (gas - 1), 0.17 + 0.03 * (gas - 1), 0, 0.25));
-  if (o.nodes === 2) {
-    body(ell(0.04, 0.045, 0.035, -0.11, 0.15, 0));
-    body(ell(0.036, 0.042, 0.033, -0.05, 0.15, 0));
-  } else body(ell(0.05, 0.058, 0.045, -0.08, 0.15, 0));
-  body(ell(0.125, 0.068, 0.066 * slim, 0.03, 0.155, 0, -0.15));
-  const hx = 0.19 + 0.06 * (head - 1);
-  const hy = 0.17 + 0.012 * (head - 1);
-  body(ell(0.085 * head, 0.075 * head, 0.08 * head, hx, hy, 0));
-  for (const s of [1, -1]) {
-    parts.push({ g: ell(0.026 * head, 0.03 * head, 0.022 * head, hx + 0.04 * head, hy + 0.022 * head, s * 0.06 * head), tone: 0.12 });
-    const jb = V3(hx + 0.07 * head, 0.14, s * 0.03 * head);
-    const jt = o.sickle ? V3(hx + 0.07 * head + 0.13, 0.12, s * -0.01) : V3(hx + 0.07 * head + 0.09 * jaw, 0.13, s * 0.005);
-    body(seg(jb, jt, 0.016 * Math.sqrt(head), 0.006));
-    const a0 = V3(hx + 0.04 * head, 0.2 + 0.03 * (head - 1), s * 0.03), a1 = V3(hx + 0.08, 0.3 + 0.03 * (head - 1), s * 0.07), a2 = V3(hx + 0.22, 0.27, s * 0.12);
-    body(seg(a0, a1, 0.012));
-    body(seg(a1, a2, 0.011, 0.007));
-  }
-  const hips = [0.08, 0.025, -0.03], kneeDx = [0.07, 0, -0.07], footDx = [0.2, 0.03, -0.2];
-  for (let k = 0; k < 3; k++) {
-    for (const s of [1, -1]) {
-      const hip = V3(hips[k], 0.13, s * 0.035);
-      const knee = V3(hips[k] + kneeDx[k] * legK, 0.21, s * 0.15 * legK);
-      const foot = V3(hips[k] + footDx[k] * legK, 0, s * 0.25 * legK);
-      const grp = k % 2 === 0 ? s : -s; // tripod: near front, far middle and near hind swing together
-      const reach = foot.distanceTo(hip);
-      const lf: LegFn = (x, y, z) => [grp, clamp(Math.hypot(x - hip.x, y - hip.y, z - hip.z) / reach, 0, 1)];
-      parts.push({ g: seg(hip, knee, 0.022, 0.017), lf });
-      parts.push({ g: seg(knee, foot, 0.017, 0.009), lf });
+  const parts = PARTS[detail > 1 ? 'close' : 'crowd'];
+  const pos: number[] = [], nor: number[] = [], leg: number[] = [], tone: number[] = [];
+  const gc = GASTER_PIVOT.clone().lerp(GASTER_C, gas); // the gaster's centre once it has grown
+  const v = new THREE.Vector3(), n = new THREE.Vector3(), sc = new THREE.Vector3();
+  for (const [name, d] of Object.entries(parts)) {
+    if (o.nodes === 2 ? name === 'petiole' : name.startsWith('petiole_')) continue;
+    if (o.sickle ? name.startsWith('mandible_') : name.startsWith('sickle_')) continue;
+    const inHead = /^(head|eye_|mandible_|sickle_|antenna_)/.test(name);
+    const legM = /^leg(\d)_([LR])$/.exec(name);
+    const k = legM ? +legM[1] - 1 : 0, s = legM?.[2] === 'R' ? -1 : 1;
+    const hip = V3(HIP_X[k], HIP_Y, s * HIP_Z);
+    // where a vertex goes for this caste; sc is the part's stretch, so its normals can follow
+    sc.set(1, 1, 1);
+    if (name.startsWith('mandible_')) sc.x *= jaw;
+    if (name === 'gaster') sc.set(1, slim, slim);
+    if (name === 'mesosoma') sc.z = slim;
+    if (legM) sc.set(legK, 1, legK);
+    const place = () => {
+      if (name.startsWith('mandible_')) v.x = JAW_BASE_X + (v.x - JAW_BASE_X) * jaw;
+      if (inHead) v.sub(NECK).multiplyScalar(head).add(NECK);
+      else if (name === 'gaster') {
+        v.sub(GASTER_PIVOT).multiplyScalar(gas).add(GASTER_PIVOT);
+        v.y = gc.y + (v.y - gc.y) * slim;
+        v.z *= slim;
+      } else if (name === 'mesosoma') v.z *= slim;
+      else if (legM) {
+        v.x = hip.x + (v.x - hip.x) * legK;
+        v.z = hip.z + (v.z - hip.z) * legK;
+      }
+    };
+    const P = d.p, N = d.n;
+    const at: number[] = [];
+    let reach = 0;
+    for (let i = 0; i < P.length; i += 3) {
+      v.set(P[i] / 1e4, P[i + 1] / 1e4, P[i + 2] / 1e4);
+      place();
+      if (legM) reach = Math.max(reach, v.distanceTo(hip));
+      n.set(N[i] / sc.x, N[i + 1] / sc.y, N[i + 2] / sc.z).normalize();
+      at.push(v.x, v.y, v.z, n.x, n.y, n.z);
+    }
+    // tripod: near front, far middle and near hind legs swing together; the swing grows from hip to foot
+    const grp = k % 2 === 0 ? s : -s;
+    for (const j of d.i) {
+      const a = j * 6;
+      pos.push(at[a], at[a + 1], at[a + 2]);
+      nor.push(at[a + 3], at[a + 4], at[a + 5]);
+      tone.push(d.t ? d.t[j] : 1);
+      if (legM) leg.push(grp, clamp(Math.hypot(at[a] - hip.x, at[a + 1] - hip.y, at[a + 2] - hip.z) / reach, 0, 1));
+      else leg.push(0, 0);
     }
   }
-  return merge(parts);
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  geo.setAttribute('normal', new THREE.Float32BufferAttribute(nor, 3));
+  geo.setAttribute('aLeg', new THREE.Float32BufferAttribute(leg, 2));
+  geo.setAttribute('aTone', new THREE.Float32BufferAttribute(tone, 1));
+  geo.computeBoundingSphere();
+  return geo;
 }
 
 const SHAPES: Record<Caste, Shape> = {
@@ -153,7 +135,7 @@ const LEGS = `vec3 transformed = vec3(position);
         transformed.y += (1.0 - abs(aLeg.x)) * abs(sin(ph)) * 0.006 * on;`;
 
 /** Three hard light bands for the cartoon look: shadow side, mid, lit. */
-function toonBands() {
+export function toonBands() {
   const t = new THREE.DataTexture(new Uint8Array([95, 175, 255]), 3, 1, THREE.RedFormat);
   t.minFilter = t.magFilter = THREE.NearestFilter;
   t.needsUpdate = true;
@@ -171,7 +153,11 @@ function antMaterial(bands: THREE.Texture) {
     sh.fragmentShader =
       'uniform vec3 uRim;\nvarying float vTone;\n' +
       sh.fragmentShader
-        .replace('#include <color_fragment>', '#include <color_fragment>\ndiffuseColor.rgb *= vTone;')
+        // tone below 1 darkens (the eyes); above 1 pales toward cream (the gaster's bands)
+        .replace(
+          '#include <color_fragment>',
+          '#include <color_fragment>\ndiffuseColor.rgb = vTone > 1.0 ? mix(diffuseColor.rgb, vec3(1.0, 0.86, 0.72), (vTone - 1.0) * 1.6) : diffuseColor.rgb * vTone;',
+        )
         .replace(
           '#include <dithering_fragment>',
           `vec3 nV = normalize(normal);
@@ -186,12 +172,16 @@ function antMaterial(bands: THREE.Texture) {
   return m;
 }
 
-/** The ink line: the same ants pushed out along their normals, inside-out and dark, so only the edge shows. */
+/**
+ * The ink line: the same ants pushed out along their normals, inside-out and dark, so only the edge shows. It thins
+ * down each leg (aLeg.y runs hip to foot) so the feet and claws keep their shape.
+ */
 function inkMaterial() {
   const m = new THREE.MeshBasicMaterial({ color: '#1c0f08', side: THREE.BackSide });
   m.onBeforeCompile = (sh) => {
     sh.vertexShader =
-      LEGS_HEAD + sh.vertexShader.replace('#include <begin_vertex>', LEGS + '\ntransformed += normalize(normal) * 0.013;');
+      LEGS_HEAD +
+      sh.vertexShader.replace('#include <begin_vertex>', LEGS + '\ntransformed += normalize(normal) * 0.013 * (1.0 - 0.6 * aLeg.y);');
   };
   return m;
 }

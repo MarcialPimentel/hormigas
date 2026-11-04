@@ -7,14 +7,17 @@ _Current as of Build 11 (2026-10-30)._
 - The live world runs at **×1 speed**: a first session reaches Nectar in about 1.3 hours of play for an engaged player (gathering is ×2 since 2026-10-30) ([16-milestones](16-milestones.md)). Check in a few times a day.
 - What's new in this build: the latest entry in [CHANGELOG.md](../CHANGELOG.md). Each build's PR has its own playtest steps.
 
-### The Whole Yard (preview)
-On a computer, open https://hormigas.marz.gg/?preview=yard once; the browser remembers it. **Whole Yard** is then the first screen. Scroll to zoom from the yard to the ground, drag to move, right-drag or Q/E to turn, WASD to pan; double-click your mound to go inside; the left buttons open Chambers, Brood Hall, Research and Missions, then Allies, Reports, Rankings and the Field Journal (red counts show unread reports, truce offers, raids coming and new journal pages). From the top, each bed has a sign with its name and colony count: click it to fly to that bed. In Reports, a battle's **Watch the battle** flies the map to where it was fought and acts it out round by round. "Classic screens" goes back to the usual layout (Whole Yard stays at the top of the menu); "Turn preview off" or `?preview=off` removes it.
+### The Whole Yard
+On a computer, https://hormigas.marz.gg opens on the Whole Yard (it is the only view there; phones keep the classic screens). Scroll to zoom from the yard to the ground, drag to move, right-drag or Q/E to turn, WASD to pan; double-click your mound to go inside; the left buttons open Chambers, Brood Hall, Research and Missions, then Allies, Reports, Rankings and the Field Journal (red counts show unread reports, truce offers, raids coming and new journal pages). From the top, each bed has a sign with its name and colony count: click it to fly to that bed. In Reports, a battle's **Watch the battle** flies the map to where it was fought and acts it out round by round. Admins get a **Feedback inbox** button at the top.
 
 ### Fog of war
 You see the patches round your colonies; the rest is greyed (explored, as last seen) or under mist (never explored). To explore a patch, tap it, pick **the wilds** and send **Scouts**. When they arrive the mist lifts, and the patch stays explored after they leave.
 
 ### Scouting the swarm
 A swarm comes every 1.5–2.5 days. To meet one sooner on a test world, wait for the "Army ant swarm" warning, then press **Scout the swarm** on its card under Under way and send a few Scouts. Check that the odds on the form go up as you add Scouts, that the report says how many came back, and that the card then shows the swarm's size and a win / draw / lose bar that moves when you raise or send away soldiers ([20-swarms](20-swarms.md)).
+
+### The test scene
+Open https://hormigas.marz.gg/?test to check ant models and trails without playing: the real Whole Yard and 3D Patch with made-up parties (forage, scouts, raids, termites, windfalls, herds, swarms) sent from buttons on the right, a lineup of every ant, and sliders for how columns march. It never touches the real game. See [test-bed](test-bed.md).
 
 ## Controls
 - Tap or click everything; the tabs are Colony, Chambers, Brood Hall, Research, Missions, Allies, Reports, Journal and Rankings ([12-ui-nest-view](12-ui-nest-view.md)).

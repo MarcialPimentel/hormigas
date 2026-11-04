@@ -10,7 +10,7 @@ import { cancelBuild, planDig, startBuild, unplanDig } from '../game/chambers';
 import { timeMultiplier } from '../game/boost';
 import { cancelResearch, startResearch } from '../game/research';
 import { enqueueUnits, startDigestion, stopDigestion } from '../game/brood';
-import { activeMissions, incomingMissions, missionView } from '../game/missions';
+import { activeMissions, incomingMissions, missionViews } from '../game/missions';
 import { claimQuest, questStatus } from '../game/quests';
 import { claimNeed, journalStatus, markJournalSeen, needsStatus, rerollNeed, setTitle } from '../game/comeback';
 import { hasForagedBefore } from '../game/forage';
@@ -92,7 +92,7 @@ export async function gameRoutes(app: FastifyInstance) {
       },
       colonies: colonies.map((c) => ({ id: c.id, name: c.name, coords: { region: c.region, patch: c.patch, spot: c.spot } })),
       colony: current ? colonyView(advance(current, t)) : null,
-      missions: (await activeMissions(q, req.playerId)).map(missionView),
+      missions: await missionViews(q, await activeMissions(q, req.playerId)),
       incoming: await incomingMissions(q, req.playerId),
       quests: await questStatus(q, req.playerId),
       /** colony needs and Yesterday in the colony (docs/26-come-back.md) */

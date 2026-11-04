@@ -42,6 +42,7 @@ import { ENABLED_MISSIONS, MISSION_HELP, MISSION_LABEL, type MissionType } from 
 import { BattlePreview } from '../components/BattlePreview';
 import { ForageOdds } from '../components/ForageOdds';
 import { SwarmScoutOdds } from '../components/SwarmIntel';
+import { ScoutRisk } from '../components/ScoutRisk';
 import { PatchView, isScent, usePatchMode, type PartyFocus, type Spot } from '../components/Patch';
 import { UnderWay, type FocusParty } from '../components/UnderWay';
 
@@ -235,6 +236,8 @@ export function SendMission({ type, setType, target, setTarget, onClose, onSent 
     else if (herd?.tended && !herd.yours) problems.push(`${herd.tenderName}'s ants tend this herd. Raid it to drive them off first.`);
   }
   const windfall = targetSpot?.colony?.windfall;
+  // wild nests, herds and windfalls: no player's ground to dig into
+  const npcSite = !!(targetSpot?.colony?.wild || herd || windfall);
   if (type === 'claim' && targetSpot !== undefined && !windfall) problems.push('Only windfalls can be claimed. Tap a windfall in the wilds on the patch above.');
   if (type === 'raid' && windfall?.yours) problems.push('Your own ants hold it.');
   if (type === 'raid' && windfall && !windfall.held && !windfall.guarded) problems.push('Nobody holds it, so there is no one to fight. Send ants to claim it instead.');
@@ -341,8 +344,30 @@ export function SendMission({ type, setType, target, setTarget, onClose, onSent 
           )}
           <div className="route-row">
             <span className="route-k">To</span>
-            <strong>{scoutingSwarm ? `Army ant swarm → ${ownTarget!.name}` : toName}</strong>
-            <span className="muted small">{valid ? fmtCoords(target) : 'not a place'}</span>
+            {state.colonies.length > 1 ? (
+              // pick one of your own colonies as the destination; a spot tapped on the patch shows as the first choice
+              <select
+                className="route-from"
+                value={ownTarget ? String(ownTarget.id) : ''}
+                onChange={(e) => {
+                  const to = state.colonies.find((c) => c.id === Number(e.target.value));
+                  if (to) setTarget(to.coords);
+                }}
+                aria-label="Send to which of your colonies"
+              >
+                {!ownTarget && <option value="">{toName}</option>}
+                {state.colonies
+                  .filter((c) => c.id !== colony.id || c.id === ownTarget?.id || type === 'haul')
+                  .map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {scoutingSwarm && c.id === ownTarget?.id ? `Army ant swarm → ${c.name}` : c.name} ({fmtCoords(c.coords)})
+                    </option>
+                  ))}
+              </select>
+            ) : (
+              <strong>{scoutingSwarm ? `Army ant swarm → ${ownTarget!.name}` : toName}</strong>
+            )}
+            {!(ownTarget && state.colonies.length > 1) && <span className="muted small">{valid ? fmtCoords(target) : 'not a place'}</span>}
             {unscouted && <span className="scent-tag">Not scouted</span>}
             <button className="btn ghost small route-edit" aria-expanded={manual} onClick={() => setManual(!manual)}>
               {manual ? 'Done' : 'Enter coordinates'}
@@ -363,7 +388,7 @@ export function SendMission({ type, setType, target, setTarget, onClose, onSent 
               )}
             </div>
           )}
-          <p className="muted small route-hint">Tap a spot on the patch{onClose ? '' : ' above'} to change where they go.</p>
+          <p className="muted small route-hint">Tap a spot on the patch{onClose ? '' : ' above'} to change where they go{state.colonies.length > 1 ? ', or pick one of your colonies' : ''}.</p>
         </div>
 
         <div className="seg" role="radiogroup" aria-label="Mission type">
@@ -503,7 +528,21 @@ export function SendMission({ type, setType, target, setTarget, onClose, onSent 
 
         {scoutingSwarm && <SwarmScoutOdds scouts={lvl(chosen, 'scout')} research={research} />}
 
-        {type === 'raid' && !unscouted && <BattlePreview target={target} units={chosen} retreatPct={retreatPct} />}
+        {type === 'scout' && !scoutingSwarm && valid && target.spot !== WILDS_SPOT && !ownTarget && (
+          <ScoutRisk target={target} scouts={lvl(chosen, 'scout')} colony={targetSpot?.colony} />
+        )}
+
+        {type === 'raid' && !unscouted && <BattlePreview target={target} units={chosen} retreatPct={retreatPct} npcSite={npcSite} />}
+        {/* claiming a windfall someone holds (or wild ants guard) is a fight under the raid rules (server/src/game/windfalls.ts) */}
+        {type === 'claim' && windfall && !windfall.yours && (windfall.held || windfall.guarded) && (
+          <BattlePreview target={target} units={chosen} npcSite claim />
+        )}
+        {type === 'claim' && windfall && !windfall.yours && !windfall.held && !windfall.guarded && (
+          <div className="preview">
+            <strong>No fight right now</strong>
+            <p className="muted small">Nobody holds it, so your ants take it without a battle. If someone gets there first, yours fight them for it.</p>
+          </div>
+        )}
 
         <dl className="summary">
           <div><dt>Distance</dt><dd>{valid ? fmtNum(dist) : '—'}</dd></div>

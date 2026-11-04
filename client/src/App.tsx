@@ -16,14 +16,15 @@ import { Journal } from './screens/Journal';
 import { FeedbackAdmin } from './screens/FeedbackAdmin';
 import { FeedbackButton } from './components/Feedback';
 import { SoundButton } from './components/SoundButton';
-import { useMarch } from './audio/useSound';
+import { useMusic } from './audio/useSound';
 import type { Nav } from './nav';
-import { phone3dPreview, yardPreview } from './preview';
+import { phone3dPreview } from './preview';
 import { FpsMeter } from './components/FpsMeter';
 
-// The Whole Yard preview (docs/art/whole-yard.md): only with ?preview=yard, only on computers, loaded when opened.
+// The Whole Yard (docs/art/whole-yard.md) is the game on computers: one map, the old screens as panels over it.
+// Phones (under 900px wide) keep the classic screens until the Whole Yard works on a small screen.
 const Yard = lazy(() => import('./screens/Yard').then((m) => ({ default: m.Yard })));
-const yardOn = yardPreview && typeof matchMedia === 'function' && matchMedia('(min-width: 900px)').matches;
+const yardOn = typeof matchMedia === 'function' && matchMedia('(min-width: 900px)').matches;
 
 export interface ScreenDef {
   id: string;
@@ -66,7 +67,7 @@ export function App() {
   }, [isAdmin]);
   const onFeedbackCount = useCallback((n: number) => setOpenFeedback(n), []);
   // Background music: the colony's march, once the game has loaded (docs/sound.md).
-  useMarch(loggedIn && state ? state : null);
+  useMusic(loggedIn && state ? state : null);
   const nav: Nav = (id, p) => {
     setScreen(id);
     setParams(p);
@@ -77,8 +78,11 @@ export function App() {
   if (!loggedIn) return <Login />;
   if (!state || !colony) return <div className="boot">Waking the colony…</div>;
 
-  const screens: ScreenDef[] = [
-    ...(yardOn ? [{ id: 'yard', label: 'Whole Yard', icon: ICONS.yard, render: (n: Nav) => <Suspense fallback={<div className="boot">Looking over the yard…</div>}><Yard go={n} /></Suspense> }] : []),
+  // On computers the Whole Yard is the only screen (plus the admin's feedback inbox); any old link to a classic
+  // screen ('nest', 'missions', 'map'...) lands back on the yard.
+  const screens: ScreenDef[] = yardOn ? [
+    { id: 'yard', label: 'Whole Yard', icon: ICONS.yard, render: (n: Nav) => <Suspense fallback={<div className="boot">Looking over the yard…</div>}><Yard go={n} /></Suspense> },
+  ] : [
     { id: 'nest', label: 'Colony', icon: ICONS.nest, render: (n) => <Overview go={n} /> },
     { id: 'chambers', label: 'Chambers', icon: ICONS.chambers, render: () => <Chambers /> },
     { id: 'brood', label: 'Brood Hall', icon: ICONS.brood, render: () => <Brood /> },

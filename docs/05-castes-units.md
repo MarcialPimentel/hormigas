@@ -71,6 +71,7 @@ Acid Sentries   ──burn───────────────▶  Majo
 ```
 
 - **Frenzy** = chance to fire again after a shot, based on the target ([08-combat](08-combat.md)). Frenzy ×3 or more counts as a counter; ×2 (Majors against Minors) is only an edge.
+- **Counters strike first** (4 Nov 2026): a counter's bites at its prey land before the rest of the round, so prey it kills never bite back. Bringing the counter is now what keeps a raid cheap ([08-combat](08-combat.md#resolution)).
 - **Outnumbers** (`castes.json`): a caste that wins by sheer numbers rather than frenzy. Minor Soldiers outnumber Major Soldiers: big hitters waste most of a 150-damage bite on a 50-health ant.
 - **Every combat unit → Scout (5)**, as before.
 - **An even mix is the safe middle.** A third each of Minors, Majors and Sprayers is never crushed by a single caste, but loses to the right counter-mix. Scouting first and bringing the counter is the skill (pillar 5).

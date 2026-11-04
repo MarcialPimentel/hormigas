@@ -8,17 +8,21 @@ Combat is automatic and resolves instantly when a raid arrives. The skill is in 
 
 ## Resolution
 1. Up to **6 rounds**.
-2. Each round, every unit/defense on each side fires once at a **random** enemy unit.
-3. **Guard** absorbs damage first and fully restores at the start of each round.
-4. **Glance rule:** a shot dealing less than 1% of the target's full Guard does nothing. Prevents swarms of weak units from wearing down big ones.
-5. **Health** damage persists for the whole battle.
-6. **Collapse chance:** a unit below 70% Health has a chance to die when hit, equal to `1 − currentHealth / maxHealth`.
-7. **Frenzy:** after firing, a unit with Frenzy *N* against the target's type has a `(N−1)/N` chance to fire again at a new random target.
-8. **Trample** (Build 11): a unit with trample *N* whose bite kills its target carries the leftover damage on into up to *N* more random enemies (stopping if what's left would glance). Only big units have it (Supermajor 4, Rhinoceros Beetle 8), so battles without them run exactly as before.
-9. **Soil Wall shield:** a shot at one of the defender's other defenses hits the Soil Wall's guard first, while the wall stands and has guard left this round. What the guard doesn't soak goes on to the target ([06-defense](06-defense.md)).
-10. **Narrow Tunnel:** if the defender has one, in round 1 each raider fights with a 50% chance (`defenses.json` → `chokepoint`). The tunnel itself isn't in the fight.
-11. **Fall-back order:** after a round in which the raiders have lost at least their chosen share of their army's worth (Foliage + Protein + Nectar cost), they break off (below).
-12. Battle ends when one side is wiped out, the raiders fall back, or after round 6 (draw).
+2. Each round, every unit/defense on each side fires once at a **random** enemy unit. The round has two parts:
+   - **Counters strike first** (Marz, 4 Nov 2026; `formulas.json` → `combat.countersStrikeFirst`). In the first part, on both sides, a bite lands only if the biter counters its target (frenzy ×3 or more, `outnumbers` or `overpowers`: the same list the Brood Hall and battle reports show, `shared/src/counters.ts`). Prey killed in this part never bite back this round.
+   - Then everyone who hasn't struck yet fires as usual. Everyone left fires at the same time, so an ant killed in this part still gets its bite.
+   - **Why:** before, every defender bit once before anything died, so a raid cost about the same whatever you brought. Major spam was the cheapest way to raid even a Minor swarm, and Acid Sprayers died to the Minors they were meant to counter. Now bringing the right counter is what makes a raid cheap (pillar 3), and it reads like ants (pillar 4): Formica spray before contact, Minors pile onto a big intruder's legs.
+3. **Outnumbered sides bite less** (Marz, 4 Nov 2026; `combat.outnumberedRatio`, 2). Checked every round by army worth (Foliage + Protein + Nectar cost, defenses included): a side worth less than half the other's bites only `2 × its worth ÷ their worth` of the time (at 4 : 1 it bites half the time). The bigger column pins it down. Fairly equal fights are untouched, so wars stay bloody (about 93% of both armies die) and you rebuild; overwhelming a nest with the right army costs a few ants (twice the army loses about a third of what one army does).
+4. **Guard** absorbs damage first and fully restores at the start of each round.
+5. **Glance rule:** a shot dealing less than 1% of the target's full Guard does nothing. Prevents swarms of weak units from wearing down big ones.
+6. **Health** damage persists for the whole battle.
+7. **Collapse chance:** a unit below 70% Health has a chance to die when hit, equal to `1 − currentHealth / maxHealth`.
+8. **Frenzy:** after firing, a unit with Frenzy *N* against the target's type has a `(N−1)/N` chance to fire again at a new random target.
+9. **Trample** (Build 11): a unit with trample *N* whose bite kills its target carries the leftover damage on into up to *N* more random enemies (stopping if what's left would glance). Only big units have it (Supermajor 4, Rhinoceros Beetle 8), so battles without them run exactly as before.
+10. **Soil Wall shield:** a shot at one of the defender's other defenses hits the Soil Wall's guard first, while the wall stands and has guard left this round. What the guard doesn't soak goes on to the target ([06-defense](06-defense.md)).
+11. **Narrow Tunnel:** if the defender has one, in round 1 each raider fights with a 50% chance (`defenses.json` → `chokepoint`). The tunnel itself isn't in the fight.
+12. **Fall-back order:** after a round in which the raiders have lost at least their chosen share of their army's worth (Foliage + Protein + Nectar cost), they break off (below).
+13. Battle ends when one side is wiped out, the raiders fall back, or after round 6 (draw).
 
 Research bonuses (Mandibles, Chitin, Guard Formation, and each caste's instinct) apply to both sides' stats before the battle. A player colony's ground adds to its defenses' stats too: Sandy Soil −15% ([04-colony](04-colony.md#terrain)).
 
@@ -72,5 +76,7 @@ Before sending a raid on a scouted target, the UI runs the **same combat code** 
 This is a core fairness goal: players should never need an external simulator.
 
 ## Open Questions
+- Spider dens got much easier with the outnumbering rule (a fair army loses about 3% instead of 21%): the Trapdoor Spider's worth (12k Protein) is low for how hard it hits, so it counts as heavily outnumbered. Proposal: tune from playtest, e.g. a bigger spider or a higher worth.
+- Defenses now strike first at what they counter (Pit Traps at Minors and Acid Sprayers), so raiding a defended colony with soldiers alone mostly fails and Trap-jaw Ants lose almost nothing. Proposal: keep (bring the siege caste), watch in playtest.
 - Should the preview be exact (seeded RNG) or a Monte Carlo range? Proposal: run ~50 simulations, show range.
 - ~~Should defenders get a home advantage (e.g., +10% Guard)?~~ Decided (Build 10): no flat bonus. The Narrow Tunnel and the Soil Wall's shield are the defender's advantages, and they cost something to build. Terrain-based home advantage (antlion pits stronger in Sandy Soil) is a candidate for later.

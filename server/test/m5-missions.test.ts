@@ -1,8 +1,9 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { FastifyInstance } from 'fastify';
-import { distance, missionFuel, travelSeconds } from '@hormigas/shared';
+import { WILDS_SPOT, distance, missionFuel, travelSeconds } from '@hormigas/shared';
 import { getPool } from '../src/db';
-import { setupTest, teardownTest, newPlayer, setColony, calmWildNests, knowAll, type Client } from './helpers';
+import { targetName } from '../src/game/missions';
+import { setupTest, teardownTest, newPlayer, newPlayerBeside, setColony, calmWildNests, knowAll, type Client } from './helpers';
 
 let app: FastifyInstance;
 let clock: Awaited<ReturnType<typeof setupTest>>['clock'];
@@ -12,7 +13,7 @@ let ca: any, cb: any;
 beforeAll(async () => {
   ({ app, clock } = await setupTest());
   a = await newPlayer(app, 'alpha');
-  b = await newPlayer(app, 'beta');
+  b = await newPlayerBeside(app, 'beta', a);
   ca = (await a.get('/api/state')).colony;
   cb = (await b.get('/api/state')).colony;
   await setColony(ca.id, { foliage: 50000, protein: 50000, nectar: 50000, last_updated: clock.t, units: { worker: 20, scout: 5, minor_soldier: 10 } });
@@ -48,6 +49,7 @@ describe('transport', () => {
     expect(s1.colony.units.worker).toBe(10);
     expect(s1.colony.resources.nectar).toBeCloseTo(50000 - 100 - fuel, 0);
     expect(s1.missions).toHaveLength(1);
+    expect(s1.missions[0].targetName).toBe(cb.name); // named, not coordinates
     const sb = await b.get('/api/state');
     expect(sb.incoming).toHaveLength(1);
     expect(sb.incoming[0].hostile).toBe(false);
@@ -148,5 +150,15 @@ describe('reports', () => {
     expect(after.reports.length).toBe(list.reports.length - 1);
     const n = await getPool().query("SELECT count(*)::int AS n FROM missions WHERE status <> 'done'");
     expect(n.rows[0].n).toBe(0);
+  });
+});
+
+describe('mission target names', () => {
+  it('names what is at the spot: whoever lives there, Windfall for any windfall, else the bare spot', () => {
+    expect(targetName('raid', 4, { name: 'Leafcutter hollow', npc: { kind: 'nest' } })).toBe('Leafcutter hollow');
+    expect(targetName('claim', 15, { name: 'Dead grasshopper', npc: { kind: 'windfall' } })).toBe('Windfall');
+    expect(targetName('haul', 4, null)).toBe('Battlefield');
+    expect(targetName('colonize', 4, null)).toBe('Open ground');
+    expect(targetName('forage', WILDS_SPOT, null)).toBe('The wilds');
   });
 });

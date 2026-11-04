@@ -6,7 +6,7 @@ import type { FastifyInstance } from 'fastify';
 import { getPool, tx } from '../src/db';
 import { processDueEvents } from '../src/events';
 import { ALL_MISSION_TYPES, defineMission, enabledMissionTypes, missionRules, repairStuckMissions } from '../src/game/missions';
-import { setupTest, teardownTest, newPlayer, setColony, calmWildNests, knowAll, type Client } from './helpers';
+import { setupTest, teardownTest, newPlayer, newPlayerBeside, setColony, calmWildNests, knowAll, type Client } from './helpers';
 
 let app: FastifyInstance;
 let clock: Awaited<ReturnType<typeof setupTest>>['clock'];
@@ -20,7 +20,7 @@ const colonyRow = async (id: number) => (await getPool().query('SELECT units, fo
 beforeAll(async () => {
   ({ app, clock } = await setupTest());
   a = await newPlayer(app, 'sender');
-  b = await newPlayer(app, 'receiver');
+  b = await newPlayerBeside(app, 'receiver', a);
   ca = (await a.get('/api/state')).colony;
   cb = (await b.get('/api/state')).colony;
   worldId = (await getPool().query('SELECT id FROM worlds LIMIT 1')).rows[0].id;

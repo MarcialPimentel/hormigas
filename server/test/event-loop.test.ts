@@ -4,7 +4,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { FastifyInstance } from 'fastify';
 import { getPool } from '../src/db';
 import { MAX_ATTEMPTS, onEvent, processDueEvents, schedule, unknownPendingEventTypes } from '../src/events';
-import { setupTest, teardownTest, newPlayer, setColony, calmWildNests, knowAll } from './helpers';
+import { setupTest, teardownTest, newPlayer, newPlayerBeside, setColony, calmWildNests, knowAll } from './helpers';
 
 let app: FastifyInstance;
 let clock: Awaited<ReturnType<typeof setupTest>>['clock'];
@@ -122,7 +122,7 @@ describe('lock order', () => {
 
   it('a mission coming home while its player is busy does not deadlock or lose the ants', async () => {
     const a = await newPlayer(app, 'homing');
-    const b = await newPlayer(app, 'host');
+    const b = await newPlayerBeside(app, 'host', a);
     const ca = (await a.get('/api/state')).colony;
     const cb = (await b.get('/api/state')).colony;
     await setColony(ca.id, { foliage: 50000, protein: 50000, nectar: 50000, last_updated: clock.t, units: { worker: 20 } });
