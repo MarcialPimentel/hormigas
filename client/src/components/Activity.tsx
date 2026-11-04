@@ -90,7 +90,7 @@ export function ActivityList({ go, trips = true, quiet = false }: { go: (screen:
       endAt: out ? m.arriveAt : m.returnAt,
       label: (
         <>
-          {MISSION_LABEL[m.type as MissionType] ?? m.type} {out ? 'arriving at' : 'returning from'} <strong>{fmtCoords(m.target)}</strong>
+          {MISSION_LABEL[m.type as MissionType] ?? m.type} {out ? 'arriving at' : 'returning from'} <strong>{m.targetName ?? fmtCoords(m.target)}</strong>
         </>
       ),
       screen: 'missions',
