@@ -3,6 +3,7 @@
 _Current as of Build 13 (2026-11-02)._ Newest first. One entry per build, in players' words, built from the merged PRs. Smaller PRs merged between builds are listed with the nearest build.
 
 ## Between builds (unreleased)
+- **Yard columns walk on their trail again.** After the busier columns, a party's ants drifted off to one side of their trail line in long waves, so they looked like they were walking beside the path. Now they walk on it, with only a small sway.
 - Whole Yard: **busier ant columns.** A party on the map used to be a thin single file of 3 to 60 ants, so a small forage looked like three lost ants. Now each column draws many more ants than it sends (3 Workers show as about 17, a big forage party as over a hundred), walking nose to tail like a real ant trail. The label still shows how many ants you really sent; nothing about the mission changes.
 - **Colony mounds match the ants.** In the Whole Yard and the 3D Patch, every colony's mound was a flat-shaded low-poly dome. Now it's a cartoon mound of dark cocoa soil clods round a crater, with twigs and pebbles at its foot and the same ink outline as the ants and termite mounds. Mounds still grow with the colony (bigger ones carry more pebbles), and ants still climb out of the crater and over the top.
 - **Colonies stay the same size when you zoom.** In the Whole Yard, colony and wild-nest mounds grew up to three times bigger as you pulled the camera back, so they piled on top of each other far out. Now they keep their real size at every zoom; the banners still show where they are.
