@@ -3,6 +3,7 @@
 _Current as of Build 13 (2026-11-02)._ Newest first. One entry per build, in players' words, built from the merged PRs. Smaller PRs merged between builds are listed with the nearest build.
 
 ## Between builds (unreleased)
+- **No more blank screen after an update.** If the game updated while your tab was open, opening the nest (or another screen loaded on demand) could leave a blank white page with the music still playing. Now the page reloads itself once and opens on the new version.
 - Whole Yard: **every patch you know shows what's in it.** Spots, wild nests, herds and windfalls in other patches only appeared once you moved the camera right over that patch, and then stayed as they were when you looked. Now every patch in sight or that your ants have explored shows its spots as soon as the map opens, and keeps up to date (every minute, and whenever a party gets somewhere). Patches you've never explored still show only their outline.
 - **Yard columns walk on their trail again.** After the busier columns, a party's ants drifted off to one side of their trail line in long waves, so they looked like they were walking beside the path. Now they walk on it, with only a small sway.
 - **Yard ants step like they mean it.** Column ants in the Whole Yard moved their legs in slow motion, because the legs followed how far the party had really walked, and a trip takes minutes. Now their legs step at a normal walking pace while the column creeps along at its true speed.
