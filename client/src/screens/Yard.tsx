@@ -2,14 +2,13 @@
 // double-click one of your mounds to dive into its nest. The buttons on the left open what used to be screens
 // (Chambers, Brood Hall, Research, Missions) as panels over the map, for whichever colony you cycle to; Allies, Reports, Rankings and the
 // Field Journal cover the whole player, so they open without the colony switcher.
-// Computers only; it ships behind the ?preview=yard switch (client/src/preview.ts).
+// Computers only: it is the whole game there (App.tsx); phones keep the classic screens.
 import { Suspense, lazy, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { WORLD } from '@hormigas/shared';
+import { WILDS_SPOT, WORLD } from '@hormigas/shared';
 import { api } from '../api';
 import { useGame } from '../game';
 import { useMotion } from '../motion';
 import { fmtCoords, fmtFull } from '../format';
-import { leaveYardPreview } from '../preview';
 import { SpotCard, type Coords, type Spot } from '../components/Patch';
 import { UnderWay } from '../components/UnderWay';
 import { NeedsCard } from '../components/NeedsCard';
@@ -97,7 +96,8 @@ export function Yard({ go }: { go: Nav }) {
   const [ready, setReady] = useState(false);
   const [failed, setFailed] = useState(false);
   const [rung, setRung] = useState<Rung>('yard');
-  const [panel, setPanel] = useState<PanelId | null>(null);
+  // a new colony's founding tasks live in the Missions panel: start with it open until they're done
+  const [panel, setPanel] = useState<PanelId | null>(() => (state?.quests && !state.quests.finished ? 'missions' : null));
   const [nest, setNest] = useState(false);
   const [sel, setSel] = useState<Coords | null>(null);
   const [deploy, setDeploy] = useState<{ type: MissionType; target: Coords } | null>(null);
@@ -270,9 +270,10 @@ export function Yard({ go }: { go: Nav }) {
   const selSpot = sel ? spots[`${sel.region}:${sel.patch}`]?.find((s) => s.spot === sel.spot) : null;
   const raids = (state.incoming ?? []).filter((i: any) => i.hostile).length;
   const readyNeeds = (state.needs?.needs ?? []).filter((n: { ready: boolean; claimed: boolean }) => n.ready && !n.claimed).length;
+  const readyQuest = state.quests && !state.quests.finished && state.quests.quest?.ready ? 1 : 0;
   const badges: Partial<Record<PanelId, [number, string]>> = {
-    // raids first; otherwise the colony needs waiting to be collected (they live in this panel)
-    missions: raids > 0 ? [raids, 'raids coming'] : [readyNeeds, 'needs ready to collect'],
+    // raids first; otherwise the founding task and colony needs waiting to be collected (they live in this panel)
+    missions: raids > 0 ? [raids, 'raids coming'] : [readyNeeds + readyQuest, 'rewards ready to collect'],
     allies: [state.player.pendingDiplomacy ?? 0, 'waiting for you'],
     reports: [state.unreadReports ?? 0, 'unread'],
     journal: [state.journal?.fresh ?? 0, 'new pages'],
@@ -342,7 +343,7 @@ export function Yard({ go }: { go: Nav }) {
             {panel === 'missions' && (
               <div className="stack">
                 <div className="row-actions">
-                  <button type="button" className="btn primary small" onClick={() => setDeploy({ type: 'transport', target: sel ?? colony.coords })}>Send ants…</button>
+                  <button type="button" className="btn primary small" onClick={() => setDeploy(sel ? { type: 'transport', target: sel } : { type: 'forage', target: { ...colony.coords, spot: WILDS_SPOT } })}>Send ants…</button>
                 </div>
                 <UnderWay onFocus={(_, at) => sceneRef.current?.flyTo(at, 'patch')} go={panelNav} />
                 {/* the daily goals the classic Colony screen shows; rewards go to the colony picked in the header */}
@@ -367,12 +368,11 @@ export function Yard({ go }: { go: Nav }) {
         {nest && (
           <button type="button" className="btn small primary" onClick={surface}>↑ Up to the yard</button>
         )}
-        <button type="button" className="btn ghost small" onClick={() => go('nest')} title="The usual screens; Whole Yard stays at the top of the menu">
-          Classic screens
-        </button>
-        <button type="button" className="btn ghost small" onClick={leaveYardPreview} title="Turn the Whole Yard preview off in this browser">
-          Turn preview off
-        </button>
+        {state?.player.isAdmin && (
+          <button type="button" className="btn ghost small" onClick={() => go('feedback')} title="Players' feedback (admins only)">
+            Feedback inbox
+          </button>
+        )}
       </div>
 
       {!nest && (
