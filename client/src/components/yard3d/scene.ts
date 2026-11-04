@@ -1,11 +1,12 @@
 // The Whole Yard (docs/art/whole-yard.md): the whole world on one map, from the back garden (≈30 m) down to ant
 // height, with Civilization's map grammar on top: every patch a hex tile, scent borders, banners, mounds that grow.
-// Like the other 3D views it only acts out server state: regions come from /api/map/region, a patch's spots from
-// /api/map, parties from the game state. Picking a spot or diving into a mound is handed back to React.
+// Like the other 3D views it only acts out server state: regions come from /api/map/region, the spots of every patch
+// you know from /api/map/spots (and /api/map for one patch), parties from the game state. Picking a spot or diving into a mound is handed back to React.
 //
 // Units: 1 = 1 cm. A patch is a hex 1 m across; a region is 10 × 10 patches; the five regions sit as the yard's beds.
 // Travel times don't change: the hexes are only how patches are drawn (docs/11-world.md, Coordinates).
 import * as THREE from 'three';
+import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { WILDS_SPOT, WORLD } from '@hormigas/shared';
 import propsUrl from './props.json?url';
 import { CHITIN, antUniforms, createAnts, type Ants } from '../nest3d/ants3d';
@@ -693,6 +694,21 @@ export async function createYardScene(host: HTMLElement, labels: HTMLElement, da
   // a free spot is ringed with pale pebbles (they read as dots from the Patch zoom, and as stones at ant height)
   const ringMat = fogify(new THREE.MeshStandardMaterial({ color: '#F6EEDB', emissive: '#4A4436', flatShading: true, roughness: 0.8 }));
   disposables.push(ringMat);
+  // the 14 pebbles as one shared mesh: every patch you know draws its rings, so one draw call per ring, not 14
+  let ringGeo: THREE.BufferGeometry | null = null;
+  function pebbleRing() {
+    if (ringGeo) return ringGeo;
+    const parts = [];
+    for (let k = 0; k < 14; k++) {
+      const a = (k / 14) * Math.PI * 2, sc = 0.5 + ((k * 7) % 5) * 0.04;
+      e3.set(0, k * 2.3, 0); q.setFromEuler(e3); v.set(Math.cos(a) * 4.2, -0.05, Math.sin(a) * 4.2); s3.set(sc, sc * 0.9, sc);
+      parts.push(prop('pebble').clone().applyMatrix4(m4.compose(v, q, s3)));
+    }
+    ringGeo = mergeGeometries(parts)!;
+    for (const p of parts) p.dispose();
+    disposables.push(ringGeo);
+    return ringGeo;
+  }
 
   function setSpots(region: number, patch: number, spots: Spot[], fog?: PatchFog) {
     const key = `${region}:${patch}`;
@@ -707,12 +723,7 @@ export async function createYardScene(host: HTMLElement, labels: HTMLElement, da
       if (!c) {
         if (s.spot > 12 && s.spot !== WILDS_SPOT) continue;
         g = new THREE.Group();
-        for (let k = 0; k < 14; k++) {
-          const dm = new THREE.Mesh(prop('pebble'), ringMat);
-          const a = (k / 14) * Math.PI * 2, sc = 0.5 + ((k * 7) % 5) * 0.04;
-          dm.position.set(Math.cos(a) * 4.2, -0.05, Math.sin(a) * 4.2); dm.rotation.y = k * 2.3; dm.scale.set(sc, sc * 0.9, sc);
-          g.add(dm);
-        }
+        g.add(new THREE.Mesh(pebbleRing(), ringMat));
         const hit = new THREE.Mesh(new THREE.CircleGeometry(5, 12), new THREE.MeshBasicMaterial({ visible: false }));
         hit.rotation.x = -Math.PI / 2; g.add(hit);
         if (s.spot === WILDS_SPOT) { cls = 'ybanner wilds'; html = '<b>The wilds</b>'; }

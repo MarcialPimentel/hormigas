@@ -6,7 +6,7 @@ import {
 } from '@hormigas/shared';
 import { leaderOf } from '../game/nests';
 import { knowledgeOf, type KnownEntry } from '../game/discovery';
-import { fogOf, showsThrough, sightOf } from '../game/fog';
+import { fogOf, showsThrough, sightOf, type Sight } from '../game/fog';
 import { relationsOf, supercolonyTags } from '../game/diplomacy';
 import type { RelationInfo } from '@hormigas/shared';
 import { getPool, tx } from '../db';
@@ -114,6 +114,62 @@ function windfallView(c: any, w: WindfallState, me: number) {
   };
 }
 
+/**
+ * The spots of some patches in one region, as `playerId` sees them, with a fixed number of queries however many
+ * patches are asked for. Fog of war (docs/22-discovery.md#fog-of-war): a patch never explored shows only its wilds (so
+ * Scouts can survey them); one explored but out of sight shows the colonies that were there when you last saw it, and
+ * nothing that comes and goes.
+ */
+async function patchesSpots(q: ReturnType<typeof getPool>, worldId: number, me: number, sight: Sight, t: number, region: number, patches: number[]) {
+  const fogs = new Map(patches.map((p) => [p, fogOf(sight, region, p)]));
+  const open = patches.filter((p) => fogs.get(p)!.fog !== 'unexplored');
+  const rows: any[] = open.length
+    ? (
+        await q.query(
+          `SELECT c.id, c.name, c.patch, c.spot, c.player_id, c.npc, c.units, c.foliage, c.protein, c.nectar, c.created_at, p.username, p.points_total, p.protected_until, p.last_active,
+                  (SELECT tp.username FROM players tp WHERE tp.id = (c.npc->'tender'->>'playerId')::int) AS tender_name
+             FROM colonies c JOIN players p ON p.id = c.player_id
+            WHERE c.world_id = $1 AND c.region = $2 AND c.patch = ANY($3::int[]) ORDER BY c.patch, c.spot`,
+          [worldId, region, open],
+        )
+      ).rows.filter((x: any) => {
+        const f = fogs.get(x.patch)!;
+        return f.fog === 'visible' || x.player_id === me || (!isWindfallState(x.npc) && showsThrough(f, Number(x.created_at)));
+      })
+    : [];
+  const lit = open.filter((p) => fogs.get(p)!.fog === 'visible');
+  const hasCorpses = lit.length > 0 && (await q.query("SELECT to_regclass('corpse_fields') IS NOT NULL AS ok")).rows[0].ok;
+  const corpses: any[] = hasCorpses
+    ? (await q.query('SELECT patch, spot, protein, created_at FROM corpse_fields WHERE world_id = $1 AND region = $2 AND patch = ANY($3::int[])', [worldId, region, lit])).rows
+    : [];
+  const known = await knowledgeOf(q, me, rows.map((x) => x.id));
+  const owners = [...new Set(rows.filter((x) => !x.npc).map((x) => x.player_id as number))];
+  const rels = await relationsOf(q, me, owners, t);
+  const tags = await supercolonyTags(q, owners);
+  return patches.map((patch) => {
+    const f = fogs.get(patch)!;
+    if (f.fog === 'unexplored') return { patch, fog: f.fog, seenAt: null, spots: [{ spot: WILDS_SPOT, colony: null, corpses: 0 }] };
+    const here = rows.filter((x) => x.patch === patch);
+    // a wild nest's level follows the strongest active player in its patch
+    const leader = leaderOf(here.filter((x) => !x.npc), t);
+    const spots = [];
+    // colony spots, the wilds, then any wild sites that hold something (herds, mounds, dens: docs/24-npcs.md)
+    for (let spot = 1; spot <= MAX_SPOT; spot++) {
+      let c = here.find((x) => x.spot === spot);
+      // an empty windfall site shows nothing until the next windfall drops (docs/25-windfalls.md)
+      if (c && isWindfallState(c.npc) && !c.npc.drop) c = undefined;
+      if (spot > WORLD.spotsPerPatch + 1 && !c) continue;
+      const corpse = corpses.find((x) => x.patch === patch && x.spot === spot);
+      spots.push({
+        spot,
+        colony: c ? colonyView(c, known.get(c.id)!, leader, t, me, rels.get(c.player_id), tags.get(c.player_id)) : null,
+        corpses: corpse ? corpseFieldAmount(corpse.protein, corpse.created_at, t) : 0,
+      });
+    }
+    return { patch, fog: f.fog, seenAt: f.seenAt, spots };
+  });
+}
+
 export async function worldRoutes(app: FastifyInstance) {
   app.addHook('preHandler', async (req) => {
     await requireAuth(req);
@@ -129,44 +185,25 @@ export async function worldRoutes(app: FastifyInstance) {
     const q = getPool();
     const world = await getWorld(q);
     const t = now();
-    // fog of war (docs/22-discovery.md#fog-of-war): a patch never explored shows only its outline; one explored but out
-    // of sight shows the colonies that were there when you last saw it, and nothing that comes and goes
-    const f = fogOf(await sightOf(q, req.playerId, t), region, patch);
-    // only the wilds show, so you can send Scouts to survey them
-    if (f.fog === 'unexplored') return { region, patch, fog: f.fog, seenAt: null, spots: [{ spot: WILDS_SPOT, colony: null, corpses: 0 }] };
-    const r = await q.query(
-      `SELECT c.id, c.name, c.spot, c.player_id, c.npc, c.units, c.foliage, c.protein, c.nectar, c.created_at, p.username, p.points_total, p.protected_until, p.last_active,
-              (SELECT tp.username FROM players tp WHERE tp.id = (c.npc->'tender'->>'playerId')::int) AS tender_name
-         FROM colonies c JOIN players p ON p.id = c.player_id
-        WHERE c.world_id = $1 AND c.region = $2 AND c.patch = $3 ORDER BY c.spot`,
-      [world.id, region, patch],
-    );
-    if (f.fog === 'explored') r.rows = r.rows.filter((x: any) => x.player_id === req.playerId || (!isWindfallState(x.npc) && showsThrough(f, Number(x.created_at))));
-    const hasCorpses = f.fog === 'visible' && (await q.query("SELECT to_regclass('corpse_fields') IS NOT NULL AS ok")).rows[0].ok;
-    const corpses = hasCorpses
-      ? (await q.query('SELECT spot, protein, created_at FROM corpse_fields WHERE world_id = $1 AND region = $2 AND patch = $3', [world.id, region, patch])).rows
-      : [];
-    // a wild nest's level follows the strongest active player in its patch
-    const leader = leaderOf(r.rows.filter((x: any) => !x.npc), t);
-    const known = await knowledgeOf(q, req.playerId, r.rows.map((x: any) => x.id));
-    const owners = [...new Set(r.rows.filter((x: any) => !x.npc).map((x: any) => x.player_id as number))];
-    const rels = await relationsOf(q, req.playerId, owners, t);
-    const tags = await supercolonyTags(q, owners);
-    const spots = [];
-    // colony spots, the wilds, then any wild sites that hold something (herds, mounds, dens: docs/24-npcs.md)
-    for (let spot = 1; spot <= MAX_SPOT; spot++) {
-      let c = r.rows.find((x: any) => x.spot === spot);
-      // an empty windfall site shows nothing until the next windfall drops (docs/25-windfalls.md)
-      if (c && isWindfallState(c.npc) && !c.npc.drop) c = undefined;
-      if (spot > WORLD.spotsPerPatch + 1 && !c) continue;
-      const corpse = corpses.find((x: any) => x.spot === spot);
-      spots.push({
-        spot,
-        colony: c ? colonyView(c, known.get(c.id)!, leader, t, req.playerId, rels.get(c.player_id), tags.get(c.player_id)) : null,
-        corpses: corpse ? corpseFieldAmount(corpse.protein, corpse.created_at, t) : 0,
-      });
-    }
-    return { region, patch, fog: f.fog, seenAt: f.seenAt, spots };
+    const [one] = await patchesSpots(q, world.id, req.playerId, await sightOf(q, req.playerId, t), t, region, [patch]);
+    return { region, ...one };
+  });
+
+  /**
+   * Every patch of a region this player can see into (in sight or explored), spots and all: what /api/map gives for one
+   * patch, in one go, so the Whole Yard can show every patch you know without flying over each one. Never-explored
+   * patches are left out: they only show their outline.
+   */
+  app.get('/api/map/spots', async (req) => {
+    const region = Number((req.query as any).region);
+    if (!(Number.isInteger(region) && region >= 1 && region <= WORLD.regions)) throw new GameError('bad_coords', 'That region does not exist.');
+    const q = getPool();
+    const world = await getWorld(q);
+    const t = now();
+    const sight = await sightOf(q, req.playerId, t);
+    const seen: number[] = [];
+    for (let p = 1; p <= WORLD.patchesPerRegion; p++) if (fogOf(sight, region, p).fog !== 'unexplored') seen.push(p);
+    return { region, patches: await patchesSpots(q, world.id, req.playerId, sight, t, region, seen) };
   });
 
   /**
