@@ -50,7 +50,7 @@ Foraging Instinct research shifts odds toward good outcomes: each level (its `fo
 
 - **The first expedition always finds food.** A player's first party to reach the wilds rolls a Food cache worth at least 70% of what it can carry, and loses nobody. Sending foragers is a founding task, so it has to land well; the gamble starts with the second trip. A recalled party doesn't use up the guarantee.
 - **Players see the cap.** One party never brings home more than `(3,000 + 25 × points) × (1 + 10% per Foraging Instinct level) × gathering multiplier` (`forageFindCap`; the multiplier is ×2, [03-economy](03-economy.md#production)). The multiplier also fills a small party's load: a find rolled at 40% of what the party carries comes home at 80%, never more than it can carry. The forage screen says that number, how many Workers (1,500 cargo each) it takes to carry it, and whether the party being sent can carry it all.
-- **The report arrives before the food.** The find is rolled when the party reaches the wilds, so the report says "On the way home, arriving HH:MM"; the food lands in the stores when the party gets home.
+- **The report arrives before the food.** The find is rolled when the party reaches the wilds, so the report says "On the way home to <colony>, arriving HH:MM" (naming the colony the party set out from, so players with several colonies know where the food goes); the food lands in the stores when the party gets home.
 - **Players see the odds.** The forage screen shows the chances after Foraging Instinct, grouped as finds food / back early / comes back empty / loses ants, with every outcome one tap away. A flop should read as bad luck, not a bug.
 
 ## Surveying the wilds
