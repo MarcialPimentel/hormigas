@@ -12,6 +12,7 @@ import type { Caste } from '../../art/ants';
 import { fmtDuration } from '../../format';
 import { CHITIN, antUniforms, createAnts, type CargoKind } from '../nest3d/ants3d';
 import { createGrasshoppers } from '../three/grasshopper';
+import { createAphidHerds } from '../three/aphidHerd';
 import { leftOf } from '../nestScene';
 import type { Spot, SpotColony } from '../Patch';
 import { moveKeys } from './keys';
@@ -133,6 +134,8 @@ export async function createPatchScene(
   const disposables: { dispose(): void }[] = [];
   const hoppers = createGrasshoppers();
   disposables.push(hoppers);
+  const herds = createAphidHerds();
+  disposables.push(herds);
   const keep = <T extends { dispose(): void }>(x: T) => (disposables.push(x), x);
   const matCache = new Map<string, THREE.MeshStandardMaterial>();
   const mat = (hex: string, extra: THREE.MeshStandardMaterialParameters = {}) => {
@@ -626,22 +629,13 @@ uniform vec3 uSpots[SIGHT_SPOTS];
       return;
     }
     if (c.herd) {
-      // aphids on a stem
-      const stem = new THREE.Mesh(sk(new THREE.CylinderGeometry(0.08, 0.12, 5, 6).translate(0, 2.5, 0)), mat('#5E8A2E'));
-      stem.position.set(x, y, z);
-      stem.rotation.z = 0.08;
-      spotGroup.add(shadow(stem));
-      const leaf = new THREE.Mesh(sk(new THREE.SphereGeometry(1, 10, 6).scale(1.1, 0.06, 0.5).translate(1.1, 0, 0)), mat('#7DB043', { side: THREE.DoubleSide }));
-      leaf.position.set(x, y + 3.2, z);
-      leaf.rotation.set(0, 0.6, 0.3);
-      spotGroup.add(shadow(leaf));
-      const aphid = sk(new THREE.SphereGeometry(0.15, 10, 8).scale(1, 0.75, 0.75));
-      for (let i = 0; i < 12; i++) {
-        const a = new THREE.Mesh(aphid, mat('#B5E04A', { roughness: 0.35, emissive: '#5C8E1A', emissiveIntensity: 0.2 }));
-        a.position.set(x + Math.sin(i) * 0.12, y + 0.8 + i * 0.33, z + Math.cos(i * 1.7) * 0.12);
-        spotGroup.add(a);
-      }
-      if (c.herd.tended) addMound(x + 1.6, z + 1, '#C8A06A', c.herd.yours ? FLAG.mine : FLAG.other, 0.4);
+      // the Meshy poppy, with more aphids feeding on it the bigger the herd
+      const h = herds.make(c.herd.level, !coarse);
+      h.scale.setScalar(5.5);
+      h.position.set(x, y, z);
+      h.rotation.y = 0.4;
+      spotGroup.add(h);
+      if (c.herd.tended) addMound(x + 2.2, z + 1.2, '#C8A06A', c.herd.yours ? FLAG.mine : FLAG.other, 0.4);
       return;
     }
     if (c.wild?.kind === 'mound') {
@@ -1534,6 +1528,7 @@ uniform vec3 uSpots[SIGHT_SPOTS];
     const d = reduced ? raw : { ...raw, now: tickNow + Math.min(1500, performance.now() - tickAt) };
     seen.clear();
     clock += reduced ? 0 : dt;
+    herds.tick(clock);
     antUniforms.uTime.value = clock;
     grassU.uTime.value = clock;
     // a view that opened hidden or at zero size measures itself again once it has one

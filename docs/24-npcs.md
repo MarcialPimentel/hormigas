@@ -109,7 +109,7 @@ Unscouted wild things show as scents with a hint ([22-discovery](22-discovery.md
 ## How players see them
 - **Missions tab:**
   - The wilds strip at the right of the patch holds up to three wild sites.
-  - Known ones are drawn: aphids on a stem (with your flag when you tend it), a termite cone, a silk-lidded burrow.
+  - Known ones are drawn: aphids feeding on a poppy, more of them the higher the herd's level (2 + 2 per level), with your flag when you tend it; a termite cone, a silk-lidded burrow.
   - Tapping one opens its card. A herd's card shows its yield and who tends it; if it's yours, it also shows your tenders and the waiting honeydew. The card has Tend, Send more tenders, Call tenders home, and Raid when someone else holds it.
 - **Tags:** "Wild nest · Level 3", "Termite mound · Tier 1", "Boss · Tier 1", "Aphid herd · untended / tended / yours".
 - **Reports:** scouting a herd says what it makes and who tends it. Tending gets its own report. Raids on your tenders arrive as normal battle reports ("Aphid Herd lost: your tenders were driven off").
