@@ -49,6 +49,8 @@ Marz's originals are 48 kHz WAVs in `GameDev/_suno/Hormiga` (not in the repo). E
 ## Before the songs
 From 2026-11-02 to the songs, the music was made in code: tiny recorded footsteps (Kenney's CC0 Impact Sounds, pitched up) swinging left and right on every beat like an ant's tripod gait, a soil drum and a sine-wave marimba tune that rewrote itself. Marz liked the idea, then wanted something fuller and more like video game military music, and made the songs to replace it. The code is in git history (`client/src/audio/march.ts`, removed in the songs PR), and recordings of it are in `GameDev/_audio/renders/hormigas-march/`.
 
+The trailer's soundtrack is this code-made march, rendered offline to follow the edit before the songs replaced it (`tools/trailer/music.mjs`, [trailer.md](trailer.md)). That script loads `march.ts`, which is gone, so re-rendering the trailer needs it switched to the songs first.
+
 ## Open Questions
 - Sound effects for moments players feel but can't hear (a battle report landing, a raid arriving, a dig finishing): not yet decided.
 - More than one song per mood, so long sessions hear some variety?

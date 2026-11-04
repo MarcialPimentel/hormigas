@@ -37,6 +37,7 @@ _Current as of Build 11 (2026-10-30)._ Every doc, its role and its status. The n
 | [27-living-world.md](27-living-world.md) | System | proposal | The long game in a world that never resets: the Great Nuptial Flight, a world calendar, the Hall of Fame, landmarks |
 | [sound.md](sound.md) | Sound | current | The marching music: what plays when, controls, how it's made, recordings and licences |
 | [test-bed.md](test-bed.md) | **Test bed** | current | The /?test scene (ant models, trails, march sliders), the simulators and the fast test world |
+| [trailer.md](trailer.md) | Trailer | current | The trailer: what it shows, how it's captured from the real game, how to re-render it |
 | [playtest.md](playtest.md) | **Playtesting** | current | How to play the current build, test with two players, report feedback |
 | [DEPLOY.md](DEPLOY.md) | **Deploy** | current | How a merge reaches players, rollbacks, everyday commands, rebuilding the server (general terms) |
 | [art/3d-exploration.md](art/3d-exploration.md) | Art reference | reference | The approved 3D nest exploration (2026-10-28) and its mock-up |
