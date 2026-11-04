@@ -1,7 +1,7 @@
 // Build 10, "Castes with a purpose": new castes, the Narrow Tunnel and the fall-back order through the API.
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { FastifyInstance } from 'fastify';
-import { setupTest, teardownTest, newPlayer, setColony, setPlayer, calmWildNests, knowAll, type Client } from './helpers';
+import { setupTest, teardownTest, newPlayer, newPlayerBeside, setColony, setPlayer, calmWildNests, knowAll, type Client } from './helpers';
 
 let app: FastifyInstance;
 let clock: Awaited<ReturnType<typeof setupTest>>['clock'];
@@ -12,7 +12,7 @@ let aId: number, bId: number;
 beforeAll(async () => {
   ({ app, clock } = await setupTest());
   a = await newPlayer(app, 'sprayer');
-  b = await newPlayer(app, 'holder');
+  b = await newPlayerBeside(app, 'holder', a);
   const sa = await a.get('/api/state');
   const sb = await b.get('/api/state');
   ca = sa.colony;
