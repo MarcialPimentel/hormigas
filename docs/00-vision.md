@@ -12,7 +12,7 @@ Hormigas is a browser-based, persistent strategy game where you grow an ant king
 
 **Tone:** grounded nature documentary. The colony is drawn like a living field guide: real anatomy, bold silhouettes, no cartoon faces. See [18-art-direction.md](18-art-direction.md).
 
-**Sound:** a soft march made from the ants' own footsteps, following what the colony is doing. See [sound.md](sound.md).
+**Sound:** a military march for a miniature army (marimba, snare, tiny footsteps): three songs that follow what the colony is doing. See [sound.md](sound.md).
 
 ## Design pillars
 1. **The colony lives while you're away.** Progress never stops. Coming back should always feel rewarding.
@@ -49,6 +49,7 @@ Decisions Marz made, newest first. Details and the smaller calls live in the lin
 
 | Date | Decision | Why |
 |---|---|---|
+| 2026-11-04 | The music is now three songs Marz made in Suno, one per colony mood: **Home in the Dirt** (nobody out), **Ants on the March** (parties walking), **Raid on the Nest** (a raid or swarm coming). They fade into each other and loop without a gap. They replace the code-made footstep march of 2 Nov ([sound](sound.md)) | Marz wanted fuller, "video game military music, ants, marimba" after toy-like and lo-fi takes missed. Songs stream instead of decoding, so phones don't hold 100 MB of audio |
 | 2026-11-03 | New players never start in a patch that already has a player: each gets the empty patch closest to an active player ([11-world](11-world.md#starting-placement)). Replaces "up to 4 players per patch" (29 Oct) | Going public: patch-mates fought over the same wild nest, herd and forage from the start. Neighbours one patch away still meet, scout and raid each other |
 | 2026-11-02 | **Mission fuel ignores speed** and costs twice the old full-speed price (`fuelDivisor` 35,000 with a 4× full-speed factor → 4,375 flat); the speed slider and Return at… stay, for timing only ([03-economy](03-economy.md#mission-fuel), [09-missions](09-missions.md)) | Playtest: fuel never scaled with gathering ×2, so it cost minutes of Nectar, and slowing down saved at most 70% of a small cost for a 10× longer trip: a choice with no bearing. Timing the army's return (army saving) is the real use of speed |
 | 2026-11-02 | Build 14, Swarm sizes: each sighting rolls a **foraging column** (60%: you win at least 95%, losing up to 30% of your ants), a **war column** (30%: win at least 90%, losing up to 60%) or a **great swarm** (10%: about a coin flip), hidden until scouted; beating one leaves **75% of its worth in mixed food**, over the storage cap; the smallest swarm is 2 Minors. Standing orders to move Workers turned down (#158): that stays manual. Who gets hit in battle parked as research ([#159](https://github.com/MarcialPimentel/hormigas/issues/159)) ([20-swarms](20-swarms.md#decisions-marz-2-nov-2026-build-14-swarm-sizes)) | A real swarm cost Marz's main colony 40,300 of ants (91%) in a fight it was twice as strong for: swarm bites kill an ant each, and the old sizing (beaten 70% of the time) made a win cost the army. One fixed moderate size would remove the fear of losing; three sizes keep the fear while most swarms are survivable and pay |

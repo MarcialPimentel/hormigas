@@ -16,7 +16,7 @@ import { Journal } from './screens/Journal';
 import { FeedbackAdmin } from './screens/FeedbackAdmin';
 import { FeedbackButton } from './components/Feedback';
 import { SoundButton } from './components/SoundButton';
-import { useMarch } from './audio/useSound';
+import { useMusic } from './audio/useSound';
 import type { Nav } from './nav';
 import { phone3dPreview, yardPreview } from './preview';
 import { FpsMeter } from './components/FpsMeter';
@@ -66,7 +66,7 @@ export function App() {
   }, [isAdmin]);
   const onFeedbackCount = useCallback((n: number) => setOpenFeedback(n), []);
   // Background music: the colony's march, once the game has loaded (docs/sound.md).
-  useMarch(loggedIn && state ? state : null);
+  useMusic(loggedIn && state ? state : null);
   const nav: Nav = (id, p) => {
     setScreen(id);
     setParams(p);

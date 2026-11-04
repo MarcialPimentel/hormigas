@@ -57,7 +57,7 @@ export function SoundButton() {
             disabled={!prefs.on}
             onChange={(e) => engine.setPrefs({ music: Number(e.target.value) / 100 })}
           />
-          <p className="muted small">The march follows your colony: quiet at home, fuller while your ants are out, faster when a raid is coming.</p>
+          <p className="muted small">The music follows your colony: Home in the Dirt while everyone's home, Ants on the March while your ants are out, Raid on the Nest when a raid is coming.</p>
         </div>
       )}
     </div>
