@@ -1245,7 +1245,9 @@ export async function createYardScene(host: HTMLElement, labels: HTMLElement, da
         if (k < 0 || k > 1) continue;
         const p = pointAlong(c.path, k * c.len, colP, colT), tg = colT;
         if (pr.back) tg.negate();
-        const wob = Math.sin(i * 12.9) * M.wobble * antGrow;
+        // a little sway each side of the trail, different for each ant (a hash, not sin(i × k): that drifts slowly and
+        // bent a nose-to-tail column into a long wave beside its line)
+        const h = Math.sin(i * 127.1 + 311.7) * 43758.5453, wob = (h - Math.floor(h) - 0.5) * 2 * M.wobble * antGrow;
         const x = p.x - tg.z * wob, z = p.z + tg.x * wob, y = footY(x, z);
         // nose up out of the crater and over the rim, down the far slope
         const ahead = footY(x + tg.x * 0.3, z + tg.z * 0.3);

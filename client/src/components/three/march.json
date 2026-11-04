@@ -4,7 +4,7 @@
     "workerSize":  { "value": 0.6,  "min": 0.2, "max": 2,   "step": 0.05, "unit": "× ant", "label": "Worker size", "note": "How big a worker is drawn in a Whole Yard column, before the zoom grows it." },
     "soldierSize": { "value": 0.75, "min": 0.2, "max": 2,   "step": 0.05, "unit": "× ant", "label": "Soldier size", "note": "How big a soldier is drawn in a Whole Yard column." },
     "spacing":     { "value": 0.6,  "min": 0.3, "max": 4,   "step": 0.1,  "unit": "ant lengths", "label": "Gap between ants", "note": "Distance from one ant to the next along the trail." },
-    "wobble":      { "value": 0.6,  "min": 0,   "max": 3,   "step": 0.1,  "unit": "ant lengths", "label": "Side-to-side spread", "note": "How far ants stray either side of the trail line." },
+    "wobble":      { "value": 0.08, "min": 0,   "max": 3,   "step": 0.02, "unit": "ant lengths", "label": "Side-to-side spread", "note": "How far ants stray either side of the trail line. Small, so the column walks on its line (Marz, 4 Nov 2026). Was 0.6." },
     "stride":      { "value": 0.17, "min": 0.05, "max": 0.6, "step": 0.01, "unit": "ant lengths", "label": "Stride", "note": "Distance walked per leg cycle. Too short and the legs blur, too long and the feet slide." },
     "density":     { "value": 10,   "min": 1,   "max": 30,  "step": 0.5,  "unit": "× √ants", "label": "Ants drawn per party", "note": "A column draws this × the square root of the party, so a small party still reads as a trail (Marz, 4 Nov 2026: 3 ants felt empty). 3 Workers → 17 ants, 170 → 130. Was 3." },
     "minAnts":     { "value": 10,   "min": 1,   "max": 60,  "step": 1,    "unit": "ants", "label": "Fewest ants in a column", "note": "Even a party of one shows at least this many." },
