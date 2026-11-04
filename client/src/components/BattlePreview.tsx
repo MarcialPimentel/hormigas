@@ -5,10 +5,9 @@ import { api } from '../api';
 import { useGame } from '../game';
 import { fmtDuration, fmtNum } from '../format';
 
-export function BattlePreview({ target, units, retreatPct = 0 }: { target: Coords; units: UnitCounts; retreatPct?: number }) {
-  const { state, now } = useGame();
+/** Your latest scout report on a spot (undefined while loading, null when there's none). */
+export function useIntel(target: Coords): any {
   const [intel, setIntel] = useState<any>(undefined);
-
   useEffect(() => {
     let live = true;
     setIntel(undefined);
@@ -23,6 +22,17 @@ export function BattlePreview({ target, units, retreatPct = 0 }: { target: Coord
       clearTimeout(t);
     };
   }, [target.region, target.patch, target.spot]);
+  return intel;
+}
+
+/**
+ * Win / draw / lose against the latest scout report. `npcSite` is a wild nest, herd or windfall: no player ground
+ * to dig into (the server's resolveRaid gives NPC spots no ground bonus). `claim` is a fight over a windfall: the
+ * winners stay to haul it, so there's no loot to carry home.
+ */
+export function BattlePreview({ target, units, retreatPct = 0, npcSite = false, claim = false }: { target: Coords; units: UnitCounts; retreatPct?: number; npcSite?: boolean; claim?: boolean }) {
+  const { state, now } = useGame();
+  const intel = useIntel(target);
 
   const unitsKey = JSON.stringify(units);
   const preview = useMemo(() => {
@@ -32,17 +42,17 @@ export function BattlePreview({ target, units, retreatPct = 0 }: { target: Coord
       { units, research: state.player.research, retreatPct },
       // allied soldiers holding position fight too; their research is unknown, so count them unboosted
       // a player colony's ground counts too (Sandy Soil's walls crumble); wild nests keep their own
-      { units: d.units ?? {}, defenses: d.defenses ?? {}, groundDefensePct: d.wild ? 0 : groundDefensePct(terrainForSpot(target.spot)), research: d.research ?? {}, allies: d.garrison ? [{ units: d.garrison, research: {} }] : [] },
+      { units: d.units ?? {}, defenses: d.defenses ?? {}, groundDefensePct: d.wild || npcSite ? 0 : groundDefensePct(terrainForSpot(target.spot)), research: d.research ?? {}, allies: d.garrison ? [{ units: d.garrison, research: {} }] : [] },
       { defenderResources: d.resources, protectedEach: d.protectedEach ?? 0, cargoOf: (u) => groupCargo(u), wild: !!d.wild },
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [intel, unitsKey, retreatPct, state?.player.research, target.spot]);
+  }, [intel, unitsKey, retreatPct, npcSite, state?.player.research, target.spot]);
 
   if (intel === undefined) return <div className="preview muted small">Checking your scout reports…</div>;
   if (intel === null)
     return (
       <div className="preview">
-        <strong>No scout report on this colony.</strong>
+        <strong>Battle odds unknown: no scout report {claim ? 'on whoever holds it' : 'on this colony'}.</strong>
         <p className="muted small">Scout it first to see your odds before you commit an army.</p>
       </div>
     );
@@ -75,7 +85,11 @@ export function BattlePreview({ target, units, retreatPct = 0 }: { target: Coord
             <div><dt>Lose</dt><dd>{Math.round(preview.lossRate * 100)}%{preview.retreatRate > 0 ? ` (fall back ${Math.round(preview.retreatRate * 100)}%)` : ''}</dd></div>
             <div><dt>Your losses</dt><dd>~{fmtNum(preview.avgAttackerLossValue)}</dd></div>
             <div><dt>Their losses</dt><dd>~{fmtNum(preview.avgDefenderLossValue)}</dd></div>
-            <div><dt>Loot if you win</dt><dd>~{fmtNum(preview.avgLootOnWin)}</dd></div>
+            {claim ? (
+              <div><dt>If you win</dt><dd>they hold it</dd></div>
+            ) : (
+              <div><dt>Loot if you win</dt><dd>~{fmtNum(preview.avgLootOnWin)}</dd></div>
+            )}
           </dl>
           {/* who in their colony counters what you're sending (docs/05-castes-units.md) */}
           {counterHints(units, d.units ?? {}, d.defenses ?? {}).map((h) => (
