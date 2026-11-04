@@ -51,10 +51,12 @@ function bend(sh: THREE.WebGLProgramParametersWithUniforms, b?: VertexBend) {
   sh.vertexShader = decl + '\n' + sh.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\n' + b.glsl);
 }
 
-export function toonPropMaterial(bands: THREE.Texture, side: THREE.Side, key: string, b?: VertexBend) {
+/** `solid`: no gloss spot or rim light, for models lit evenly so each part is one flat colour (the poppy). */
+export function toonPropMaterial(bands: THREE.Texture, side: THREE.Side, key: string, b?: VertexBend, solid = false) {
   const m = new THREE.MeshToonMaterial({ gradientMap: bands, vertexColors: true, side });
   m.onBeforeCompile = (sh) => {
     bend(sh, b);
+    if (solid) return;
     sh.uniforms.uRim = antUniforms.uRim;
     sh.fragmentShader = 'uniform vec3 uRim;\n' + sh.fragmentShader.replace(
       '#include <dithering_fragment>',
@@ -66,7 +68,7 @@ export function toonPropMaterial(bands: THREE.Texture, side: THREE.Side, key: st
       #include <dithering_fragment>`,
     );
   };
-  m.customProgramCacheKey = () => key + '-toon' + (b ? '|' + b.key : '');
+  m.customProgramCacheKey = () => key + '-toon' + (b ? '|' + b.key : '') + (solid ? '|solid' : '');
   return m;
 }
 
