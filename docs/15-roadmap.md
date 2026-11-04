@@ -30,6 +30,7 @@ _Current as of Build 11 (2026-10-30)._ Hormigas has no GitHub milestones: each b
 | — | Mission fuel ignores speed and costs ×2 a full-speed trip ([03-economy](03-economy.md#mission-fuel)) | done (live) |
 | — | New players get their own patch, next to the active players ([11-world](11-world.md#starting-placement)) | in review |
 | — | A better-looking ant: the 3D ant rebuilt in Blender from a Meshy concept ([18-art-direction](18-art-direction.md#in-3d-the-sunlit-microcosm)) | in review |
+| — | Aphid herds are a poppy with aphids on it, more aphids for a bigger herd (Meshy, [18-art-direction](18-art-direction.md#in-3d-the-sunlit-microcosm)) | in review |
 | v1 | Supercolonies stage B, joint raids on spider dens, more defenses | later |
 
 ## Guiding rule
