@@ -1256,6 +1256,8 @@ export async function createYardScene(host: HTMLElement, labels: HTMLElement, da
         if (k < 0 || k > 1) continue;
         const p = pointAlong(c.path, k * c.len, colP, colT), tg = colT;
         if (pr.back) tg.negate();
+        // legs step on the clock at a walking pace, not by distance: a real trip takes minutes, so legs tied to the
+        // column's progress barely moved (Marz, 4 Nov 2026: walk in place)
         // a little sway each side of the trail, different for each ant (a hash, not sin(i × k): that drifts slowly and
         // bent a nose-to-tail column into a long wave beside its line)
         const h = Math.sin(i * 127.1 + 311.7) * 43758.5453, wob = (h - Math.floor(h) - 0.5) * 2 * M.wobble * antGrow;
@@ -1263,7 +1265,7 @@ export async function createYardScene(host: HTMLElement, labels: HTMLElement, da
         // nose up out of the crater and over the rim, down the far slope
         const ahead = footY(x + tg.x * 0.3, z + tg.z * 0.3);
         const pitch = y > 0 || ahead > 0 ? pitchAhead(footY, x, z, tg.x, tg.z, 0.3, 1.2) : 0;
-        ants.ant(c.caste, x, y, z, { pitch, scale: (c.caste === 'soldier' ? M.soldierSize : M.workerSize) * antGrow, yaw: Math.atan2(-tg.z, tg.x), gait: (k * c.len) / (M.stride * antGrow) * 1.2, color: c.color, cargo: pr.back && c.cargo ? { kind: 'leaf', color: c.cargo } : null });
+        ants.ant(c.caste, x, y, z, { pitch, scale: (c.caste === 'soldier' ? M.soldierSize : M.workerSize) * antGrow, yaw: Math.atan2(-tg.z, tg.x), step: reduced ? 0 : M.legSpeed, color: c.color, cargo: pr.back && c.cargo ? { kind: 'leaf', color: c.cargo } : null });
       }
     }
     drawBattle(dt, antGrow, showAnts);
