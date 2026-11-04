@@ -11,6 +11,7 @@ import type { ServerColony, ServerState } from '../../game';
 import type { Caste } from '../../art/ants';
 import { fmtDuration } from '../../format';
 import { CHITIN, antUniforms, createAnts, type CargoKind } from '../nest3d/ants3d';
+import { createGrasshoppers } from '../three/grasshopper';
 import { leftOf } from '../nestScene';
 import type { Spot, SpotColony } from '../Patch';
 import { moveKeys } from './keys';
@@ -129,6 +130,8 @@ export async function createPatchScene(
   scene.fog = new THREE.Fog('#B8DCEA', 70, 190);
   const camera = new THREE.PerspectiveCamera(40, 1, 0.05, 600);
   const disposables: { dispose(): void }[] = [];
+  const hoppers = createGrasshoppers();
+  disposables.push(hoppers);
   const keep = <T extends { dispose(): void }>(x: T) => (disposables.push(x), x);
   const matCache = new Map<string, THREE.MeshStandardMaterial>();
   const mat = (hex: string, extra: THREE.MeshStandardMaterialParameters = {}) => {
@@ -701,8 +704,15 @@ uniform vec3 uSpots[SIGHT_SPOTS];
         l.rotation.set(0.2 * (i % 2 ? 1 : -1), i * 0.9, 0.15);
         spotGroup.add(shadow(l));
       }
+    } else if (w.kind === 'grasshopper') {
+      // the Meshy grasshopper, on its back with its legs in the air
+      const h = hoppers.make(!coarse);
+      h.scale.setScalar(5.5);
+      h.position.set(x, y, z);
+      h.rotation.y = 0.3 - Math.PI / 2;
+      spotGroup.add(h);
     } else {
-      // a dead grasshopper or lizard on its side: long body, legs in the air
+      // a dead lizard on its side: long body, legs in the air
       const lizard = w.kind === 'lizard';
       const len = lizard ? 7 : 4;
       const body = new THREE.Mesh(sk(new THREE.CapsuleGeometry(lizard ? 0.55 : 0.45, len, 6, 12)), mat(lizard ? '#8C8A4E' : '#9DAA45', { roughness: 0.7 }));

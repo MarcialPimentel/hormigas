@@ -10,6 +10,7 @@ import { WILDS_SPOT, WORLD } from '@hormigas/shared';
 import moundsUrl from './mounds.json?url';
 import propsUrl from './props.json?url';
 import { CHITIN, antUniforms, createAnts, type Ants } from '../nest3d/ants3d';
+import { createGrasshoppers } from '../three/grasshopper';
 import { tripProgress } from '../UnderWay';
 import { TIMING, drawnFor, momentAt, planBattle, replayLength, type BattlePlan, type ReplayMoment } from '../patch3d/battle';
 import { makePath, pitchAhead, pointAlong, type Path } from '../three/path';
@@ -172,6 +173,8 @@ export async function createYardScene(host: HTMLElement, labels: HTMLElement, da
     m.customProgramCacheKey = () => key + '|fog';
     return m;
   }
+  const hoppers = createGrasshoppers(fogify);
+  disposables.push(hoppers);
   const mats = new Map<string, THREE.MeshStandardMaterial>();
   const mat = (color: string) => {
     if (!mats.has(color)) mats.set(color, fogify(new THREE.MeshStandardMaterial({ color, flatShading: true, roughness: 0.9 })));
@@ -690,10 +693,17 @@ export async function createYardScene(host: HTMLElement, labels: HTMLElement, da
       const silk = new THREE.Mesh(new THREE.CircleGeometry(6, 10), new THREE.MeshStandardMaterial({ color: '#EDE8E0', transparent: true, opacity: 0.8 })); silk.rotation.x = -Math.PI / 2; silk.position.y = 2.9; g.add(silk);
     } else if (c.windfall) {
       const k = c.windfall.kind;
+      if (k === 'grasshopper') {
+        // the Meshy grasshopper, on its back with its legs in the air
+        const h = hoppers.make();
+        h.scale.setScalar(12);
+        h.rotation.y = 0.5;
+        g.add(h);
+        return g;
+      }
       const m = k === 'fig' ? new THREE.Mesh(new THREE.SphereGeometry(4, 8, 6), mat('#7A3F6E'))
         : k === 'branch' ? new THREE.Mesh(new THREE.CylinderGeometry(1, 1.4, 30, 6), mat('#7A5536'))
-        : k === 'lizard' ? new THREE.Mesh(new THREE.CapsuleGeometry(2.5, 16, 3, 8), mat('#6E8F3A'))
-        : new THREE.Mesh(new THREE.CapsuleGeometry(1.4, 7, 3, 6), mat('#8DB83A'));
+        : new THREE.Mesh(new THREE.CapsuleGeometry(2.5, 16, 3, 8), mat('#6E8F3A'));
       if (k !== 'fig') m.rotation.z = Math.PI / 2;
       m.position.y = 2.5; m.castShadow = true; g.add(m);
     }

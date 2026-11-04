@@ -153,7 +153,7 @@ const LEGS = `vec3 transformed = vec3(position);
         transformed.y += (1.0 - abs(aLeg.x)) * abs(sin(ph)) * 0.006 * on;`;
 
 /** Three hard light bands for the cartoon look: shadow side, mid, lit. */
-function toonBands() {
+export function toonBands() {
   const t = new THREE.DataTexture(new Uint8Array([95, 175, 255]), 3, 1, THREE.RedFormat);
   t.minFilter = t.magFilter = THREE.NearestFilter;
   t.needsUpdate = true;
