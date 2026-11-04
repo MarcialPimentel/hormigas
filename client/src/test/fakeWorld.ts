@@ -187,7 +187,7 @@ export function spotsFor(region: number, patch: number): Spot[] {
       wildSpot(WILDS_SPOT + 2, { name: 'Termite mound', wild: { species: 'Termites', kind: 'mound', level: 2, style: '' } }),
       wildSpot(WILDS_SPOT + 3, {
         name: 'Aphid herd',
-        herd: { level: 1, nectarPerHour: 10, storeCap: 100, style: '', tended: false, tenderName: null, yours: false },
+        herd: { level: 3, nectarPerHour: 35, storeCap: 420, style: '', tended: false, tenderName: null, yours: false },
       }),
       wildSpot(WILDS_SPOT + 4, { name: 'Grasshopper', windfall: windfall('grasshopper') }),
     ];

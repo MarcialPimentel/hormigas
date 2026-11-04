@@ -14,7 +14,9 @@ _2026-11-04. Source: Meshy, paid plan (commercial use allowed)._
 
 The concept prompts are in `c1.json`, `c2.json` and `c3.json` (concept 2 is the one used).
 
-**Result:** 1,542 triangles in 2 parts (spires, base). Faces under the arches use the dark `hole` material. Game data: `client/src/components/three/termite-mound.json`, drawn by `toonModel.ts` (scale 26 in the Whole Yard, 6 in the Patch).
+**Result:** 1,542 triangles in 2 parts (spires, base). Faces under the arches use the dark `hole` material. Game data: `client/src/components/three/termite-mound.json`, drawn by `toonModel.ts` (scale 17 in the Whole Yard so it stays inside its hex, 6 in the Patch).
+
+**Fix, 4 Nov:** Meshy left a see-through slit in the main spire's front; `fill` closes it (and `build` now does too). See `slit-before.png` / `slit-after.png`.
 
 **Editing it:** open `termite-mound.blend`, repaint faces between the `tm_spires` / `tm_base` / `tm_hole` materials or change their colours, then:
 
