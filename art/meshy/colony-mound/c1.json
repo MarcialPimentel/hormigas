@@ -1,0 +1,5 @@
+{
+ "ai_model": "nano-banana-2",
+ "prompt": "Chunky cartoon 3D game prop of an ant colony mound, in the same style as the reference termite mound and ant: smooth rounded simple shapes, flat colour with two or three soft shading bands, a thick dark brown ink outline, one small glossy highlight, readable at a glance. Colours: rich dark cocoa-brown earth #6E4A2E with deeper #4E3220 shade low down, lighter #8A6040 on top, a very dark #1E120A entrance hole. Same silhouette and proportions as the reference low-poly mound: a low wide dome about twice as wide as tall, built of soft rounded soil clods and crumbs, a shallow crater on top with one round entrance hole in the middle, a few pale pebbles and small twigs pushed out round the foot. Wide solid base sitting flat on the ground. No ants, no flag, no grass. Single object, centred, three-quarter view from slightly above, plain white background, even lighting, no text, no ground shadow.",
+ "remove_background": true
+}

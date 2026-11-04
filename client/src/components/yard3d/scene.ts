@@ -7,10 +7,9 @@
 // Travel times don't change: the hexes are only how patches are drawn (docs/11-world.md, Coordinates).
 import * as THREE from 'three';
 import { WILDS_SPOT, WORLD } from '@hormigas/shared';
-import moundsUrl from './mounds.json?url';
 import propsUrl from './props.json?url';
 import { CHITIN, antUniforms, createAnts, type Ants } from '../nest3d/ants3d';
-import { createGrasshoppers, createTermiteMounds } from '../three/toonModel';
+import { colonyMoundHeights, createColonyMounds, createGrasshoppers, createTermiteMounds } from '../three/toonModel';
 import { tripProgress } from '../UnderWay';
 import { TIMING, drawnFor, momentAt, planBattle, replayLength, type BattlePlan, type ReplayMoment } from '../patch3d/battle';
 import { makePath, pitchAhead, pointAlong, type Path } from '../three/path';
@@ -51,7 +50,8 @@ export interface YardScene {
   dispose(): void;
 }
 
-type MoundData = { pos: number[]; tri: number[][]; r: number; h: number };
+/** The colony mound's growth stages: radius and height in yard units. */
+type MoundData = { r: number; h: number };
 /** small models built in Blender (docs/art/whole-yard/props.blend.py): positions y-up, sRGB colour per vertex */
 type PropData = Record<string, { pos: number[]; col: number[] }>;
 const lerp = (a: number, b: number, k: number) => a + (b - a) * k;
@@ -120,7 +120,12 @@ const OWN = { you: '#F2B21F', ally: '#2F9C95', rival: '#9A6B45', wild: '#C4473A'
 type Owner = keyof typeof OWN;
 
 export async function createYardScene(host: HTMLElement, labels: HTMLElement, data: () => YardData, h: YardHandlers, reducedStart: boolean): Promise<YardScene> {
-  const [MOUNDS, PROPS]: [MoundData[], PropData] = await Promise.all([fetch(moundsUrl).then((r) => r.json()), fetch(propsUrl).then((r) => r.json())]);
+  const PROPS: PropData = await fetch(propsUrl).then((r) => r.json());
+  const MOUNDS: MoundData[] = [
+    { r: 4.0, h: 2.2 },
+    { r: 6.5, h: 3.8 },
+    { r: 9.0, h: 5.6 },
+  ];
   let reduced = reducedStart;
   const R = rng(42);
   const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -174,8 +179,8 @@ export async function createYardScene(host: HTMLElement, labels: HTMLElement, da
     m.customProgramCacheKey = () => key + '|fog';
     return m;
   }
-  const hoppers = createGrasshoppers(fogify), termites = createTermiteMounds(fogify);
-  disposables.push(hoppers, termites);
+  const hoppers = createGrasshoppers(fogify), termites = createTermiteMounds(fogify), colonyMounds = createColonyMounds(fogify);
+  disposables.push(hoppers, termites, colonyMounds);
   const mats = new Map<string, THREE.MeshStandardMaterial>();
   const mat = (color: string) => {
     if (!mats.has(color)) mats.set(color, fogify(new THREE.MeshStandardMaterial({ color, flatShading: true, roughness: 0.9 })));
@@ -585,56 +590,20 @@ export async function createYardScene(host: HTMLElement, labels: HTMLElement, da
     world.add(borders, fills);
   }
 
-  // ---------- mounds (built in Blender: docs/art/whole-yard/mounds.blend.py), sites and spots
-  const moundGeo = MOUNDS.map((m) => {
-    const g = new THREE.BufferGeometry();
-    g.setAttribute('position', new THREE.Float32BufferAttribute(m.pos, 3));
-    const c: number[] = [];
-    for (const t of m.tri) for (let k = 0; k < 3; k++) { col.setRGB(t[0], t[1], t[2], THREE.SRGBColorSpace); c.push(col.r, col.g, col.b); }
-    g.setAttribute('color', new THREE.Float32BufferAttribute(c, 3));
-    g.computeVertexNormals();
-    return g;
-  });
-  const moundMat = fogify(new THREE.MeshStandardMaterial({ vertexColors: true, flatShading: true, roughness: 0.95 }));
-  // each mound's height map (soil, twigs, stones), so parties climb out of the crater and over the mound rather than
-  // walking out of its middle at ground level. A 3×3 median keeps a thin twig from making the ants hop.
-  const HM_CELL = 0.25, HM_N = 104, HM_HALF = (HM_N * HM_CELL) / 2;
-  const moundHeights = MOUNDS.map((m) => {
-    const hm = new Float32Array(HM_N * HM_N);
-    const p = m.pos;
-    for (let i = 0; i + 8 < p.length; i += 9) {
-      const ax = p[i], ay = p[i + 1], az = p[i + 2], bx = p[i + 3], by = p[i + 4], bz = p[i + 5], cx = p[i + 6], cy = p[i + 7], cz = p[i + 8];
-      const det = (bz - cz) * (ax - cx) + (cx - bx) * (az - cz);
-      if (Math.abs(det) < 1e-9) continue;
-      const x0 = Math.max(0, Math.floor((Math.min(ax, bx, cx) + HM_HALF) / HM_CELL)), x1 = Math.min(HM_N - 1, Math.ceil((Math.max(ax, bx, cx) + HM_HALF) / HM_CELL));
-      const z0 = Math.max(0, Math.floor((Math.min(az, bz, cz) + HM_HALF) / HM_CELL)), z1 = Math.min(HM_N - 1, Math.ceil((Math.max(az, bz, cz) + HM_HALF) / HM_CELL));
-      for (let iz = z0; iz <= z1; iz++) for (let ix = x0; ix <= x1; ix++) {
-        const x = ix * HM_CELL - HM_HALF, z = iz * HM_CELL - HM_HALF;
-        const u = ((bz - cz) * (x - cx) + (cx - bx) * (z - cz)) / det, v = ((cz - az) * (x - cx) + (ax - cx) * (z - cz)) / det, w = 1 - u - v;
-        if (u < -1e-4 || v < -1e-4 || w < -1e-4) continue;
-        const y = u * ay + v * by + w * cy, k = iz * HM_N + ix;
-        if (y > hm[k]) hm[k] = y;
-      }
-    }
-    const out = new Float32Array(HM_N * HM_N), nine: number[] = [];
-    for (let iz = 0; iz < HM_N; iz++) for (let ix = 0; ix < HM_N; ix++) {
-      nine.length = 0;
-      for (let dz = -1; dz <= 1; dz++) for (let dx = -1; dx <= 1; dx++) nine.push(hm[clamp(iz + dz, 0, HM_N - 1) * HM_N + clamp(ix + dx, 0, HM_N - 1)]);
-      out[iz * HM_N + ix] = nine.sort((a, b) => a - b)[4];
-    }
-    return out;
-  });
+  // ---------- mounds (the Meshy colony mound, art/meshy/colony-mound/), sites and spots
+  /** A colony mound of growth `stage`, stretched to its radius and height. */
+  function moundModel(stage: number, shadows = true) {
+    const m = colonyMounds.make(stage, shadows);
+    m.scale.set(MOUNDS[stage].r, MOUNDS[stage].h, MOUNDS[stage].r);
+    return m;
+  }
+  // each mound's height map, so parties climb out of the crater and over the mound rather than walking out of its
+  // middle at ground level (toonModel.ts: twigs smoothed out, the steep foot eased into a ramp)
+  const moundSurfaces = MOUNDS.map((_, stage) => colonyMoundHeights(stage));
   /** Height of mound `stage` at (lx, lz) from its centre; near the middle it drops away into the entrance. */
   function moundHeight(stage: number, lx: number, lz: number) {
-    const hm = moundHeights[stage];
-    const fx = (lx + HM_HALF) / HM_CELL, fz = (lz + HM_HALF) / HM_CELL;
-    const ix = Math.floor(fx), iz = Math.floor(fz);
-    if (ix < 0 || iz < 0 || ix >= HM_N - 1 || iz >= HM_N - 1) return 0;
-    const tx = fx - ix, tz = fz - iz, k = iz * HM_N + ix;
-    let y = (hm[k] * (1 - tx) + hm[k + 1] * tx) * (1 - tz) + (hm[k + HM_N] * (1 - tx) + hm[k + HM_N + 1] * tx) * tz;
-    const hole = MOUNDS[stage].r * 0.12, r = Math.hypot(lx, lz);
-    if (r < hole) y -= (hole - r) * 2.5;
-    return y;
+    const { r, h } = MOUNDS[stage];
+    return moundSurfaces[stage](lx / r, lz / r) * h;
   }
   /** Every mound on the loaded patches, by place key. */
   const moundSpots = new Map<string, { x: number; z: number; stage: number }>();
@@ -671,8 +640,7 @@ export async function createYardScene(host: HTMLElement, labels: HTMLElement, da
   }
   function flagged(stage: number, color: string) {
     const g = new THREE.Group();
-    const m = new THREE.Mesh(moundGeo[stage], moundMat);
-    m.castShadow = m.receiveShadow = true;
+    const m = moundModel(stage);
     const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.3, 14, 4), mat('#6B4A2F'));
     pole.position.set(MOUNDS[stage].r * 0.4, MOUNDS[stage].h * 0.5 + 7, 0);
     const flag = new THREE.Mesh(new THREE.PlaneGeometry(5, 3.2), new THREE.MeshStandardMaterial({ color, side: THREE.DoubleSide, flatShading: true }));
@@ -809,9 +777,9 @@ export async function createYardScene(host: HTMLElement, labels: HTMLElement, da
         const g = new THREE.Group();
         const pr = rng(region * 1000 + p.patch);
         for (let i = 0; i < Math.min(4, p.colonies); i++) {
-          const m = new THREE.Mesh(moundGeo[1], moundMat);
+          const m = moundModel(1);
           const [dx, dz] = spotOffset(1 + Math.floor(pr() * 12));
-          m.position.set(dx, 0, dz); m.castShadow = true;
+          m.position.set(dx, 0, dz);
           g.add(m);
         }
         const t = tileAt(region, p.patch);

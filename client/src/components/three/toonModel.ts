@@ -3,9 +3,11 @@
 // JSON file here. A part flagged `wing` (thin and see-through) is two-sided and gets no outline.
 //  - the dead grasshopper windfall (docs/25-windfalls.md): on its back, legs in the air, X eyes
 //  - the termite mound (docs/24-npcs.md): a tall clay spire with buttress ridges and arched entrances
+//  - the colony mound (docs/art/whole-yard.md): a low dome of cocoa soil clods round a crater, three growth stages
 import * as THREE from 'three';
 import grasshopper from './grasshopper.json';
 import termiteMound from './termite-mound.json';
+import colonyMound from './colony-mound.json';
 import { antUniforms, toonBands } from '../nest3d/ants3d';
 
 type Part = { name: string; color: string; wing: boolean; p: number[]; i: number[] };
@@ -98,3 +100,99 @@ function createToonModel(data: ModelData, wrap: Wrap) {
 export const createGrasshoppers = (wrap: Wrap = (m) => m) => createToonModel(grasshopper as ModelData, wrap);
 /** The termite mound: 1 unit tall, about 1.15 across its base. */
 export const createTermiteMounds = (wrap: Wrap = (m) => m) => createToonModel(termiteMound as ModelData, wrap);
+
+/** The colony mound's growth stages (small, medium, big): each 1 unit tall and 1 unit in radius, the entrance at the
+ *  origin. Bigger stages carry more pebbles round the foot. Scenes stretch a stage to its radius and height. */
+export const COLONY_MOUND_STAGES = (colonyMound as { stages: ModelData[] }).stages;
+
+/** Every triangle of a colony mound stage as a flat [x, y, z, ...] list (three per triangle), for height maps. */
+export function colonyMoundTriangles(stage: number) {
+  const out: number[] = [];
+  for (const part of COLONY_MOUND_STAGES[stage].parts) for (const i of part.i) out.push(part.p[i * 3], part.p[i * 3 + 1], part.p[i * 3 + 2]);
+  return out;
+}
+
+/** Colony mounds, one model per stage. `lighten` lifts the soil colours (not the hole or pebbles), e.g. for your own. */
+export function createColonyMounds(wrap: Wrap = (m) => m, lighten = 0) {
+  const c = new THREE.Color();
+  const stages = COLONY_MOUND_STAGES.map((d) =>
+    createToonModel(
+      {
+        parts: d.parts.map((p) =>
+          lighten && p.name.startsWith('soil_') && p.name !== 'soil_hole' ? { ...p, color: '#' + c.set(p.color).offsetHSL(0, 0, lighten).getHexString() } : p,
+        ),
+      },
+      wrap,
+    ),
+  );
+  return {
+    make: (stage: number, shadows = true) => stages[stage].make(shadows),
+    dispose() {
+      for (const s of stages) s.dispose();
+    },
+  };
+}
+
+/**
+ * Height of a colony mound stage over the ground, in model units (radius 1, height 1): a top-down height map of its
+ * mesh, with a 3×3 median so a thin twig doesn't make the ants hop, and its steep foot eased into a ramp. Returns 0 off
+ * the mound. Near the middle it drops
+ * away down the entrance, so ants walk in and out of the hole.
+ */
+export function colonyMoundHeights(stage: number, n = 72) {
+  const half = 1.2, cell = (half * 2) / n, hm = new Float32Array(n * n);
+  const p = colonyMoundTriangles(stage);
+  for (let t = 0; t + 8 < p.length; t += 9) {
+    const ax = p[t], ay = p[t + 1], az = p[t + 2], bx = p[t + 3], by = p[t + 4], bz = p[t + 5], cx = p[t + 6], cy = p[t + 7], cz = p[t + 8];
+    const det = (bz - cz) * (ax - cx) + (cx - bx) * (az - cz);
+    if (Math.abs(det) < 1e-12) continue;
+    const x0 = Math.max(0, Math.floor((Math.min(ax, bx, cx) + half) / cell)), x1 = Math.min(n - 1, Math.ceil((Math.max(ax, bx, cx) + half) / cell));
+    const z0 = Math.max(0, Math.floor((Math.min(az, bz, cz) + half) / cell)), z1 = Math.min(n - 1, Math.ceil((Math.max(az, bz, cz) + half) / cell));
+    for (let iz = z0; iz <= z1; iz++) for (let ix = x0; ix <= x1; ix++) {
+      const x = ix * cell - half, z = iz * cell - half;
+      const u = ((bz - cz) * (x - cx) + (cx - bx) * (z - cz)) / det, v = ((cz - az) * (x - cx) + (ax - cx) * (z - cz)) / det, w = 1 - u - v;
+      if (u < -1e-4 || v < -1e-4 || w < -1e-4) continue;
+      const k = iz * n + ix, y = u * ay + v * by + w * cy;
+      if (y > hm[k]) hm[k] = y;
+    }
+  }
+  const out = new Float32Array(n * n), nine: number[] = [];
+  const at = (ix: number, iz: number) => hm[Math.min(n - 1, Math.max(0, iz)) * n + Math.min(n - 1, Math.max(0, ix))];
+  for (let iz = 0; iz < n; iz++) for (let ix = 0; ix < n; ix++) {
+    nine.length = 0;
+    for (let dz = -1; dz <= 1; dz++) for (let dx = -1; dx <= 1; dx++) nine.push(at(ix + dx, iz + dz));
+    out[iz * n + ix] = nine.sort((a, b) => a - b)[4];
+  }
+  // the mound's sides bulge out near the foot: cap its height by the distance in from the bare ground round it (two
+  // chamfer passes), so ants walk down a ramp of soil rather than stepping off a ledge; at worst their feet sink a hair
+  // into the bulge. The entrance pit doesn't count as ground, so the crater keeps its shape.
+  const dist = new Float32Array(n * n);
+  for (let iz = 0; iz < n; iz++) for (let ix = 0; ix < n; ix++) {
+    const k = iz * n + ix, r = Math.hypot(ix * cell - half, iz * cell - half);
+    dist[k] = out[k] < 0.02 && r > 0.3 ? 0 : 1e9;
+  }
+  const diag = cell * Math.SQRT2;
+  const relax = (k: number, jx: number, jz: number, w: number) => {
+    if (jx < 0 || jz < 0 || jx >= n || jz >= n) return;
+    const v = dist[jz * n + jx] + w;
+    if (v < dist[k]) dist[k] = v;
+  };
+  for (let iz = 0; iz < n; iz++) for (let ix = 0; ix < n; ix++) {
+    const k = iz * n + ix;
+    relax(k, ix - 1, iz, cell); relax(k, ix, iz - 1, cell); relax(k, ix - 1, iz - 1, diag); relax(k, ix + 1, iz - 1, diag);
+  }
+  for (let iz = n - 1; iz >= 0; iz--) for (let ix = n - 1; ix >= 0; ix--) {
+    const k = iz * n + ix;
+    relax(k, ix + 1, iz, cell); relax(k, ix, iz + 1, cell); relax(k, ix + 1, iz + 1, diag); relax(k, ix - 1, iz + 1, diag);
+  }
+  for (let k = 0; k < n * n; k++) out[k] = Math.min(out[k], dist[k] * 4);
+  return (x: number, z: number) => {
+    const fx = (x + half) / cell, fz = (z + half) / cell, ix = Math.floor(fx), iz = Math.floor(fz);
+    if (ix < 0 || iz < 0 || ix >= n - 1 || iz >= n - 1) return 0;
+    const tx = fx - ix, tz = fz - iz, k = iz * n + ix;
+    let y = (out[k] * (1 - tx) + out[k + 1] * tx) * (1 - tz) + (out[k + n] * (1 - tx) + out[k + n + 1] * tx) * tz;
+    const r = Math.hypot(x, z);
+    if (r < 0.1) y -= (0.1 - r) * 2.5;
+    return y;
+  };
+}
