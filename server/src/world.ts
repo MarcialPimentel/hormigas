@@ -1,4 +1,4 @@
-import { WORLD, TERRAIN, STARTING_TERRAIN, INACTIVE_AFTER_MS, randInt, createRng, randomSeed, distance } from '@hormigas/shared';
+import { WORLD, TERRAIN, STARTING_TERRAIN, INACTIVE_AFTER_MS, randInt, createRng, randomSeed, distance, patchNeighbours } from '@hormigas/shared';
 import type { Q } from './db';
 import { config } from './config';
 import { now } from './clock';
@@ -38,8 +38,9 @@ export function clearWorldCache() {
 /**
  * Pick a starting spot (docs/11-world.md, "Starting placement"): neighbours, but never patch-mates.
  * Sharing a patch made new players fight over the same wild nest, herd and forage.
- * 1. A patch with no players (wild things are fine) as close as possible to an active player,
- *    by real travel distance. Ties go to world order.
+ * 1. A patch with no players (wild things are fine) next to an active player's patch: one of the hexes
+ *    touching it, so each can see the other's patch. Among those, and failing that among all empty patches,
+ *    the closest by real travel distance; ties go to world order.
  * 2. With no active players, the next patch without players after the newest player's home.
  * 3. Only when every patch has players: any patch with a free Grassland spot.
  */
@@ -83,7 +84,9 @@ export async function pickStartingSpot(q: Q, worldId: number): Promise<{ region:
     for (let i = 1; i <= total; i++) {
       if (used.has(i) || freeIn(i).length === 0) continue;
       const here = { ...at(i), spot: 1 };
-      const d = Math.min(...homes.map((h) => distance(h, here)));
+      const touching = homes.some((h) => h.region === here.region && patchNeighbours(h.patch).includes(here.patch));
+      // touching a player's patch beats any distance
+      const d = Math.min(...homes.map((h) => distance(h, here))) + (touching ? 0 : 1e9);
       if (d < bestD) [best, bestD] = [i, d];
     }
     if (best) return place(at(best).region, at(best).patch, freeIn(best));

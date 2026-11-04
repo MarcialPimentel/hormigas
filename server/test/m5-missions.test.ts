@@ -2,7 +2,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { FastifyInstance } from 'fastify';
 import { distance, missionFuel, travelSeconds } from '@hormigas/shared';
 import { getPool } from '../src/db';
-import { setupTest, teardownTest, newPlayer, setColony, calmWildNests, knowAll, type Client } from './helpers';
+import { setupTest, teardownTest, newPlayer, newPlayerBeside, setColony, calmWildNests, knowAll, type Client } from './helpers';
 
 let app: FastifyInstance;
 let clock: Awaited<ReturnType<typeof setupTest>>['clock'];
@@ -12,7 +12,7 @@ let ca: any, cb: any;
 beforeAll(async () => {
   ({ app, clock } = await setupTest());
   a = await newPlayer(app, 'alpha');
-  b = await newPlayer(app, 'beta');
+  b = await newPlayerBeside(app, 'beta', a);
   ca = (await a.get('/api/state')).colony;
   cb = (await b.get('/api/state')).colony;
   await setColony(ca.id, { foliage: 50000, protein: 50000, nectar: 50000, last_updated: clock.t, units: { worker: 20, scout: 5, minor_soldier: 10 } });

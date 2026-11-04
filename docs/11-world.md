@@ -26,7 +26,7 @@ Exact formulas in `data/formulas.json`. Distance should make **neighbors** your 
 
 ## Starting placement
 Players should meet, but never share a patch. Until Build 7 each sign-up went to the least-populated region, so the first players all ended up alone. From Build 7 new players filled a patch, up to 4 to a patch; once the game went public, patch-mates fought over the same wild nest, herd and forage from day one. Now (Marz, 3 Nov 2026):
-1. **The empty patch closest to an active player.** A new player goes to a patch with no players (a patch that holds only wild things counts as empty) as close as possible, by real travel distance, to a player seen in the last 7 days. Ties go to world order. So newcomers fill in round the players, one patch each: their neighbours are a short walk away, but the wild nest, herd and forage in their own patch are theirs.
+1. **The empty patch closest to an active player.** A new player goes to a patch with no players (a patch that holds only wild things counts as empty) next to a player seen in the last 7 days: one of the hexes touching that player's patch, so each sees the other's patch from the start ([fog of war](22-discovery.md#fog-of-war)). Among those (or, if none is free, among all empty patches) the closest by real travel distance wins; ties go to world order. So newcomers fill in round the players, one patch each: their neighbours are a short walk away, but the wild nest, herd and forage in their own patch are theirs.
 2. **With nobody active, a new patch beside the last one:** the next patch without players after the newest player's home, in world order (region by region).
 3. **Only when every patch has players:** any patch with a free Grassland spot.
 

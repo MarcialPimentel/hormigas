@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { FastifyInstance } from 'fastify';
 import { getPool } from '../src/db';
-import { setupTest, teardownTest, newPlayer, setColony, setPlayer, calmWildNests, knowAll, type Client } from './helpers';
+import { setupTest, teardownTest, newPlayer, newPlayerBeside, setColony, setPlayer, calmWildNests, knowAll, type Client } from './helpers';
 
 let app: FastifyInstance;
 let clock: Awaited<ReturnType<typeof setupTest>>['clock'];
@@ -19,7 +19,7 @@ async function raid(units: Record<string, number>) {
 beforeAll(async () => {
   ({ app, clock } = await setupTest());
   a = await newPlayer(app, 'raider');
-  b = await newPlayer(app, 'victim');
+  b = await newPlayerBeside(app, 'victim', a);
   const sa = await a.get('/api/state');
   const sb = await b.get('/api/state');
   ca = sa.colony;
