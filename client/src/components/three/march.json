@@ -3,10 +3,13 @@
   "yard": {
     "workerSize":  { "value": 0.6,  "min": 0.2, "max": 2,   "step": 0.05, "unit": "× ant", "label": "Worker size", "note": "How big a worker is drawn in a Whole Yard column, before the zoom grows it." },
     "soldierSize": { "value": 0.75, "min": 0.2, "max": 2,   "step": 0.05, "unit": "× ant", "label": "Soldier size", "note": "How big a soldier is drawn in a Whole Yard column." },
-    "spacing":     { "value": 1.3,  "min": 0.4, "max": 4,   "step": 0.1,  "unit": "ant lengths", "label": "Gap between ants", "note": "Distance from one ant to the next along the trail." },
+    "spacing":     { "value": 0.6,  "min": 0.3, "max": 4,   "step": 0.1,  "unit": "ant lengths", "label": "Gap between ants", "note": "Distance from one ant to the next along the trail." },
     "wobble":      { "value": 0.6,  "min": 0,   "max": 3,   "step": 0.1,  "unit": "ant lengths", "label": "Side-to-side spread", "note": "How far ants stray either side of the trail line." },
     "stride":      { "value": 0.17, "min": 0.05, "max": 0.6, "step": 0.01, "unit": "ant lengths", "label": "Stride", "note": "Distance walked per leg cycle. Too short and the legs blur, too long and the feet slide." },
-    "maxAnts":     { "value": 60,   "min": 3,   "max": 200, "step": 1,    "unit": "ants", "label": "Most ants in a column", "note": "A party's column never shows more ants than this (swarms are separate)." },
+    "density":     { "value": 10,   "min": 1,   "max": 30,  "step": 0.5,  "unit": "× √ants", "label": "Ants drawn per party", "note": "A column draws this × the square root of the party, so a small party still reads as a trail (Marz, 4 Nov 2026: 3 ants felt empty). 3 Workers → 17 ants, 170 → 130. Was 3." },
+    "minAnts":     { "value": 10,   "min": 1,   "max": 60,  "step": 1,    "unit": "ants", "label": "Fewest ants in a column", "note": "Even a party of one shows at least this many." },
+    "maxAnts":     { "value": 240,  "min": 3,   "max": 400, "step": 1,    "unit": "ants", "label": "Most ants in a column", "note": "A party's column never shows more ants than this (swarms are separate: 40 to 400)." },
+    "trailShare":  { "value": 0.6,  "min": 0.1, "max": 1,   "step": 0.05, "unit": "of the trail", "label": "Longest column", "note": "A column never covers more than this share of its trail, so far out, where ants are drawn big, it shows fewer." },
     "growPatch":   { "value": 6,    "min": 0,   "max": 20,  "step": 0.5,  "unit": "×", "label": "Grow at Patch zoom", "note": "How much bigger ants get as the camera pulls back to a whole patch, so a column still reads." },
     "growRegion":  { "value": 18,   "min": 0,   "max": 40,  "step": 1,    "unit": "×", "label": "Grow at Region zoom", "note": "Extra growth further out, at the Region zoom." }
   },

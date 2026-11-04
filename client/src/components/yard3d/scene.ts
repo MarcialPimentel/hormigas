@@ -815,9 +815,9 @@ export async function createYardScene(host: HTMLElement, labels: HTMLElement, da
   beds.forEach((b) => signText(b.region));
 
   // ---------- parties: columns of real ants up close, a thread far out
-  // room for a swarm's column (200 army ants) and a battle replay (140 a side) at once
-  const ants: Ants = createAnts(world, { worker: 700, soldier: 400, army: 450, army_major: 30, queen: 4, alate: 10 }, true);
-  interface Column { key: string; from: THREE.Vector3; to: THREE.Vector3; path: Path; len: number; thread: THREE.Line; rib: THREE.Mesh; color: string; caste: 'worker' | 'soldier' | 'army'; n: number; el: HTMLDivElement; prog: (now: number) => { d: number; back: boolean } | null; cargo?: string }
+  // room for several busy columns, a swarm's (up to 400 army ants) and a battle replay (140 a side) at once
+  const ants: Ants = createAnts(world, { worker: 2400, soldier: 1600, army: 900, army_major: 30, queen: 4, alate: 10 }, true);
+  interface Column { key: string; from: THREE.Vector3; to: THREE.Vector3; path: Path; len: number; thread: THREE.Line; rib: THREE.Mesh; color: string; caste: 'worker' | 'soldier' | 'army'; /** ants really in the party: the column draws many more (march.json) */ units: number; el: HTMLDivElement; prog: (now: number) => { d: number; back: boolean } | null; cargo?: string }
   const columns = new Map<string, Column>();
   const colP = new THREE.Vector3(), colT = new THREE.Vector3(); // scratch: where an ant stands, and which way it faces
   const sumUnits = (u?: Record<string, number>) => Object.values(u ?? {}).reduce((a, b) => a + (b ?? 0), 0);
@@ -832,7 +832,7 @@ export async function createYardScene(host: HTMLElement, labels: HTMLElement, da
       const soldiers = ['raid', 'hold', 'tend', 'claim'].includes(m.type);
       want.set(`m${m.id}`, {
         key: `m${m.id}`, from: spotAt(m.origin), to: spotAt(m.target), color: m.type === 'transport' || m.type === 'relocate' ? CHITIN.worker : soldiers ? CHITIN.soldier : CHITIN.worker,
-        caste: soldiers ? 'soldier' : 'worker', n: Math.min(200, Math.max(3, Math.round(Math.sqrt(sumUnits(m.units)) * 3))),
+        caste: soldiers ? 'soldier' : 'worker', units: sumUnits(m.units),
         label: `${m.type[0].toUpperCase()}${m.type.slice(1)} · ${sumUnits(m.units).toLocaleString('en')}`,
         prog: (now) => { const p = tripProgress(m, now); return p.oneWay ? { d: p.x, back: false } : { d: p.x <= 0.5 ? p.x * 2 : 2 - p.x * 2, back: p.x > 0.5 }; },
         cargo: m.cargo && sumUnits(m.cargo) > 0 ? '#7FC24A' : undefined,
@@ -844,7 +844,7 @@ export async function createYardScene(host: HTMLElement, labels: HTMLElement, da
       const swarm = i.type === 'swarm';
       want.set(`i${i.id}`, {
         key: `i${i.id}`, from: spotAt(i.origin), to: spotAt(target), color: swarm ? CHITIN.army : i.hostile ? CHITIN.raider : CHITIN.worker,
-        caste: swarm ? 'army' : i.hostile ? 'soldier' : 'worker', n: Math.min(swarm ? 200 : 60, Math.max(4, Math.round(Math.sqrt(i.unitCount ?? 30) * 3))),
+        caste: swarm ? 'army' : i.hostile ? 'soldier' : 'worker', units: i.unitCount ?? 30,
         label: swarm ? `Army ants · ${i.scouted ? (i.unitCount ?? 0).toLocaleString('en') : '?'}` : i.hostile ? `${i.type === 'raid' ? 'Raid' : 'Scouts'} from ${i.from}` : `Delivery from ${i.from}`,
         prog: (now) => ({ d: clamp((now - i.departAt) / Math.max(1, i.arriveAt - i.departAt), 0, 1), back: false }),
       });
@@ -1227,11 +1227,17 @@ export async function createYardScene(host: HTMLElement, labels: HTMLElement, da
       const lp = pointAlong(c.path, lead * c.len, colP);
       place(c.el, lp.x, 8, lp.z, d < 700 && d > 30);
       if (!showAnts) continue;
-      const spacing = (M.spacing * antGrow) / c.len;
-      // a party's column is capped (march.json); a swarm's column is not
-      const n = c.caste === 'army' ? c.n : Math.min(c.n, M.maxAnts);
-      for (let i = 0; i < n; i++) {
-        const k = pr.back ? lead + i * spacing : lead - i * spacing;
+      // single file, nose to tail (Marz, 4 Nov 2026). A column draws many more ants than the party (density × √ants,
+      // march.json), never more than trailShare of its trail: far out, where ants are drawn big, it shows fewer.
+      // A swarm's column has its own range.
+      const gap = M.spacing * antGrow;
+      const spacing = gap / c.len;
+      const want = Math.round(Math.sqrt(Math.max(1, c.units)) * M.density);
+      const n = c.caste === 'army' ? clamp(want, 40, 400) : clamp(want, M.minAnts, M.maxAnts);
+      const shown = Math.max(3, Math.min(n, Math.floor((M.trailShare * c.len) / gap)));
+      for (let i = 0; i < shown; i++) {
+        const jitter = Math.sin(i * 7.31) * 0.2; // ants don't keep perfect distance
+        const k = pr.back ? lead + (i + jitter) * spacing : lead - (i + jitter) * spacing;
         if (k < 0 || k > 1) continue;
         const p = pointAlong(c.path, k * c.len, colP, colT), tg = colT;
         if (pr.back) tg.negate();
