@@ -10,7 +10,7 @@ import { WILDS_SPOT, WORLD } from '@hormigas/shared';
 import moundsUrl from './mounds.json?url';
 import propsUrl from './props.json?url';
 import { CHITIN, antUniforms, createAnts, type Ants } from '../nest3d/ants3d';
-import { createGrasshoppers } from '../three/grasshopper';
+import { createGrasshoppers, createTermiteMounds } from '../three/toonModel';
 import { tripProgress } from '../UnderWay';
 import { TIMING, drawnFor, momentAt, planBattle, replayLength, type BattlePlan, type ReplayMoment } from '../patch3d/battle';
 import { makePath, pitchAhead, pointAlong, type Path } from '../three/path';
@@ -173,8 +173,8 @@ export async function createYardScene(host: HTMLElement, labels: HTMLElement, da
     m.customProgramCacheKey = () => key + '|fog';
     return m;
   }
-  const hoppers = createGrasshoppers(fogify);
-  disposables.push(hoppers);
+  const hoppers = createGrasshoppers(fogify), termites = createTermiteMounds(fogify);
+  disposables.push(hoppers, termites);
   const mats = new Map<string, THREE.MeshStandardMaterial>();
   const mat = (color: string) => {
     if (!mats.has(color)) mats.set(color, fogify(new THREE.MeshStandardMaterial({ color, flatShading: true, roughness: 0.9 })));
@@ -687,7 +687,10 @@ export async function createYardScene(host: HTMLElement, labels: HTMLElement, da
       stem.castShadow = true; g.add(stem);
       for (let i = 0; i < 12; i++) { const a = new THREE.Mesh(new THREE.SphereGeometry(0.8, 6, 4), mat('#A6D83A')); a.scale.set(1, 0.8, 1.3); a.position.set(Math.cos(i * 2.4) * 1.3, 8 + i * 1.4, Math.sin(i * 2.4) * 1.3); g.add(a); }
     } else if (c.wild?.kind === 'mound') {
-      const t = new THREE.Mesh(new THREE.ConeGeometry(7, 26, 7), mat('#B07A44')); t.position.y = 13; t.castShadow = true; g.add(t);
+      // the Meshy termite mound: a tall clay spire with buttress ridges and arched entrances
+      const t = termites.make();
+      t.scale.setScalar(26);
+      g.add(t);
     } else if (c.wild?.kind === 'den') {
       const d = new THREE.Mesh(new THREE.SphereGeometry(7, 10, 6, 0, Math.PI * 2, 0, Math.PI / 2), mat('#3A2E2A')); d.scale.y = 0.4; g.add(d);
       const silk = new THREE.Mesh(new THREE.CircleGeometry(6, 10), new THREE.MeshStandardMaterial({ color: '#EDE8E0', transparent: true, opacity: 0.8 })); silk.rotation.x = -Math.PI / 2; silk.position.y = 2.9; g.add(silk);

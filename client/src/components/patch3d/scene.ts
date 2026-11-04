@@ -11,7 +11,7 @@ import type { ServerColony, ServerState } from '../../game';
 import type { Caste } from '../../art/ants';
 import { fmtDuration } from '../../format';
 import { CHITIN, antUniforms, createAnts, type CargoKind } from '../nest3d/ants3d';
-import { createGrasshoppers } from '../three/grasshopper';
+import { createGrasshoppers, createTermiteMounds } from '../three/toonModel';
 import { leftOf } from '../nestScene';
 import type { Spot, SpotColony } from '../Patch';
 import { moveKeys } from './keys';
@@ -130,8 +130,8 @@ export async function createPatchScene(
   scene.fog = new THREE.Fog('#B8DCEA', 70, 190);
   const camera = new THREE.PerspectiveCamera(40, 1, 0.05, 600);
   const disposables: { dispose(): void }[] = [];
-  const hoppers = createGrasshoppers();
-  disposables.push(hoppers);
+  const hoppers = createGrasshoppers(), termites = createTermiteMounds();
+  disposables.push(hoppers, termites);
   const keep = <T extends { dispose(): void }>(x: T) => (disposables.push(x), x);
   const matCache = new Map<string, THREE.MeshStandardMaterial>();
   const mat = (hex: string, extra: THREE.MeshStandardMaterialParameters = {}) => {
@@ -644,16 +644,12 @@ uniform vec3 uSpots[SIGHT_SPOTS];
       return;
     }
     if (c.wild?.kind === 'mound') {
-      // a termite tower, cracked and lumpy
-      const tower = new THREE.Mesh(sk(new THREE.ConeGeometry(1.5, 6, 9, 5)), mat('#A47E55', { flatShading: true, roughness: 1 }));
-      tower.position.set(x, y + 3, z);
-      const tp = tower.geometry.attributes.position;
-      for (let i = 0; i < tp.count; i++) tp.setX(i, tp.getX(i) * (1 + 0.15 * Math.sin(tp.getY(i) * 3 + i)));
-      tower.geometry.computeVertexNormals();
-      spotGroup.add(shadow(tower));
-      const spire = new THREE.Mesh(sk(new THREE.ConeGeometry(0.6, 2.4, 7)), mat('#B58C5E', { flatShading: true }));
-      spire.position.set(x + 0.9, y + 1.2, z + 0.4);
-      spotGroup.add(shadow(spire));
+      // the Meshy termite mound: a tall clay spire with buttress ridges and arched entrances
+      const t = termites.make(!coarse);
+      t.scale.setScalar(6);
+      t.position.set(x, y, z);
+      t.rotation.y = 0.6;
+      spotGroup.add(t);
       return;
     }
     if (c.wild?.kind === 'den') {
