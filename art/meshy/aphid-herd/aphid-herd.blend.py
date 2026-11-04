@@ -19,7 +19,7 @@ mode = args[0]
 
 # the sunlit-microcosm palette (docs/art/sunlit-microcosm.md): Poppy, Aphid, the grasshopper's greens
 COLOURS = {
-    "petal": "#FF6B4F", "blotch": "#5A341E", "seed": "#9DC449", "stamen": "#5A341E",
+    "petal": "#FF6B4F", "blotch": "#FF6B4F", "seed": "#9DC449", "stamen": "#9DC449",  # no brown: red and green only
     "stem": "#5F8C30", "leaf": "#5F8C30", "grass": "#6E9A34",
     "body": "#B5E04A", "belly": "#DDEB9A", "leg": "#8DB83A", "dew": "#F2B21F",
     "eye": "#2B1D12", "eye_white": "#F7F4EA",
@@ -51,7 +51,7 @@ def bounds(pts):
             Vector((max(v.x for v in pts), max(v.y for v in pts), max(v.z for v in pts))))
 
 
-def poppy_kind(c, n, lo, hi, head):
+def poppy_kind(c, n, lo, hi, head, verts=()):
     """Blender axes, z up. `head` is the flower cup's centre (x, y) and the height where the cup starts."""
     h = (c.z - lo.z) / (hi.z - lo.z)
     if h < 0.13:
@@ -60,8 +60,9 @@ def poppy_kind(c, n, lo, hi, head):
         # the seed bulb: everything within a bulb's radius of the stamen ring's centre; brown around it
         if (c - BULB).length < 0.05:
             return "seed"
-        r = math.hypot(c.x - head.x, c.y - head.y)
-        if r < 0.085 and n.z > -0.3:
+        # a tight brown ring hugging the bulb: only faces whose every corner is close to it, so the big
+        # triangles of the cup floor stay petal red instead of spilling a jagged brown wedge
+        if verts and max((v - BULB).length for v in verts) < RING and n.z > -0.3:
             return "blotch"
         return "petal"
     r = math.hypot(c.x - STEM[0](c.z), c.y - STEM[1](c.z))
@@ -70,9 +71,10 @@ def poppy_kind(c, n, lo, hi, head):
 
 STEM = (lambda z: 0.0, lambda z: 0.0)
 BULB = Vector((0, 0, 0.32))
+RING = 0.075          # brown reaches this far from the bulb's centre (the bulb itself is 0.05)
 
 
-def aphid_kind(c, n, lo, hi):
+def aphid_kind(c, n, lo, hi, verts=()):
     """Blender axes, z up, head towards -y (Meshy's front)."""
     h = (c.z - lo.z) / (hi.z - lo.z)
     if h < 0.2:
@@ -94,7 +96,8 @@ def colour_split(obj, kind_of, coll, prefix=""):
     for f in me.polygons:
         c = obj.matrix_world @ f.center
         n = (obj.matrix_world.to_3x3() @ f.normal).normalized()
-        k = kind_of(c, n, lo, hi)
+        vs = [obj.matrix_world @ me.vertices[i].co for i in f.vertices]
+        k = kind_of(c, n, lo, hi, vs)
         if k not in kinds:
             kinds.append(k)
             me.materials.append(material(k))
@@ -183,7 +186,7 @@ def build(poppy_src, aphid_src, out):
         head = Vector((sum(v.co.x for v in stam) / len(stam), sum(v.co.y for v in stam) / len(stam), HEAD_Z))
     else:
         head = Vector(((sl.x + sh.x) / 2, (sl.y + sh.y) / 2, HEAD_Z))
-    kinds = colour_split(main, lambda c, n, l, h: poppy_kind(c, n, l, h, head), pc)
+    kinds = colour_split(main, lambda c, n, l, h, vs=(): poppy_kind(c, n, l, h, head, vs), pc)
     for i, s in enumerate(stamens):
         s.data.materials.clear()
         s.data.materials.append(material("stamen"))
