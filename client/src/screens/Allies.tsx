@@ -207,7 +207,7 @@ export function Allies({ go }: { go: Nav }) {
 
       <Panel title="Players you've met">
         {view.contacts.length === 0 ? (
-          <Empty>Nobody yet. Scout a scent on the Missions screen: once you've seen inside one of a player's colonies, you can talk to them here.</Empty>
+          <Empty>Nobody yet. Send a Scout to a scent in Missions: once you've seen inside one of a player's colonies, you can talk to them here.</Empty>
         ) : (
           <ul className="members">
             {view.contacts.map((c) => {
