@@ -120,3 +120,25 @@ describe('exploring', () => {
     await q.query('DELETE FROM supercolonies WHERE id = $1', [sc]);
   });
 });
+
+describe('a whole region of spots at once (the Whole Yard)', () => {
+  it('gives every patch you can see into exactly as /api/map does, and leaves out the unexplored ones', async () => {
+    for (const region of new Set([ca.coords.region, far.region])) {
+      const { patches } = await a.get(`/api/map/spots?region=${region}`);
+      const fog = (await a.get(`/api/map/region?region=${region}`)).fog;
+      const open = fog.filter((f: any) => f.fog !== 'unexplored').map((f: any) => f.patch);
+      expect(patches.map((p: any) => p.patch)).toEqual(open);
+      for (const p of patches) {
+        const { region: _r, status: _s, ...one } = await mapOf(a, region, p.patch);
+        expect(p).toEqual(one);
+      }
+    }
+    // your home patch, its neighbours and the far patch you scouted are all there
+    expect((await a.get(`/api/map/spots?region=${ca.coords.region}`)).patches.find((p: any) => p.patch === ca.coords.patch).fog).toBe('visible');
+    expect((await a.get(`/api/map/spots?region=${far.region}`)).patches.find((p: any) => p.patch === far.patch).fog).toBe('explored');
+  });
+
+  it('refuses a region that does not exist', async () => {
+    expect((await a.get('/api/map/spots?region=99')).error.code).toBe('bad_coords');
+  });
+});

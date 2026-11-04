@@ -67,6 +67,8 @@ The top zoom (approved 1 Nov 2026, option 2 of three previews; built in `yard3d/
 
 ![The top view, just the beds](whole-yard/yard-view-tight.jpg)
 
+**What's drawn in each patch (4 Nov 2026).** Every patch you can see into, in sight or explored ([fog of war](../22-discovery.md#fog-of-war)), shows its spots, wild sites and banners as soon as the map opens: one `/api/map/spots` request per bed, refreshed every minute and whenever a party arrives or comes home. Before, a patch's spots loaded only when the camera stopped over it (Marz: "I have to move directly over a grey tile to see what is in it"), and then went stale once you looked away. Your own patches, the one under the camera and the one you tapped still refresh on every game update. Never-explored patches still show only their outline. A patch is redrawn only when what's in it changed, and each empty spot's pebble ring is one mesh, so drawing every known patch stays cheap.
+
 ## The models
 
 Every zoom's ground and plants (approved 2 Nov 2026; Marz picked soft ground with a drawn grid, curved grass clumps, and Blender versions of the rocks, stones, flowers, shrubs, logs, bark, reeds and tussocks):
