@@ -19,7 +19,7 @@ mode = args[0]
 
 # the sunlit-microcosm palette (docs/art/sunlit-microcosm.md): Poppy, Aphid, the grasshopper's greens
 COLOURS = {
-    "petal": "#FF6B4F", "blotch": "#5A341E", "seed": "#9DC449", "stamen": "#5A341E",
+    "petal": "#FF6B4F", "blotch": "#FF6B4F", "seed": "#9DC449", "stamen": "#9DC449",  # no brown: red and green only
     "stem": "#5F8C30", "leaf": "#5F8C30", "grass": "#6E9A34",
     "body": "#B5E04A", "belly": "#DDEB9A", "leg": "#8DB83A", "dew": "#F2B21F",
     "eye": "#2B1D12", "eye_white": "#F7F4EA",
