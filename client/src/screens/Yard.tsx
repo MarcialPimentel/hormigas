@@ -12,6 +12,8 @@ import { fmtCoords, fmtFull } from '../format';
 import { leaveYardPreview } from '../preview';
 import { SpotCard, type Coords, type Spot } from '../components/Patch';
 import { UnderWay } from '../components/UnderWay';
+import { NeedsCard } from '../components/NeedsCard';
+import { QuestCard } from '../components/QuestCard';
 import { Chambers } from './Chambers';
 import { Brood } from './Brood';
 import { Research } from './Research';
@@ -268,8 +270,11 @@ export function Yard({ go }: { go: Nav }) {
 
   if (!state || !colony) return null;
   const selSpot = sel ? spots[`${sel.region}:${sel.patch}`]?.find((s) => s.spot === sel.spot) : null;
+  const raids = (state.incoming ?? []).filter((i: any) => i.hostile).length;
+  const readyNeeds = (state.needs?.needs ?? []).filter((n: { ready: boolean; claimed: boolean }) => n.ready && !n.claimed).length;
   const badges: Partial<Record<PanelId, [number, string]>> = {
-    missions: [(state.incoming ?? []).filter((i: any) => i.hostile).length, 'raids coming'],
+    // raids first; otherwise the colony needs waiting to be collected (they live in this panel)
+    missions: raids > 0 ? [raids, 'raids coming'] : [readyNeeds, 'needs ready to collect'],
     allies: [state.player.pendingDiplomacy ?? 0, 'waiting for you'],
     reports: [state.unreadReports ?? 0, 'unread'],
     journal: [state.journal?.fresh ?? 0, 'new pages'],
@@ -342,6 +347,9 @@ export function Yard({ go }: { go: Nav }) {
                   <button type="button" className="btn primary small" onClick={() => setDeploy({ type: 'transport', target: sel ?? colony.coords })}>Send ants…</button>
                 </div>
                 <UnderWay onFocus={(_, at) => sceneRef.current?.flyTo(at, 'patch')} go={panelNav} />
+                {/* the daily goals the classic Colony screen shows; rewards go to the colony picked in the header */}
+                <QuestCard nav={panelNav} />
+                <NeedsCard nav={panelNav} />
               </div>
             )}
           </div>
