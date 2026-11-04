@@ -3,6 +3,7 @@
 _Current as of Build 13 (2026-11-02)._ Newest first. One entry per build, in players' words, built from the merged PRs. Smaller PRs merged between builds are listed with the nearest build.
 
 ## Between builds (unreleased)
+- **Colonies stay the same size when you zoom.** In the Whole Yard, colony and wild-nest mounds grew up to three times bigger as you pulled the camera back, so they piled on top of each other far out. Now they keep their real size at every zoom; the banners still show where they are.
 - **The Whole Yard is the game on every computer.** It used to need a secret `?preview=yard` link, so new players landed on the old screens. Now everyone on a computer opens straight onto the Whole Yard, and the classic screens are gone there: Colony, Chambers, Brood Hall, Research, Missions, Allies, Reports, Rankings and the Journal all open as panels over the map. Phones (and browser windows narrower than 900 pixels) keep the classic screens until the Whole Yard works on a small screen.
 - **Termite mounds fit their spot.** In the Whole Yard the new mound spilled into the next hex; it's about a third smaller now. A see-through gap in its main spire is filled in.
 - **Termite mounds look like fortresses.** In the Whole Yard and the 3D Patch, a termite mound was a brown cone. Now it's a tall clay spire with buttress ridges and dark arched entrances, drawn in the same cartoon style as the ants.
