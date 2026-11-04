@@ -38,7 +38,8 @@ describe('big units and their hunters, at equal spend', () => {
 
 describe('trample', () => {
   it('a big killing bite carries on into more ants', () => {
-    const minors = { minor_soldier: 300 };
+    // Workers, not Minors: Minors counter Supermajors and would strike first, before any trample
+    const minors = { worker: 300 };
     const killed = (trample: number) => {
       const saved = CASTES.supermajor.trample;
       (CASTES.supermajor as { trample?: number }).trample = trample;
@@ -70,7 +71,7 @@ describe('instincts', () => {
 
   it('turn a close fight', () => {
     const minors: UnitCounts = { minor_soldier: 100 };
-    const majors: UnitCounts = { major_soldier: 45 };
+    const majors: UnitCounts = { major_soldier: 55 }; // Minors counter Majors and strike first, so it takes more Majors to be close
     const rate = (research: Record<string, number>) => {
       let w = 0;
       for (let i = 0; i < 40; i++) if (simulateBattle({ units: majors, research }, { units: minors, research: {} }, createRng(i)).winner === 'attacker') w++;

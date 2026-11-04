@@ -71,7 +71,8 @@ describe('wild nests', () => {
         const weakArmy = half(FAIR[level]);
         const weak = previewBattle({ units: weakArmy, research: {} }, defender, { runs: 60 });
         const weakLoss = weak.avgAttackerLossValue / total(unitsValue(weakArmy));
-        expect(weakLoss, `${species} L${level} half army losses`).toBeGreaterThan(0.45);
+        // counters strike first, so a fair army that counters the nest loses little; half of it still pays far more
+        expect(weakLoss, `${species} L${level} half army losses`).toBeGreaterThan(Math.max(0.35, 1.75 * lossShare));
       }
     }
   });
