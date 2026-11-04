@@ -258,13 +258,11 @@ export function Yard({ go }: { go: Nav }) {
     if (!nest) sceneRef.current?.flyTo(next.coords, 'patch');
   };
 
-  // what needs you: the turn-based "unit needs orders", for a game that never stops
+  // what needs you: only a threat on its way (idle digs, brood and research are not nagged)
   const needs = useMemo(() => {
     if (!state || !colony) return null;
     const threat = (state.incoming ?? []).find((i: any) => i.hostile);
     if (threat) return { text: threat.type === 'swarm' ? 'Army ants coming' : 'Raid incoming', sub: `${Math.max(1, Math.ceil(((threat as any).arriveAt - now) / 60000))} min · see Missions`, danger: true, go: () => setPanel('missions') };
-    if (!(colony.unitQueue ?? []).length) return { text: 'Brood Hall idle', sub: `${colony.name} · open Brood Hall`, go: () => setPanel('brood') };
-    if (!state.player.researchJob) return { text: 'No research running', sub: 'Open Research', go: () => setPanel('research') };
     return null;
   }, [state, colony, now]);
 

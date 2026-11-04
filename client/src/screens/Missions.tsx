@@ -42,6 +42,7 @@ import { ENABLED_MISSIONS, MISSION_HELP, MISSION_LABEL, type MissionType } from 
 import { BattlePreview } from '../components/BattlePreview';
 import { ForageOdds } from '../components/ForageOdds';
 import { SwarmScoutOdds } from '../components/SwarmIntel';
+import { ScoutRisk } from '../components/ScoutRisk';
 import { PatchView, isScent, usePatchMode, type PartyFocus, type Spot } from '../components/Patch';
 import { UnderWay, type FocusParty } from '../components/UnderWay';
 
@@ -235,6 +236,8 @@ export function SendMission({ type, setType, target, setTarget, onClose, onSent 
     else if (herd?.tended && !herd.yours) problems.push(`${herd.tenderName}'s ants tend this herd. Raid it to drive them off first.`);
   }
   const windfall = targetSpot?.colony?.windfall;
+  // wild nests, herds and windfalls: no player's ground to dig into
+  const npcSite = !!(targetSpot?.colony?.wild || herd || windfall);
   if (type === 'claim' && targetSpot !== undefined && !windfall) problems.push('Only windfalls can be claimed. Tap a windfall in the wilds on the patch above.');
   if (type === 'raid' && windfall?.yours) problems.push('Your own ants hold it.');
   if (type === 'raid' && windfall && !windfall.held && !windfall.guarded) problems.push('Nobody holds it, so there is no one to fight. Send ants to claim it instead.');
@@ -525,7 +528,21 @@ export function SendMission({ type, setType, target, setTarget, onClose, onSent 
 
         {scoutingSwarm && <SwarmScoutOdds scouts={lvl(chosen, 'scout')} research={research} />}
 
-        {type === 'raid' && !unscouted && <BattlePreview target={target} units={chosen} retreatPct={retreatPct} />}
+        {type === 'scout' && !scoutingSwarm && valid && target.spot !== WILDS_SPOT && !ownTarget && (
+          <ScoutRisk target={target} scouts={lvl(chosen, 'scout')} colony={targetSpot?.colony} />
+        )}
+
+        {type === 'raid' && !unscouted && <BattlePreview target={target} units={chosen} retreatPct={retreatPct} npcSite={npcSite} />}
+        {/* claiming a windfall someone holds (or wild ants guard) is a fight under the raid rules (server/src/game/windfalls.ts) */}
+        {type === 'claim' && windfall && !windfall.yours && (windfall.held || windfall.guarded) && (
+          <BattlePreview target={target} units={chosen} npcSite claim />
+        )}
+        {type === 'claim' && windfall && !windfall.yours && !windfall.held && !windfall.guarded && (
+          <div className="preview">
+            <strong>No fight right now</strong>
+            <p className="muted small">Nobody holds it, so your ants take it without a battle. If someone gets there first, yours fight them for it.</p>
+          </div>
+        )}
 
         <dl className="summary">
           <div><dt>Distance</dt><dd>{valid ? fmtNum(dist) : '—'}</dd></div>
