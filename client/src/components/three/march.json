@@ -1,0 +1,24 @@
+{
+  "_note": "How marching columns look on the 3D maps (the Whole Yard and the 3D Patch). Visual only: nothing here changes travel times or any rule. Tune them live in the test scene (/?test), then Copy changes. Each entry: value, min, max, step, unit, and what it does.",
+  "yard": {
+    "workerSize":  { "value": 0.6,  "min": 0.2, "max": 2,   "step": 0.05, "unit": "× ant", "label": "Worker size", "note": "How big a worker is drawn in a Whole Yard column, before the zoom grows it." },
+    "soldierSize": { "value": 0.75, "min": 0.2, "max": 2,   "step": 0.05, "unit": "× ant", "label": "Soldier size", "note": "How big a soldier is drawn in a Whole Yard column." },
+    "spacing":     { "value": 0.6,  "min": 0.3, "max": 4,   "step": 0.1,  "unit": "ant lengths", "label": "Gap between ants", "note": "Distance from one ant to the next along the trail." },
+    "wobble":      { "value": 0.6,  "min": 0,   "max": 3,   "step": 0.1,  "unit": "ant lengths", "label": "Side-to-side spread", "note": "How far ants stray either side of the trail line." },
+    "stride":      { "value": 0.17, "min": 0.05, "max": 0.6, "step": 0.01, "unit": "ant lengths", "label": "Stride", "note": "Distance walked per leg cycle. Too short and the legs blur, too long and the feet slide." },
+    "density":     { "value": 10,   "min": 1,   "max": 30,  "step": 0.5,  "unit": "× √ants", "label": "Ants drawn per party", "note": "A column draws this × the square root of the party, so a small party still reads as a trail (Marz, 4 Nov 2026: 3 ants felt empty). 3 Workers → 17 ants, 170 → 130. Was 3." },
+    "minAnts":     { "value": 10,   "min": 1,   "max": 60,  "step": 1,    "unit": "ants", "label": "Fewest ants in a column", "note": "Even a party of one shows at least this many." },
+    "maxAnts":     { "value": 240,  "min": 3,   "max": 400, "step": 1,    "unit": "ants", "label": "Most ants in a column", "note": "A party's column never shows more ants than this (swarms are separate: 40 to 400)." },
+    "trailShare":  { "value": 0.6,  "min": 0.1, "max": 1,   "step": 0.05, "unit": "of the trail", "label": "Longest column", "note": "A column never covers more than this share of its trail, so far out, where ants are drawn big, it shows fewer." },
+    "growPatch":   { "value": 6,    "min": 0,   "max": 20,  "step": 0.5,  "unit": "×", "label": "Grow at Patch zoom", "note": "How much bigger ants get as the camera pulls back to a whole patch, so a column still reads." },
+    "growRegion":  { "value": 18,   "min": 0,   "max": 40,  "step": 1,    "unit": "×", "label": "Grow at Region zoom", "note": "Extra growth further out, at the Region zoom." }
+  },
+  "patch": {
+    "gap":         { "value": 0.46, "min": 0.15, "max": 1.5, "step": 0.01, "unit": "units", "label": "Gap between rows", "note": "Distance between rows of ants in a 3D Patch column (an ant is 0.36 long)." },
+    "swarmGap":    { "value": 0.3,  "min": 0.1, "max": 1.5,  "step": 0.01, "unit": "units", "label": "Swarm row gap", "note": "Same, for army-ant swarms." },
+    "laneWidth":   { "value": 0.3,  "min": 0.1, "max": 1,    "step": 0.01, "unit": "units", "label": "Lane width", "note": "Distance between side-by-side lanes in a big column." },
+    "wobble":      { "value": 0.05, "min": 0,   "max": 0.4,  "step": 0.01, "unit": "units", "label": "Sway", "note": "How much each ant sways as it walks." },
+    "stride":      { "value": 0.17, "min": 0.05, "max": 0.6, "step": 0.01, "unit": "units", "label": "Stride", "note": "Distance walked per leg cycle on the 3D Patch." },
+    "soldierSize": { "value": 1.15, "min": 0.5, "max": 2.5,  "step": 0.05, "unit": "× worker", "label": "Soldier size", "note": "Soldiers next to workers on the 3D Patch." }
+  }
+}

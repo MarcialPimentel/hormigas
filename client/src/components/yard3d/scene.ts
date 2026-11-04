@@ -14,6 +14,7 @@ import { createGrasshoppers } from '../three/grasshopper';
 import { tripProgress } from '../UnderWay';
 import { TIMING, drawnFor, momentAt, planBattle, replayLength, type BattlePlan, type ReplayMoment } from '../patch3d/battle';
 import { makePath, pitchAhead, pointAlong, type Path } from '../three/path';
+import { MARCH } from '../three/march';
 import type { Spot, Coords } from '../Patch';
 import type { ServerState } from '../../game';
 
@@ -840,10 +841,7 @@ export async function createYardScene(host: HTMLElement, labels: HTMLElement, da
   // ---------- parties: columns of real ants up close, a thread far out
   // room for several busy columns, a swarm's (up to 400 army ants) and a battle replay (140 a side) at once
   const ants: Ants = createAnts(world, { worker: 2400, soldier: 1600, army: 900, army_major: 30, queen: 4, alate: 10 }, true);
-  // How many ants a column draws: lots more than the party, so a trail reads like a busy stream of ants (Marz, 4 Nov 2026:
-  // "it feels empty with only 3 ants"). The label still shows the real count.
-  const columnAnts = (units: number, min: number, max: number) => Math.min(max, Math.max(min, Math.round(Math.sqrt(Math.max(1, units)) * 10)));
-  interface Column { key: string; from: THREE.Vector3; to: THREE.Vector3; path: Path; len: number; thread: THREE.Line; rib: THREE.Mesh; color: string; caste: 'worker' | 'soldier' | 'army'; n: number; el: HTMLDivElement; prog: (now: number) => { d: number; back: boolean } | null; cargo?: string }
+  interface Column { key: string; from: THREE.Vector3; to: THREE.Vector3; path: Path; len: number; thread: THREE.Line; rib: THREE.Mesh; color: string; caste: 'worker' | 'soldier' | 'army'; /** ants really in the party: the column draws many more (march.json) */ units: number; el: HTMLDivElement; prog: (now: number) => { d: number; back: boolean } | null; cargo?: string }
   const columns = new Map<string, Column>();
   const colP = new THREE.Vector3(), colT = new THREE.Vector3(); // scratch: where an ant stands, and which way it faces
   const sumUnits = (u?: Record<string, number>) => Object.values(u ?? {}).reduce((a, b) => a + (b ?? 0), 0);
@@ -858,7 +856,7 @@ export async function createYardScene(host: HTMLElement, labels: HTMLElement, da
       const soldiers = ['raid', 'hold', 'tend', 'claim'].includes(m.type);
       want.set(`m${m.id}`, {
         key: `m${m.id}`, from: spotAt(m.origin), to: spotAt(m.target), color: m.type === 'transport' || m.type === 'relocate' ? CHITIN.worker : soldiers ? CHITIN.soldier : CHITIN.worker,
-        caste: soldiers ? 'soldier' : 'worker', n: columnAnts(sumUnits(m.units), 10, 240),
+        caste: soldiers ? 'soldier' : 'worker', units: sumUnits(m.units),
         label: `${m.type[0].toUpperCase()}${m.type.slice(1)} · ${sumUnits(m.units).toLocaleString('en')}`,
         prog: (now) => { const p = tripProgress(m, now); return p.oneWay ? { d: p.x, back: false } : { d: p.x <= 0.5 ? p.x * 2 : 2 - p.x * 2, back: p.x > 0.5 }; },
         cargo: m.cargo && sumUnits(m.cargo) > 0 ? '#7FC24A' : undefined,
@@ -870,7 +868,7 @@ export async function createYardScene(host: HTMLElement, labels: HTMLElement, da
       const swarm = i.type === 'swarm';
       want.set(`i${i.id}`, {
         key: `i${i.id}`, from: spotAt(i.origin), to: spotAt(target), color: swarm ? CHITIN.army : i.hostile ? CHITIN.raider : CHITIN.worker,
-        caste: swarm ? 'army' : i.hostile ? 'soldier' : 'worker', n: swarm ? columnAnts(i.unitCount ?? 30, 40, 400) : columnAnts(i.unitCount ?? 30, 10, 240),
+        caste: swarm ? 'army' : i.hostile ? 'soldier' : 'worker', units: i.unitCount ?? 30,
         label: swarm ? `Army ants · ${i.scouted ? (i.unitCount ?? 0).toLocaleString('en') : '?'}` : i.hostile ? `${i.type === 'raid' ? 'Raid' : 'Scouts'} from ${i.from}` : `Delivery from ${i.from}`,
         prog: (now) => ({ d: clamp((now - i.departAt) / Math.max(1, i.arriveAt - i.departAt), 0, 1), back: false }),
       });
@@ -1240,7 +1238,8 @@ export async function createYardScene(host: HTMLElement, labels: HTMLElement, da
     const showAnts = d < 700;
     // true size at ant height, then bigger as the camera pulls back (about 7× at the Patch zoom, 20× halfway out, 25× near
     // the Region zoom) so a column reads like a unit on the map (Marz, 2 Nov 2026: they were still too small)
-    const antGrow = 1 + 6 * smooth(20, 140, d) + 18 * smooth(140, 500, d);
+    const M = MARCH.yard;
+    const antGrow = 1 + M.growPatch * smooth(20, 140, d) + M.growRegion * smooth(140, 500, d);
     // the game's clock ticks once a second: run it on smoothly in between, so columns march instead of hopping
     const smoothNow = reduced ? dd.now : nowSeen + Math.min(1500, t0 - nowAt);
     for (const c of columns.values()) {
@@ -1252,23 +1251,26 @@ export async function createYardScene(host: HTMLElement, labels: HTMLElement, da
       const lp = pointAlong(c.path, lead * c.len, colP);
       place(c.el, lp.x, 8, lp.z, d < 700 && d > 30);
       if (!showAnts) continue;
-      // single file, nose to tail (Marz, 4 Nov 2026), and never more than about 60% of its trail: far out, where ants are
-      // drawn big, a column shows fewer
-      const gap = 0.6 * antGrow;
-      const shown = Math.max(3, Math.min(c.n, Math.floor((0.6 * c.len) / gap)));
+      // single file, nose to tail (Marz, 4 Nov 2026). A column draws many more ants than the party (density × √ants,
+      // march.json), never more than trailShare of its trail: far out, where ants are drawn big, it shows fewer.
+      // A swarm's column has its own range.
+      const gap = M.spacing * antGrow;
       const spacing = gap / c.len;
+      const want = Math.round(Math.sqrt(Math.max(1, c.units)) * M.density);
+      const n = c.caste === 'army' ? clamp(want, 40, 400) : clamp(want, M.minAnts, M.maxAnts);
+      const shown = Math.max(3, Math.min(n, Math.floor((M.trailShare * c.len) / gap)));
       for (let i = 0; i < shown; i++) {
         const jitter = Math.sin(i * 7.31) * 0.2; // ants don't keep perfect distance
         const k = pr.back ? lead + (i + jitter) * spacing : lead - (i + jitter) * spacing;
         if (k < 0 || k > 1) continue;
         const p = pointAlong(c.path, k * c.len, colP, colT), tg = colT;
         if (pr.back) tg.negate();
-        const wob = Math.sin(i * 12.9) * 0.6 * antGrow;
+        const wob = Math.sin(i * 12.9) * M.wobble * antGrow;
         const x = p.x - tg.z * wob, z = p.z + tg.x * wob, y = footY(x, z);
         // nose up out of the crater and over the rim, down the far slope
         const ahead = footY(x + tg.x * 0.3, z + tg.z * 0.3);
         const pitch = y > 0 || ahead > 0 ? pitchAhead(footY, x, z, tg.x, tg.z, 0.3, 1.2) : 0;
-        ants.ant(c.caste, x, y, z, { pitch, scale: (c.caste === 'soldier' ? 0.75 : 0.6) * antGrow, yaw: Math.atan2(-tg.z, tg.x), gait: (k * c.len) / (0.17 * antGrow) * 1.2, color: c.color, cargo: pr.back && c.cargo ? { kind: 'leaf', color: c.cargo } : null });
+        ants.ant(c.caste, x, y, z, { pitch, scale: (c.caste === 'soldier' ? M.soldierSize : M.workerSize) * antGrow, yaw: Math.atan2(-tg.z, tg.x), gait: (k * c.len) / (M.stride * antGrow) * 1.2, color: c.color, cargo: pr.back && c.cargo ? { kind: 'leaf', color: c.cargo } : null });
       }
     }
     drawBattle(dt, antGrow, showAnts);
