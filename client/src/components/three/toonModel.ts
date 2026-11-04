@@ -1,11 +1,16 @@
-// The dead grasshopper windfall (docs/25-windfalls.md): on its back, legs in the air, X eyes. Made with Meshy and
-// coloured in Blender (art/meshy/grasshopper/), stored as parts in grasshopper.json. Drawn like the ants: three
-// flat toon bands, a gloss spot, the warm rim and a dark ink outline; the see-through wings get no outline.
+// Meshy models drawn like the ants: three flat toon bands, a gloss spot, the warm rim and a dark ink outline.
+// Each model was made with Meshy and coloured per part in Blender (art/meshy/<name>/), then stored as parts in a
+// JSON file here. A part flagged `wing` (thin and see-through) is two-sided and gets no outline.
+//  - the dead grasshopper windfall (docs/25-windfalls.md): on its back, legs in the air, X eyes
+//  - the termite mound (docs/24-npcs.md): a tall clay spire with buttress ridges and arched entrances
 import * as THREE from 'three';
-import data from './grasshopper.json';
+import grasshopper from './grasshopper.json';
+import termiteMound from './termite-mound.json';
 import { antUniforms, toonBands } from '../nest3d/ants3d';
 
 type Part = { name: string; color: string; wing: boolean; p: number[]; i: number[] };
+type ModelData = { parts: Part[] };
+type Wrap = <M extends THREE.Material>(m: M) => M;
 
 /** Merge parts into one geometry with a colour per vertex; normals are smoothed within each part only. */
 function merge(parts: Part[]) {
@@ -49,7 +54,7 @@ function toonMaterial(bands: THREE.Texture, side: THREE.Side) {
       #include <dithering_fragment>`,
     );
   };
-  m.customProgramCacheKey = () => 'grasshopper-toon';
+  m.customProgramCacheKey = () => 'toon-model';
   return m;
 }
 
@@ -58,16 +63,16 @@ function inkMaterial() {
   m.onBeforeCompile = (sh) => {
     sh.vertexShader = sh.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\ntransformed += normalize(normal) * 0.012;');
   };
-  m.customProgramCacheKey = () => 'grasshopper-ink';
+  m.customProgramCacheKey = () => 'toon-model-ink';
   return m;
 }
 
 /**
- * One set of geometry and materials per scene; `make()` hands out a model 1 unit nose to tail, lying on y = 0 with
- * its head towards +z. `wrap` lets a scene add its own shader bits (the Whole Yard's fog of war) to every material.
+ * One set of geometry and materials per scene; `make()` hands out a copy of the model standing on y = 0.
+ * `wrap` lets a scene add its own shader bits (the Whole Yard's fog of war) to every material.
  */
-export function createGrasshoppers(wrap: <M extends THREE.Material>(m: M) => M = (m) => m) {
-  const parts = data.parts as Part[];
+function createToonModel(data: ModelData, wrap: Wrap) {
+  const parts = data.parts;
   const body = merge(parts.filter((p) => !p.wing));
   const wings = merge(parts.filter((p) => p.wing));
   const bands = toonBands();
@@ -88,3 +93,8 @@ export function createGrasshoppers(wrap: <M extends THREE.Material>(m: M) => M =
     },
   };
 }
+
+/** The dead grasshopper: 1 unit nose to tail, head towards +z. */
+export const createGrasshoppers = (wrap: Wrap = (m) => m) => createToonModel(grasshopper as ModelData, wrap);
+/** The termite mound: 1 unit tall, about 1.15 across its base. */
+export const createTermiteMounds = (wrap: Wrap = (m) => m) => createToonModel(termiteMound as ModelData, wrap);
