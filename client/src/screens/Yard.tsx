@@ -261,7 +261,6 @@ export function Yard({ go }: { go: Nav }) {
     if (!state || !colony) return null;
     const threat = (state.incoming ?? []).find((i: any) => i.hostile);
     if (threat) return { text: threat.type === 'swarm' ? 'Army ants coming' : 'Raid incoming', sub: `${Math.max(1, Math.ceil(((threat as any).arriveAt - now) / 60000))} min · see Missions`, danger: true, go: () => setPanel('missions') };
-    if (!colony.buildJob && !colony.digPlan?.chambers?.length) return { text: 'No dig running', sub: `${colony.name} · open Chambers`, go: () => setPanel('chambers') };
     if (!(colony.unitQueue ?? []).length) return { text: 'Brood Hall idle', sub: `${colony.name} · open Brood Hall`, go: () => setPanel('brood') };
     if (!state.player.researchJob) return { text: 'No research running', sub: 'Open Research', go: () => setPanel('research') };
     return null;
