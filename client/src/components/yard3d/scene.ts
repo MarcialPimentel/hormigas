@@ -1252,21 +1252,18 @@ export async function createYardScene(host: HTMLElement, labels: HTMLElement, da
       const lp = pointAlong(c.path, lead * c.len, colP);
       place(c.el, lp.x, 8, lp.z, d < 700 && d > 30);
       if (!showAnts) continue;
-      // a stream, not a single file: big parties walk a few abreast, in loose rows, and the column never covers more than
-      // about 40% of its trail (far out, where ants are drawn big, it shows fewer)
-      const lanes = c.n >= 120 ? 4 : c.n >= 60 ? 3 : c.n >= 20 ? 2 : 1;
-      const rowGap = 0.9 * antGrow;
-      const rows = Math.max(3, Math.min(Math.ceil(c.n / lanes), Math.floor((0.4 * c.len) / rowGap)));
-      const shown = Math.min(c.n, rows * lanes);
-      const spacing = rowGap / c.len;
+      // single file, nose to tail (Marz, 4 Nov 2026), and never more than about 60% of its trail: far out, where ants are
+      // drawn big, a column shows fewer
+      const gap = 0.6 * antGrow;
+      const shown = Math.max(3, Math.min(c.n, Math.floor((0.6 * c.len) / gap)));
+      const spacing = gap / c.len;
       for (let i = 0; i < shown; i++) {
-        const row = Math.floor(i / lanes), lane = i % lanes;
-        const jitter = Math.sin(i * 7.31) * 0.35; // ants don't march in perfect rows
-        const k = pr.back ? lead + (row + jitter) * spacing : lead - (row + jitter) * spacing;
+        const jitter = Math.sin(i * 7.31) * 0.2; // ants don't keep perfect distance
+        const k = pr.back ? lead + (i + jitter) * spacing : lead - (i + jitter) * spacing;
         if (k < 0 || k > 1) continue;
         const p = pointAlong(c.path, k * c.len, colP, colT), tg = colT;
         if (pr.back) tg.negate();
-        const wob = ((lane - (lanes - 1) / 2) * 0.8 + Math.sin(i * 12.9) * 0.45) * antGrow;
+        const wob = Math.sin(i * 12.9) * 0.6 * antGrow;
         const x = p.x - tg.z * wob, z = p.z + tg.x * wob, y = footY(x, z);
         // nose up out of the crater and over the rim, down the far slope
         const ahead = footY(x + tg.x * 0.3, z + tg.z * 0.3);
