@@ -75,6 +75,9 @@ export async function buildApp(opts: { logger?: boolean } = {}): Promise<Fastify
     });
     app.setNotFoundHandler((req, reply) => {
       if (req.url.startsWith('/api/')) return reply.status(404).send({ error: { code: 'not_found', message: 'Not found.' } });
+      // A missing build file (an old tab asking for a chunk a newer deploy replaced) is a plain 404, not the page,
+      // so the browser reports a load error the client can recover from (the vite:preloadError reload in client/src/main.tsx).
+      if (req.url.startsWith('/assets/')) return reply.status(404).header('Cache-Control', 'no-store').send('Not found');
       return reply.sendFile('index.html');
     });
   }
