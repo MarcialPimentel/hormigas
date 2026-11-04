@@ -15,6 +15,7 @@ import {
 import { casteResearchFraction, researchFraction, researchSum, type DefenseCounts, type ResearchLevels, type UnitCounts } from './economy';
 import { res, add, scale } from './resources';
 import { createRng, type Rng } from './rng';
+import { counters } from './counters';
 
 const C = FORMULAS.combat;
 
@@ -86,6 +87,8 @@ interface EntityStats {
 interface Army {
   keys: EntityKey[]; // type table
   stats: EntityStats[];
+  /** Per entity: 1 if it fires in the round's second part (it hasn't struck its prey first). */
+  waiting: Uint8Array;
   type: Uint16Array; // per entity → index into keys
   health: Float64Array;
   guard: Float64Array;
@@ -133,11 +136,12 @@ function buildArmy(side: CombatSide): Army {
   const type = new Uint16Array(size);
   const health = new Float64Array(size);
   const guard = new Float64Array(size);
+  const waiting = new Uint8Array(size);
   let i = 0;
   keys.forEach((_, t) => {
     for (let n = 0; n < counts[t]; n++, i++) { type[i] = t; health[i] = stats[t].health; }
   });
-  return { keys, stats, type, health, guard, size };
+  return { keys, stats, type, health, guard, waiting, size };
 }
 
 function resetGuards(a: Army) {
@@ -168,11 +172,22 @@ function liveShield(a: Army): number {
   return -1;
 }
 
+/** prey[i][j]: src type i counters dst type j, so its bites at j land first (countersStrikeFirst). */
+const preyTable = (src: Army, dst: Army): boolean[][] => src.stats.map((s) => dst.stats.map((t) => counters(s.id, t.id)));
+
+/**
+ * 'all': everyone fires (the old one-part round). 'prey': the round's first part, where a bite only lands on
+ * prey (an enemy the biter counters); a biter whose pick isn't prey waits for the second part. 'waiting': the
+ * second part, only the waiting entities fire, as usual.
+ */
+type Phase = 'all' | 'prey' | 'waiting';
+
 /**
  * Each entity of `src` fires at random entities of `dst`. Returns [shots, damage].
- * `fireChance` < 1: only that share of `src` gets to fire (attackers squeezing through a Narrow Tunnel).
+ * `fireChance` < 1: only that share of `src` gets to fire (attackers squeezing through a Narrow Tunnel,
+ * a side pinned down by a much bigger one). It is rolled once a round, in the round's first part.
  */
-function fire(src: Army, dst: Army, rng: Rng, fireChance = 1): [number, number] {
+function fire(src: Army, dst: Army, rng: Rng, fireChance = 1, phase: Phase = 'all', prey?: boolean[][]): [number, number] {
   let shots = 0;
   let damage = 0;
   if (dst.size === 0) return [0, 0];
@@ -180,11 +195,17 @@ function fire(src: Army, dst: Army, rng: Rng, fireChance = 1): [number, number] 
   for (let i = 0; i < src.size; i++) {
     const s = src.stats[src.type[i]];
     if (s.attack <= 0) continue;
-    if (fireChance < 1 && rng() >= fireChance) continue;
+    if (phase === 'waiting') {
+      if (!src.waiting[i]) continue;
+    } else if (fireChance < 1 && rng() >= fireChance) continue;
     for (;;) {
-      shots++;
       const t = Math.floor(rng() * dst.size);
       const ts = dst.stats[dst.type[t]];
+      if (phase === 'prey' && !prey![src.type[i]][dst.type[t]]) {
+        src.waiting[i] = 1;
+        break;
+      }
+      shots++;
       if (dst.health[t] > 0) {
         let dmg = s.attack;
         if (dmg >= (C.glanceThresholdPctOfGuard / 100) * ts.guard) {
@@ -223,6 +244,7 @@ function compact(a: Army) {
     if (a.health[r] > 0) {
       a.type[w] = a.type[r];
       a.health[w] = a.health[r];
+      a.waiting[w] = a.waiting[r];
       w++;
     }
   }
@@ -253,20 +275,49 @@ function armyValue(a: Army): number {
   return v;
 }
 
+/** [attacker, defender] share of bites this round: 1, unless that side is outnumbered past outnumberedRatio. */
+function biteShares(A: Army, D: Army): [number, number] {
+  const k = C.outnumberedRatio;
+  if (!(k > 0)) return [1, 1];
+  const va = armyValue(A);
+  const vd = armyValue(D);
+  if (va <= 0 || vd <= 0) return [1, 1];
+  return [Math.min(1, (k * va) / vd), Math.min(1, (k * vd) / va)];
+}
+
 export function simulateBattle(attacker: CombatSide, defender: CombatSide, rng: Rng): BattleResult {
   const A = buildArmy(attacker);
   const D = buildArmy(defender);
   const rounds: RoundSummary[] = [];
   const choke = chokepointOf(defender);
   const startValue = armyValue(A);
+  const preyA = preyTable(A, D);
+  const preyD = preyTable(D, A);
   const retreatPct = attacker.retreatPct ?? 0;
   let retreatedAfterRound: number | undefined;
   for (let round = 1; round <= C.maxRounds && A.size > 0 && D.size > 0; round++) {
     resetGuards(A);
     resetGuards(D);
     const share = choke && round <= choke.rounds ? choke.sharePct / 100 : 1;
-    const [as, ad] = fire(A, D, rng, share);
-    const [ds, dd] = fire(D, A, rng);
+    // outnumbered: a side worth less than 1/ratio of the other bites only part of the time (pinned down)
+    const [aBite, dBite] = biteShares(A, D);
+    let as: number, ad: number, ds: number, dd: number;
+    if (C.countersStrikeFirst) {
+      // part one: bites at prey land first, on both sides; prey killed now don't bite back this round
+      A.waiting.fill(0);
+      D.waiting.fill(0);
+      const [as1, ad1] = fire(A, D, rng, share * aBite, 'prey', preyA);
+      const [ds1, dd1] = fire(D, A, rng, dBite, 'prey', preyD);
+      compact(A);
+      compact(D);
+      // part two: everyone who hasn't struck yet fires as usual
+      const [as2, ad2] = fire(A, D, rng, 1, 'waiting');
+      const [ds2, dd2] = fire(D, A, rng, 1, 'waiting');
+      [as, ad, ds, dd] = [as1 + as2, ad1 + ad2, ds1 + ds2, dd1 + dd2];
+    } else {
+      [as, ad] = fire(A, D, rng, share * aBite);
+      [ds, dd] = fire(D, A, rng, dBite);
+    }
     compact(A);
     compact(D);
     rounds.push({ round, attackerShots: as, defenderShots: ds, attackerDamage: ad, defenderDamage: dd, attackerRemaining: A.size, defenderRemaining: D.size });

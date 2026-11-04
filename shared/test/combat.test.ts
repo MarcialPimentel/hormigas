@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   simulateBattle, rebuildDefenses, corpseProtein, lootable, fillCargo, previewBattle, createRng, groupCargo, res,
+  FORMULAS, unitsValue,
 } from '../src';
 
 describe('combat engine', () => {
@@ -40,9 +41,41 @@ describe('combat engine', () => {
     }
     expect(winsResearched).toBeGreaterThan(winsPlain);
   });
-  it('frenzy: major soldiers shred minors efficiently', () => {
-    const r = simulateBattle({ units: { major_soldier: 50 }, research: {} }, { units: { minor_soldier: 300 }, research: {} }, createRng(21));
-    expect(r.rounds[0].attackerShots).toBeGreaterThan(50);
+  it('frenzy: acid sprayers shred minors efficiently', () => {
+    // (Majors no longer: Minors counter them, so they strike first and few Majors get to bite.)
+    const r = simulateBattle({ units: { acid_sprayer: 50 }, research: {} }, { units: { minor_soldier: 100 }, research: {} }, createRng(21));
+    expect(r.rounds[0].attackerShots).toBeGreaterThan(100);
+  });
+});
+
+describe('counters strike first, outnumbered sides bite less (docs/08-combat.md)', () => {
+  const C = FORMULAS.combat as { countersStrikeFirst: boolean; outnumberedRatio: number };
+  const worth = (u: Record<string, number | undefined>) => { const v = unitsValue(u); return v.foliage + v.protein + v.nectar; };
+  const lost = (att: Record<string, number>, def: Record<string, number>, runs = 200) => {
+    const rng = createRng(7);
+    let v = 0;
+    for (let i = 0; i < runs; i++) v += worth(simulateBattle({ units: att, research: {} }, { units: def, research: {} }, rng).attackerLost);
+    return v / runs;
+  };
+  const withRules = <T>(first: boolean, ratio: number, f: () => T): T => {
+    const saved = [C.countersStrikeFirst, C.outnumberedRatio] as const;
+    C.countersStrikeFirst = first; C.outnumberedRatio = ratio;
+    try { return f(); } finally { [C.countersStrikeFirst, C.outnumberedRatio] = saved; }
+  };
+  it('a counter loses less to its prey when it strikes first', () => {
+    const acid = { acid_sprayer: 20 }, minors = { minor_soldier: 35 };
+    expect(withRules(true, 0, () => lost(acid, minors))).toBeLessThan(0.8 * withRules(false, 0, () => lost(acid, minors)));
+  });
+  it('overwhelming a nest costs less than a fair fight; without the rule it costs about the same', () => {
+    const army = { minor_soldier: 18, major_soldier: 20, acid_sprayer: 15 };
+    const big = { minor_soldier: 72, major_soldier: 80, acid_sprayer: 60 };
+    const nest = { worker: 12, major_soldier: 4, minor_soldier: 25 };
+    expect(withRules(true, 2, () => lost(big, nest))).toBeLessThan(0.4 * withRules(true, 2, () => lost(army, nest)));
+    expect(withRules(false, 0, () => lost(big, nest))).toBeGreaterThan(0.8 * withRules(false, 0, () => lost(army, nest)));
+  });
+  it('fairly equal fights stay bloody', () => {
+    const army = { minor_soldier: 18, major_soldier: 20, acid_sprayer: 15 };
+    expect(lost(army, army, 100)).toBeGreaterThan(0.85 * worth(army));
   });
 });
 
