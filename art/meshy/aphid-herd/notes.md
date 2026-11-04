@@ -19,7 +19,7 @@ Prompts are in `c1.json`, `c2.json`, `c3.json` and `a1.json`. The 3D settings ar
 
 ## Result
 
-- **Poppy:** 1,559 triangles in 14 parts. Grass tuft `#6E9A34`, stem `#4E7A2A`, leaves `#5F8C30`, petals Poppy `#FF6B4F` / inner `#E2503A`, dark centre `#3A1A14`, seed head `#C9DB8A`, 7 stamens `#2B1D12`. Stem and leaves are darker than the grasshopper's greens on purpose, so the lime aphids stand out against them.
+- **Poppy:** 1,559 triangles in 13 parts, one flat colour per part like the concept: grass tuft `#6E9A34`, stem and leaves `#5F8C30`, petals Poppy `#FF6B4F`, a green seed bulb `#9DC449` with brown `#5A341E` around it (the cup's centre and the 7 stamens). The bulb is everything within 0.05 of the stamen ring's centre. Stem and leaves are darker than the grasshopper's greens on purpose, so the lime aphids stand out against them.
 - **Aphid:** 476 triangles in 6 parts. Body Aphid `#B5E04A`, belly `#DDEB9A`, legs `#8DB83A`, honeydew `#F2B21F`, and two eye spheres `#2B1D12` added in Blender.
 - **Perches:** 14 spots on the stem (a spiral from just under the flower downwards) and on top of the leaves, at least an aphid's length apart. A herd shows 2 + 2 per level (level 1: 4 aphids, level 6: 14), filled top down.
 - The game data (`client/src/components/three/aphid-herd.json`) is about 50 KB. Drawn by `client/src/components/three/aphidHerd.ts` with the same toon look as the ants and the grasshopper (`three/toonModel.ts`). The aphids swell gently while they feed (turned off with reduced motion). The poppy is 22 units tall in the Whole Yard and 5.5 in the Patch.

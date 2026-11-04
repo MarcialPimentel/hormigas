@@ -1199,9 +1199,8 @@ export async function createYardScene(host: HTMLElement, labels: HTMLElement, da
     grassU.uClear.value = d < 260 ? clamp(d * 0.9, 14, 70) : 0;
     grassU.uCam.value.set(camera.position.x, camera.position.z);
     grassU.uCamR.value = d < 260 ? clamp(d * 0.7, 6, 60) : 0;
-    const swell = 1 + 2.2 * smooth(380, 1400, d); // mounds swell far out, like Civ's cities
-    for (const p of places.values()) if (p.big) p.group.scale.setScalar(swell);
-    for (const [k, g] of farMounds) { g.visible = !patchPlaces.has(k); g.scale.setScalar(swell); }
+    // mounds keep their true size at every zoom (Marz, 4 Nov 2026: no swelling far out like the ants)
+    for (const [k, g] of farMounds) g.visible = !patchPlaces.has(k);
     selRing.scale.setScalar(clamp(d / 200, 0.5, 6));
     // the server's state changed: rebuild the parties
     const dd = data();
@@ -1249,7 +1248,7 @@ export async function createYardScene(host: HTMLElement, labels: HTMLElement, da
     // labels
     for (const p of places.values()) if (p.el) {
       const show = p.big ? d < 1500 && d > 9 : d < 420 && d > 9;
-      place(p.el, p.group.position.x, p.top * (p.big ? swell : 1), p.group.position.z, show);
+      place(p.el, p.group.position.x, p.top, p.group.position.z, show);
       p.el.classList.toggle('slim', d > 600);
     }
     for (const o of farDress) o.visible = d > 1300;
