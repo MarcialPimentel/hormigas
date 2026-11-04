@@ -2,14 +2,13 @@
 // double-click one of your mounds to dive into its nest. The buttons on the left open what used to be screens
 // (Chambers, Brood Hall, Research, Missions) as panels over the map, for whichever colony you cycle to; Allies, Reports, Rankings and the
 // Field Journal cover the whole player, so they open without the colony switcher.
-// Computers only; it ships behind the ?preview=yard switch (client/src/preview.ts).
+// Computers only: it is the whole game there (App.tsx); phones keep the classic screens.
 import { Suspense, lazy, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { WORLD } from '@hormigas/shared';
 import { api } from '../api';
 import { useGame } from '../game';
 import { useMotion } from '../motion';
 import { fmtCoords, fmtFull } from '../format';
-import { leaveYardPreview } from '../preview';
 import { SpotCard, type Coords, type Spot } from '../components/Patch';
 import { UnderWay } from '../components/UnderWay';
 import { NeedsCard } from '../components/NeedsCard';
@@ -367,12 +366,11 @@ export function Yard({ go }: { go: Nav }) {
         {nest && (
           <button type="button" className="btn small primary" onClick={surface}>↑ Up to the yard</button>
         )}
-        <button type="button" className="btn ghost small" onClick={() => go('nest')} title="The usual screens; Whole Yard stays at the top of the menu">
-          Classic screens
-        </button>
-        <button type="button" className="btn ghost small" onClick={leaveYardPreview} title="Turn the Whole Yard preview off in this browser">
-          Turn preview off
-        </button>
+        {state?.player.isAdmin && (
+          <button type="button" className="btn ghost small" onClick={() => go('feedback')} title="Players' feedback (admins only)">
+            Feedback inbox
+          </button>
+        )}
       </div>
 
       {!nest && (
