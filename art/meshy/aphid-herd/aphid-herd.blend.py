@@ -19,8 +19,8 @@ mode = args[0]
 
 # the sunlit-microcosm palette (docs/art/sunlit-microcosm.md): Poppy, Aphid, the grasshopper's greens
 COLOURS = {
-    "petal": "#FF6B4F", "petal_in": "#E2503A", "blotch": "#3A1A14", "seed": "#C9DB8A", "stamen": "#2B1D12",
-    "stem": "#4E7A2A", "leaf": "#5F8C30", "grass": "#6E9A34",
+    "petal": "#FF6B4F", "blotch": "#5A341E", "seed": "#9DC449", "stamen": "#5A341E",
+    "stem": "#5F8C30", "leaf": "#5F8C30", "grass": "#6E9A34",
     "body": "#B5E04A", "belly": "#DDEB9A", "leg": "#8DB83A", "dew": "#F2B21F",
     "eye": "#2B1D12", "eye_white": "#F7F4EA",
 }
@@ -57,17 +57,19 @@ def poppy_kind(c, n, lo, hi, head):
     if h < 0.13:
         return "grass"
     if c.z > head.z:
-        r = math.hypot(c.x - head.x, c.y - head.y)
-        if r < 0.05 and c.z > head.z + 0.05:
+        # the seed bulb: everything within a bulb's radius of the stamen ring's centre; brown around it
+        if (c - BULB).length < 0.05:
             return "seed"
-        if r < 0.075:
+        r = math.hypot(c.x - head.x, c.y - head.y)
+        if r < 0.085 and n.z > -0.3:
             return "blotch"
-        return "petal_in" if n.z > 0.35 else "petal"
+        return "petal"
     r = math.hypot(c.x - STEM[0](c.z), c.y - STEM[1](c.z))
     return "stem" if r < 0.03 else "leaf"
 
 
 STEM = (lambda z: 0.0, lambda z: 0.0)
+BULB = Vector((0, 0, 0.32))
 
 
 def aphid_kind(c, n, lo, hi):
@@ -175,7 +177,9 @@ def build(poppy_src, aphid_src, out):
     sc = [v for v in pts if v.z > lo.z + (hi.z - lo.z) * 0.6]
     sl, sh = bounds(sc)
     stam = [v for p in stamens for v in p.data.vertices]
+    global BULB
     if stam:
+        BULB = sum((v.co for v in stam), Vector()) / len(stam)
         head = Vector((sum(v.co.x for v in stam) / len(stam), sum(v.co.y for v in stam) / len(stam), HEAD_Z))
     else:
         head = Vector(((sl.x + sh.x) / 2, (sl.y + sh.y) / 2, HEAD_Z))
