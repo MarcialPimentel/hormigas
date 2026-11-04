@@ -28,6 +28,7 @@ _Current as of Build 11 (2026-10-30)._ Hormigas has no GitHub milestones: each b
 | 14 | Swarm sizes: foraging column, war column or great swarm, hidden until scouted; beating one pays 75% of its worth in mixed food ([20-swarms](20-swarms.md)) | in review |
 | — | Mission fuel ignores speed and costs ×2 a full-speed trip ([03-economy](03-economy.md#mission-fuel)) | in review |
 | — | New players get their own patch, next to the active players ([11-world](11-world.md#starting-placement)) | in review |
+| — | A better-looking ant: the 3D ant rebuilt in Blender from a Meshy concept ([18-art-direction](18-art-direction.md#in-3d-the-sunlit-microcosm)) | in review |
 | v1 | Supercolonies stage B, joint raids on spider dens, more defenses | later |
 
 ## Guiding rule

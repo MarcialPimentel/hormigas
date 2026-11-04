@@ -1,0 +1,41 @@
+{
+ "source": "C:/Users/marci/Documents/GameDev/hormigas/.claude/worktrees/hero-ant/art/meshy/hero-ant/ref/old_ant.obj",
+ "triangles": 2664,
+ "dimensions_m": [
+  0.516,
+  0.8788,
+  0.3193
+ ],
+ "bbox_min": [
+  -0.258,
+  -0.4127,
+  -0.0055
+ ],
+ "bbox_max": [
+  0.258,
+  0.4661,
+  0.3138
+ ],
+ "pivot_note": "world origin (0,0,0) is the model's pivot in game",
+ "pivot_vs_bbox": {
+  "x_center": 0.0,
+  "y_center": 0.0267,
+  "z_min": -0.0055
+ },
+ "objects": [
+  {
+   "name": "ant",
+   "type": "MESH",
+   "depth": 0
+  }
+ ],
+ "mesh_count": 1,
+ "materials": [
+  "chitin",
+  "eye"
+ ],
+ "images": [],
+ "vertex_colors": false,
+ "armatures": [],
+ "actions": []
+}
