@@ -690,7 +690,7 @@ export async function createYardScene(host: HTMLElement, labels: HTMLElement, da
     } else if (c.wild?.kind === 'mound') {
       // the Meshy termite mound: a tall clay spire with buttress ridges and arched entrances
       const t = termites.make();
-      t.scale.setScalar(26);
+      t.scale.setScalar(17);
       g.add(t);
     } else if (c.wild?.kind === 'den') {
       const d = new THREE.Mesh(new THREE.SphereGeometry(7, 10, 6, 0, Math.PI * 2, 0, Math.PI / 2), mat('#3A2E2A')); d.scale.y = 0.4; g.add(d);

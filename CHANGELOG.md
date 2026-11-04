@@ -3,6 +3,7 @@
 _Current as of Build 13 (2026-11-02)._ Newest first. One entry per build, in players' words, built from the merged PRs. Smaller PRs merged between builds are listed with the nearest build.
 
 ## Between builds (unreleased)
+- **Termite mounds fit their spot.** In the Whole Yard the new mound spilled into the next hex; it's about a third smaller now. A see-through gap in its main spire is filled in.
 - **Termite mounds look like fortresses.** In the Whole Yard and the 3D Patch, a termite mound was a brown cone. Now it's a tall clay spire with buttress ridges and dark arched entrances, drawn in the same cartoon style as the ants.
 - **A test scene for ants and trails** (for Marz, not players): **/?test** shows every 3D ant side by side and the real Whole Yard or 3D Patch with made-up parties. Buttons on the right send forages, scouts, raids on wild nests, termites and spider dens, windfall claims, herd tenders and incoming raids or swarms; the clock can pause, step, speed up and scrub; sliders change how columns march, and Copy changes sends the numbers back. It never talks to the server. See docs/test-bed.md.
 - **The dead grasshopper looks like a dead grasshopper.** In the Whole Yard and the 3D Patch, the grasshopper windfall was a green capsule. Now it's a cartoon grasshopper on its back with its legs in the air and X eyes, drawn in the same style as the ants.
