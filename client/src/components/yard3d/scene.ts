@@ -14,6 +14,7 @@ import { createGrasshoppers } from '../three/grasshopper';
 import { tripProgress } from '../UnderWay';
 import { TIMING, drawnFor, momentAt, planBattle, replayLength, type BattlePlan, type ReplayMoment } from '../patch3d/battle';
 import { makePath, pitchAhead, pointAlong, type Path } from '../three/path';
+import { MARCH } from '../three/march';
 import type { Spot, Coords } from '../Patch';
 import type { ServerState } from '../../game';
 
@@ -855,7 +856,7 @@ export async function createYardScene(host: HTMLElement, labels: HTMLElement, da
       const soldiers = ['raid', 'hold', 'tend', 'claim'].includes(m.type);
       want.set(`m${m.id}`, {
         key: `m${m.id}`, from: spotAt(m.origin), to: spotAt(m.target), color: m.type === 'transport' || m.type === 'relocate' ? CHITIN.worker : soldiers ? CHITIN.soldier : CHITIN.worker,
-        caste: soldiers ? 'soldier' : 'worker', n: Math.min(60, Math.max(3, Math.round(Math.sqrt(sumUnits(m.units)) * 3))),
+        caste: soldiers ? 'soldier' : 'worker', n: Math.min(200, Math.max(3, Math.round(Math.sqrt(sumUnits(m.units)) * 3))),
         label: `${m.type[0].toUpperCase()}${m.type.slice(1)} · ${sumUnits(m.units).toLocaleString('en')}`,
         prog: (now) => { const p = tripProgress(m, now); return p.oneWay ? { d: p.x, back: false } : { d: p.x <= 0.5 ? p.x * 2 : 2 - p.x * 2, back: p.x > 0.5 }; },
         cargo: m.cargo && sumUnits(m.cargo) > 0 ? '#7FC24A' : undefined,
@@ -1237,7 +1238,8 @@ export async function createYardScene(host: HTMLElement, labels: HTMLElement, da
     const showAnts = d < 700;
     // true size at ant height, then bigger as the camera pulls back (about 7× at the Patch zoom, 20× halfway out, 25× near
     // the Region zoom) so a column reads like a unit on the map (Marz, 2 Nov 2026: they were still too small)
-    const antGrow = 1 + 6 * smooth(20, 140, d) + 18 * smooth(140, 500, d);
+    const M = MARCH.yard;
+    const antGrow = 1 + M.growPatch * smooth(20, 140, d) + M.growRegion * smooth(140, 500, d);
     // the game's clock ticks once a second: run it on smoothly in between, so columns march instead of hopping
     const smoothNow = reduced ? dd.now : nowSeen + Math.min(1500, t0 - nowAt);
     for (const c of columns.values()) {
@@ -1249,18 +1251,20 @@ export async function createYardScene(host: HTMLElement, labels: HTMLElement, da
       const lp = pointAlong(c.path, lead * c.len, colP);
       place(c.el, lp.x, 8, lp.z, d < 700 && d > 30);
       if (!showAnts) continue;
-      const spacing = (1.3 * antGrow) / c.len;
-      for (let i = 0; i < c.n; i++) {
+      const spacing = (M.spacing * antGrow) / c.len;
+      // a party's column is capped (march.json); a swarm's column is not
+      const n = c.caste === 'army' ? c.n : Math.min(c.n, M.maxAnts);
+      for (let i = 0; i < n; i++) {
         const k = pr.back ? lead + i * spacing : lead - i * spacing;
         if (k < 0 || k > 1) continue;
         const p = pointAlong(c.path, k * c.len, colP, colT), tg = colT;
         if (pr.back) tg.negate();
-        const wob = Math.sin(i * 12.9) * 0.6 * antGrow;
+        const wob = Math.sin(i * 12.9) * M.wobble * antGrow;
         const x = p.x - tg.z * wob, z = p.z + tg.x * wob, y = footY(x, z);
         // nose up out of the crater and over the rim, down the far slope
         const ahead = footY(x + tg.x * 0.3, z + tg.z * 0.3);
         const pitch = y > 0 || ahead > 0 ? pitchAhead(footY, x, z, tg.x, tg.z, 0.3, 1.2) : 0;
-        ants.ant(c.caste, x, y, z, { pitch, scale: (c.caste === 'soldier' ? 0.75 : 0.6) * antGrow, yaw: Math.atan2(-tg.z, tg.x), gait: (k * c.len) / (0.17 * antGrow) * 1.2, color: c.color, cargo: pr.back && c.cargo ? { kind: 'leaf', color: c.cargo } : null });
+        ants.ant(c.caste, x, y, z, { pitch, scale: (c.caste === 'soldier' ? M.soldierSize : M.workerSize) * antGrow, yaw: Math.atan2(-tg.z, tg.x), gait: (k * c.len) / (M.stride * antGrow) * 1.2, color: c.color, cargo: pr.back && c.cargo ? { kind: 'leaf', color: c.cargo } : null });
       }
     }
     drawBattle(dt, antGrow, showAnts);

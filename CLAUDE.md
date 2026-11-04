@@ -38,6 +38,7 @@ Needs Node 22+ and Docker (for local Postgres).
 | `npm run sim` | Milestone pacing simulation (`npm run sim -- 5` for ×5) |
 | `npm run combat` | Balance tables from the real combat code: castes against each other, raids on defenses, fair armies against every wild nest (`-- castes`, `-- defenses`, `-- nests`; `--budget`, `--runs`) |
 | `npm run build` then `npm start` | Production mode, one server on :3000 |
+| `/?test` in the browser | Test scene: every 3D ant and every kind of trail on the real maps, with fake parties and march sliders ([docs/test-bed.md](docs/test-bed.md)) |
 
 Run `npm run typecheck` and `npm test` before calling work done. CI runs both, plus the build, on every push and PR. After changing `castes.json`, `defenses.json`, `npc.json` or `combat.ts`, also run `npm run combat`.
 

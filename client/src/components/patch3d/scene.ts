@@ -17,6 +17,7 @@ import type { Spot, SpotColony } from '../Patch';
 import { moveKeys } from './keys';
 import { TIMING, drawnFor, momentAt, planBattle, replayLength, type BattlePlan } from './battle';
 import { makePath, pitchAhead, pointAlong, type Path } from '../three/path';
+import { MARCH } from '../three/march';
 
 export interface PatchData {
   colony: ServerColony | null;
@@ -877,7 +878,7 @@ uniform vec3 uSpots[SIGHT_SPOTS];
   const clamp01 = (v: number) => Math.max(0, Math.min(1, v));
   // legs are tied to the ground covered: one tripod cycle per STRIDE, so the feet don't slide. A column that creeps
   // (a long trip at world speed ×1) still steps at least MIN_STEP radians a second, slowly, rather than freezing.
-  const STRIDE = 0.17, MIN_STEP = 4;
+  const MIN_STEP = 4;
   /** Nose up or down to follow a mound's slope (and steeply up out of its entrance); flat ground stays level. */
   function slope(x: number, z: number, fx: number, fz: number) {
     if (moundY(x, z) === -Infinity && moundY(x + fx * 0.12, z + fz * 0.12) === -Infinity) return 0;
@@ -953,7 +954,8 @@ uniform vec3 uSpots[SIGHT_SPOTS];
       const t = trailFor(c.key, c.from, c.to, c.trail, hash(c.key.length, Number(c.key.slice(1))) < 0.5 ? 1 : -1);
       const swarm = c.caste(0) === 'army' || c.caste(2) === 'army_major';
       const lanes = Math.min(swarm ? 9 : 4, Math.max(1, Math.round(Math.sqrt(c.n / (swarm ? 5 : 12)))));
-      const gap = swarm ? 0.3 : 0.46;
+      const M = MARCH.patch, STRIDE = M.stride;
+      const gap = swarm ? M.swarmGap : M.gap;
       const lead = c.k * t.total;
       // how fast the column really moves (world units a second), and the slow floor for its legs
       const legs = (Math.abs(c.rate) * 1000 * t.total) / STRIDE * Math.PI * 2;
@@ -987,8 +989,8 @@ uniform vec3 uSpots[SIGHT_SPOTS];
         if (c.holding) dd = t.total - (row % 12) * 0.3;
         if (dd < 0) continue;
         along(t, dd);
-        const side = (lane - (lanes - 1) / 2) * (swarm ? 0.34 : 0.3) + (hash(i, 4) - 0.5) * 0.18;
-        const wob = reduced ? 0 : Math.sin(clock * (swarm ? 3.3 : 1.8) + i * 1.37) * (swarm ? 0.12 : 0.05);
+        const side = (lane - (lanes - 1) / 2) * (swarm ? 0.34 : M.laneWidth) + (hash(i, 4) - 0.5) * 0.18;
+        const wob = reduced ? 0 : Math.sin(clock * (swarm ? 3.3 : 1.8) + i * 1.37) * (swarm ? 0.12 : M.wobble);
         const tl = Math.hypot(dir.x, dir.z) || 1, nx = -dir.z / tl, nz = dir.x / tl;
         const x = at.x + nx * (side + wob), z = at.z + nz * (side + wob);
         // heading home when the party is on its way back (k falls), else toward the target
@@ -999,7 +1001,7 @@ uniform vec3 uSpots[SIGHT_SPOTS];
         const fx = (back ? -dir.x : dir.x) / tl, fz = (back ? -dir.z : dir.z) / tl;
         ants.ant(caste, x, footY(x, z), z, {
           // ants3d's body is about 0.9 long: scale it to 5 mm
-          scale: (ANT / 0.9) * (caste === 'soldier' ? 1.15 : caste === 'army_major' ? 1.3 : caste === 'alate' ? 1.5 : 1),
+          scale: (ANT / 0.9) * (caste === 'soldier' ? M.soldierSize : caste === 'army_major' ? 1.3 : caste === 'alate' ? 1.5 : 1),
           yaw, pitch: slope(x, z, fx, fz), color: c.color,
           ...(reduced || c.holding ? { step: 0 } : { gait: gait(back ? t.total - dd : dd, i) }),
           cargo: r ? { kind: LOAD[r], color: CARGO[r] } : null,

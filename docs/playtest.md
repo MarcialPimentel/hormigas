@@ -16,6 +16,9 @@ You see the patches round your colonies; the rest is greyed (explored, as last s
 ### Scouting the swarm
 A swarm comes every 1.5–2.5 days. To meet one sooner on a test world, wait for the "Army ant swarm" warning, then press **Scout the swarm** on its card under Under way and send a few Scouts. Check that the odds on the form go up as you add Scouts, that the report says how many came back, and that the card then shows the swarm's size and a win / draw / lose bar that moves when you raise or send away soldiers ([20-swarms](20-swarms.md)).
 
+### The test scene
+Open https://hormigas.marz.gg/?test to check ant models and trails without playing: the real Whole Yard and 3D Patch with made-up parties (forage, scouts, raids, termites, windfalls, herds, swarms) sent from buttons on the right, a lineup of every ant, and sliders for how columns march. It never touches the real game. See [test-bed](test-bed.md).
+
 ## Controls
 - Tap or click everything; the tabs are Colony, Chambers, Brood Hall, Research, Missions, Allies, Reports, Journal and Rankings ([12-ui-nest-view](12-ui-nest-view.md)).
 - **3D nest (computers):** drag to turn it; scroll, pinch or the + and − buttons to zoom. Tap a chamber to open it.
