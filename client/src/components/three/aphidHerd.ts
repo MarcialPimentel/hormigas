@@ -10,8 +10,18 @@ import { inkPropMaterial, mergeParts, toonPropMaterial, type PropPart, type Vert
 type Part = PropPart & { two: boolean };
 type Perch = { p: number[]; n: number[] };
 
+/** how much the evenly lit poppy is dimmed so its colours match the palette in daylight */
+const POPPY_TONE = 0.8;
+
 /** an aphid's length next to a poppy 1 unit tall */
 const APHID = 0.07;
+
+/** A copy of a geometry whose normals all point up, so lighting is the same over every face. */
+function litFromAbove(geo: THREE.BufferGeometry) {
+  const g = geo.clone(), N = g.attributes.normal;
+  for (let k = 0; k < N.count; k++) N.setXYZ(k, 0, 1, 0);
+  return g;
+}
 
 /** how many aphids a herd of this level shows */
 export const aphidsShown = (level: number) => Math.min(data.poppy.perches.length, 2 + 2 * Math.max(1, Math.round(level)));
@@ -23,8 +33,11 @@ export const aphidsShown = (level: number) => Math.min(data.poppy.perches.length
  */
 export function createAphidHerds(wrap: <M extends THREE.Material>(m: M) => M = (m) => m) {
   const poppyParts = data.poppy.parts as Part[];
+  // the ink outline follows the real shape; the colour is lit as if every face pointed up, so each part of the
+  // poppy reads as one solid colour like the concept, instead of toon bands breaking up over Meshy's big triangles
   const solid = mergeParts(poppyParts.filter((p) => !p.two));
   const thin = mergeParts(poppyParts.filter((p) => p.two));
+  const solidFlat = litFromAbove(solid), thinFlat = litFromAbove(thin);
   const aphid = mergeParts(data.aphid.parts as Part[]);
   const bands = toonBands();
   // feeding: each aphid swells up and back, timed from where it sits so neighbours don't pulse together
@@ -37,8 +50,11 @@ export function createAphidHerds(wrap: <M extends THREE.Material>(m: M) => M = (
       transformed.x *= 1.0 + 0.04 * aS;
       transformed.z *= 1.0 - 0.03 * aS;`,
   };
-  const poppyMat = wrap(toonPropMaterial(bands, THREE.FrontSide, 'poppy'));
-  const thinMat = wrap(toonPropMaterial(bands, THREE.DoubleSide, 'poppy-thin'));
+  const poppyMat = wrap(toonPropMaterial(bands, THREE.FrontSide, 'poppy', undefined, true));
+  const thinMat = wrap(toonPropMaterial(bands, THREE.DoubleSide, 'poppy-thin', undefined, true));
+  // facing straight up catches the full sun and sky, so dim it back to the palette colours
+  poppyMat.color.setScalar(POPPY_TONE);
+  thinMat.color.setScalar(POPPY_TONE);
   const poppyInk = wrap(inkPropMaterial('poppy', 0.006));
   const aphidMat = wrap(toonPropMaterial(bands, THREE.FrontSide, 'aphid', feed));
   // the aphid is drawn at 1 unit long and scaled down, so its outline is wider in its own units
@@ -67,9 +83,9 @@ export function createAphidHerds(wrap: <M extends THREE.Material>(m: M) => M = (
   return {
     make(level: number, shadows = true) {
       const g = new THREE.Group();
-      const p = new THREE.Mesh(solid, poppyMat), t = new THREE.Mesh(thin, thinMat);
+      const p = new THREE.Mesh(solidFlat, poppyMat), t = new THREE.Mesh(thinFlat, thinMat);
+      // it casts a shadow on the ground but not on itself: its cupped petals striped themselves with shadow
       p.castShadow = t.castShadow = shadows;
-      p.receiveShadow = t.receiveShadow = shadows;
       g.add(p, t, new THREE.Mesh(solid, poppyInk), new THREE.Mesh(thin, poppyInk));
       const perches = data.poppy.perches as Perch[];
       for (let i = 0; i < aphidsShown(level); i++) g.add(placeAphid(perches[i], shadows));
@@ -79,7 +95,7 @@ export function createAphidHerds(wrap: <M extends THREE.Material>(m: M) => M = (
       feed.uniforms.uAphidT.value = seconds;
     },
     dispose() {
-      for (const d of [solid, thin, aphid, bands, poppyMat, thinMat, poppyInk, aphidMat, aphidInk]) d.dispose();
+      for (const d of [solid, thin, solidFlat, thinFlat, aphid, bands, poppyMat, thinMat, poppyInk, aphidMat, aphidInk]) d.dispose();
     },
   };
 }
