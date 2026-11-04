@@ -26,6 +26,7 @@ _Current as of Build 11 (2026-10-30)._ Hormigas has no GitHub milestones: each b
 | 13 | Scout the swarm: the swarm's size hidden until scouted, Scouts sent out to meet it with visible odds, live battle odds once scouted ([20-swarms](20-swarms.md)) | in review |
 | 14 | Swarm sizes: foraging column, war column or great swarm, hidden until scouted; beating one pays 75% of its worth in mixed food ([20-swarms](20-swarms.md)) | in review |
 | — | Mission fuel ignores speed and costs ×2 a full-speed trip ([03-economy](03-economy.md#mission-fuel)) | in review |
+| — | New players get their own patch, next to the active players ([11-world](11-world.md#starting-placement)) | in review |
 | v1 | Supercolonies stage B, joint raids on spider dens, more defenses | later |
 
 ## Guiding rule

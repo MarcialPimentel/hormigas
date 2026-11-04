@@ -6,7 +6,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { FastifyInstance } from 'fastify';
 import { WORLD, DISCOVERY_MESSAGES } from '@hormigas/shared';
 import { getPool } from '../src/db';
-import { setupTest, teardownTest, newPlayer, setColony, setPlayer, calmWildNests, type Client } from './helpers';
+import { setupTest, teardownTest, newPlayer, newPlayerBeside, setColony, setPlayer, calmWildNests, type Client } from './helpers';
 
 let app: FastifyInstance;
 let clock: Awaited<ReturnType<typeof setupTest>>['clock'];
@@ -20,7 +20,7 @@ const spotOf = async (who: Client, at: { region: number; patch: number; spot: nu
 beforeAll(async () => {
   ({ app, clock } = await setupTest());
   a = await newPlayer(app, 'alpha');
-  b = await newPlayer(app, 'beta');
+  b = await newPlayerBeside(app, 'beta', a); // a patch-mate, to raid and scout next door
   ca = (await a.get('/api/state')).colony;
   cb = (await b.get('/api/state')).colony;
   await calmWildNests();
@@ -30,13 +30,6 @@ beforeAll(async () => {
   for (const c of [ca, cb]) await setColony(c.id, { foliage: 1e5, protein: 1e5, nectar: 1e5, last_updated: clock.t, units: { scout: 5, minor_soldier: 20, worker: 10 } });
 });
 afterAll(async () => teardownTest(app));
-
-describe('placement', () => {
-  it('the second player joins the first one in the same patch', () => {
-    expect(cb.coords.region).toBe(ca.coords.region);
-    expect(cb.coords.patch).toBe(ca.coords.patch);
-  });
-});
 
 describe('scents', () => {
   it('an unscouted neighbour is only an ant scent: no name, owner, points or id', async () => {
@@ -77,7 +70,7 @@ describe('scents', () => {
 
   it('a raid also leaves its scent on the defender', async () => {
     // a third player, raided by alpha, recognizes alpha afterwards
-    const c = await newPlayer(app, 'gamma');
+    const c = await newPlayerBeside(app, 'gamma', a);
     const cc = (await c.get('/api/state')).colony;
     await setPlayer((await c.get('/api/state')).player.id, { protected_until: 0, points_total: 1000, points: { total: 1000, economy: 1000, research: 0, military: 0 } });
     await getPool().query(
@@ -127,28 +120,30 @@ describe('the launch migration', () => {
   });
 });
 
-describe('placement fills patches, then opens the next one', () => {
-  it('up to 4 players per patch, then the neighbouring patch; lone active players get neighbours first', async () => {
-    // alpha, beta and gamma already share a patch; one more fills it
+describe('placement: neighbours, never patch-mates', () => {
+  const idx = (c: any) => (c.region - 1) * WORLD.patchesPerRegion + c.patch;
+  const coordsOf = async (name: string) => (await (await newPlayer(app, name)).get('/api/state')).colony.coords;
+  const playersIn = async (c: any) =>
+    (await getPool().query('SELECT count(*)::int AS n FROM colonies c JOIN players p ON p.id = c.player_id WHERE NOT p.is_npc AND c.region = $1 AND c.patch = $2', [c.region, c.patch])).rows[0].n;
+
+  it('a newcomer gets an empty patch right next to the players, even when a player patch has free spots', async () => {
+    // alpha, beta and gamma share the home patch (set up by hand); one Grassland spot is still free there
     const home = ca.coords;
-    const d = await newPlayer(app, 'delta');
-    expect((await d.get('/api/state')).colony.coords).toMatchObject({ region: home.region, patch: home.patch });
-    const idx = (c: any) => (c.region - 1) * WORLD.patchesPerRegion + c.patch;
-    const e = (await (await newPlayer(app, 'epsilon')).get('/api/state')).colony.coords;
-    expect(idx(e)).toBe(idx(home) + 1);
-    // the next one joins epsilon rather than opening another patch
-    const f = (await (await newPlayer(app, 'zeta')).get('/api/state')).colony.coords;
-    expect(idx(f)).toBe(idx(e));
+    const d = await coordsOf('delta');
+    expect(idx(d)).toBe(idx(home) + 1);
+    expect(await playersIn(d)).toBe(1);
+    // the next one fills in around the players too, not on delta's patch
+    const e = await coordsOf('epsilon');
+    expect(idx(e)).toBe(idx(home) + 2);
+    expect(await playersIn(e)).toBe(1);
   });
 
-  it('a patch whose players are all inactive is not joined', async () => {
-    await getPool().query(
-      `UPDATE players SET last_active = $1 WHERE id IN (SELECT player_id FROM colonies WHERE region = (SELECT region FROM colonies c JOIN players p ON p.id = c.player_id WHERE p.username = 'zeta')
-         AND patch = (SELECT patch FROM colonies c JOIN players p ON p.id = c.player_id WHERE p.username = 'zeta'))`,
-      [clock.t - 30 * 24 * H],
-    );
-    const zeta = (await getPool().query("SELECT c.region, c.patch FROM colonies c JOIN players p ON p.id = c.player_id WHERE p.username = 'zeta'")).rows[0];
-    const g = (await (await newPlayer(app, 'eta')).get('/api/state')).colony.coords;
-    expect(`${g.region}:${g.patch}`).not.toBe(`${zeta.region}:${zeta.patch}`);
+  it('with nobody active, the next empty patch after the newest player', async () => {
+    await getPool().query('UPDATE players SET last_active = $1 WHERE NOT is_npc', [clock.t - 30 * 24 * H]);
+    const eps = (await getPool().query("SELECT c.region, c.patch FROM colonies c JOIN players p ON p.id = c.player_id WHERE p.username = 'epsilon'")).rows[0];
+    const z = await coordsOf('zeta');
+    expect(idx(z)).toBe(idx(eps) + 1);
+    expect(await playersIn(z)).toBe(1);
+    await getPool().query('UPDATE players SET last_active = $1 WHERE NOT is_npc', [clock.t]);
   });
 });
