@@ -1,6 +1,7 @@
 """The termite mound: Meshy mesh -> coloured parts in Blender -> game data (same format as the grasshopper).
 
   build   blender -b --factory-startup --python termite-mound.blend.py -- build meshy/termite_mound.glb termite-mound.blend
+  fill    blender -b termite-mound.blend --python termite-mound.blend.py -- fill   (close the slit, save)
   export  blender -b termite-mound.blend --python termite-mound.blend.py -- export ../../../client/src/components/three/termite-mound.json [preview.png]
 
 In the .blend the mound is two objects in the "termite_mound" collection: the spires and the base. Faces can use
@@ -35,6 +36,33 @@ def material(kind):
     return m
 
 
+def fill_slits(o):
+    """Close small open loops in the sides (Meshy left a see-through slit in the main spire); the open bottom stays."""
+    bm = bmesh.new()
+    bm.from_mesh(o.data)
+    seen, filled = set(), 0
+    for e in [e for e in bm.edges if e.is_boundary]:
+        if e in seen:
+            continue
+        loop, st = [], [e]
+        while st:
+            x = st.pop()
+            if x in seen:
+                continue
+            seen.add(x)
+            loop.append(x)
+            st += [y for v in x.verts for y in v.link_edges if y.is_boundary and y not in seen]
+        if len(loop) <= 16:
+            res = bmesh.ops.holes_fill(bm, edges=loop, sides=len(loop))
+            for f in res["faces"]:
+                f.material_index = 0
+            filled += len(res["faces"])
+    bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
+    bm.to_mesh(o.data)
+    bm.free()
+    return filled
+
+
 def build(src, out):
     bpy.ops.wm.read_factory_settings(use_empty=True)
     bpy.ops.import_scene.gltf(filepath=src)
@@ -53,6 +81,7 @@ def build(src, out):
         p.data.materials.append(material(kind))
         p.data.materials.append(material("hole"))
         if kind == "spires":
+            holes_filled = fill_slits(p)
             # the undersides of the arches face down: paint them as the dark entrances
             for f in p.data.polygons:
                 if f.normal.z < -0.35:
@@ -65,7 +94,7 @@ def build(src, out):
         if c is not coll and not c.objects:
             bpy.data.collections.remove(c)
     bpy.ops.wm.save_as_mainfile(filepath=out)
-    return {"parts": [p.name for p in parts], "hole_faces": holes}
+    return {"parts": [p.name for p in parts], "hole_faces": holes, "slit_faces": holes_filled}
 
 
 def export(out, preview=None):
@@ -121,7 +150,11 @@ def render(path):
     bpy.ops.render.render(write_still=True)
 
 
-if mode == "build":
+if mode == "fill":
+    # close the slit in an existing .blend without rebuilding it: blender -b termite-mound.blend --python ... -- fill
+    print("RESULT", json.dumps({"slit_faces": fill_slits(bpy.data.objects["spires"])}))
+    bpy.ops.wm.save_mainfile()
+elif mode == "build":
     print("RESULT", json.dumps(build(args[1], args[2])))
 elif mode == "export":
     print("RESULT", json.dumps(export(args[1], args[2] if len(args) > 2 else None)))
