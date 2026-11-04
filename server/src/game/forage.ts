@@ -2,7 +2,7 @@
 import { WILDS_SPOT, coordsKey, createRng, partyForageLuck, groupCargo, randomSeed, resolveForage, returnLegMs, type CasteId, type UnitCounts } from '@hormigas/shared';
 import type { Q } from '../db';
 import { GameError } from '../errors';
-import { getPlayer } from '../colony';
+import { getColony, getPlayer } from '../colony';
 import { defineMission } from './missions';
 import { addReport } from './reports';
 import { refreshPointsAfterCommit } from './points';
@@ -49,6 +49,7 @@ defineMission('forage', {
     // the report arrives now, but the food lands only when the party is home (same sum as the return trip in missions.ts)
     const survivors = Object.values(m.units).some((n) => (n ?? 0) > 0);
     const returnsAt = survivors ? at + returnLegMs(m.departAt, m.arriveAt, r.returnTimeFactor) : null;
+    const home = await getColony(q, m.originColonyId); // named in the report, so players with several colonies know where the food goes
 
     await addReport(q, m.worldId, m.playerId, 'forage', `${TITLES[r.outcome]} (${coordsKey(m.target)})`, {
       outcome: r.outcome,
@@ -57,6 +58,8 @@ defineMission('forage', {
       lost,
       target: m.target,
       returnsAt,
+      colonyId: home.id,
+      colony: home.name,
     }, at);
     await bump(q, m.playerId, `forage:${r.outcome}`);
     if (Object.keys(lost).length) await refreshPointsAfterCommit(q, m.playerId);

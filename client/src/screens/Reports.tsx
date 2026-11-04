@@ -333,8 +333,8 @@ function ReportBody({ r, go }: { r: Report; go?: Nav }) {
           {d.returnsAt != null && (
             <p className="muted small">
               {d.returnsAt > Date.now()
-                ? <>On the way home, arriving {fmtClock(d.returnsAt)}.{d.found && RESOURCE_IDS.some((k) => d.found[k] > 0) ? ' The food lands in your stores then.' : ''}</>
-                : <>Got home {fmtClock(d.returnsAt)}.</>}
+                ? <>On the way home{d.colony ? <> to <strong>{d.colony}</strong></> : ''}, arriving {fmtClock(d.returnsAt)}.{d.found && RESOURCE_IDS.some((k) => d.found[k] > 0) ? ` The food lands in ${d.colony ? `${d.colony}'s` : 'your'} stores then.` : ''}</>
+                : <>Got home{d.colony ? <> to <strong>{d.colony}</strong></> : ''} at {fmtClock(d.returnsAt)}.</>}
             </p>
           )}
           {d.lost && Object.keys(d.lost).length > 0 && (
