@@ -3,17 +3,16 @@
 // JSON file here. A part flagged `wing` (thin and see-through) is two-sided and gets no outline.
 //  - the dead grasshopper windfall (docs/25-windfalls.md): on its back, legs in the air, X eyes
 //  - the termite mound (docs/24-npcs.md): a tall clay spire with buttress ridges and arched entrances
+//  - the aphid herd (docs/24-npcs.md) builds on the helpers here in aphidHerd.ts: a poppy with aphids on it
 import * as THREE from 'three';
 import grasshopper from './grasshopper.json';
 import termiteMound from './termite-mound.json';
 import { antUniforms, toonBands } from '../nest3d/ants3d';
 
-type Part = { name: string; color: string; wing: boolean; p: number[]; i: number[] };
-type ModelData = { parts: Part[] };
-type Wrap = <M extends THREE.Material>(m: M) => M;
+export type PropPart = { name: string; color: string; p: number[]; i: number[] };
 
 /** Merge parts into one geometry with a colour per vertex; normals are smoothed within each part only. */
-function merge(parts: Part[]) {
+export function mergeParts(parts: PropPart[]) {
   const pos: number[] = [], nor: number[] = [], col: number[] = [], idx: number[] = [];
   const c = new THREE.Color();
   for (const part of parts) {
@@ -40,9 +39,20 @@ function merge(parts: Part[]) {
   return geo;
 }
 
-function toonMaterial(bands: THREE.Texture, side: THREE.Side) {
+/** GLSL run on `transformed` before projection, shared by a prop's toon and ink materials so both move together. */
+export type VertexBend = { uniforms: Record<string, THREE.IUniform>; glsl: string; key: string };
+
+function bend(sh: THREE.WebGLProgramParametersWithUniforms, b?: VertexBend) {
+  if (!b) return;
+  Object.assign(sh.uniforms, b.uniforms);
+  const decl = Object.keys(b.uniforms).map((u) => `uniform float ${u};`).join('\n');
+  sh.vertexShader = decl + '\n' + sh.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\n' + b.glsl);
+}
+
+export function toonPropMaterial(bands: THREE.Texture, side: THREE.Side, key: string, b?: VertexBend) {
   const m = new THREE.MeshToonMaterial({ gradientMap: bands, vertexColors: true, side });
   m.onBeforeCompile = (sh) => {
+    bend(sh, b);
     sh.uniforms.uRim = antUniforms.uRim;
     sh.fragmentShader = 'uniform vec3 uRim;\n' + sh.fragmentShader.replace(
       '#include <dithering_fragment>',
@@ -54,18 +64,24 @@ function toonMaterial(bands: THREE.Texture, side: THREE.Side) {
       #include <dithering_fragment>`,
     );
   };
-  m.customProgramCacheKey = () => 'toon-model';
+  m.customProgramCacheKey = () => key + '-toon' + (b ? '|' + b.key : '');
   return m;
 }
 
-function inkMaterial() {
+/** The ink outline: the back faces pushed out a little along their normals. `width` is in the model's own units. */
+export function inkPropMaterial(key: string, width = 0.012, b?: VertexBend) {
   const m = new THREE.MeshBasicMaterial({ color: '#1c0f08', side: THREE.BackSide });
   m.onBeforeCompile = (sh) => {
-    sh.vertexShader = sh.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\ntransformed += normalize(normal) * 0.012;');
+    bend(sh, b);
+    sh.vertexShader = sh.vertexShader.replace('#include <begin_vertex>', `#include <begin_vertex>\ntransformed += normalize(normal) * ${width.toFixed(4)};`);
   };
-  m.customProgramCacheKey = () => 'toon-model-ink';
+  m.customProgramCacheKey = () => key + '-ink' + (b ? '|' + b.key : '');
   return m;
 }
+
+type Part = PropPart & { wing: boolean };
+type ModelData = { parts: Part[] };
+type Wrap = <M extends THREE.Material>(m: M) => M;
 
 /**
  * One set of geometry and materials per scene; `make()` hands out a copy of the model standing on y = 0.
@@ -73,12 +89,12 @@ function inkMaterial() {
  */
 function createToonModel(data: ModelData, wrap: Wrap) {
   const parts = data.parts;
-  const body = merge(parts.filter((p) => !p.wing));
-  const wings = merge(parts.filter((p) => p.wing));
+  const body = mergeParts(parts.filter((p) => !p.wing));
+  const wings = mergeParts(parts.filter((p) => p.wing));
   const bands = toonBands();
-  const bodyMat = wrap(toonMaterial(bands, THREE.FrontSide));
-  const wingMat = wrap(toonMaterial(bands, THREE.DoubleSide));
-  const ink = wrap(inkMaterial());
+  const bodyMat = wrap(toonPropMaterial(bands, THREE.FrontSide, 'toon-model'));
+  const wingMat = wrap(toonPropMaterial(bands, THREE.DoubleSide, 'toon-model-wing'));
+  const ink = wrap(inkPropMaterial('toon-model'));
   return {
     make(shadows = true) {
       const g = new THREE.Group();

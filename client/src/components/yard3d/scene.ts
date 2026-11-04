@@ -11,6 +11,7 @@ import moundsUrl from './mounds.json?url';
 import propsUrl from './props.json?url';
 import { CHITIN, antUniforms, createAnts, type Ants } from '../nest3d/ants3d';
 import { createGrasshoppers, createTermiteMounds } from '../three/toonModel';
+import { createAphidHerds } from '../three/aphidHerd';
 import { tripProgress } from '../UnderWay';
 import { TIMING, drawnFor, momentAt, planBattle, replayLength, type BattlePlan, type ReplayMoment } from '../patch3d/battle';
 import { makePath, pitchAhead, pointAlong, type Path } from '../three/path';
@@ -147,7 +148,7 @@ export async function createYardScene(host: HTMLElement, labels: HTMLElement, da
   // hex lines aren't, so every patch's outline still shows.
   const fogU = { uFogTex: { value: null as THREE.Texture | null }, uFogBox: { value: new THREE.Vector4(0, 0, 1, 1) }, uFogTime: { value: 0 } };
   function fogify<M extends THREE.Material>(m: M): M {
-    const prev = m.onBeforeCompile.bind(m), key = m.onBeforeCompile.toString();
+    const prev = m.onBeforeCompile.bind(m), key = m.customProgramCacheKey();
     m.onBeforeCompile = (sh, r) => {
       prev(sh, r);
       Object.assign(sh.uniforms, fogU);
@@ -176,6 +177,8 @@ export async function createYardScene(host: HTMLElement, labels: HTMLElement, da
   }
   const hoppers = createGrasshoppers(fogify), termites = createTermiteMounds(fogify);
   disposables.push(hoppers, termites);
+  const herds = createAphidHerds(fogify);
+  disposables.push(herds);
   const mats = new Map<string, THREE.MeshStandardMaterial>();
   const mat = (color: string) => {
     if (!mats.has(color)) mats.set(color, fogify(new THREE.MeshStandardMaterial({ color, flatShading: true, roughness: 0.9 })));
@@ -684,9 +687,11 @@ export async function createYardScene(host: HTMLElement, labels: HTMLElement, da
   function siteModel(c: NonNullable<Spot['colony']>): THREE.Group {
     const g = new THREE.Group();
     if (c.herd) {
-      const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.7, 1, 30, 5).translate(0, 15, 0), mat('#5C9A33'));
-      stem.castShadow = true; g.add(stem);
-      for (let i = 0; i < 12; i++) { const a = new THREE.Mesh(new THREE.SphereGeometry(0.8, 6, 4), mat('#A6D83A')); a.scale.set(1, 0.8, 1.3); a.position.set(Math.cos(i * 2.4) * 1.3, 8 + i * 1.4, Math.sin(i * 2.4) * 1.3); g.add(a); }
+      // the Meshy poppy, with more aphids feeding on it the bigger the herd
+      const h = herds.make(c.herd.level);
+      h.scale.setScalar(22);
+      h.rotation.y = 0.4;
+      g.add(h);
     } else if (c.wild?.kind === 'mound') {
       // the Meshy termite mound: a tall clay spire with buttress ridges and arched entrances
       const t = termites.make();
@@ -767,7 +772,7 @@ export async function createYardScene(host: HTMLElement, labels: HTMLElement, da
         cls = 'ybanner wild'; html = `<i>!</i><b>${esc(c.wild?.species ?? c.name)}</b>${c.wild ? `<span>Lv ${c.wild.level}</span>` : ''}`;
       } else {
         g = siteModel(c);
-        top = c.herd ? 34 : c.wild?.kind === 'mound' ? 32 : 12;
+        top = c.herd ? 26 : c.wild?.kind === 'mound' ? 32 : 12;
         cls = `ybanner site${c.windfall ? ' windfall' : ''}`; html = `<b>${esc(c.windfall ? c.windfall.text?.split('.')[0] || c.name : c.name)}</b>`;
       }
       g.position.copy(p);
@@ -1191,6 +1196,7 @@ export async function createYardScene(host: HTMLElement, labels: HTMLElement, da
     if ((!W || !H) && !resize()) return;
     const t0 = performance.now(), dt = Math.min((t0 - last) / 1000, 0.05);
     last = t0; time += dt;
+    if (!reduced) herds.tick(time);
     for (let i = tweens.length - 1; i >= 0; i--) { const t = tweens[i]; t.t += dt; const k = Math.min(1, t.t / t.dur); t.fn(k); if (k >= 1) { tweens.splice(i, 1); t.done?.(); } }
     // WASD / arrows move, Q/E turn
     if (keys.size) {
