@@ -16,7 +16,7 @@ A page of made-up data for troubleshooting ant models and movement. It **never t
 **On screen:** the map (left), the ant lineup (bottom) and the menu (right).
 
 - **The map** is the real Whole Yard or 3D Patch code, drawing a made-up patch 1:45 with your colony, a rival, the wilds, a wild nest, a termite mound, an aphid herd and a grasshopper windfall. Next door (1:46) are a second colony of yours, a spider den and a fallen fig. A rival outpost and more wilds sit on 1:44.
-- **The lineup** shows every 3D ant the game draws, walking on the spot: worker, soldier, queen, winged queen, raider (red), army ant, army major, and a worker carrying each kind of load (leaf, chunk, drop). The top row is the close-up mesh used in chambers; the bottom row is the light crowd mesh used for columns on the maps.
+- **The lineup** shows every 3D ant the game draws, walking on the spot, each named under itself: worker, soldier, queen, winged queen, raider (red), army ant, army major, and a worker carrying each kind of load (leaf, chunk, drop). Two rows, named at their left: **Close-up** is the detailed mesh used in chambers; **Crowd** is the light mesh used for columns on the maps.
 
 ### The menu
 
@@ -65,6 +65,20 @@ Visual only: none of these change travel times or any rule.
 1. Move the sliders until it looks right, then press **Copy changes**.
 2. Paste the result to Claude ("keep these numbers"). Claude puts them in `march.json` on a branch and opens a PR.
 3. Say "merge #N" once you've checked the PR.
+
+## Keep it current
+
+The test scene is only useful if it shows **everything** the maps can draw. Whenever art or movement is added or changed, update it in the same PR:
+
+| When you add… | Update |
+|---|---|
+| a new 3D ant, caste shape or colour (`ants3d.ts`) | its own entry in `LINEUP` in `client/src/test/modelStrip.ts` |
+| a new kind of load an ant carries | a worker carrying it in `LINEUP` |
+| a new wild site, windfall, creature or prop model | a spot showing it in `spotsFor` in `client/src/test/fakeWorld.ts` (and `PLACES`) |
+| a new mission type or way of marching (incoming, one-way, holding) | a button in `ORDERS` in `fakeWorld.ts`, and a starter setup if it needs one |
+| a new visual number for columns | an entry in `client/src/components/three/march.json` (it shows up as a slider by itself) |
+
+Then open `/?test`, check the new thing shows, and add it to the lists above in this doc. The PR's playtest steps should say where to look for it in the test scene.
 
 ## Simulators
 

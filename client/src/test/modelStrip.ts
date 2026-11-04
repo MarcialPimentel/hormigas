@@ -18,7 +18,7 @@ export const LINEUP: LineupAnt[] = [
   { caste: 'worker', label: 'Chunk load', cargo: { kind: 'chunk', color: '#C98B5A' } },
   { caste: 'worker', label: 'Drop load', cargo: { kind: 'drop', color: '#F2B21F' } },
 ];
-const GAP = 1.25;
+const GAP = 1.7;
 
 export interface Lineup {
   set(o: { walk?: boolean; spin?: boolean; speed?: number }): void;
@@ -51,13 +51,20 @@ export function createLineup(host: HTMLElement, labels: HTMLElement): Lineup {
   const close = createAnts(scene, caps, true, 2);
   const crowd = createAnts(scene, caps, true, 1);
 
-  const tags = LINEUP.map((a) => {
+  // two rows, each ant named under itself, and each row named at its left end
+  const ROWS = [
+    { ants: close, z: -0.7, name: 'Close-up' },
+    { ants: crowd, z: 0.7, name: 'Crowd' },
+  ];
+  const tag = (text: string, cls = '') => {
     const el = document.createElement('div');
-    el.className = 'ts-lineup-tag';
-    el.textContent = a.label;
+    el.className = `ts-lineup-tag${cls}`;
+    el.textContent = text;
     labels.append(el);
     return el;
-  });
+  };
+  const tags = ROWS.map(() => LINEUP.map((a) => tag(a.label)));
+  const rowTags = ROWS.map((r) => tag(r.name, ' row'));
 
   let walk = true, spin = false, speed = 1;
   const v = new THREE.Vector3();
@@ -66,10 +73,11 @@ export function createLineup(host: HTMLElement, labels: HTMLElement): Lineup {
     if (!w || !h) return;
     renderer.setSize(w, h, false);
     camera.aspect = w / h;
-    // fit the whole row across the strip
-    const fit = ((width / 2 + 1.2) / Math.tan((camera.fov * Math.PI) / 360) / camera.aspect) * 1.15;
-    camera.position.set(0, fit * 0.55, fit * 0.85);
-    camera.lookAt(0, 0.1, 0.2);
+    // far enough back for the whole row across and both rows (with their names) top to bottom
+    const tan = Math.tan((camera.fov * Math.PI) / 360);
+    const fit = Math.max((width / 2 + 1.6) / tan / camera.aspect, 1.75 / tan) * 1.05;
+    camera.position.set(0, fit * 0.8, fit * 0.6);
+    camera.lookAt(0, 0, 0.15);
     camera.updateProjectionMatrix();
   }
   const ro = new ResizeObserver(resize);
@@ -82,7 +90,7 @@ export function createLineup(host: HTMLElement, labels: HTMLElement): Lineup {
     const dt = Math.min(0.1, (now - last) / 1000);
     last = now;
     t += dt * speed;
-    for (const [ants, z] of [[close, -0.45], [crowd, 0.75]] as const) {
+    for (const { ants, z } of ROWS) {
       ants.begin();
       LINEUP.forEach((a, i) => {
         const x = -width / 2 + i * GAP;
@@ -98,9 +106,13 @@ export function createLineup(host: HTMLElement, labels: HTMLElement): Lineup {
     }
     renderer.render(scene, camera);
     const w = host.clientWidth, h = host.clientHeight;
-    LINEUP.forEach((_, i) => {
-      v.set(-width / 2 + i * GAP, 0, 1.35).project(camera);
-      tags[i].style.transform = `translate(-50%, 0) translate(${((v.x + 1) / 2) * w}px, ${((1 - v.y) / 2) * h}px)`;
+    const put = (el: HTMLElement, x: number, z: number, anchor: string) => {
+      v.set(x, 0, z).project(camera);
+      el.style.transform = `translate(${anchor}) translate(${((v.x + 1) / 2) * w}px, ${((1 - v.y) / 2) * h}px)`;
+    };
+    ROWS.forEach((r, k) => {
+      LINEUP.forEach((_, i) => put(tags[k][i], -width / 2 + i * GAP, r.z + 0.45, '-50%, 0'));
+      put(rowTags[k], -width / 2 - 0.7, r.z, '-100%, -50%');
     });
   };
   raf = requestAnimationFrame(frame);
@@ -120,7 +132,7 @@ export function createLineup(host: HTMLElement, labels: HTMLElement): Lineup {
       (ground.material as THREE.Material).dispose();
       renderer.dispose();
       renderer.domElement.remove();
-      tags.forEach((t) => t.remove());
+      [...tags.flat(), ...rowTags].forEach((t) => t.remove());
     },
   };
 }
