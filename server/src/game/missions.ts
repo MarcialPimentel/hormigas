@@ -31,6 +31,8 @@ import {
   roughSwarmSize,
   swarmSize,
   isHeldState,
+  isWindfallState,
+  coordsKey,
   type CasteId,
   type MissionType,
   type Coords,
@@ -518,6 +520,30 @@ export function missionView(m: Mission) {
     status: m.status,
     result: m.result,
   };
+}
+
+/**
+ * What a mission is heading for, by name rather than coordinates: whoever lives on the spot (a nest, a wild nest,
+ * an aphid herd), "Windfall" for any windfall site, or what the bare spot is.
+ */
+export function targetName(type: string, spot: number, here: { name: string; npc: unknown } | null): string {
+  if (here) return isWindfallState(here.npc) ? 'Windfall' : here.name;
+  if (spot === WILDS_SPOT) return 'The wilds';
+  return type === 'haul' ? 'Battlefield' : 'Open ground';
+}
+
+/** missionView for a list, each with its target's name looked up in one query. */
+export async function missionViews(q: Q, missions: Mission[]) {
+  if (!missions.length) return [];
+  const r = await q.query(
+    `SELECT DISTINCT c.region, c.patch, c.spot, c.name, c.npc
+       FROM missions m JOIN colonies c
+         ON c.world_id = m.world_id AND c.region = m.target_region AND c.patch = m.target_patch AND c.spot = m.target_spot
+      WHERE m.id = ANY($1::bigint[])`,
+    [missions.map((m) => m.id)],
+  );
+  const at = new Map(r.rows.map((c) => [coordsKey(c), { name: c.name as string, npc: c.npc }]));
+  return missions.map((m) => ({ ...missionView(m), targetName: targetName(m.type, m.target.spot, at.get(coordsKey(m.target)) ?? null) }));
 }
 
 /**
