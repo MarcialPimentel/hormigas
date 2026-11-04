@@ -341,8 +341,30 @@ export function SendMission({ type, setType, target, setTarget, onClose, onSent 
           )}
           <div className="route-row">
             <span className="route-k">To</span>
-            <strong>{scoutingSwarm ? `Army ant swarm → ${ownTarget!.name}` : toName}</strong>
-            <span className="muted small">{valid ? fmtCoords(target) : 'not a place'}</span>
+            {state.colonies.length > 1 ? (
+              // pick one of your own colonies as the destination; a spot tapped on the patch shows as the first choice
+              <select
+                className="route-from"
+                value={ownTarget ? String(ownTarget.id) : ''}
+                onChange={(e) => {
+                  const to = state.colonies.find((c) => c.id === Number(e.target.value));
+                  if (to) setTarget(to.coords);
+                }}
+                aria-label="Send to which of your colonies"
+              >
+                {!ownTarget && <option value="">{toName}</option>}
+                {state.colonies
+                  .filter((c) => c.id !== colony.id || c.id === ownTarget?.id || type === 'haul')
+                  .map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {scoutingSwarm && c.id === ownTarget?.id ? `Army ant swarm → ${c.name}` : c.name} ({fmtCoords(c.coords)})
+                    </option>
+                  ))}
+              </select>
+            ) : (
+              <strong>{scoutingSwarm ? `Army ant swarm → ${ownTarget!.name}` : toName}</strong>
+            )}
+            {!(ownTarget && state.colonies.length > 1) && <span className="muted small">{valid ? fmtCoords(target) : 'not a place'}</span>}
             {unscouted && <span className="scent-tag">Not scouted</span>}
             <button className="btn ghost small route-edit" aria-expanded={manual} onClick={() => setManual(!manual)}>
               {manual ? 'Done' : 'Enter coordinates'}
@@ -363,7 +385,7 @@ export function SendMission({ type, setType, target, setTarget, onClose, onSent 
               )}
             </div>
           )}
-          <p className="muted small route-hint">Tap a spot on the patch{onClose ? '' : ' above'} to change where they go.</p>
+          <p className="muted small route-hint">Tap a spot on the patch{onClose ? '' : ' above'} to change where they go{state.colonies.length > 1 ? ', or pick one of your colonies' : ''}.</p>
         </div>
 
         <div className="seg" role="radiogroup" aria-label="Mission type">
