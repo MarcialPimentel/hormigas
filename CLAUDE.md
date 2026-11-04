@@ -49,10 +49,14 @@ Run `npm run typecheck` and `npm test` before calling work done. CI runs both, p
 Mostly a data change in `docs/data/`:
 1. `castes.json` / `defenses.json`: stats, cost, `unlock`, `frenzy` (who it strikes again and again), `outnumbers` if it wins by numbers, `role` (castes: worker, soldier, scout, carrier, queen, wild) and `blurb` (the Brood Hall line). Screens group castes by `role`, never by listing ids.
 2. Add the id to `CASTE_IDS` / `DEFENSE_IDS` in `shared/src/data.ts`.
-3. A picture in `client/src/art/icons.ts` (the type-checker insists).
+3. A picture in `client/src/art/icons.ts` (the type-checker insists). If it gets its own 3D look, add it to the test scene lineup too (see below).
 4. `npm run combat` to see where it lands; `shared/test/castes-triangle.test.ts` and `nests.test.ts` guard the balance. Update `docs/05-castes-units.md` / `06-defense.md`.
 
 A new combat *mechanic* (like the Soil Wall's shield or the Narrow Tunnel's chokepoint) also needs `shared/src/combat.ts`.
+
+## Keep the test scene current
+
+`/?test` ([docs/test-bed.md](docs/test-bed.md)) must show everything the 3D maps can draw. In the same PR as any new or changed ant model, load, wild site, windfall, creature, mission type or column number, add it to the test scene (`client/src/test/modelStrip.ts` lineup, `client/src/test/fakeWorld.ts` spots and buttons, `client/src/components/three/march.json`) and say in the playtest steps where to see it there. The table in docs/test-bed.md § Keep it current says which file covers what.
 
 ## Design-doc conventions
 

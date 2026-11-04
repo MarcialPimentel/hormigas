@@ -311,7 +311,7 @@ export default function TestScene() {
         {models && (
           <div className="ts-lineup" ref={lineHost}>
             <div className="ts-lineup-labels" ref={lineLabels} />
-            <div className="ts-lineup-note">Top row: close-up mesh (chambers) · bottom row: crowd mesh (columns on the maps)</div>
+            <div className="ts-lineup-note">Close-up: the detailed ant seen in chambers · Crowd: the light ant used for columns on the maps</div>
           </div>
         )}
       </div>
