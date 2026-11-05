@@ -16,6 +16,9 @@ You see the patches round your colonies; the rest is greyed (explored, as last s
 ### Scouting the swarm
 A swarm comes every 1.5–2.5 days. To meet one sooner on a test world, wait for the "Army ant swarm" warning, then press **Scout the swarm** on its card under Under way and send a few Scouts. Check that the odds on the form go up as you add Scouts, that the report says how many came back, and that the card then shows the swarm's size and a win / draw / lose bar that moves when you raise or send away soldiers ([20-swarms](20-swarms.md)).
 
+### Trade trails
+Tap another of your colonies (or a truce partner's or supercolony mate's) and press **Trade trail**, or pick Trade trail on the send card. Send Workers, Media Workers or Haulers; the card shows what each delivery brings and, for a player, what they gain. While the trail is open the caravan walks to and fro on the Whole Yard, and Under way shows when it ends and what it has brought so far ([23-supercolonies](23-supercolonies.md#trade-trails-build-16)).
+
 ### The test scene
 Open https://hormigas.marz.gg/?test to check ant models and trails without playing: the real Whole Yard and 3D Patch with made-up parties (forage, scouts, raids, termites, windfalls, herds, swarms) sent from buttons on the right, a lineup of every ant, and sliders for how columns march. It never touches the real game. See [test-bed](test-bed.md).
 
@@ -28,7 +31,7 @@ Open https://hormigas.marz.gg/?test to check ant models and trails without playi
 - **Phones** get the 2D nest and the drawn patch; everything else is the same. On a computer, **2D view** / **3D view** switches either.
 
 ## Testing with more than one player
-- Open a second browser or a private window and sign up a second player. New players are placed in the same patch, up to 4 per patch ([11-world](11-world.md)), so the two can scout, raid, truce and form a supercolony.
+- Open a second browser or a private window and sign up a second player. New players get their own patch next to an active player's ([11-world](11-world.md#starting-placement)), so the two can scout across the border, raid, truce, trade and form a supercolony.
 - For fast checks, run the game locally at ×5 speed (see the [README](../README.md#run-it-locally)).
 
 ## Daily needs and the Journal

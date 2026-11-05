@@ -8,7 +8,7 @@
 |---|---|---|---|
 | **Foliage** | Bulk | Leaf Garden | Chambers, most castes |
 | **Protein** | Mid | Hunting Grounds, battlefield corpses | Castes, research (with Nectar) |
-| **Nectar** | Scarce | Aphid Pasture, tended aphid herds ([24-npcs](24-npcs.md)) | **Research** (with Protein), advanced castes, **mission fuel** |
+| **Nectar** | Scarce | Aphid Pasture, tended aphid herds ([24-npcs](24-npcs.md)), trade trails to Creek Bank colonies ([23-supercolonies](23-supercolonies.md#trade-trails-build-16)) | **Research** (with Protein), advanced castes, **mission fuel** |
 | **Workforce** | Capacity (not stored) | Nursery, Queen's Chamber | Required to run production chambers |
 
 ## Production
