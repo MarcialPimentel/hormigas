@@ -114,7 +114,7 @@
     "style": "Aphids on a stem, dripping honeydew. Tend them and they make Nectar for you; anyone can drive your tenders off and take over."
   },
   "windfalls": {
-    "_note": "Windfalls (docs/25-windfalls.md): contested food that drops on the patch's windfall site. Every site rolls a new one every everyHours (skipped while one is still there, or when no active player lives within announceRange patches). It lasts lastsHours, then rots. pile: food by level (levels follow the area leader like herds), times the kind's size, split by the kind's mix; not affected by the gathering multiplier. guardChance: how often wild ants get there first (guards by level). Ants that claim it fight whoever is there, then hold it and carry a load home every deliverEveryHours (as much as they can carry). Players with a colony within announceRange patches get a report when one drops. Hours at world speed 1.",
+    "_note": "Windfalls (docs/25-windfalls.md): contested food that drops on the patch's windfall site. Every site rolls a new one every everyHours (skipped while one is still there, or when no active player lives within announceRange patches). It lasts lastsHours, then rots. pile: food by level (levels follow the area leader like herds), times the kind's size, split by the kind's mix; not affected by the gathering multiplier. guardChance: how often wild ants get there first (guards by level). Ants that claim it fight whoever is there, then hold it and carry a load home every deliverEveryHours (as much as they can carry). Players with a colony within announceRange patches get a report when one drops. kinds[].eaters: the wild species that come for it (wildParties); lastsHours on a kind overrides lastsHours; carryPct: share of a holder's cargo it can strip per load (a beetle's shell); parties: how many wild parties it draws. Hours at world speed 1.",
     "name": "Windfall",
     "everyHours": [8, 16],
     "firstDropHours": [0.5, 3],
@@ -132,10 +132,17 @@
       {"minor_soldier": 80, "major_soldier": 35}
     ],
     "kinds": {
-      "grasshopper": {"name": "Dead grasshopper", "weight": 40, "size": 1, "mix": {"foliage": 0, "protein": 100, "nectar": 0}, "text": "A grasshopper dropped out of the grass and didn't get up. Every colony nearby can smell it."},
-      "fig": {"name": "Fallen fig", "weight": 30, "size": 1, "mix": {"foliage": 40, "protein": 0, "nectar": 60}, "text": "A ripe fig split open on the ground, sweet and sticky. It won't stay unclaimed for long."},
-      "branch": {"name": "Leafy branch", "weight": 25, "size": 1, "mix": {"foliage": 100, "protein": 0, "nectar": 0}, "text": "The wind snapped off a branch full of fresh leaves. A cutter's dream, if you can hold it."},
-      "lizard": {"name": "Dead lizard", "weight": 5, "size": 3, "mix": {"foliage": 0, "protein": 100, "nectar": 0}, "text": "A dead lizard lies in the wilds: a mountain of Protein. Every colony around will march for it."}
+      "grasshopper": {"name": "Dead grasshopper", "weight": 40, "size": 1, "mix": {"foliage": 0, "protein": 100, "nectar": 0}, "eaters": ["pavement", "fire", "carpenter", "trapjaw"], "text": "A grasshopper dropped out of the grass and didn't get up. Every colony nearby can smell it."},
+      "fig": {"name": "Fallen fig", "weight": 30, "size": 1, "mix": {"foliage": 40, "protein": 0, "nectar": 60}, "eaters": ["honeypot"], "text": "A ripe fig split open on the ground, sweet and sticky. It won't stay unclaimed for long."},
+      "branch": {"name": "Leafy branch", "weight": 25, "size": 1, "mix": {"foliage": 100, "protein": 0, "nectar": 0}, "eaters": ["termite"], "text": "The wind snapped off a branch full of fresh leaves. A cutter's dream, if you can hold it."},
+      "lizard": {"name": "Dead lizard", "weight": 5, "size": 3, "mix": {"foliage": 0, "protein": 100, "nectar": 0}, "eaters": ["any"], "text": "A dead lizard lies in the wilds: a mountain of Protein. Every colony around will march for it."},
+      "beetle": {"name": "Dead beetle", "weight": 15, "size": 1.5, "mix": {"foliage": 0, "protein": 100, "nectar": 0}, "carryPct": 50, "eaters": ["pavement", "fire", "carpenter", "trapjaw"], "text": "A ground beetle died on its back in the wilds. Plenty of meat inside, but the shell makes it slow work to strip."},
+      "sugar": {"name": "Sugar spill", "weight": 12, "size": 0.6, "mix": {"foliage": 0, "protein": 0, "nectar": 100}, "lastsHours": 4, "eaters": ["honeypot", "pavement"], "text": "Someone spilled something sweet. Pure Nectar, but the sun dries it fast: a few hours and it's gone."},
+      "picnic": {"name": "Picnic crumbs", "weight": 3, "size": 4, "mix": {"foliage": 40, "protein": 30, "nectar": 30}, "parties": 3, "eaters": ["any"], "text": "The giants left a picnic behind: crumbs of bread, meat and fruit as far as an ant can see. Every nest around is coming."}
+    },
+    "wildParties": {
+      "_note": "Wild nests go out for windfalls (docs/25-windfalls.md#wild-ants-come-for-windfalls). When a windfall drops, a wild nest within range patches whose species eats it (kinds[].eaters; any = every wild nest but spiders) sends a party after delayHours, with chance (a kind with parties draws that many, always). After each one sets off, another may follow with repeatChance until it rots. A party is partyShare of each of the nest's units and walks at speedPct. Wild holders carry carryEach per ant home each delivery on top of their castes' cargo (termites carry nothing otherwise). Hours at world speed 1.",
+      "chance": 0.6, "delayHours": [1, 4], "repeatChance": 0.35, "range": 1, "partyShare": 0.4, "speedPct": 50, "carryEach": 40
     }
   },
   "scents": {

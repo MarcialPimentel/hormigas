@@ -113,7 +113,7 @@ export async function setPlayer(playerId: number, fields: Record<string, unknown
 /** Stop wild nests from raiding (for tests about player-vs-player combat that run the clock forward). */
 /** Stop the wild from attacking test colonies: wild-nest raids and army-ant swarm sightings (call again after new colonies appear). */
 export async function calmWildNests() {
-  await getPool().query("UPDATE events SET done = true WHERE type IN ('nest_raid', 'swarm_spotted', 'windfall_drop')");
+  await getPool().query("UPDATE events SET done = true WHERE type IN ('nest_raid', 'swarm_spotted', 'windfall_drop', 'windfall_wild')");
 }
 
 /** No nest events (gifts) either, for tests that count resources exactly over many hours. */

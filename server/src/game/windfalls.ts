@@ -26,7 +26,17 @@ import {
   windfallGuards,
   windfallName,
   windfallPile,
+  windfallLastsHours,
+  windfallLoadCap,
+  eatsWindfall,
+  wildPartiesFor,
+  wildPartyDelayHours,
+  wildWindfallParty,
+  wildCarry,
+  WILD_PARTIES,
+  subCounts,
   type Resources,
+  type WindfallKind,
   type WindfallState,
 } from '@hormigas/shared';
 import type { Q, Tx } from '../db';
@@ -35,7 +45,7 @@ import { advance, getColony, getPlayer, lockColony, saveColony, type Colony } fr
 import { onEvent, schedule } from '../events';
 import { recurringColonyEvent } from '../recurring';
 import { gameHoursMs, getWorld } from '../world';
-import { defineMission, launchReturn, type Mission } from './missions';
+import { defineMission, launchMission, launchReturn, type Mission } from './missions';
 import { addReport } from './reports';
 import { refreshPointsAfterCommit } from './points';
 import { syncNest } from './nests';
@@ -48,6 +58,15 @@ export const windfallOf = (c: Colony | null): WindfallState | null => (c && isWi
 const floorRes = (r: Resources) => res(Math.floor(r.foliage), Math.floor(r.protein), Math.floor(r.nectar));
 const isEmpty = (r: Resources) => Math.floor(r.foliage) + Math.floor(r.protein) + Math.floor(r.nectar) <= 0;
 const coordsOf = (c: Colony) => ({ region: c.region, patch: c.patch, spot: c.spot });
+
+/** Is this the hidden wild player (a wild nest's party holding the windfall)? */
+async function isWild(q: Q, playerId: number): Promise<boolean> {
+  return !!(await q.query('SELECT is_npc FROM players WHERE id = $1', [playerId])).rows[0]?.is_npc;
+}
+
+/** How much the holders can carry home in one load: their cargo (wild ants carry by the mouthful), less from a beetle. */
+const loadCap = (site: Colony, wild: boolean) =>
+  windfallLoadCap(windfallOf(site)?.drop?.kind, groupCargo(site.units) + (wild ? wildCarry(site.units) : 0));
 
 /** The windfall is gone (eaten or rotted): the site is empty until the next one drops. */
 async function clearSite(q: Tx, site: Colony) {
@@ -112,13 +131,19 @@ const drops = recurringColonyEvent('windfall_drop', {
     const roll = rollWindfall(createRng(randomSeed()));
     const pile = windfallPile(roll.kind, npc.level);
     const world = await getWorld(q);
-    const endsAt = t + gameHoursMs(WINDFALLS.lastsHours, world.speed);
+    const endsAt = t + gameHoursMs(windfallLastsHours(roll.kind), world.speed);
     const drop = { kind: roll.kind, startedAt: t, endsAt, pile, guarded: roll.guarded };
     site = { ...site, units: roll.guarded ? windfallGuards(npc.level) : {}, resources: pile, npc: { ...npc, tender: null, drop } };
     site.name = windfallName(site.npc as WindfallState);
     await saveColony(q, site);
     await q.query('UPDATE colonies SET name = $2 WHERE id = $1', [site.id, site.name]);
     await schedule(q, world.id, 'windfall_rot', endsAt, { colonyId: site.id, startedAt: t });
+    // wild nests nearby smell it too, and some come for it (docs/25-windfalls.md#wild-ants-come-for-windfalls)
+    const rng = createRng(randomSeed());
+    for (let i = wildPartiesFor(roll.kind, rng); i > 0; i--) {
+      const due = t + gameHoursMs(wildPartyDelayHours(rng), world.speed);
+      if (due < endsAt) await schedule(q, world.id, 'windfall_wild', due, { colonyId: site.id, startedAt: t });
+    }
 
     const def = WINDFALLS.kinds[roll.kind];
     const coords = coordsOf(site);
@@ -143,19 +168,22 @@ onEvent('windfall_deliver', async (q, ev) => {
   let site = advance(await lockColony(q, ev.payload.colonyId), t);
   const npc = windfallOf(site);
   if (!npc?.drop || !npc.tender || npc.tender.since !== ev.payload.since) return; // gone, or the holders changed
-  const load = fillCargo(floorRes(site.resources), groupCargo(site.units));
+  // a wild nest's party hauls into the nest's store, where players can raid it back
+  const wild = await isWild(q, npc.tender.playerId);
+  const load = fillCargo(floorRes(site.resources), loadCap(site, wild));
   if (!isEmpty(load)) {
     const home = advance(await lockColony(q, npc.tender.colonyId), t);
     home.resources = add(home.resources, load);
     await saveColony(q, home);
-    await bump(q, npc.tender.playerId, 'food_home', foodIn(load));
+    if (!wild) await bump(q, npc.tender.playerId, 'food_home', foodIn(load));
     site.resources = sub(site.resources, load);
   }
   if (isEmpty(site.resources)) {
     const name = site.name;
-    await addReport(q, site.worldId, npc.tender.playerId, 'windfall', `Your ants stripped the ${name.toLowerCase()} clean`, {
-      event: 'windfall_done', windfall: name, coords: coordsOf(site), delivered: load, done: 'eaten',
-    }, t);
+    if (!wild)
+      await addReport(q, site.worldId, npc.tender.playerId, 'windfall', `Your ants stripped the ${name.toLowerCase()} clean`, {
+        event: 'windfall_done', windfall: name, coords: coordsOf(site), delivered: load, done: 'eaten',
+      }, t);
     await holdersGoHome(q, site, res(), t, { stripped: true });
     await clearSite(q, site);
     return;
@@ -173,10 +201,12 @@ onEvent('windfall_rot', async (q, ev) => {
   const npc = windfallOf(site);
   if (!npc?.drop || npc.drop.startedAt !== ev.payload.startedAt) return;
   if (npc.tender && presentUnits(site.units).length > 0) {
-    const cargo = fillCargo(floorRes(site.resources), groupCargo(site.units));
-    await addReport(q, site.worldId, npc.tender.playerId, 'windfall', `The ${site.name.toLowerCase()} rotted away`, {
-      event: 'windfall_done', windfall: site.name, coords: coordsOf(site), carried: cargo, done: 'rotted',
-    }, t);
+    const wild = await isWild(q, npc.tender.playerId);
+    const cargo = fillCargo(floorRes(site.resources), loadCap(site, wild));
+    if (!wild)
+      await addReport(q, site.worldId, npc.tender.playerId, 'windfall', `The ${site.name.toLowerCase()} rotted away`, {
+        event: 'windfall_done', windfall: site.name, coords: coordsOf(site), carried: cargo, done: 'rotted',
+      }, t);
     await holdersGoHome(q, site, cargo, t, { rotted: true, carried: cargo });
   }
   await clearSite(q, site);
@@ -202,14 +232,21 @@ defineMission('claim', {
     if (!m.targetColonyId) return { home: true };
     let site = await syncNest(q, await lockColony(q, m.targetColonyId), at);
     let npc = windfallOf(site);
+    const wild = await isWild(q, m.playerId);
     if (!npc?.drop) {
       m.result = { turnedBack: true };
-      await addReport(q, m.worldId, m.playerId, 'windfall', 'Your ants found nothing left to claim', {
-        event: 'windfall_turned_back', coords: m.target, why: 'It was gone before they got there.', turnedBack: true,
-      }, at);
+      if (!wild)
+        await addReport(q, m.worldId, m.playerId, 'windfall', 'Your ants found nothing left to claim', {
+          event: 'windfall_turned_back', coords: m.target, why: 'It was gone before they got there.', turnedBack: true,
+        }, at);
       return { home: true };
     }
     const held = presentUnits(site.units).length > 0;
+    // a wild nest's party never fights other wild ants (guards, or another nest's party): it goes home
+    if (wild && held && (!npc.tender || npc.tender.playerId === m.playerId)) {
+      m.result = { turnedBack: true };
+      return { home: true };
+    }
     const ours = npc.tender?.playerId === m.playerId && npc.tender.colonyId === m.originColonyId;
     if (held && !ours && npc.tender?.playerId === m.playerId) {
       m.result = { turnedBack: true };
@@ -243,29 +280,84 @@ defineMission('claim', {
         return { home: presentUnits(m.units).length > 0 };
       }
     }
-    return hold(q, m, site, at);
+    return hold(q, m, site, at, wild);
   },
 });
 
-/** The party takes (or joins) the hold on a windfall. */
-async function hold(q: Tx, m: Mission, site: Colony, at: number) {
+/** The party takes (or joins) the hold on a windfall. A wild nest's party holds it quietly: no reports or counters. */
+async function hold(q: Tx, m: Mission, site: Colony, at: number, wild = false) {
   const npc = windfallOf(site)!;
   const fresh = !npc.tender || npc.tender.playerId !== m.playerId || npc.tender.colonyId !== m.originColonyId;
   const tender = fresh ? { playerId: m.playerId, colonyId: m.originColonyId, since: at } : npc.tender!;
   site = { ...site, units: addCounts(fresh ? {} : site.units, m.units), npc: { ...npc, tender } };
   await saveColony(q, site);
+  if (fresh) await scheduleDelivery(q, m.worldId, site.id, tender.since, at);
+  if (wild) {
+    m.result = { ...(m.result ?? {}), holding: true, claimed: fresh };
+    m.units = {};
+    return { home: false };
+  }
   if (fresh) {
-    await scheduleDelivery(q, m.worldId, site.id, tender.since, at);
     await bump(q, m.playerId, 'windfalls_claimed');
     if (npc.drop?.kind) await bump(q, m.playerId, `windfall:${npc.drop.kind}`);
   }
   const home = await getColony(q, m.originColonyId);
   await addReport(q, m.worldId, m.playerId, 'windfall', fresh ? `Your ants hold the ${site.name.toLowerCase()} (${coordsKey(m.target)})` : `More of your ants reached the ${site.name.toLowerCase()}`, {
     event: 'windfall_held', windfall: site.name, coords: m.target, colony: home.name, units: m.units, holders: site.units, claimed: fresh,
-    left: floorRes(site.resources), carryPerLoad: groupCargo(site.units), deliverEveryHours: WINDFALLS.deliverEveryHours, endsAt: npc.drop!.endsAt,
+    left: floorRes(site.resources), carryPerLoad: loadCap(site, false), deliverEveryHours: WINDFALLS.deliverEveryHours, endsAt: npc.drop!.endsAt,
   }, at);
   m.result = { ...(m.result ?? {}), holding: true, claimed: fresh };
   m.units = {};
   await refreshPointsAfterCommit(q, m.playerId);
   return { home: false };
+}
+
+// ---------- wild nests come for windfalls (docs/25-windfalls.md#wild-ants-come-for-windfalls) ----------
+
+/**
+ * A wild party sets off for a windfall: a nest within range whose species eats this kind sends a share of its ants.
+ * Not if wild ants already hold it (no wild-on-wild fights). Another party may follow later, until it rots.
+ */
+onEvent('windfall_wild', async (q, ev) => {
+  const t = ev.due_at;
+  const found = await q.query('SELECT id FROM colonies WHERE id = $1', [ev.payload.colonyId]);
+  if (!found.rows[0]) return;
+  const site = advance(await lockColony(q, ev.payload.colonyId), t);
+  const npc = windfallOf(site);
+  if (!npc?.drop || npc.drop.startedAt !== ev.payload.startedAt) return;
+  const heldByWild = presentUnits(site.units).length > 0 && (!npc.tender || (await isWild(q, npc.tender.playerId)));
+  if (!heldByWild) await sendWildParty(q, site, npc.drop.kind, t);
+  const rng = createRng(randomSeed());
+  if (rng() < WILD_PARTIES.repeatChance) {
+    const due = t + gameHoursMs(wildPartyDelayHours(rng), (await getWorld(q)).speed);
+    if (due < npc.drop.endsAt) await schedule(q, site.worldId, 'windfall_wild', due, { colonyId: site.id, startedAt: npc.drop.startedAt });
+  }
+});
+
+/** Pick a wild nest that eats this and isn't already out at a windfall, and send its party. Returns the mission, or null. */
+export async function sendWildParty(q: Tx, site: Colony, kind: WindfallKind, t: number): Promise<Mission | null> {
+  const range = Math.min(WILD_PARTIES.range, AREA_RANGE);
+  const r = await q.query(
+    `SELECT c.id, c.npc->>'species' AS species FROM colonies c JOIN players p ON p.id = c.player_id
+      WHERE c.world_id = $1 AND c.region = $2 AND c.patch BETWEEN $3 AND $4 AND p.is_npc AND c.npc ? 'species'
+        AND NOT EXISTS (SELECT 1 FROM missions m WHERE m.origin_colony_id = c.id AND m.type = 'claim' AND m.status IN ('outbound', 'returning'))
+        AND NOT EXISTS (SELECT 1 FROM colonies w WHERE w.world_id = c.world_id AND w.npc->>'kind' = 'windfall' AND (w.npc->'tender'->>'colonyId')::int = c.id)
+      ORDER BY c.id`,
+    [site.worldId, site.region, site.patch - range, site.patch + range],
+  );
+  const eaters = r.rows.filter((row: any) => eatsWindfall(row.species, kind));
+  if (eaters.length === 0) return null;
+  const pick = eaters[Math.floor(createRng(randomSeed())() * eaters.length)];
+  let nest = await syncNest(q, await lockColony(q, pick.id), t);
+  const party = wildWindfallParty(nest.units);
+  if (presentUnits(party).length === 0) return null;
+  nest = { ...nest, units: subCounts(nest.units, party) };
+  await saveColony(q, nest);
+  const world = await getWorld(q);
+  const dest = coordsOf(site);
+  const secs = travelSeconds(distance(nest, dest), groupSpeed(party, {}), WILD_PARTIES.speedPct, world.speed);
+  return launchMission(q, {
+    worldId: nest.worldId, playerId: nest.playerId, type: 'claim', origin: nest, target: dest, targetColony: site,
+    units: party, cargo: res(), speedPct: WILD_PARTIES.speedPct, fuel: 0, departAt: t, arriveAt: t + secs * 1000, senderName: nest.name,
+  });
 }

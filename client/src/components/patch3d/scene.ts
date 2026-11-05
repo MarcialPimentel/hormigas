@@ -666,6 +666,54 @@ uniform vec3 uSpots[SIGHT_SPOTS];
         l.rotation.set(0.2 * (i % 2 ? 1 : -1), i * 0.9, 0.15);
         spotGroup.add(shadow(l));
       }
+    } else if (w.kind === 'beetle') {
+      // a ground beetle dead on its back: a glossy black shell, legs in the air
+      const shell = new THREE.Mesh(sk(new THREE.SphereGeometry(1.6, 16, 12).scale(1.25, 0.55, 0.85)), mat('#2A2420', { roughness: 0.25 }));
+      shell.position.set(x, y + 0.75, z);
+      shell.rotation.y = 0.4;
+      spotGroup.add(shadow(shell));
+      const leg = sk(new THREE.CylinderGeometry(0.06, 0.05, 1.4, 4));
+      for (let i = 0; i < 6; i++) {
+        const l = new THREE.Mesh(leg, mat('#1A1512'));
+        const along = ((i % 3) - 1) * 0.9, side = i < 3 ? 0.6 : -0.6;
+        l.position.set(x + Math.cos(0.4) * along + Math.sin(0.4) * side, y + 1.7, z - Math.sin(0.4) * along + Math.cos(0.4) * side);
+        l.rotation.set(side * 0.6, 0, along * 0.3);
+        spotGroup.add(l);
+      }
+    } else if (w.kind === 'sugar') {
+      // a spilled puddle of sugar with loose crystals
+      const puddle = new THREE.Mesh(sk(new THREE.CircleGeometry(2.4, 18).scale(1.3, 1, 1)), mat('#F4EEE2', { roughness: 0.3, side: THREE.DoubleSide }));
+      puddle.rotation.x = -Math.PI / 2;
+      puddle.position.set(x, y + 0.06, z);
+      spotGroup.add(puddle);
+      const cube = sk(new THREE.BoxGeometry(0.4, 0.4, 0.4));
+      for (let i = 0; i < 9; i++) {
+        const c = new THREE.Mesh(cube, mat('#FFFFFF', { roughness: 0.2 }));
+        c.position.set(x - 2 + (i * 0.53) % 4, y + 0.25, z - 1 + ((i * 7) % 5) * 0.5);
+        c.rotation.set(i, i * 0.7, 0);
+        spotGroup.add(shadow(c));
+      }
+    } else if (w.kind === 'picnic') {
+      // picnic crumbs: a chunk of bread, a slice of tomato and crumbs all round
+      const bread = new THREE.Mesh(sk(new THREE.BoxGeometry(2.8, 1.3, 2)), mat('#D9A55A', { roughness: 0.8 }));
+      bread.position.set(x - 0.6, y + 0.65, z);
+      bread.rotation.y = 0.3;
+      spotGroup.add(shadow(bread));
+      const crumb = new THREE.Mesh(sk(new THREE.BoxGeometry(2.4, 0.2, 1.6)), mat('#F0D9A8'));
+      crumb.position.set(x - 0.6, y + 1.35, z);
+      crumb.rotation.y = 0.3;
+      spotGroup.add(crumb);
+      const tomato = new THREE.Mesh(sk(new THREE.CylinderGeometry(0.9, 0.9, 0.25, 14)), mat('#C8452F', { roughness: 0.4 }));
+      tomato.position.set(x + 1.8, y + 0.15, z + 0.8);
+      spotGroup.add(shadow(tomato));
+      const bit = sk(new THREE.BoxGeometry(0.35, 0.3, 0.35));
+      for (let i = 0; i < 10; i++) {
+        const b = new THREE.Mesh(bit, mat(i % 3 ? '#E3BD7A' : '#F0D9A8'));
+        const a = i * 2.4, r = 2.2 + (i % 3) * 0.5;
+        b.position.set(x + Math.cos(a) * r, y + 0.15, z + Math.sin(a) * r);
+        b.rotation.y = a;
+        spotGroup.add(b);
+      }
     } else if (w.kind === 'grasshopper') {
       // the Meshy grasshopper, on its back with its legs in the air
       const h = hoppers.make(!coarse);

@@ -26,6 +26,7 @@ const PIC: Record<string, [PicKind, string]> = {
   dutiful: ['chamber', 'queen_chamber'], fortunate: ['research', 'repletes'], peacemaker: ['research', 'chemical_mimicry'], supercolonist: ['research', 'supercolony'],
   boot: ['defense', 'pit_trap'], ambush: ['unit', 'spiderling'], rain: ['research', 'tandem_running'], shortcut: ['research', 'pheromone_trails'],
   lost: ['research', 'scent_reading'], lizard: ['unit', 'rhino_beetle'],
+  beetle: ['unit', 'carrion_beetle'], sugar: ['research', 'repletes'], picnic: ['chamber', 'granary'],
 };
 
 const STAGE_CLASS = ['blank', 'sketch', 'entry', 'plate'];

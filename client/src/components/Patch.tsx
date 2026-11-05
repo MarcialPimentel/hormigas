@@ -305,9 +305,11 @@ function ResList({ r }: { r: Resources }) {
 }
 
 /** Short map labels for windfalls. */
-const WINDFALL_SHORT: Record<WindfallKind, string> = { grasshopper: 'Grasshopper', fig: 'Fig', branch: 'Branch', lizard: 'Lizard' };
+const WINDFALL_SHORT: Record<WindfallKind, string> = {
+  grasshopper: 'Grasshopper', fig: 'Fig', branch: 'Branch', lizard: 'Lizard', beetle: 'Beetle', sugar: 'Sugar', picnic: 'Picnic',
+};
 
-/** A windfall, drawn small: a fallen grasshopper, a split fig, a leafy branch or a lizard, with a flag if someone holds it. */
+/** A windfall, drawn small: a grasshopper, fig, branch, lizard, beetle, sugar spill or picnic crumbs, with a flag if someone holds it. */
 function WindfallMark({ c, x, y }: { c: SpotColony; x: number; y: number }) {
   const w = c.windfall!;
   const flag = w.yours ? FLAG.mine : w.held ? FLAG.other : w.guarded ? FLAG.wild : null;
@@ -322,6 +324,28 @@ function WindfallMark({ c, x, y }: { c: SpotColony; x: number; y: number }) {
         <path d={`M${x - 13} ${y + 2} L${x + 13} ${y - 6}`} stroke="#6E5236" strokeWidth={2.4} strokeLinecap="round" />
         {[-8, -2, 4, 10].map((dx, i) => (
           <ellipse key={dx} cx={x + dx} cy={y - 4 - (i % 2) * 6 + dx * 0.2} rx={4.5} ry={2.4} fill={i % 2 ? '#7DB043' : '#5E8A2E'} transform={`rotate(${i % 2 ? -30 : 25} ${x + dx} ${y - 4})`} />
+        ))}
+      </>
+    ) : w.kind === 'beetle' ? (
+      <>
+        <path d={`M${x - 7} ${y - 6} l-3 -7 M${x - 2} ${y - 7} l-1 -8 M${x + 3} ${y - 7} l1 -8 M${x + 8} ${y - 6} l3 -7`} stroke="#2B1D13" strokeWidth={1.1} />
+        <ellipse cx={x} cy={y - 3} rx={11} ry={6} fill="#2A2420" stroke="#2B1D13" strokeWidth={1} />
+        <path d={`M${x - 7} ${y - 5} q7 -4 14 0`} stroke="#6B625B" strokeWidth={1.4} fill="none" />
+      </>
+    ) : w.kind === 'sugar' ? (
+      <>
+        <path d={`M${x - 13} ${y} q2 -6 9 -5 q5 -4 10 0 q6 0 6 5 q-12 4 -25 0z`} fill="#F4EEE2" stroke="#C9BFA8" strokeWidth={1} />
+        {[-6, -1, 4, 8].map((dx, i) => (
+          <rect key={dx} x={x + dx} y={y - 7 - (i % 2) * 2} width={3} height={3} fill="#FFFFFF" stroke="#C9BFA8" strokeWidth={0.6} transform={`rotate(${i * 20} ${x + dx} ${y - 6})`} />
+        ))}
+      </>
+    ) : w.kind === 'picnic' ? (
+      <>
+        <rect x={x - 10} y={y - 9} width={14} height={9} rx={2} fill="#D9A55A" stroke="#2B1D13" strokeWidth={1} />
+        <rect x={x - 8} y={y - 7} width={10} height={5} rx={1} fill="#F0D9A8" />
+        <circle cx={x + 9} cy={y - 3} r={4} fill="#C8452F" stroke="#2B1D13" strokeWidth={0.8} />
+        {[-14, 6, 13, -4].map((dx, i) => (
+          <circle key={dx} cx={x + dx} cy={y + 1 - (i % 2) * 2} r={1.4} fill={i % 2 ? '#F0D9A8' : '#D9A55A'} />
         ))}
       </>
     ) : w.kind === 'lizard' ? (

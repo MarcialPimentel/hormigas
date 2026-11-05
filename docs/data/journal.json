@@ -17,6 +17,8 @@
     { "id": "grasshopper", "section": "discovery", "name": "Dead grasshopper", "stat": "windfall:grasshopper", "tiers": [1], "title": "Scavenger", "text": "A meadow's worth of protein, if you can hold it long enough to carry it home." },
     { "id": "fig", "section": "discovery", "name": "Fallen fig", "stat": "windfall:fig", "tiers": [1], "title": "Fig-finder", "text": "Split open and sweet. Every forager in range smells it at once." },
     { "id": "branch", "section": "discovery", "name": "Leafy branch", "stat": "windfall:branch", "tiers": [1], "title": "Leaf-hauler", "text": "Torn down by the wind: more leaves than a garden grows in a day." },
+    { "id": "beetle", "section": "discovery", "name": "Dead beetle", "stat": "windfall:beetle", "tiers": [1], "title": "Shell-cracker", "text": "Armoured even in death. The meat is worth the long work on the shell." },
+    { "id": "sugar", "section": "discovery", "name": "Sugar spill", "stat": "windfall:sugar", "tiers": [1], "title": "Sweet-tooth", "text": "Pure sweetness, drying in the sun. Whoever gets there first drinks deep." },
     { "id": "roster", "section": "discovery", "name": "The roster", "stat": "castes_raised", "tiers": [3, 7, 12], "title": "Brood-keeper", "text": "Kinds of ant and ally you have raised. One queen's eggs become workers, soldiers and scouts by how the larvae are fed." },
 
     { "id": "gardener", "section": "deeds", "name": "Leaf Gardens", "stat": "level:leaf_garden", "tiers": [10, 30, 60], "title": "Gardener", "text": "Levels of Leaf Garden across your colonies. Leafcutters don't eat the leaves: they farm a fungus on them." },
@@ -45,6 +47,7 @@
     { "id": "rain", "section": "oddities", "name": "Caught in the rain", "stat": "forage:rainstorm", "tiers": [1], "hidden": true, "title": "Rain-soaked", "text": "To an ant, a raindrop is a falling boulder of water." },
     { "id": "shortcut", "section": "oddities", "name": "A shortcut", "stat": "forage:shortcut", "tiers": [1], "hidden": true, "title": "Trailblazer", "text": "Ants keep straightening their trails, and the shortest path wins." },
     { "id": "lost", "section": "oddities", "name": "Lost the trail", "stat": "forage:lost_trail", "tiers": [1], "hidden": true, "title": "Wanderer", "text": "Wind can blow a scent trail away in minutes." },
-    { "id": "lizard", "section": "oddities", "name": "Dead lizard", "stat": "windfall:lizard", "tiers": [1], "hidden": true, "title": "Lizard-hauler", "text": "Rare, huge, and worth a war." }
+    { "id": "lizard", "section": "oddities", "name": "Dead lizard", "stat": "windfall:lizard", "tiers": [1], "hidden": true, "title": "Lizard-hauler", "text": "Rare, huge, and worth a war." },
+    { "id": "picnic", "section": "oddities", "name": "Picnic crumbs", "stat": "windfall:picnic", "tiers": [1], "hidden": true, "title": "Picnic-raider", "text": "The giants eat in the open and leave half of it behind." }
   ]
 }
