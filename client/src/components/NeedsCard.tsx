@@ -23,7 +23,8 @@ interface Need {
 
 const YESTERDAY_KEY = 'hormigas.yesterdaySeen';
 
-export function NeedsCard({ nav }: { nav: Nav }) {
+/** `here`: the screen this card sits on; a need pointing there gets no Show me (it would go nowhere). */
+export function NeedsCard({ nav, here }: { nav: Nav; here?: string }) {
   const { state, colony, act, now } = useGame();
   const [seenDay, setSeenDay] = useState<number | null>(() => {
     try {
@@ -94,9 +95,11 @@ export function NeedsCard({ nav }: { nav: Nav }) {
                       Collect
                     </button>
                   ) : (
-                    <button className="btn small" onClick={() => nav(n.screen)}>
-                      Show me
-                    </button>
+                    n.screen !== here && (
+                      <button className="btn small" onClick={() => nav(n.screen)}>
+                        Show me
+                      </button>
+                    )
                   )}
                   {needs.canReroll && !n.carried && !n.ready && (
                     <button

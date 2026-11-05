@@ -5,7 +5,8 @@ import { Cost } from './ui';
 import { enableNotifications, notificationsEnabled, notificationsSupported } from '../notify';
 import type { Nav } from '../nav';
 
-export function QuestCard({ nav }: { nav: Nav }) {
+/** `here`: the screen this card sits on; a task pointing there gets no Show me (it would go nowhere). */
+export function QuestCard({ nav, here }: { nav: Nav; here?: string }) {
   const { state, colony, act, toast } = useGame();
   const [askDismissed, setAskDismissed] = useState(() => {
     try {
@@ -74,9 +75,11 @@ export function QuestCard({ nav }: { nav: Nav }) {
             Collect reward
           </button>
         ) : (
-          <button className="btn" onClick={() => nav(quest.screen)}>
-            Show me
-          </button>
+          quest.screen !== here && (
+            <button className="btn" onClick={() => nav(quest.screen)}>
+              Show me
+            </button>
+          )
         )}
       </div>
     </section>
