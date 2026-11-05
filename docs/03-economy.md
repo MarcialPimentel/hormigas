@@ -60,7 +60,7 @@ Adult ants can't swallow solid food. Workers feed protein to the larvae, which d
 - A **job** in the Brood Hall (Brood Hall 2+, one per colony): put in Protein, get back **1 Nectar per 3 Protein**.
 - It takes time: the larvae get through `200 × Brood Hall level` Protein an hour (× world speed). 3,000 Protein at Brood Hall 2 is 7.5 hours for 1,000 Nectar.
 - The Nectar trickles in evenly while the job runs and can go over the Nectar Cellar's cap, like mission cargo. Stopping the job keeps the Nectar made so far and refunds the undigested Protein.
-- The rate is deliberately poor (production values Protein at about 2 : 1), so Aphid Pastures stay the real Nectar source and digestion is for surplus Protein. Protein inside a running job is out of raiders' reach; at 3 : 1 that is an expensive way to hide it.
+- The rate is deliberately poor, so Aphid Pastures stay the real Nectar source and digestion is for surplus Protein. Since 5 Nov 2026 research pays in Protein and Nectar, so digestion is also how fighters turn battle Protein into research. If Protein piles up again, making it 2 : 1 is the dial. Protein inside a running job is out of raiders' reach; at 3 : 1 that is an expensive way to hide it.
 - Numbers: `formulas.json` → `brood.digestion`.
 - Where: on the Brood Hall's chamber card in the nest (tap the Brood Hall), since 1 Nov 2026; the Brood Hall screen is for the army.
 
@@ -78,6 +78,8 @@ Raids **move** value between players; corpses recover only 30% of destroyed valu
 
 ## Why Protein needed a sink (playtest, 29 Oct 2026)
 Players piled up Protein while Nectar ran short. Production (about 2 Foliage : 1 Protein) and chamber costs balance each other, but Protein also arrives free from battles (corpses are 30% of destroyed value, all Protein), dead-beetle forages and loot, and its big sinks (research, castes, mission fuel) all need Nectar too. When Nectar runs out, Protein has nowhere to go.
+
+**Follow-ups:** on 30 Oct research started paying half its Nectar in Protein to soak it up. That overshot (research was paid 62% Protein and players couldn't reach Nuptial Flight), so on 5 Nov research moved to Protein + Nectar by branch with 2.5× Aphid Pasture Nectar ([07-research](07-research.md#what-research-costs-protein-and-nectar)). Each resource now has a job: **Foliage builds** (chambers, defenses, troops), **Protein raises ants** and feeds research, **Nectar powers research and travel**.
 
 **Decisions (Marz, 29 Oct 2026, #65):**
 - **Feed the brood:** extra Protein raises castes faster, at two levels: Well fed and Feast ([05](05-castes-units.md#feeding-the-brood)).

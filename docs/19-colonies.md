@@ -6,7 +6,7 @@
 A player starts with one colony and can found more by sending a **Winged Queen** on a **nuptial flight**. This is how real ant colonies spread: a winged queen leaves the nest, lands, sheds her wings and digs a new one (pillar 4). It gives the "Growth" stage (days 2–7, see [02-progression](02-progression.md)) its big goal: a second colony (pillar 1).
 
 ## The path to a second colony
-1. **Pheromone Chamber 3** unlocks the research **Nuptial Flight** (level 1 costs 4,000 Foliage, 8,000 Protein, 4,000 Nectar; each level doubles).
+1. **Pheromone Chamber 3** unlocks the research **Nuptial Flight** (level 1 costs 3,560 Foliage, 6,220 Protein, 6,220 Nectar; each level doubles. Research pays mostly in Protein and Nectar since 5 Nov 2026, [07-research](07-research.md#what-research-costs-protein-and-nectar); before that it was 4,000 / 14,000 / 2,000).
 2. **Brood Hall 4 + Nuptial Flight 1** unlock the **Winged Queen** caste (1,000 Foliage, 2,000 Protein, 1,000 Nectar). She is slow, barely fights, and carries up to 500.
 3. Send her on a **Found Colony** mission to an empty spot.
 

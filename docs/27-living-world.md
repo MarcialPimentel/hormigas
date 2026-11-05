@@ -34,7 +34,7 @@ _Idea: [#144](https://github.com/MarcialPimentel/hormigas/issues/144)._ The recu
 **Real basis (pillar 4):** once a year, mature colonies feed larvae extra protein to raise winged princesses and males, and every colony of a species flies on the same day.
 
 - **The Royal Brood** opens in every colony for the last part of each cycle (about 7–10 days; placeholder). You pour Protein and Nectar into larvae over time to raise **alates**. They're scored, not kept, and are separate from the Winged Queen caste that founds your own colonies ([19-colonies](19-colonies.md)).
-- **It's the sink the mid and late game lack.** Nectar is the bottleneck, so windfalls ([25-windfalls](25-windfalls.md)) and aphid herds ([24-npcs](24-npcs.md)) become worth fighting over in the run-up.
+- **It's the sink the mid and late game lack.** Nectar is what research and travel run on, so windfalls ([25-windfalls](25-windfalls.md)) and aphid herds ([24-npcs](24-npcs.md)) become worth fighting over in the run-up.
 - **Royal brood can be raided.** A raid can kill or carry off some of it (Slave-makers steal brood, which is real behaviour). A protected share, like the Honeypot Gallery, keeps it recoverable (pillar 2). War peaks in autumn, with a reason.
 - **Flight day ("first frost")**: every colony's alates fly at once. Results per player and per supercolony.
 - **Prizes:** a permanent Hall of Fame entry (section 3), a Field Journal page and title ([26-come-back](26-come-back.md)), and a mark on the winner's mound or banner until the next flight.
