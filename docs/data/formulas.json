@@ -11,8 +11,16 @@
     "chamberFormula": "baseCost * costFactor^(level - 1)   (costFactor per chamber in chambers.json)",
     "researchFormula": "baseCost * researchCostFactor^(level - 1)",
     "researchCostFactor": 2,
-    "_researchNectarToProtein": "Research pays part of its Nectar in Protein (Marz, 30 Oct 2026): share of each research's Nectar cost is replaced by proteinPerNectar Protein each. Protein piles up while Nectar is the bottleneck. Research time still comes from the unswapped cost (docs/07-research.md).",
-    "researchNectarToProtein": { "share": 0.5, "proteinPerNectar": 3 }
+    "_researchSplit": "Research pays its listed total (Foliage + Protein + Nectar, after researchCostFactor) split by its branch's ratio, Foliage : Protein : Nectar (Marz, 5 Nov 2026). Research is the Protein + Nectar sink; Foliage builds. Each part rounds to roundTo. Research time and points still come from the listed baseCost (docs/07-research.md). Replaces the 30 Oct Nectar-to-Protein swap.",
+    "researchSplit": {
+      "roundTo": 10,
+      "byBranch": {
+        "jaws":    { "foliage": 1, "protein": 2,    "nectar": 1.5 },
+        "harvest": { "foliage": 1, "protein": 1.75, "nectar": 1.75 },
+        "nest":    { "foliage": 1, "protein": 1.75, "nectar": 1.75 },
+        "scent":   { "foliage": 1, "protein": 1.75, "nectar": 2 }
+      }
+    }
   },
   "gathering": {
     "_note": "One dial for everything a colony gathers itself (docs/03-economy.md): base income, producing chambers, Gardener Minims, forage finds (still only what the party can carry) and aphid herd Nectar. Raid loot, wild-nest stores, quest rewards and storage are not affected. Set to 2 on 2026-10-30 after playtest feedback; 1 is the original pace.",
@@ -61,9 +69,9 @@
     "baseSeconds": 10,
     "timeScale": 3500,
     "speedPct": "10..100",
-    "_fuelNote": "Fuel ignores speed (Marz, 2 Nov 2026): the speed slider and Return at only change when the party gets home. The divisor was 35000 with a (speedPct/100 + 1)^2 speed factor (4x at full speed); 4375 is twice that full-speed price, to keep up with gathering x2 (docs/03-economy.md#mission-fuel).",
+    "_fuelNote": "Fuel ignores speed (Marz, 2 Nov 2026): the speed slider and Return at only change when the party gets home. The divisor was 35000 with a (speedPct/100 + 1)^2 speed factor (4x at full speed); 4375 was twice that full-speed price, to keep up with gathering x2; 1750 (Marz, 5 Nov 2026) keeps fuel at the same hours of Nectar after Aphid Pastures went from base 10 to 25 (docs/03-economy.md#mission-fuel).",
     "nectarFuel": "sum(unitCount * nectarUse) * distance / fuelDivisor",
-    "fuelDivisor": 4375
+    "fuelDivisor": 1750
   },
   "scouting": {
     "detectionFormula": "min(1, detectionPerUnitPerScout * defenderUnits * scouts * detectionScentBase^(theirScentReading - yourScentReading))",

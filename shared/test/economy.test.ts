@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   CHAMBERS, CHAMBER_IDS, CASTES, CASTE_IDS, DEFENSES, DEFENSE_IDS, RESEARCH, RESEARCH_IDS, TERRAIN, TERRAIN_IDS,
-  chamberCost, chamberBuildSeconds, researchCost, researchSeconds, unitSeconds,
+  chamberCost, chamberBuildSeconds, researchBaseCost, researchCost, researchSeconds, unitSeconds,
   workforce, productionPerHour, storageCapacity, protectedAmount, accrue,
   spaceUsed, spaceMax, missingRequirements, isUnlocked, res, shortfalls, explainShortfall, GATHER_MULTIPLIER,
   chamberOutputPerHour, FORMULAS,
@@ -39,7 +39,9 @@ describe('costs and times', () => {
     expect(chamberCost('queen_chamber', 3)).toEqual(res(1000, 500, 0));
   });
   it('research cost doubles', () => {
-    expect(researchCost('mandibles', 3)).toEqual(res(3200, 800, 0));
+    expect(researchBaseCost('mandibles', 3)).toEqual(res(3200, 800, 0));
+    // paid as the Jaws split, 1 : 2 : 1.5 of the 4,000 total
+    expect(researchCost('mandibles', 3)).toEqual(res(890, 1780, 1330));
   });
   it('founding boost speeds up levels 1-3 and respects minimum', () => {
     const ctx = { worldSpeed: 1, excavation: 0, terrain: 'grassland' as const };

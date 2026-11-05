@@ -7,8 +7,8 @@
 | Resource | Tier | Main source | Main use |
 |---|---|---|---|
 | **Foliage** | Bulk | Leaf Garden | Chambers, most castes |
-| **Protein** | Mid | Hunting Grounds, battlefield corpses | Castes, research |
-| **Nectar** | Rare | Aphid Pasture, tended aphid herds ([24-npcs](24-npcs.md)) | Advanced castes/research, **mission fuel** |
+| **Protein** | Mid | Hunting Grounds, battlefield corpses | Castes, research (with Nectar) |
+| **Nectar** | Scarce | Aphid Pasture, tended aphid herds ([24-npcs](24-npcs.md)) | **Research** (with Protein), advanced castes, **mission fuel** |
 | **Workforce** | Capacity (not stored) | Nursery, Queen's Chamber | Required to run production chambers |
 
 ## Production
@@ -40,18 +40,18 @@ The tiniest leafcutter workers weed and tend the fungus garden. Each Gardener Mi
 - Compute-don't-tick: production uses the minims at home when the colony was last settled, and minims hatching in the Brood Hall while the player is away are paid from the moment they hatch (`syncColony`), so away time is never paid at the wrong rate. A test checks one big jump equals many small steps.
 
 ## Mission fuel
-- Every mission consumes Nectar based on distance, unit count and unit type: `sum(count × nectarUse) × distance ÷ 4,375`, paid once when the party leaves (`formulas.json` → `travel`).
+- Every mission consumes Nectar based on distance, unit count and unit type: `sum(count × nectarUse) × distance ÷ 1,750`, paid once when the party leaves (`formulas.json` → `travel`).
 - **Speed doesn't change it** (Marz, 2 Nov 2026). The speed slider and Return at… only decide when the party gets home ([09-missions](09-missions.md#army-saving-the-core-skill)).
 - Makes Nectar strategically important and turns distance into a real cost.
-- **Why the change:** fuel used to be `÷ 35,000 × (speed% + 1)²`, so 4× at full speed and 1.21× at 10%. It never followed gathering ×2 (30 Oct 2026), and a raid in your own patch cost 10–60 minutes of Nectar. Slowing down saved at most 70% of that small cost for a trip 10× as long, so the choice had no bearing. The new divisor is twice the old full-speed price.
-- **What it costs now** (Aphid Pasture 8 makes about 340 Nectar an hour, Pasture 10 about 520):
+- **Why the change:** fuel used to be `÷ 35,000 × (speed% + 1)²`, so 4× at full speed and 1.21× at 10%. It never followed gathering ×2 (30 Oct 2026), and a raid in your own patch cost 10–60 minutes of Nectar. Slowing down saved at most 70% of that small cost for a trip 10× as long, so the choice had no bearing. The divisor became 4,375, twice the old full-speed price; on 5 Nov 2026 it went to 1,750 so fuel costs the same hours of Nectar after Aphid Pastures started making 2.5× as much (research now pays in Nectar, [07-research](07-research.md#what-research-costs-protein-and-nectar)).
+- **What it costs now** (Aphid Pasture 8 makes about 850 Nectar an hour, Pasture 10 about 1,300):
 
 | Mission | Fuel |
 |---|---|
-| 8 Minor Soldiers to the wild nest next door | ~37 |
-| 10 Workers foraging your own wilds | ~23 |
-| 30 Majors + 20 Acid Sprayers, raid in your patch | ~650 |
-| 30 Majors, raid in the next patch | ~1,440 |
+| 8 Minor Soldiers to the wild nest next door | ~93 |
+| 10 Workers foraging your own wilds | ~58 |
+| 30 Majors + 20 Acid Sprayers, raid in your patch | ~1,630 |
+| 30 Majors, raid in the next patch | ~3,600 |
 
 - If Nectar runs short for raiders, larval digestion (below) turns surplus Protein, much of it from battles, into Nectar. Tune `fuelDivisor` from playtest.
 
@@ -60,7 +60,7 @@ Adult ants can't swallow solid food. Workers feed protein to the larvae, which d
 - A **job** in the Brood Hall (Brood Hall 2+, one per colony): put in Protein, get back **1 Nectar per 3 Protein**.
 - It takes time: the larvae get through `200 × Brood Hall level` Protein an hour (× world speed). 3,000 Protein at Brood Hall 2 is 7.5 hours for 1,000 Nectar.
 - The Nectar trickles in evenly while the job runs and can go over the Nectar Cellar's cap, like mission cargo. Stopping the job keeps the Nectar made so far and refunds the undigested Protein.
-- The rate is deliberately poor (production values Protein at about 2 : 1), so Aphid Pastures stay the real Nectar source and digestion is for surplus Protein. Protein inside a running job is out of raiders' reach; at 3 : 1 that is an expensive way to hide it.
+- The rate is deliberately poor, so Aphid Pastures stay the real Nectar source and digestion is for surplus Protein. Since 5 Nov 2026 research pays in Protein and Nectar, so digestion is also how fighters turn battle Protein into research. If Protein piles up again, making it 2 : 1 is the dial. Protein inside a running job is out of raiders' reach; at 3 : 1 that is an expensive way to hide it.
 - Numbers: `formulas.json` → `brood.digestion`.
 - Where: on the Brood Hall's chamber card in the nest (tap the Brood Hall), since 1 Nov 2026; the Brood Hall screen is for the army.
 
@@ -78,6 +78,8 @@ Raids **move** value between players; corpses recover only 30% of destroyed valu
 
 ## Why Protein needed a sink (playtest, 29 Oct 2026)
 Players piled up Protein while Nectar ran short. Production (about 2 Foliage : 1 Protein) and chamber costs balance each other, but Protein also arrives free from battles (corpses are 30% of destroyed value, all Protein), dead-beetle forages and loot, and its big sinks (research, castes, mission fuel) all need Nectar too. When Nectar runs out, Protein has nowhere to go.
+
+**Follow-ups:** on 30 Oct research started paying half its Nectar in Protein to soak it up. That overshot (research was paid 62% Protein and players couldn't reach Nuptial Flight), so on 5 Nov research moved to Protein + Nectar by branch with 2.5× Aphid Pasture Nectar ([07-research](07-research.md#what-research-costs-protein-and-nectar)). Each resource now has a job: **Foliage builds** (chambers, defenses, troops), **Protein raises ants** and feeds research, **Nectar powers research and travel**.
 
 **Decisions (Marz, 29 Oct 2026, #65):**
 - **Feed the brood:** extra Protein raises castes faster, at two levels: Well fed and Feast ([05](05-castes-units.md#feeding-the-brood)).

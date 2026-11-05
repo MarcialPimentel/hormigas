@@ -59,7 +59,7 @@ That made sense when fights were rare. With wild nests, swarms, mounds and nest 
 So:
 - **Corpses stay Protein** (the identity is worth keeping).
 - **Loot becomes the main profit from wild things:** wild nests, termite mounds and spider dens give up **75%** of their store (`formulas.json` → `combat.lootPctOfWild`). Players and aphid herds stay at 50%.
-- **Research takes more Protein** ([07-research](07-research.md#protein-in-research)), so the Protein from corpses has somewhere to go.
+- **Research pays in Protein and Nectar** ([07-research](07-research.md#what-research-costs-protein-and-nectar)), so the Protein from corpses has somewhere to go, and larval digestion turns the rest into Nectar for research.
 - **The battle report shows the net result** (below).
 
 ## Battle report
