@@ -6,14 +6,22 @@
 ## Concept
 Research represents the colony evolving new instincts. It happens in the **Pheromone Chamber** and is **account-wide** (all colonies benefit). One research at a time per account.
 
-## Protein in research
-**Research pays half of its Nectar in Protein,** at 3 Protein for each Nectar (Marz, 30 Oct 2026; `formulas.json` → `cost.researchNectarToProtein`).
-- **Example:** Colony Mind 1 was 0 Foliage / 400 Protein / 600 Nectar; it now costs 0 / 1,300 / 300.
-- **Why:** battles leave lots of Protein (corpses, [08-combat](08-combat.md#why-corpses-are-protein-and-why-loot-is-the-main-profit-marz-30-oct-2026)), while Nectar is the bottleneck. Research now soaks up Protein and frees Nectar for missions and castes. Overall, research costs shift from about 35% Foliage / 41% Protein / 24% Nectar to about 28 / 62 / 10.
-- **The data stays as designed.** `research.json` keeps each research's original costs. The swap is one rule in the cost formula, easy to tune or undo.
-- **Research time doesn't change:** it's still worked out from the original Foliage + Protein, so the extra Protein doesn't slow research down.
-- **Points don't change either:** research counts at its original cost, so nobody's points (and wild-nest levels) jumped when this shipped.
-- A research already running when this shipped keeps what it paid; cancelling it refunds exactly that.
+## What research costs: Protein and Nectar
+**Research pays mostly in Protein and Nectar** (Marz, 5 Nov 2026; `formulas.json` → `cost.researchSplit`). Each research level's listed total (Foliage + Protein + Nectar in `research.json`, doubled per level) is split by its branch's ratio, Foliage : Protein : Nectar:
+
+| Branch | Ratio | Why |
+|---|---|---|
+| Jaws | 1 : 2 : 1.5 | Fighters have battle Protein |
+| Nest, Harvest | 1 : 1.75 : 1.75 | Even |
+| Scent | 1 : 1.75 : 2 | Pheromones lean sweet |
+
+- **Examples:** Nurse Workers 1 costs 620 / 1,090 / 1,090 (it was 800 / 2,200 / 200). Nuptial Flight 1 costs 3,560 / 6,220 / 6,220 (it was 4,000 / 14,000 / 2,000), and each level doubles it.
+- **Why:** colonies earn about 60% Foliage, 30% Protein and 10% Nectar, and chambers, troops and defenses all cost close to that. Research was the outlier at 62% Protein after the 30 Oct swap (below), so players sat on Foliage while Protein ran out, and few reached their first Nuptial Flight (14,000 Protein). Now each resource has a job: **Foliage builds** (chambers, defenses, troops), **Protein raises ants** and feeds research, **Nectar powers research and travel**, and it's the resource worth fighting over on the map (herds, honeypot nests, figs).
+- **It comes with more Nectar:** Aphid Pastures make 2.5× the Nectar (base 10 → 25), and mission fuel was re-priced so it still costs the same hours of Nectar ([03-economy](03-economy.md#mission-fuel)). Without that, Nectar would become a wall.
+- **Hours to save up** (an engaged colony on day 3, pacing sim): Nuptial Flight 1 about 7.7 h (was 12.8 h), the whole tree at level 1 about 77 h (was 118 h). Protein and Nectar now run out at about the same point.
+- **Research time and points don't change:** both still come from the listed cost in `research.json`, so the split never makes research slower and nobody's points (or wild-nest levels) jump.
+- Per-item flavour is gone within a branch (Chitin was all Foliage). If that's missed, blend each item's own mix with the branch ratio.
+- **Replaced:** from 30 Oct to 5 Nov 2026 research paid half its Nectar in Protein at 3 : 1, to soak up battle Protein while Nectar was the bottleneck. A research already running keeps what it paid; cancelling it refunds exactly that.
 
 ## The tech tree
 Since Build 6 research is a **tree**: research can need other research (not only a Pheromone Chamber level), it is grouped into four branches (Jaws, Harvest, Nest, Scent), and some research has a highest level. Full design, the new research and the reasoning: [21-tech-tree.md](21-tech-tree.md).

@@ -37,7 +37,7 @@ Since 2026-10-30 gathering is ×2 ([03-economy](03-economy.md#production)), whic
 
 The sim's player saves up for 8 Minor Soldiers after scouting, to win the "Raid the wild nest" task (see [17-wild-nests](17-wild-nests.md)).
 
-At the end of the run (~40 days) an engaged colony produces roughly 8,400 Foliage, 4,900 Protein and 1,550 Nectar per hour (2,900 / 1,450 / 520 at the original pace).
+At the end of the run (~40 days) an engaged colony produces roughly 8,800 Foliage, 4,400 Protein and 4,000 Nectar per hour (Aphid Pastures ×2.5 since 5 Nov 2026; it was 8,400 / 4,900 / 1,550) (2,900 / 1,450 / 520 at the original pace).
 
 ## Pacing targets (what the test enforces)
 | Milestone | Target |

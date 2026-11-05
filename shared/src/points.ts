@@ -14,7 +14,7 @@ export function chamberSpent(chambers: ChamberLevels): number {
 
 export function researchSpent(research: ResearchLevels): number {
   let sum = 0;
-  for (const id of RESEARCH_IDS) for (let l = 1; l <= lvl(research, id); l++) sum += total(researchBaseCost(id, l)); // before the Nectar → Protein swap, so points don't jump
+  for (const id of RESEARCH_IDS) for (let l = 1; l <= lvl(research, id); l++) sum += total(researchBaseCost(id, l)); // the listed cost, not the branch split, so points never jump
   return sum;
 }
 

@@ -32,7 +32,7 @@ describe('travel', () => {
   });
   it('slower speed takes longer; fuel grows with ants and distance, not speed', () => {
     expect(travelSeconds(3650, 5000, 50, 1)).toBeGreaterThan(travelSeconds(3650, 5000, 100, 1));
-    expect(missionFuel({ worker: 100 }, 3650)).toBe(Math.round((100 * 10 * 3650) / 4375));
+    expect(missionFuel({ worker: 100 }, 3650)).toBe(Math.round((100 * 10 * 3650) / 1750));
     expect(missionFuel({ worker: 200 }, 3650)).toBeGreaterThan(missionFuel({ worker: 100 }, 3650));
     expect(missionFuel({ worker: 100 }, 7300)).toBeGreaterThan(missionFuel({ worker: 100 }, 3650));
     expect(missionFuel({ scout: 1 }, 1005)).toBe(1);
