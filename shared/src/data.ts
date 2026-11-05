@@ -85,6 +85,7 @@ export const RESEARCH_IDS = [
   'nurse_workers',
   'deep_digging',
   'tunnel_engineering',
+  'digging_crews',
   'nuptial_flight',
   'supercolony',
   // Scent
@@ -186,7 +187,7 @@ export const RESEARCH_NUMBER_EFFECTS = [
   // combat (combat.ts). casteAttackPct / casteHealthPct only boost the research's own `caste` (instincts).
   'attackPct', 'guardPct', 'healthPct', 'defensePct', 'lootPct', 'casteAttackPct', 'casteHealthPct',
   // economy (economy.ts)
-  'foliagePct', 'proteinPct', 'nectarPct', 'storagePct', 'protectedPct', 'buildTimePct', 'unitTimePct', 'researchTimePct', 'space',
+  'foliagePct', 'proteinPct', 'nectarPct', 'storagePct', 'protectedPct', 'buildTimePct', 'unitTimePct', 'researchTimePct', 'space', 'digCrewsPerExcavationLevel',
   // missions and the map (world.ts, forage.ts)
   'speedPct', 'missionSlots', 'forageSlotsPer2Levels', 'forageLuck', 'scoutLevel', 'scoutStealth', 'coloniesPerLevel',
 ] as const;

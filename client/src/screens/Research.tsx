@@ -54,10 +54,11 @@ export const RESEARCH_BLURB: Record<string, string> = {
   repletes: 'Living storage jars: workers that swell with food. +10% storage for every resource per level.',
   symbiosis: 'Other insects come to live with the colony. Level 1: Carrion Beetle. 2: Assassin Bug. 3: Bullet Ant. 4: Rhinoceros Beetle (Brood Hall 6).',
   // Nest
-  brood_science: 'Unlocks Major Soldiers and Acid Sprayers (level 1) and Haulers (level 2).',
+  brood_science: 'Unlocks Major Soldiers and Acid Sprayers (level 1) and Haulers (level 2, Brood Hall 4).',
   nurse_workers: 'Dedicated nurses feed and groom the larvae. Units are raised 5% faster per level (up to 30%).',
   deep_digging: '+5 space in every colony, per level.',
   tunnel_engineering: 'Shore up tunnels with packed soil. Chambers are dug 5% faster per level (up to 30%).',
+  digging_crews: 'Workers at home lend a mandible. Each one cuts dig time by 0.5%, up to 5 Workers per Excavation Works level (25% at Excavation Works 10). Workers out on missions don’t help.',
   nuptial_flight: 'Unlocks the Winged Queen (Brood Hall 4). Rule one more colony with every level.',
   supercolony: 'Lets you found or join a supercolony: up to 6 players who share one scent, never raid each other and can hold position at each other\'s nests.',
   // Scent

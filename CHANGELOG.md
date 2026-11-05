@@ -1,6 +1,11 @@
 # Hormigas — Changelog
 
-_Current as of Build 16 (2026-11-05)._ Newest first. One entry per build, in players' words, built from the merged PRs. Smaller PRs merged between builds are listed with the nearest build.
+_Current as of Build 17 (2026-11-05)._ Newest first. One entry per build, in players' words, built from the merged PRs. Smaller PRs merged between builds are listed with the nearest build.
+
+## Build 17: Cargo ants (unreleased)
+- **Workers have a late-game job: Digging Crews.** A new Nest research (Pheromone Chamber 4 and Tunnel Engineering 2) puts Workers at home to work on the dig. Each one cuts a new dig's time by 0.5%, counting up to 5 Workers per Excavation Works level, so 50 Workers at Excavation Works 10 dig 25% faster. Workers out on missions don't help, and it adds on top of Tunnel Engineering.
+- **Haulers come later: Brood Hall 4** (with Brood Science 2, as before). Media Workers are now the carrier for the middle of the game, and Haulers arrive about when Winged Queens and long trips between colonies do. Haulers you already have stay.
+- **"Claim a windfall" counts any carrier.** The colony need used to wait until you had 3 Workers, so colonies that switched to Media Workers or Haulers never got it. Now any 3 Workers, Media Workers or Haulers will do.
 
 ## Build 16: Trade trails (unreleased)
 - **Trade trails.** Send a caravan of Workers, Media Workers or Haulers to another of your colonies, or to a player you have a truce or a shared scent with. It keeps a pheromone trail open there for 3 days and brings home goods every 6 hours, chosen by the ground at the other end: Sunny Meadow and Sandy Soil send Foliage, Rotting Log Protein, Creek Bank Nectar, Grassland a bundle of all three. Bigger producers and longer trails pay more, and the other colony never loses anything. A trail to a truce partner pays more than one between your own colonies, a supercolony mate's more still, and **both sides gain**: they get a share in your ground's goods every delivery. Each colony keeps one trail, and it doesn't use a mission slot. When the trail runs out the caravan walks home and you can open it again; Call home ends it early. In the Whole Yard the caravan walks to and fro along its trail carrying gold loads home. Joint raids come in the next build.

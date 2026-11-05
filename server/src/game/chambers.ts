@@ -39,6 +39,7 @@ async function beginDig(q: Tx, c: Colony, player: Player, id: ChamberId, level: 
     terrain: c.terrain,
     timeMultiplier: mult,
     research: player.research,
+    units: c.units,
   });
   const endAt = t + secs * 1000;
   const eventId = await schedule(q, world.id, 'build_complete', endAt, { colonyId: c.id });

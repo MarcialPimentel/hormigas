@@ -138,6 +138,11 @@
     "pctEach": 0.5,
     "perLeafGardenLevel": 4
   },
+  "digCrews": {
+    "_note": "Digging Crews research (docs/04-colony.md): each Worker at home when a dig starts cuts its time by pctEach %, counting at most digCrewsPerExcavationLevel (research.json) Workers per Excavation Works level. Workers out on missions don't count.",
+    "caste": "worker",
+    "pctEach": 0.5
+  },
   "desertAnts": {
     "_note": "Desert Ants in a forage party (docs/09-missions.md): every antsPerLuck of them count as one more Foraging Instinct level for that trip (luck and find cap), up to maxLuck.",
     "antsPerLuck": 5,

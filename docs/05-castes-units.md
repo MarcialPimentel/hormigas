@@ -19,7 +19,7 @@ Units are **castes** raised in the Brood Hall. Each unit represents a squad of a
 ## MVP castes
 | Caste | Role | Notes |
 |---|---|---|
-| **Worker** | Light hauling, corpse hauling, early foraging | Cheap. Frenzy target for soldiers. |
+| **Worker** | Light hauling, corpse hauling, early foraging; late game, digging | Cheap. Frenzy target for soldiers. With **Digging Crews** (Build 17), Workers at home speed up digs ([04-colony](04-colony.md#digging-crews-build-17)). |
 | **Minor Soldier** | Swarm | Fast and cheap. Beats Major Soldiers by numbers; mown down by Acid Sprayers and Pit Traps. |
 | **Major Soldier** | Heavy | Expensive and armoured. Crushes Acid Sprayers and Trap-jaw Ants; drowns under a swarm of Minors. |
 | **Acid Sprayer** (Build 10) | Anti-swarm | *Formica* soldiers spray formic acid over a crowd. Frenzy vs Minor Soldiers and Workers; dies fast to Majors. Brood Hall 2 + Brood Science 1. |
@@ -29,8 +29,8 @@ Units are **castes** raised in the Brood Hall. Each unit represents a squad of a
 | **Desert Ant** (Build 11) | Forager | *Cataglyphis*. Very fast; every 5 in a forage party count as one more Foraging Instinct level for that trip (up to +5). Brood Hall 3 + Foraging Instinct 2. |
 | **Gardener Minim** (Build 11) | Economy | The tiniest leafcutters, tending the fungus. Each at home adds 0.5% to the Leaf Gardens' output, counting up to 4 per Leaf Garden level ([03](03-economy.md#gardener-minims-build-11)). Fights like a Worker, so raids can kill some. Brood Hall 2 + Fungus Farming 1. |
 | **Scout** | Espionage | Near-zero combat value; dies easily. |
-| **Media Worker** (30 Oct 2026) | Carrier | Leafcutter *media*: the everyday carrier between Worker and Hauler. Carries 3,500 (Worker 1,500, Hauler 7,500) for 500 Foliage / 200 Protein, 5.0 cargo per resource spent (Worker 3.8, Hauler 6.3). Hauls corpses. Can't fight. **Brood Hall 2, no research.** |
-| **Hauler** | Bulk cargo | 7,500 cargo. Brood Hall 2 + Brood Science 2. |
+| **Media Worker** (30 Oct 2026) | Carrier | Leafcutter *media*: the everyday carrier between Worker and Hauler. Carries 3,500 (Worker 1,500, Hauler 7,500) for 500 Foliage / 200 Protein, 5.0 cargo per resource spent (Worker 3.8, Hauler 6.3). Hauls corpses. Can't fight. **Brood Hall 2, no research.** The mid-game carrier: the Hauler waits for Brood Hall 4 (Build 17). |
+| **Hauler** | Bulk cargo | 7,500 cargo. Brood Hall 4 + Brood Science 2 (Brood Hall 2 before Build 17; Haulers raised before then stay). |
 | **Winged Queen** | Founds a new colony | Brood Hall 4 + Nuptial Flight 1. Used up on landing ([19-colonies](19-colonies.md)). |
 
 ## Feeding the brood
@@ -117,6 +117,18 @@ Rule: every unit should have **at least one counter** and **at least one thing i
 **Decisions (Marz, 30 Oct 2026, Build 11):** bigger units are wanted for variety, without copying OGame's combat exactly; beetles and other bugs fit the fantasy; ship the whole roster at once (research gates already spread it over weeks); one instinct per caste; allies are raised like ants; Gardener Minims can die in raids, capped.
 
 **Decisions (Marz, 29 Oct 2026, Build 10):** a triangle plus a siege caste, rather than retuning the two old castes (that stays knife-edge) or adding ally species now. Existing armies are unchanged; every player got a report explaining the change. No refunds.
+
+## The carrier ladder (Build 17)
+A meta review on 5 Nov 2026 found three carriers doing one job in three sizes. Per resource spent, a Worker carries 3.75, a Media Worker 5.0 and a Hauler 6.25; all three burn about the same Nectar per unit of cargo, the Hauler is the fastest of them and the Worker the slowest (a party moves at its slowest ant's speed), and soldiers frenzy on Workers but not on the bigger carriers. With the Hauler only Brood Science 2 (about 2,800 resources) behind the Media Worker, players skipped the Media Worker and stopped raising Workers at Brood Hall 2.
+
+Marz's call: give each carrier a stage of the game.
+
+| Stage | Carrier | Job |
+|---|---|---|
+| Start | Worker | Carries early; late game digs at home with Digging Crews |
+| Brood Hall 2 | Media Worker | The mid-game carrier |
+| Brood Hall 4 + Brood Science 2 | Hauler | Big hauls and moving goods between colonies (Winged Queens and trade trails come about then) |
+| Brood Hall 4 + Symbiosis 1 | Carrion Beetle | Corpses only |
 
 ## Open Questions
 - Should units have upkeep (ongoing Protein cost)? Pro: limits hoarding armies. Con: punishes offline players. Proposal: no upkeep in MVP.
