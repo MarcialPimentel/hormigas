@@ -334,6 +334,7 @@ export default function TestScene() {
             <div className="ts-row">
               <button type="button" className="btn small" aria-pressed={patchShown === 45} onClick={() => setPatchShown(45)}>Home patch</button>
               <button type="button" className="btn small" aria-pressed={patchShown === 46} onClick={() => setPatchShown(46)}>Next patch</button>
+              <button type="button" className="btn small" aria-pressed={patchShown === 44} onClick={() => setPatchShown(44)} title="The rival's patch: the beetle, sugar spill, picnic crumbs and a lizard held by wild ants">Rival patch</button>
               <button type="button" className="btn small" onClick={() => patch.current?.antsEye()}>Ant's-eye</button>
               <button type="button" className="btn small" onClick={() => patch.current?.resetView()}>Whole patch</button>
             </div>

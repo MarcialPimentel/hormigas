@@ -672,13 +672,21 @@ uniform vec3 uSpots[SIGHT_SPOTS];
       shell.position.set(x, y + 0.75, z);
       shell.rotation.y = 0.4;
       spotGroup.add(shadow(shell));
-      const leg = sk(new THREE.CylinderGeometry(0.06, 0.05, 1.4, 4));
+      // six legs folded up off the belly, splayed outward, each bent at the knee
+      const thigh = sk(new THREE.CylinderGeometry(0.07, 0.06, 1, 4).translate(0, 0.5, 0));
+      const shin = sk(new THREE.CylinderGeometry(0.05, 0.03, 0.9, 4).translate(0, 0.45, 0));
       for (let i = 0; i < 6; i++) {
-        const l = new THREE.Mesh(leg, mat('#1A1512'));
-        const along = ((i % 3) - 1) * 0.9, side = i < 3 ? 0.6 : -0.6;
-        l.position.set(x + Math.cos(0.4) * along + Math.sin(0.4) * side, y + 1.7, z - Math.sin(0.4) * along + Math.cos(0.4) * side);
-        l.rotation.set(side * 0.6, 0, along * 0.3);
-        spotGroup.add(l);
+        const along = ((i % 3) - 1) * 1.1, side = i < 3 ? 1 : -1;
+        const hip = new THREE.Group();
+        hip.position.set(x + Math.cos(0.4) * along + Math.sin(0.4) * side * 0.5, y + 1.15, z - Math.sin(0.4) * along + Math.cos(0.4) * side * 0.5);
+        hip.rotation.set(side * 0.7, 0.4, -along * 0.35);
+        const t = new THREE.Mesh(thigh, mat('#1A1512'));
+        const k = new THREE.Mesh(shin, mat('#1A1512'));
+        k.position.y = 1;
+        k.rotation.x = -side * 1.1;
+        t.add(k);
+        hip.add(t);
+        spotGroup.add(hip);
       }
     } else if (w.kind === 'sugar') {
       // a spilled puddle of sugar with loose crystals
@@ -941,11 +949,12 @@ uniform vec3 uSpots[SIGHT_SPOTS];
       const swarm = i.type === 'swarm', hostile = !!i.hostile;
       const k = i.departAt ? clamp01((d.now - i.departAt) / (i.arriveAt - i.departAt)) : 0.5;
       const units = Math.max(1, i.unitCount ?? 1);
-      const what = swarm ? 'Swarm' : i.type === 'raid' ? 'Raid' : i.type === 'scout' ? 'Scouts' : i.type === 'hold' ? 'Allied soldiers' : 'Delivery';
+      // a claim coming at a windfall you hold is a fight for it: a wild nest's party, or another player's
+      const what = swarm ? 'Swarm' : i.type === 'claim' ? (i.wild ? 'Wild ants' : 'Raid') : i.type === 'raid' ? 'Raid' : i.type === 'scout' ? 'Scouts' : i.type === 'hold' ? 'Allied soldiers' : 'Delivery';
       out.push({
         key: `i${i.id}`, from: endAt(i.origin, target), to: endAt(target, i.origin), k, units,
         n: Math.min(swarm ? SWARM_CAP : PARTY_CAP, units),
-        caste: (n) => (swarm ? (n % 5 === 2 ? 'army_major' : 'army') : i.type === 'raid' || i.type === 'hold' ? 'soldier' : 'worker'),
+        caste: (n) => (swarm ? (n % 5 === 2 ? 'army_major' : 'army') : i.type === 'raid' || i.type === 'hold' || i.type === 'claim' ? 'soldier' : 'worker'),
         color: swarm ? undefined : hostile ? CHITIN.raider : i.type === 'hold' ? '#3FA79E' : FLAG.other,
         trail: hostile ? '#C4473A' : i.type === 'hold' ? FLAG.ally : FLAG.other, cargo: [],
         label: what, tone: hostile ? 'raid' : 'ours', endsAt: i.arriveAt, unknownSize: swarm && !i.scouted,

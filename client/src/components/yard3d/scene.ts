@@ -880,7 +880,7 @@ export async function createYardScene(host: HTMLElement, labels: HTMLElement, da
       want.set(`i${i.id}`, {
         key: `i${i.id}`, from: spotAt(i.origin), to: spotAt(target), color: swarm ? CHITIN.army : i.hostile ? CHITIN.raider : CHITIN.worker,
         caste: swarm ? 'army' : i.hostile ? 'soldier' : 'worker', units: i.unitCount ?? 30,
-        label: swarm ? `Army ants · ${i.scouted ? (i.unitCount ?? 0).toLocaleString('en') : '?'}` : i.hostile ? `${i.type === 'raid' ? 'Raid' : 'Scouts'} from ${i.from}` : `Delivery from ${i.from}`,
+        label: swarm ? `Army ants · ${i.scouted ? (i.unitCount ?? 0).toLocaleString('en') : '?'}` : i.hostile ? `${i.type === 'claim' && i.wild ? 'Wild ants' : i.type === 'raid' || i.type === 'claim' ? 'Raid' : 'Scouts'} from ${i.from}` : `Delivery from ${i.from}`,
         prog: (now) => ({ d: clamp((now - i.departAt) / Math.max(1, i.arriveAt - i.departAt), 0, 1), back: false }),
       });
     }
