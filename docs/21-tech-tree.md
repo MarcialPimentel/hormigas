@@ -23,7 +23,7 @@ Every research is real ant behaviour (pillar 4).
 | **Scent** | Pheromones and information | Pheromone Trails, Colony Mind, Scent Reading | Tandem Running, Chemical Mimicry |
 
 ## The new research
-Pher = Pheromone Chamber level in the colony doing the research. Costs are level 1; each level doubles ([formulas.json](data/formulas.json) `researchCostFactor`).
+Pher = Pheromone Chamber level in the colony doing the research. Costs are level 1; each level doubles ([formulas.json](data/formulas.json) `researchCostFactor`). Players pay each listed total split by branch, mostly Protein and Nectar ([07-research](07-research.md#what-research-costs-protein-and-nectar)).
 
 | Research | Needs | Effect per level | Cap | The ant behaviour |
 |---|---|---|---|---|

@@ -24,20 +24,20 @@ Re-run `npm run sim` after any change to `docs/data/`. If the pacing test fails,
 | | ~1.5 h | Brood Hall | Raising castes and defenses |
 | | ~2.3 h | First castes, first forage | Missions, the map, the wild nest next door |
 | | ~3.7 h | First raid on the wild nest, all founding tasks done | Combat, loot and corpses, learned safely |
-| **Growth** | ~13 h | Major Soldiers | Real raiding power (since research pays more in Protein, 30 Oct 2026; the sim's player doesn't fight, so it gets no corpse Protein, and real players are a little faster) |
+| **Growth** | ~8 h | Major Soldiers | Real raiding power (~13 h from 30 Oct to 5 Nov 2026, while research paid mostly in Protein; now it pays in Protein and Nectar with 2.5× Aphid Pasture Nectar, [07-research](07-research.md#what-research-costs-protein-and-nectar). The sim's player doesn't fight, so it gets no corpse Protein, and real players are a little faster) |
 | | ~16 h | Queen's Chamber 4 | Honeypot Gallery, Excavation Works |
 | | ~18 h | Honeypot Gallery | A raid shield — well before the 72 h new-colony protection ends |
 | | ~33 h | Queen's Chamber 5 | |
 | | ~38 h | Leaf Garden 10 | |
-| **Established** | ~2.5 days | Queen's Chamber 6 | |
+| **Established** | ~3 days | Queen's Chamber 6 | |
 | | ~6 days | Leaf Garden 15 | Storage becomes a recurring planning puzzle |
-| | ~20 days | Leaf Garden 20 | Long-term goals: hours-to-days per upgrade |
+| | ~21 days | Leaf Garden 20 | Long-term goals: hours-to-days per upgrade |
 
 Since 2026-10-30 gathering is ×2 ([03-economy](03-economy.md#production)), which roughly halves the whole map: at the original pace Nectar came at ~2.4 h, Queen's Chamber 4 at ~32 h and Leaf Garden 20 at ~36 days. Build times didn't change, but the simulated player is mostly waiting for resources, not diggers, so ×2 resources is close to ×2 progress.
 
 The sim's player saves up for 8 Minor Soldiers after scouting, to win the "Raid the wild nest" task (see [17-wild-nests](17-wild-nests.md)).
 
-At the end of the run (~40 days) an engaged colony produces roughly 8,400 Foliage, 4,900 Protein and 1,550 Nectar per hour (2,900 / 1,450 / 520 at the original pace).
+At the end of the run (~40 days) an engaged colony produces roughly 8,800 Foliage, 4,400 Protein and 4,000 Nectar per hour (Aphid Pastures ×2.5 since 5 Nov 2026; it was 8,400 / 4,900 / 1,550) (2,900 / 1,450 / 520 at the original pace).
 
 ## Pacing targets (what the test enforces)
 | Milestone | Target |

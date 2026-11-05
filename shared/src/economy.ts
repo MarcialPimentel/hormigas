@@ -19,7 +19,7 @@ import {
   type ResourceId,
   type TerrainId,
 } from './data';
-import { res, scale } from './resources';
+import { res, scale, total } from './resources';
 
 export type ChamberLevels = Partial<Record<ChamberId, number>>;
 export type ResearchLevels = Partial<Record<ResearchId, number>>;
@@ -82,20 +82,22 @@ export function chamberCost(id: ChamberId, level: number): Resources {
   return scale(def.baseCost, Math.pow(def.costFactor, level - 1)) as Resources;
 }
 
-/** Research cost before the Nectar → Protein swap: the data's baseCost, doubled per level. Research time and points come from this. */
+/** A research level's listed cost: the data's baseCost, doubled per level. Research time and points come from this. */
 export function researchBaseCost(id: ResearchId, level: number): Resources {
   return scale(RESEARCH[id].baseCost, Math.pow(FORMULAS.cost.researchCostFactor, level - 1));
 }
 
 /**
- * What a research level costs. Part of its Nectar is paid in Protein instead (researchNectarToProtein):
- * Protein piles up from battles while Nectar is the bottleneck (docs/07-research.md).
+ * What a research level costs: its listed total, split by its branch's Foliage : Protein : Nectar ratio
+ * (researchSplit). Research is the Protein + Nectar sink; Foliage builds (docs/07-research.md).
  */
 export function researchCost(id: ResearchId, level: number): Resources {
-  const c = researchBaseCost(id, level);
-  const { share, proteinPerNectar } = FORMULAS.cost.researchNectarToProtein;
-  const swapped = Math.floor(c.nectar * share);
-  return { foliage: c.foliage, protein: c.protein + swapped * proteinPerNectar, nectar: c.nectar - swapped };
+  const sum = total(researchBaseCost(id, level));
+  const { roundTo, byBranch } = FORMULAS.cost.researchSplit;
+  const w = byBranch[RESEARCH[id].branch as keyof typeof byBranch];
+  const parts = w.foliage + w.protein + w.nectar;
+  const part = (x: number) => Math.round((sum * x) / parts / roundTo) * roundTo;
+  return { foliage: part(w.foliage), protein: part(w.protein), nectar: part(w.nectar) };
 }
 
 export interface TimeContext {
@@ -123,7 +125,7 @@ export function chamberBuildSeconds(
 }
 
 export function researchSeconds(id: ResearchId, level: number, ctx: TimeContext & { pheromone: number }): number {
-  // time comes from the cost before the Nectar → Protein swap, so the swap doesn't slow research down
+  // time comes from the listed cost, not the branch split, so the split never changes how long research takes
   const c = researchBaseCost(id, level);
   const t = ((c.foliage + c.protein) / (FORMULAS.buildTime.researchDivisor * (1 + ctx.pheromone)) / ctx.worldSpeed) * (ctx.timeMultiplier ?? 1) * researchFactor(ctx.research, 'researchTimePct');
   return Math.max(FORMULAS.buildTime.minimumSeconds, Math.round(t));

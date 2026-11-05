@@ -30,7 +30,7 @@ Real ants live like this (pillar 4). They fight neighbouring colonies and tend a
   - Your ants stay with the herd and it makes Nectar for you while they're there.
   - Others can raid your tenders to take the herd.
   - A herd left without tenders wanders off.
-  - Why: Nectar is the bottleneck. This turns it into something players compete over, and keeping ants away from home is a real choice (they aren't there to defend).
+  - Why: Nectar is what research and travel run on (research pays mostly in Protein and Nectar since 5 Nov 2026, [07-research](07-research.md#what-research-costs-protein-and-nectar)). This turns it into something players compete over, and keeping ants away from home is a real choice (they aren't there to defend).
 - **NPCs live around players.**
   - In patches with players and the patches within 2 of them (same region), created when a player first arrives nearby.
   - Not seeded across every empty patch: that would fill far-off land nobody visits and add rows to keep.

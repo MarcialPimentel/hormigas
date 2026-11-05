@@ -1,37 +1,53 @@
-// Fights pay in loot; research pays part of its Nectar in Protein (Marz, 30 Oct 2026; docs/07-research.md, docs/08-combat.md).
+// Fights pay in loot (Marz, 30 Oct 2026); research pays its listed total split by branch, Protein + Nectar heavy (Marz, 5 Nov 2026). docs/07-research.md, docs/08-combat.md.
 import { describe, expect, it } from 'vitest';
 import {
-  FORMULAS, RESEARCH, RESEARCH_IDS, computePoints, lootPct, lootable, researchBaseCost, researchCost, researchSeconds, total,
+  CHAMBERS, FORMULAS, RESEARCH, RESEARCH_IDS, computePoints, lootPct, lootable, researchBaseCost, researchCost, researchSeconds, total,
 } from '../src';
 
-const { share, proteinPerNectar } = FORMULAS.cost.researchNectarToProtein;
+const { roundTo, byBranch } = FORMULAS.cost.researchSplit;
 
-describe('research pays part of its Nectar in Protein', () => {
-  it('swaps the configured share of Nectar for Protein, at every level', () => {
+describe('research pays by its branch ratio', () => {
+  it('splits the listed total by the branch ratio, at every level', () => {
     for (const id of RESEARCH_IDS) {
+      const w = byBranch[RESEARCH[id].branch as keyof typeof byBranch];
       for (const level of [1, 2, 5]) {
-        const base = researchBaseCost(id, level);
+        const sum = total(researchBaseCost(id, level));
         const cost = researchCost(id, level);
-        const swapped = Math.floor(base.nectar * share);
-        expect(cost.foliage).toBe(base.foliage);
-        expect(cost.nectar).toBe(base.nectar - swapped);
-        expect(cost.protein).toBe(base.protein + swapped * proteinPerNectar);
+        // the total is kept, give or take rounding
+        expect(Math.abs(total(cost) - sum)).toBeLessThanOrEqual(roundTo * 1.5);
+        // Protein and Nectar each outweigh Foliage, so research is the Protein + Nectar sink
+        if (sum >= 1000) {
+          expect(cost.protein).toBeGreaterThan(cost.foliage);
+          expect(cost.nectar).toBeGreaterThan(cost.foliage);
+        }
+        expect(cost.protein / sum).toBeCloseTo(w.protein / (w.foliage + w.protein + w.nectar), 1);
       }
     }
   });
 
-  it('Colony Mind 1 example: 0 / 400 / 600 becomes 0 / 1,300 / 300', () => {
-    expect(RESEARCH.colony_mind.baseCost).toEqual({ foliage: 0, protein: 400, nectar: 600 });
-    expect(researchCost('colony_mind', 1)).toEqual({ foliage: 0, protein: 1300, nectar: 300 });
+  it('every branch has a ratio', () => {
+    for (const id of RESEARCH_IDS) expect(byBranch[RESEARCH[id].branch as keyof typeof byBranch]).toBeDefined();
   });
 
-  it('research takes no longer than before the swap', () => {
+  it('examples: Nurse Workers 1 and Nuptial Flight 1', () => {
+    // Nest branch, 1 : 1.75 : 1.75
+    expect(researchCost('nurse_workers', 1)).toEqual({ foliage: 620, protein: 1090, nectar: 1090 });
+    expect(researchCost('nuptial_flight', 1)).toEqual({ foliage: 3560, protein: 6220, nectar: 6220 });
+  });
+
+  it("research time comes from the listed cost, so the split doesn't change it", () => {
     const ctx = { worldSpeed: 1, pheromone: 1 };
     const base = researchBaseCost('colony_mind', 1);
     expect(researchSeconds('colony_mind', 1, ctx)).toBe(Math.max(FORMULAS.buildTime.minimumSeconds, Math.round((base.foliage + base.protein) / (FORMULAS.buildTime.researchDivisor * 2))));
   });
 
-  it("points don't jump: research counts at its pre-swap cost", () => {
+  it('Aphid Pastures make 2.5x their old Nectar (base 25), and fuel keeps its hours (divisor 1,750)', () => {
+    const e = CHAMBERS.aphid_pasture.effect as { base: number };
+    expect(e.base).toBe(25);
+    expect(FORMULAS.travel.fuelDivisor).toBe(1750);
+  });
+
+  it("points don't jump: research counts at its listed cost", () => {
     const research = { colony_mind: 2, formic_acid: 1 };
     const expected = (total(researchBaseCost('colony_mind', 1)) + total(researchBaseCost('colony_mind', 2)) + total(researchBaseCost('formic_acid', 1))) / FORMULAS.points.resourcesPerPoint;
     expect(computePoints([], research).research).toBeCloseTo(expected, 0);
