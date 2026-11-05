@@ -3,7 +3,7 @@
 **Version:** 0.1
 
 ## Build status
-_Current as of Build 16 (2026-11-05)._ Hormigas has no GitHub milestones: each build is a GitHub issue and/or PR. What shipped in each build: [CHANGELOG](../CHANGELOG.md).
+_Current as of Build 18 (2026-11-05)._ Hormigas has no GitHub milestones: each build is a GitHub issue and/or PR. What shipped in each build: [CHANGELOG](../CHANGELOG.md).
 
 | Build | What it delivers | Status |
 |---|---|---|
@@ -25,9 +25,10 @@ _Current as of Build 16 (2026-11-05)._ Hormigas has no GitHub milestones: each b
 | 13 | Scout the swarm ([#153](https://github.com/MarcialPimentel/hormigas/pull/153)) | done (live) |
 | 14 | Swarm sizes ([#160](https://github.com/MarcialPimentel/hormigas/pull/160)) | done (live) |
 | 15 | Plan digs you can't afford yet ([#197](https://github.com/MarcialPimentel/hormigas/issues/197), [04-colony](04-colony.md#build-rules)) | done (live) |
-| 16 | Trade trails: caravans between your colonies and to truce partners and supercolony mates ([#98](https://github.com/MarcialPimentel/hormigas/issues/98), [23-supercolonies](23-supercolonies.md#trade-trails-build-16)) | in review |
-| 17 | Joint raids and the members' board (alliances stage B, rest of [#98](https://github.com/MarcialPimentel/hormigas/issues/98)), and spider dens become alliance raids ([#207](https://github.com/MarcialPimentel/hormigas/issues/207), [24-npcs](24-npcs.md#spider-den-boss)) | next |
-| 18 | Goals in the wilds: the Matabele Ant earned on termite mounds, wild nests going out for windfalls, three new windfalls ([#205](https://github.com/MarcialPimentel/hormigas/issues/205), [#206](https://github.com/MarcialPimentel/hormigas/issues/206), [27-living-world](27-living-world.md#5-goals-in-the-wilds)) | in review |
+| 16 | Trade trails: caravans between your colonies and to truce partners and supercolony mates ([#98](https://github.com/MarcialPimentel/hormigas/issues/98), [23-supercolonies](23-supercolonies.md#trade-trails-build-16)) | done (live) |
+| 17 | Cargo ants: Digging Crews gives Workers a late job, the Hauler moves to Brood Hall 4, the windfall need counts any carrier ([#211](https://github.com/MarcialPimentel/hormigas/issues/211), [05-castes-units](05-castes-units.md#the-carrier-ladder-build-17)) | done (live) |
+| 18 | Goals in the wilds: the Matabele Ant earned on termite mounds, wild nests going out for windfalls, three new windfalls ([#205](https://github.com/MarcialPimentel/hormigas/issues/205), [#206](https://github.com/MarcialPimentel/hormigas/issues/206), [27-living-world](27-living-world.md#5-goals-in-the-wilds)) | done (live) |
+| 19 | Joint raids and the members' board (alliances stage B, rest of [#98](https://github.com/MarcialPimentel/hormigas/issues/98)), and spider dens become alliance raids ([#207](https://github.com/MarcialPimentel/hormigas/issues/207), [24-npcs](24-npcs.md#spider-den-boss)) | next |
 | — | Background music: the colony marches to its own footsteps ([#139](https://github.com/MarcialPimentel/hormigas/pull/139), [sound](sound.md)) | done (live) |
 | — | Music: three songs replace the code-made march (Suno, [sound](sound.md)) | in review |
 | 13 | Scout the swarm: the swarm's size hidden until scouted, Scouts sent out to meet it with visible odds, live battle odds once scouted ([20-swarms](20-swarms.md)) | in review |

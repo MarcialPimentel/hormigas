@@ -29,6 +29,11 @@
 | **Excavation Works** | Speeds up chamber construction | Queen L4 |
 | **Honeypot Gallery** | Protected storage | Queen L4 |
 
+## Digging Crews (Build 17)
+A Nest research (Pher 4, Tunnel Engineering 2, one level) that puts idle Workers to work on the dig. Each **Worker at home when a dig starts** cuts that dig's time by **0.5%**, counting at most **5 Workers per Excavation Works level** (25% off at Excavation Works 10, with 50 Workers). Workers out on missions don't count, and a dig keeps the time it started with, like every other speed-up. It multiplies with Tunnel Engineering (−30% at 6) and the Excavation Works itself. Numbers: `research.json` `digging_crews` (Workers per Excavation level) and `formulas.json` `digCrews` (percent per Worker).
+
+Why: once Media Workers and Haulers arrive, the Worker was a dead caste (see [05-castes-units](05-castes-units.md#the-carrier-ladder-build-17)). Digging is a job no ant had, late-game digs are the longest waits in the game, and keeping Workers home to dig or sending them out to carry is a real choice. It works like the Gardener Minim's Leaf Garden bonus.
+
 ## What chambers cost
 Numbers live in [`data/chambers.json`](data/chambers.json): `baseCost × costFactor^(L−1)`. Production chambers and the Nursery grow ×1.5–1.6 a level, everything else ×2.
 

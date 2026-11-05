@@ -78,7 +78,7 @@ Real ants lay pheromone trails between nests and walk them for days, carrying fo
 - **Not built:** plundering caravans (decided: later, with joint raids), more trails from research, a trail upkeep.
 
 ### Decisions (Marz, 5 Nov 2026)
-- **Trails now, joint raids next build.** Build 16 is own and player trade trails; joint raids and the members' board are Build 17. Reason: each is a large change with its own playtest (joint raids need two accounts in a supercolony).
+- **Trails now, joint raids next build.** Build 16 is own and player trade trails; joint raids and the members' board are Build 19 (Builds 17 and 18 went to cargo ants and goals in the wilds). Reason: each is a large change with its own playtest (joint raids need two accounts in a supercolony).
 - **One trail per colony, research for more later.** With today's player count one each is plenty; add a research once trails are used.
 - **Grassland sends a bundle, Sandy Soil sends Foliage.** Every trail brings food, and a trail to the ground most players start on still pays.
 - **No plunder yet.** Ship peaceful trails first; ambushing caravans needs scouting caravans and open-ground fights, so it can come with joint raids.
@@ -105,7 +105,7 @@ Four new tables, read and written only through `server/src/game/diplomacy.ts`:
 ### Notes for stage B
 - **Joint Raid:** missions from several members that wait at a muster point and arrive together, fought as one attacker with per-owner groups. `simulateBattle` already supports per-owner groups on the defending side (`allies`); the attacking side needs the same. Bosses from #67 are the natural targets.
 - **Trade trails** shipped in Build 16 (above). A trail is a mission (`type = 'trade'`) that is `holding` while it runs; its totals live in `missions.result`, and one `trade_deliver` event at a time carries its delivery number (`n`), so an old event after a recall does nothing. No migration.
-- **Plunder** (Build 17 or later): players without a truce ambush a caravan they've scouted.
+- **Plunder** (Build 19 or later): players without a truce ambush a caravan they've scouted.
 - **Declared wars** (lifting the bash limit between enemies, [10-pvp-rules](10-pvp-rules.md)) are not built.
 
 ## Launch on the live world (migration 010)

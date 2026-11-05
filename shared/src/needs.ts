@@ -4,7 +4,12 @@ import type { CasteId, ChamberId, Resources } from './data';
 import { createRng } from './rng';
 import { stat, type Stats } from './stats';
 
-export type NeedUnlock = { chamber: ChamberId; level: number } | { units: CasteId; count: number } | { stat: string; count: number };
+export type NeedUnlock =
+  | { chamber: ChamberId; level: number }
+  | { units: CasteId; count: number }
+  /** this many ants of these castes together (e.g. any 3 carrying ants) */
+  | { castes: CasteId[]; count: number }
+  | { stat: string; count: number };
 
 export interface NeedDef {
   id: string;
@@ -57,6 +62,7 @@ export function needUnlocked(def: NeedDef, p: NeedInput): boolean {
   if (!u) return true;
   if ('chamber' in u) return (p.chambers[u.chamber] ?? 0) >= u.level;
   if ('units' in u) return (p.units[u.units] ?? 0) >= u.count;
+  if ('castes' in u) return u.castes.reduce((n, id) => n + (p.units[id] ?? 0), 0) >= u.count;
   return stat(p.stats, u.stat) >= u.count;
 }
 

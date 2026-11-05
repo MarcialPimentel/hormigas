@@ -115,12 +115,13 @@ const FB = FORMULAS.buildTime.foundingBoost;
 export function chamberBuildSeconds(
   id: ChamberId,
   level: number,
-  ctx: TimeContext & { excavation: number; terrain: TerrainId },
+  ctx: TimeContext & { excavation: number; terrain: TerrainId; /** ants at home when the dig starts (Digging Crews) */ units?: UnitCounts },
 ): number {
   const c = chamberCost(id, level);
   let t = (c.foliage + c.protein) / (FORMULAS.buildTime.chamberDivisor * (1 + ctx.excavation)) / ctx.worldSpeed;
   t *= 1 + (TERRAIN[ctx.terrain].mods.buildTimePct ?? 0) / 100;
   t *= researchFactor(ctx.research, 'buildTimePct');
+  t *= digCrewFactor(ctx.research, ctx.excavation, ctx.units);
   if (FB.levels.includes(level)) t *= FB.multiplier;
   t *= ctx.timeMultiplier ?? 1;
   return Math.max(FORMULAS.buildTime.minimumSeconds, Math.round(t));
@@ -183,6 +184,27 @@ export function chamberOutputPerHour(
   const amount = (def.effect.base ?? 0) * growth(level) * (1 + terrainPct) * researchFactor(research, PRODUCTION_PCT[r]) * workforceRatio * GATHER_MULTIPLIER * worldSpeed;
   return { resource: r, amount };
 }
+
+// ---------- Digging Crews (Build 17, docs/04-colony.md) ----------
+
+const CREWS = FORMULAS.digCrews;
+/** The caste that digs with Digging Crews. */
+export const DIGGER = CREWS.caste as CasteId;
+
+/** How many Workers can help dig: Digging Crews' digCrewsPerExcavationLevel per Excavation Works level (0 without the research). */
+export const digCrewCap = (research: ResearchLevels | undefined, excavation: number): number =>
+  Math.floor(researchSum(research, 'digCrewsPerExcavationLevel') * excavation);
+
+/** Workers at home that count toward the dig (capped). */
+export const digCrewsCounted = (research: ResearchLevels | undefined, excavation: number, units?: UnitCounts): number =>
+  Math.min(units?.[DIGGER] ?? 0, digCrewCap(research, excavation));
+
+/** Multiplier on dig time from Workers at home: each counted Worker cuts pctEach %. */
+export const digCrewFactor = (research: ResearchLevels | undefined, excavation: number, units?: UnitCounts): number =>
+  1 - (digCrewsCounted(research, excavation, units) * CREWS.pctEach) / 100;
+
+/** Percent off dig time per counted Worker. */
+export const DIG_CREW_PCT_EACH: number = CREWS.pctEach;
 
 // ---------- Gardener Minims (Build 11, docs/03-economy.md) ----------
 
