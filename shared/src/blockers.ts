@@ -27,12 +27,14 @@ export interface BlockerColony {
 export interface BlockerPlayer {
   research: ResearchLevels;
   researchJob?: { research: string } | null;
+  /** lifetime counters some unlocks ask for (deed.beat:termite); see DEED_COUNTERS */
+  deeds?: Record<string, number>;
 }
 
-const needs = (unlock: Requirements, chambers: ChamberLevels, research: ResearchLevels): Blocker | null => {
-  const missing = missingRequirements(unlock, chambers, research);
+const needs = (unlock: Requirements, chambers: ChamberLevels, research: ResearchLevels, deeds?: Record<string, number>): Blocker | null => {
+  const missing = missingRequirements(unlock, chambers, research, deeds);
   if (!missing.length) return null;
-  const list = missing.map((m) => `${m.name} ${m.need}`).join(', ');
+  const list = missing.map((m) => (m.key.startsWith('deed.') ? `${m.name}: ${m.have}/${m.need}` : `${m.name} ${m.need}`)).join(', ');
   return { code: 'locked', message: `Requires ${list}.`, short: `Needs ${list}` };
 };
 
@@ -92,7 +94,7 @@ export function broodBlocker(
   p: BlockerPlayer,
 ): Blocker | null {
   if (lvl(c.chambers, 'brood_hall') < 1) return { code: 'locked', message: 'Build a Brood Hall first.', short: 'Build a Brood Hall first' };
-  const locked = needs(def.unlock, c.chambers, p.research);
+  const locked = needs(def.unlock, c.chambers, p.research, p.deeds);
   if (locked) return locked;
   if (c.buildJob?.chamber === 'brood_hall') return { code: 'busy', message: 'The Brood Hall is being enlarged.', short: 'Brood Hall is being enlarged' };
   if (kind === 'defense' && def.max) {

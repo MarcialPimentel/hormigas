@@ -13,6 +13,7 @@ import { enqueueUnits, startDigestion, stopDigestion } from '../game/brood';
 import { activeMissions, incomingMissions, missionViews } from '../game/missions';
 import { claimQuest, questStatus } from '../game/quests';
 import { claimNeed, journalStatus, markJournalSeen, needsStatus, rerollNeed, setTitle } from '../game/comeback';
+import { playerDeeds } from '../game/stats';
 import { hasForagedBefore } from '../game/forage';
 import { membershipOf } from '../game/diplomacy';
 import { isInactive } from '@hormigas/shared';
@@ -73,6 +74,8 @@ export async function gameRoutes(app: FastifyInstance) {
         username: player.username,
         research: player.research,
         researchJob: player.researchJob,
+        /** counters some unlocks ask for, e.g. termite mounds beaten for the Matabele Ant (docs/05-castes-units.md) */
+        deeds: await playerDeeds(q, req.playerId),
         points: player.points,
         protectedUntil: player.protectedUntil,
         timeMultiplier: await timeMultiplier(q, world.id, player.points.total, t),

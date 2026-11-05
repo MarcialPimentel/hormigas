@@ -81,6 +81,8 @@ const ACID_DROPS = (x: number, y: number) =>
   `<g fill="#c8d44a" stroke="#6f7a1a" stroke-width="0.8"><circle cx="${x}" cy="${y}" r="2.6"/><circle cx="${x - 5}" cy="${y - 6}" r="2.1"/><circle cx="${x - 8}" cy="${y - 13}" r="1.7"/><circle cx="${x - 2}" cy="${y - 10}" r="1.4"/></g>`;
 // Build 11 (docs/05-castes-units.md)
 const SUPER = { base: '#7a3418', light: '#c0704a', shade: '#4e1f0c', far: '#3a1708' };
+// Megaponera: big, glossy black termite raiders
+const MEGAPONERA = { base: '#2e2824', light: '#6b625b', shade: '#1a1512', far: '#100c0a' };
 const POLYERGUS = { base: '#b0402a', light: '#e2836a', shade: '#74251a', far: '#561a12' };
 const DESERT = { base: '#c48a3c', light: '#efc786', shade: '#8a5c22', far: '#6a4418' };
 const MINIM = { base: '#9a6a3c', light: '#d6a676', shade: '#664424', far: '#4e331a' };
@@ -122,6 +124,11 @@ const UNIT: Record<CasteId, () => string> = {
   slave_maker: () =>
     ground() + ant('soldier', 30, 49, 58, { palette: POLYERGUS }) +
     `<g stroke="${INK}" stroke-width="1.8" fill="none" stroke-linecap="round"><path d="M52,30 q8,-1 9,6"/><path d="M52,34 q7,3 6,8"/></g>`,
+  // Megaponera: a black termite raider carrying a pale termite home in its jaws
+  matabele: () =>
+    ground() + ant('soldier', 28, 49, 58, { palette: MEGAPONERA }) +
+    `<g stroke="${INK}" stroke-width="1.2"><ellipse cx="57" cy="31" rx="6" ry="3.4" fill="#efe3c4" transform="rotate(-20 57 31)"/><circle cx="51.5" cy="33.5" r="2.4" fill="#d9a54a"/></g>` +
+    `<path d="M54,29 q3,-1 6,0 M54,32 q3,1 6,1" stroke="#c9b48c" stroke-width="0.8" fill="none"/>`,
   // Cataglyphis: long legs, under the sun
   desert_ant: () =>
     `<circle cx="50" cy="13" r="7" fill="#f2c14e"/><g stroke="#f2c14e" stroke-width="1.6" stroke-linecap="round"><path d="M50,2 v-0 M39,13 h-3 M61,13 h3 M42,5 l-2,-2 M58,5 l2,-2"/></g>` +

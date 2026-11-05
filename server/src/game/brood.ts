@@ -28,6 +28,7 @@ import { GameError } from '../errors';
 import { advance, requireAffordable, getPlayer, lockOwnColony, saveColony } from '../colony';
 import { getWorld } from '../world';
 import { timeMultiplier } from './boost';
+import { playerDeeds } from './stats';
 
 export const MAX_BATCH = 100_000;
 
@@ -49,7 +50,7 @@ export async function enqueueUnits(q: Tx, playerId: number, colonyId: number, ki
 
   const broodHall = lvl(c.chambers, 'brood_hall');
   // same checks the Brood screen uses to grey out the button
-  const blocked = broodBlocker(kind, id, def, count, c, player);
+  const blocked = broodBlocker(kind, id, def, count, c, { ...player, deeds: await playerDeeds(q, playerId) });
   if (blocked) throw new GameError(blocked.code, blocked.message);
 
   // Feeding the brood (docs/05-castes-units.md): extra Protein per unit, raised faster

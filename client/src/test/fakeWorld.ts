@@ -152,7 +152,7 @@ export function stateAt(parties: Party[], now: number): ServerState {
     world: { id: 0, name: 'Test world', speed: 1 },
     player: {
       id: 1, username: 'tester', research: {}, researchJob: null, points: { total: 0, economy: 0, research: 0, military: 0 },
-      protectedUntil: 0, timeMultiplier: 1, isAdmin: false, firstForage: false, supercolony: null, pendingDiplomacy: 0,
+      protectedUntil: 0, timeMultiplier: 1, isAdmin: false, firstForage: false, supercolony: null, pendingDiplomacy: 0, deeds: { 'beat:termite': 3 },
     },
     colonies: COLONIES,
     colony: { ...COLONIES[0], units: {}, chambers: {}, resources: { foliage: 0, protein: 0, nectar: 0 } } as unknown as ServerState['colony'],

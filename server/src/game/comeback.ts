@@ -7,6 +7,7 @@ import {
   daySummary,
   journalEntry,
   journalTiers,
+  titleFor,
   needDay,
   needDayStart,
   needDef,
@@ -224,6 +225,7 @@ export async function setTitle(q: Q, playerId: number, entryId: string | null) {
   if (!e) throw new GameError('no_entry', 'No such journal entry.');
   const r = await q.query('SELECT tier FROM player_journal WHERE player_id = $1 AND entry_id = $2', [playerId, entryId]);
   if (!(r.rows[0]?.tier >= 1)) throw new GameError('not_earned', 'Earn that page of the journal first.');
-  await q.query('UPDATE players SET title = $2 WHERE id = $1', [playerId, e.title]);
-  return e.title;
+  const title = titleFor(e, r.rows[0].tier);
+  await q.query('UPDATE players SET title = $2 WHERE id = $1', [playerId, title]);
+  return title;
 }

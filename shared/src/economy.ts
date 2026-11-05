@@ -1,7 +1,9 @@
 // Economy rules: costs, build times, production, workforce, storage, space, unlocks.
 // Spec: docs/02-progression.md, docs/03-economy.md, docs/04-colony.md, docs/data/formulas.json
 import {
+  CASTES,
   CHAMBERS,
+  DEFENSES,
   CHAMBER_IDS,
   RESEARCH,
   RESOURCES_DATA,
@@ -283,10 +285,22 @@ export interface MissingRequirement {
   have: number;
 }
 
-export function missingRequirements(req: Requirements, chambers: ChamberLevels, research: ResearchLevels): MissingRequirement[] {
+/** What a deed requirement ("deed.<counter>") is called on screen. */
+const DEED_LABEL: Record<string, string> = { 'beat:termite': 'Termite mounds beaten' };
+export const deedLabel = (counter: string): string => DEED_LABEL[counter] ?? counter;
+
+/**
+ * What still blocks an unlock. Keys are chambers, "research.<id>", or "deed.<counter>" for a lifetime counter
+ * (shared/src/stats.ts) such as termite mounds beaten. Deeds count as 0 when `deeds` isn't given.
+ */
+export function missingRequirements(req: Requirements, chambers: ChamberLevels, research: ResearchLevels, deeds?: Record<string, number>): MissingRequirement[] {
   const missing: MissingRequirement[] = [];
   for (const [key, need] of Object.entries(req)) {
-    if (key.startsWith('research.')) {
+    if (key.startsWith('deed.')) {
+      const counter = key.slice(5);
+      const have = deeds?.[counter] ?? 0;
+      if (have < need) missing.push({ key, name: deedLabel(counter), need, have });
+    } else if (key.startsWith('research.')) {
       const id = key.slice(9) as ResearchId;
       const have = lvl(research, id);
       if (have < need) missing.push({ key, name: RESEARCH[id]?.name ?? id, need, have });
@@ -299,8 +313,13 @@ export function missingRequirements(req: Requirements, chambers: ChamberLevels, 
   return missing;
 }
 
-export const isUnlocked = (req: Requirements, chambers: ChamberLevels, research: ResearchLevels): boolean =>
-  missingRequirements(req, chambers, research).length === 0;
+export const isUnlocked = (req: Requirements, chambers: ChamberLevels, research: ResearchLevels, deeds?: Record<string, number>): boolean =>
+  missingRequirements(req, chambers, research, deeds).length === 0;
+
+/** The lifetime counters any unlock asks for (e.g. "beat:termite"): the server sends these with the player. */
+export const DEED_COUNTERS: string[] = [...new Set(
+  [...Object.values(CASTES), ...Object.values(DEFENSES)].flatMap((d) => Object.keys(d.unlock).filter((k) => k.startsWith('deed.')).map((k) => k.slice(5))),
+)];
 
 // ---------- why can't I afford it? ----------
 
