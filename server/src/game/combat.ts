@@ -241,6 +241,7 @@ export async function resolveRaid(q: Tx, m: Mission, at: number, opts: { attacke
     loot,
     corpses,
     ...(carried > 0 ? { corpsesCarried: carried } : {}),
+    ...(result.rescued ? { rescued: result.rescued } : {}),
   };
   m.result = { winner: result.winner, loot, corpses };
   const verb = result.retreatedAfterRound != null ? 'fell back' : result.winner === 'attacker' ? 'won' : result.winner === 'defender' ? 'lost' : 'drew';

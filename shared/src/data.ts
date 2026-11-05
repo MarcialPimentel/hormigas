@@ -43,6 +43,8 @@ export const CASTE_IDS = [
   // Build 11: the full roster (docs/05-castes-units.md)
   'supermajor',
   'slave_maker',
+  // earned by beating termite mounds, not researched (docs/05-castes-units.md#the-matabele-ant)
+  'matabele',
   'desert_ant',
   'gardener_minim',
   // the middle carrier between Worker and Hauler (docs/05-castes-units.md)
@@ -165,6 +167,8 @@ export interface CasteDef extends CombatStats {
   overpowers?: string[];
   /** Lives only in NPC colonies (termites, spiders): never raised by players. */
   npcOnly?: boolean;
+  /** Matabele Ants: after a won fight against any of `vs`, this share of the caste's fallen come home alive. */
+  rescue?: { share: number; vs: string[] };
 }
 export interface DefenseDef extends CombatStats {
   name: string;

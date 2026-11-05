@@ -120,7 +120,7 @@ export function ActivityList({ go, trips = true, quiet = false }: { go: (screen:
             </>
           ) : (
             <>
-              <strong>{i.type === 'raid' || i.type === 'claim' ? 'Raid incoming' : 'Enemy scouts incoming'}</strong>{i.windfall ? ` on your windfall (${fmtCoords(i.herd)})` : i.herd ? ` on your aphid herd (${fmtCoords(i.herd)})` : ''} from {i.from} ({fmtCoords(i.origin)}){i.type === 'raid' || i.type === 'claim' ? ` — ${i.unitCount.toLocaleString()} units` : ''}
+              <strong>{i.type === 'claim' && i.wild ? 'Wild ants coming' : i.type === 'raid' || i.type === 'claim' ? 'Raid incoming' : 'Enemy scouts incoming'}</strong>{i.windfall ? ` on your windfall (${fmtCoords(i.herd)})` : i.herd ? ` on your aphid herd (${fmtCoords(i.herd)})` : ''} from {i.from} ({fmtCoords(i.origin)}){i.type === 'raid' || i.type === 'claim' ? ` — ${i.unitCount.toLocaleString()} units` : ''}
               {i.windfall && i.type !== 'scout' && <span className="muted small"> They're coming to fight your ants for it. Send more soldiers, or call your ants home with a load before they land.</span>}
               {i.herd && !i.windfall && i.type === 'raid' && <span className="muted small"> They're after your tenders and the honeydew. Send more soldiers to tend it, or call your tenders home before they land.</span>}
             </>

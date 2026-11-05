@@ -22,10 +22,11 @@ This is real ant behaviour (pillar 4). Ants from neighbouring colonies race to l
 
   | Kind | Chance | Food | Size |
   |---|---|---|---|
-  | Dead grasshopper | 40% | Protein | ×1 |
-  | Fallen fig | 30% | 60% Nectar, 40% Foliage | ×1 |
-  | Leafy branch | 25% | Foliage | ×1 |
-  | Dead lizard | 5% | Protein | ×3 |
+  | Dead grasshopper | 31% | Protein | ×1 |
+  | Fallen fig | 23% | 60% Nectar, 40% Foliage | ×1 |
+  | Leafy branch | 19% | Foliage | ×1 |
+  | Dead lizard | 4% | Protein | ×3 |
+  | Dead beetle, sugar spill, picnic crumbs | 23% together | see [below](#wild-ants-come-for-windfalls) | |
 
   The pile is **4k / 10k / 18k / 30k / 45k / 70k** by site level, times the kind's size. The level follows the area's strongest active player, like aphid herds and wild nests, and never drops. The gathering multiplier doesn't apply: a windfall is the world's food, not the colony's own gathering.
 - **Guards:** half the time (`guardChance`), wild ants got there first and guard it. There are a few Minor Soldiers at level 1, up to 80 Minor and 35 Major Soldiers at level 6.
@@ -54,8 +55,41 @@ This is real ant behaviour (pillar 4). Ants from neighbouring colonies race to l
 - **Reports:** a windfall dropped nearby (with **Show on the map**), your ants hold it, it was stripped clean, it rotted.
 - **Battle reports** read "Fight for Dead grasshopper", and "your ants were driven off" for the side that lost it.
 
+## Wild ants come for windfalls
+_Build 18 ([#206](https://github.com/MarcialPimentel/hormigas/issues/206)), decided by Marz 5 Nov 2026. Numbers in `npc.json` (`windfalls.wildParties`, `windfalls.kinds[].eaters`), first pass for playtest._
+
+Before this, wild ants only guarded a windfall when it dropped, so in a quiet area nobody contested it. Now the wild nests nearby go out for food too, as real colonies do.
+
+- **When a windfall drops**, a wild nest within **1 patch** whose species eats it sends a party after **1–4 h**, with a **60%** chance. A picnic always draws **3** parties. After each party sets off, another may follow (**35%**), until it rots.
+- **Each species goes for the food it really eats**, so you can guess who's coming:
+
+  | Windfall | Who comes for it |
+  |---|---|
+  | Fallen fig | Honeypot Ants |
+  | Sugar spill | Honeypot and Pavement Ants |
+  | Leafy branch | Termites |
+  | Dead grasshopper, dead beetle | Pavement, Fire, Carpenter and Trap-jaw Ants |
+  | Dead lizard, picnic crumbs | Any wild nest nearby |
+
+- **The party is 40% of each kind of ant in the nest**, so the nest is weaker at home while they're out: a chance to raid it. It walks at half speed. A nest that already has a party out (or holding a windfall) sends no other.
+- **It claims the windfall like a player.** Free: it holds it. Held by a player: it fights the holders under the normal battle rules. Held by wild ants (guards, or another nest's party): it turns round and walks home, because wild ants never fight wild ants. A windfall already held by wild ants draws no party at all.
+- **It hauls loads into its nest's store** every 2 h, like a player. Wild ants carry 40 per ant on top of their castes' cargo (termites carry nothing otherwise). Fight them off the windfall, or raid the store back.
+- **Seen and warned:** players see the windfall "held by" the nest, by name. When a party heads for a windfall you hold, Under way says **Wild ants coming** and the party marches on the Whole Yard and 3D Patch. There's no report otherwise, to keep reports quiet. Wild parties get no reports, counters or points.
+- **Spiders stay home**: they never raid.
+
+**New kinds of windfall** (weights out of 130 with the old four):
+
+| Kind | Chance | Food | Size | What's different |
+|---|---|---|---|---|
+| Dead beetle | 12% | Protein | ×1.5 | Hard shell: each load carries only half the holders' cargo (`carryPct` 50) |
+| Sugar spill | 9% | Nectar | ×0.6 | Rots in 4 h instead of 12 (`lastsHours`) |
+| Picnic crumbs | 2% | 40% Foliage, 30% Protein, 30% Nectar | ×4 | Draws 3 wild parties, always |
+
+Each has a Journal page: Dead beetle (*Shell-cracker*), Sugar spill (*Sweet-tooth*), and a hidden oddity for Picnic crumbs (*Picnic-raider*).
+
 ## Open Questions
 - Is 8–16 h per site too many? With 5 sites in reach, an active player sees a few drops a day. Watch whether reports feel like noise.
-- Should wild nests send parties to windfalls that are already held, so quiet areas still get contested? (Today wild ants only guard at the start.)
+- ~~Should wild nests send parties to windfalls that are already held?~~ Decided (5 Nov 2026): yes, built in Build 18 (above).
+- Are the wild-party numbers right? Watch whether players feel they lose too many windfalls to the wild, or that quiet areas are still quiet. The dials are `wildParties.chance`, `repeatChance` and `partyShare`.
 - Should the 3D patch show the holders' column walking loads home every 2 h? (Today only the party going out and coming back is drawn.)
 - War trails (standing raid orders that keep marching while you're away) are the next step towards constant marching. Design them with the trade-trail plumbing.

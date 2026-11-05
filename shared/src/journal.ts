@@ -13,6 +13,8 @@ export interface JournalEntryDef {
   /** goals for each stage: one for a discovery, three for a deed (sketch, full entry, coloured plate) */
   tiers: number[];
   title: string;
+  /** a title per stage, when the page's title grows with it (Termites: Mound-breaker → Termite-hunter → Bane of the Mounds) */
+  titles?: string[];
   text: string;
   /** an unwritten page until earned */
   hidden?: boolean;
@@ -46,5 +48,13 @@ export function journalTiers(stats: Stats, kept: Record<string, number> = {}): R
   return out;
 }
 
-/** Titles the player can wear: every entry with at least its first stage. */
-export const earnedTitles = (tiers: Record<string, number>): string[] => JOURNAL.filter((e) => (tiers[e.id] ?? 0) >= 1).map((e) => e.title);
+/** The title a page gives at a stage: its stage's own title when it has one per stage, else its one title. */
+export const titleFor = (e: JournalEntryDef, tier: number): string =>
+  e.titles?.length ? e.titles[Math.min(Math.max(tier, 1), e.titles.length) - 1] : e.title;
+
+/** Every title a page can give, at any stage. */
+export const allTitles = (e: JournalEntryDef): string[] => (e.titles?.length ? e.titles : [e.title]);
+
+/** Titles the player can wear: every entry with at least its first stage, at the stage reached. */
+export const earnedTitles = (tiers: Record<string, number>): string[] =>
+  JOURNAL.filter((e) => (tiers[e.id] ?? 0) >= 1).map((e) => titleFor(e, tiers[e.id]));

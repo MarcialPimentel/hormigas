@@ -119,6 +119,11 @@ export function BattleReport({ data, onReplay }: { data: any; onReplay?: () => v
           The raiders' Slave-makers carried <strong>{fmtFull(data.corpsesCarried)} Protein</strong> of the dead straight home.
         </p>
       )}
+      {data.rescued && Object.keys(data.rescued).length > 0 && (
+        <p className="small">
+          The Matabele Ants carried their wounded home: <Counts counts={data.rescued} /> will fight again.
+        </p>
+      )}
       {data.corpses > 0 && (
         <p className="small">
           The fallen left <strong>{fmtFull(data.corpses)} Protein</strong> in corpses at {fmtCoords(data.target)}. Anyone can haul them — be quick.

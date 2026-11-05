@@ -1,7 +1,7 @@
 // Windfalls (docs/25-windfalls.md): contested food that drops in the wilds, claimed by fighting whoever holds it.
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { FastifyInstance } from 'fastify';
-import { SITE_SPOTS, WINDFALLS, groupCargo, windfallPile, type WindfallKind } from '@hormigas/shared';
+import { SITE_SPOTS, WINDFALLS, groupCargo, windfallLastsHours, windfallPile, type WindfallKind } from '@hormigas/shared';
 import { getPool } from '../src/db';
 import { setupTest, teardownTest, newPlayer, newPlayerBeside, setColony, setPlayer, type Client } from './helpers';
 
@@ -22,7 +22,7 @@ const site = (patch: number) => ({ region: ca.coords.region, patch, spot: SITE_S
 const spotOf = async (who: Client, patch: number) => (await mapOf(who, ca.coords.region, patch)).find((s: any) => s.spot === SITE_SPOTS.windfall);
 
 /** Push every pending drop far off, so only the drops a test asks for happen. */
-const holdDrops = () => getPool().query("UPDATE events SET due_at = due_at + 1000000000000 WHERE NOT done AND type = 'windfall_drop' AND due_at < 2500000000000");
+const holdDrops = () => getPool().query("UPDATE events SET due_at = due_at + 1000000000000 WHERE NOT done AND type IN ('windfall_drop', 'windfall_wild') AND due_at < 2500000000000");
 
 /** Bring a site's next drop forward to now and run it, then set what fell (so the test doesn't depend on the dice). */
 async function dropNow(patch: number, opts: { kind?: WindfallKind; guards?: Record<string, number> } = {}) {
@@ -34,11 +34,14 @@ async function dropNow(patch: number, opts: { kind?: WindfallKind; guards?: Reco
   expect(after.npc.drop).not.toBeNull();
   const kind: WindfallKind = opts.kind ?? after.npc.drop.kind;
   const pile = windfallPile(kind, after.npc.level);
-  const npc = { ...after.npc, drop: { ...after.npc.drop, kind, pile, guarded: !!opts.guards } };
+  // the rot time follows the kind set here, not the one rolled (a sugar spill dries sooner)
+  const endsAt = Number(after.npc.drop.startedAt) + (windfallLastsHours(kind) * H) / speed;
+  await getPool().query("UPDATE events SET due_at = $2 WHERE NOT done AND type = 'windfall_rot' AND (payload->>'colonyId')::int = $1", [row.id, endsAt]);
+  const npc = { ...after.npc, drop: { ...after.npc.drop, kind, pile, endsAt, guarded: !!opts.guards } };
   await getPool().query('UPDATE colonies SET units = $2, npc = $3, foliage = $4, protein = $5, nectar = $6, name = $7 WHERE id = $1', [
     row.id, JSON.stringify(opts.guards ?? {}), JSON.stringify(npc), pile.foliage, pile.protein, pile.nectar, WINDFALLS.kinds[kind].name,
   ]);
-  return { id: row.id as number, pile, endsAt: Number(after.npc.drop.endsAt) };
+  return { id: row.id as number, pile, endsAt };
 }
 
 beforeAll(async () => {

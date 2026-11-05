@@ -1,5 +1,5 @@
 // Lifetime counters per player (docs/26-come-back.md, shared/src/stats.ts). Bumped where things happen.
-import { derivedStats, type Stats } from '@hormigas/shared';
+import { DEED_COUNTERS, derivedStats, type Stats } from '@hormigas/shared';
 import type { Q } from '../db';
 import { now } from '../clock';
 import { advance, playerColonies } from '../colony';
@@ -31,5 +31,14 @@ export async function playerStats(q: Q, playerId: number): Promise<Stats> {
   const t = now();
   const cols = (await playerColonies(q, playerId)).map((c) => advance(c, t));
   Object.assign(out, derivedStats(cols.map((c) => ({ chambers: c.chambers, raised: c.raised ?? {} }))));
+  return out;
+}
+
+/** The counters unlocks ask for (DEED_COUNTERS, e.g. termite mounds beaten for the Matabele Ant), 0 when not yet bumped. */
+export async function playerDeeds(q: Q, playerId: number): Promise<Record<string, number>> {
+  const out: Record<string, number> = Object.fromEntries(DEED_COUNTERS.map((k) => [k, 0]));
+  if (!DEED_COUNTERS.length) return out;
+  const r = await q.query('SELECT key, value FROM player_stats WHERE player_id = $1 AND key = ANY($2::text[])', [playerId, DEED_COUNTERS]);
+  for (const row of r.rows) out[row.key] = Number(row.value);
   return out;
 }

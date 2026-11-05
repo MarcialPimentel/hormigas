@@ -6,7 +6,7 @@ import type { UnitCounts } from './economy';
 import type { HerdState, HerdTender } from './herds';
 import type { Rng } from './rng';
 
-export type WindfallKind = 'grasshopper' | 'fig' | 'branch' | 'lizard';
+export type WindfallKind = 'grasshopper' | 'fig' | 'branch' | 'lizard' | 'beetle' | 'sugar' | 'picnic';
 
 interface WindfallKindDef {
   name: string;
@@ -16,6 +16,24 @@ interface WindfallKindDef {
   /** percent of the pile per resource */
   mix: Resources;
   text: string;
+  /** the wild species that come for it ("any": every wild nest but spiders) */
+  eaters: string[];
+  /** rots sooner or later than the usual lastsHours (a sugar spill dries fast) */
+  lastsHours?: number;
+  /** share of a holder's cargo it gives up per load (a beetle's shell is slow work); 100 when missing */
+  carryPct?: number;
+  /** wild parties it always draws (picnic crumbs); otherwise one, with wildParties.chance */
+  parties?: number;
+}
+
+interface WildPartiesData {
+  chance: number;
+  delayHours: [number, number];
+  repeatChance: number;
+  range: number;
+  partyShare: number;
+  speedPct: number;
+  carryEach: number;
 }
 
 interface WindfallData {
@@ -29,11 +47,13 @@ interface WindfallData {
   pile: number[];
   guards: UnitCounts[];
   kinds: Record<WindfallKind, WindfallKindDef>;
+  wildParties: WildPartiesData;
 }
 
 export const WINDFALLS = NPC_DATA.windfalls as unknown as WindfallData;
 export const WINDFALL_KINDS = Object.keys(WINDFALLS.kinds) as WindfallKind[];
 export const WINDFALL_MAX_LEVEL = WINDFALLS.pile.length;
+export const WILD_PARTIES = WINDFALLS.wildParties;
 
 /** The food lying on a windfall site right now. */
 export interface WindfallDrop {
@@ -110,3 +130,46 @@ export function firstWindfallHours(rng: Rng): number {
 
 /** "Dead grasshopper" for a site with a drop, "Windfall" for an empty one. */
 export const windfallName = (state: WindfallState) => (state.drop ? WINDFALLS.kinds[state.drop.kind].name : WINDFALLS.name);
+
+// ---------- wild ants come for windfalls (docs/25-windfalls.md#wild-ants-come-for-windfalls) ----------
+
+/** Hours (world speed 1) a windfall of this kind lies there before it rots. */
+export const windfallLastsHours = (kind: WindfallKind): number => WINDFALLS.kinds[kind].lastsHours ?? WINDFALLS.lastsHours;
+
+/** How much a holding party can strip per load: its cargo, less for a hard-shelled beetle. */
+export const windfallLoadCap = (kind: WindfallKind | undefined, cargo: number): number =>
+  Math.floor((cargo * (kind ? WINDFALLS.kinds[kind].carryPct ?? 100 : 100)) / 100);
+
+/** Does this wild species come for this kind of windfall? Spiders never leave their den. */
+export function eatsWindfall(species: string | undefined, kind: WindfallKind): boolean {
+  if (!species || species === 'spider') return false;
+  const eaters = WINDFALLS.kinds[kind].eaters;
+  return eaters.includes('any') || eaters.includes(species);
+}
+
+/** How many wild parties a new windfall draws: a picnic always draws its `parties`, the rest one, by chance. */
+export function wildPartiesFor(kind: WindfallKind, rng: Rng): number {
+  const fixed = WINDFALLS.kinds[kind].parties;
+  if (fixed) return fixed;
+  return rng() < WILD_PARTIES.chance ? 1 : 0;
+}
+
+/** Hours (world speed 1) until a wild party sets off for a windfall. */
+export function wildPartyDelayHours(rng: Rng): number {
+  const [lo, hi] = WILD_PARTIES.delayHours;
+  return lo + rng() * (hi - lo);
+}
+
+/** The ants a wild nest sends: partyShare of each kind it has. Empty when it's too small to send anyone. */
+export function wildWindfallParty(units: UnitCounts): UnitCounts {
+  const out: UnitCounts = {};
+  for (const [id, n] of Object.entries(units)) {
+    const k = Math.floor((n ?? 0) * WILD_PARTIES.partyShare);
+    if (k > 0) out[id as keyof UnitCounts] = k;
+  }
+  return out;
+}
+
+/** What wild holders carry home per load, on top of their castes' cargo: termites and wild ants carry by the mouthful. */
+export const wildCarry = (units: UnitCounts): number =>
+  Object.values(units).reduce((a, n) => a + (n ?? 0), 0) * WILD_PARTIES.carryEach;

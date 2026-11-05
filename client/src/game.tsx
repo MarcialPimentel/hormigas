@@ -47,6 +47,8 @@ export interface ServerState {
     supercolony: null | { supercolonyId: number; name: string; founderId: number };
     /** Truce offers and supercolony invitations waiting for your answer. */
     pendingDiplomacy: number;
+    /** Lifetime counters some unlocks ask for, e.g. termite mounds beaten ("beat:termite") for the Matabele Ant. */
+    deeds?: Record<string, number>;
   };
   colonies: { id: number; name: string; coords: { region: number; patch: number; spot: number } }[];
   colony: ServerColony | null;

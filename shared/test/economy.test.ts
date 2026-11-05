@@ -5,6 +5,7 @@ import {
   workforce, productionPerHour, storageCapacity, protectedAmount, accrue,
   spaceUsed, spaceMax, missingRequirements, isUnlocked, res, shortfalls, explainShortfall, GATHER_MULTIPLIER,
   chamberOutputPerHour, FORMULAS,
+  deedLabel,
 } from '../src';
 
 const G = GATHER_MULTIPLIER;
@@ -17,11 +18,13 @@ describe('data integrity', () => {
     expect(Object.keys(RESEARCH).sort()).toEqual([...RESEARCH_IDS].sort());
     expect(Object.keys(TERRAIN).sort()).toEqual([...TERRAIN_IDS].sort());
   });
-  it('every requirement key points at a real chamber or research', () => {
+  it('every requirement key points at a real chamber, research or named deed', () => {
     const all = [...Object.values(CHAMBERS), ...Object.values(CASTES), ...Object.values(DEFENSES), ...Object.values(RESEARCH)];
     for (const def of all) {
       for (const key of Object.keys(def.unlock)) {
-        if (key.startsWith('research.')) expect(RESEARCH_IDS).toContain(key.slice(9));
+        // deeds are lifetime counters (Matabele Ant: deed.beat:termite); each needs a name for the Brood Hall
+        if (key.startsWith('deed.')) expect(deedLabel(key.slice(5))).not.toBe(key.slice(5));
+        else if (key.startsWith('research.')) expect(RESEARCH_IDS).toContain(key.slice(9));
         else expect(CHAMBER_IDS).toContain(key);
       }
     }

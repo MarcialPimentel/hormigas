@@ -36,7 +36,7 @@ export interface Order {
   id: string;
   label: string;
   group: 'Send' | 'Incoming';
-  type: MissionType | 'raid_in' | 'scout_in' | 'swarm_in' | 'delivery_in';
+  type: MissionType | 'raid_in' | 'scout_in' | 'swarm_in' | 'delivery_in' | 'claim_in';
   to: Place;
   from?: Place;
   units?: Record<string, number>;
@@ -64,6 +64,8 @@ export const ORDERS: Order[] = [
   { id: 'scout_in', label: 'Scouts on you', group: 'Incoming', type: 'scout_in', from: 'rival', to: 'home' },
   { id: 'swarm_in', label: 'Army ant swarm', group: 'Incoming', type: 'swarm_in', from: 'wildsFar', to: 'home' },
   { id: 'delivery_in', label: 'Delivery to you', group: 'Incoming', type: 'delivery_in', from: 'rivalFar', to: 'second' },
+  // a wild nest's party coming for a windfall you hold (docs/25-windfalls.md#wild-ants-come-for-windfalls)
+  { id: 'claim_in', label: 'Wild ants for windfall', group: 'Incoming', type: 'claim_in', from: 'wildNest', to: 'windfall' },
 ];
 
 /** A party on the test clock. Times are ms on that clock. */
@@ -141,10 +143,12 @@ function incomingRow(p: Party) {
   const t = p.order.type;
   const target = PLACES[p.order.to];
   return {
-    id: p.id, type: t === 'raid_in' ? 'raid' : t === 'scout_in' ? 'scout' : t === 'swarm_in' ? 'swarm' : 'transport',
+    id: p.id, type: t === 'raid_in' ? 'raid' : t === 'scout_in' ? 'scout' : t === 'swarm_in' ? 'swarm' : t === 'claim_in' ? 'claim' : 'transport',
     hostile: t !== 'delivery_in', origin: p.from, targetColonyId: COLONIES.find((c) => c.coords === target)?.id ?? 1,
     departAt: p.departAt, arriveAt: p.arriveAt, unitCount: t === 'swarm_in' ? p.size * 4 : p.size, scouted: p.scouted,
-    from: t === 'swarm_in' ? 'the wilds' : 'Rival',
+    from: t === 'swarm_in' ? 'the wilds' : t === 'claim_in' ? 'Wild nest' : 'Rival',
+    // aimed at your ants holding a windfall, not at a colony
+    ...(t === 'claim_in' ? { wild: true, herd: target, windfall: true } : {}),
   };
 }
 
@@ -156,7 +160,7 @@ export function stateAt(parties: Party[], now: number): ServerState {
     world: { id: 0, name: 'Test world', speed: 1 },
     player: {
       id: 1, username: 'tester', research: {}, researchJob: null, points: { total: 0, economy: 0, research: 0, military: 0 },
-      protectedUntil: 0, timeMultiplier: 1, isAdmin: false, firstForage: false, supercolony: null, pendingDiplomacy: 0,
+      protectedUntil: 0, timeMultiplier: 1, isAdmin: false, firstForage: false, supercolony: null, pendingDiplomacy: 0, deeds: { 'beat:termite': 3 },
     },
     colonies: COLONIES,
     colony: { ...COLONIES[0], units: {}, chambers: {}, resources: { foliage: 0, protein: 0, nectar: 0 } } as unknown as ServerState['colony'],
@@ -200,14 +204,23 @@ export function spotsFor(region: number, patch: number): Spot[] {
       colonySpot(3, { known: 'mine', id: 2, name: 'Second Colony', owner: 'tester', mine: true, points: 40 }),
       wildSpot(WILDS_SPOT + 1, { name: 'Spider den', wild: { species: 'Trapdoor spider', kind: 'den', level: 1, style: '' } }),
       wildSpot(WILDS_SPOT + 2, { name: 'Fallen fig', windfall: windfall('fig') }),
+      wildSpot(WILDS_SPOT + 3, { name: 'Leafy branch', windfall: windfall('branch') }),
     ];
-  if (patch === 44) return [colonySpot(5, { id: 10, name: 'Rival Outpost', owner: 'Rival', points: 200 })];
+  if (patch === 44)
+    return [
+      colonySpot(5, { id: 10, name: 'Rival Outpost', owner: 'Rival', points: 200 }),
+      // every other windfall kind, so each one's model can be checked
+      wildSpot(WILDS_SPOT + 1, { name: 'Dead beetle', windfall: windfall('beetle') }),
+      wildSpot(WILDS_SPOT + 2, { name: 'Sugar spill', windfall: windfall('sugar') }),
+      wildSpot(WILDS_SPOT + 3, { name: 'Picnic crumbs', windfall: windfall('picnic') }),
+      wildSpot(WILDS_SPOT + 4, { name: 'Dead lizard', windfall: { ...windfall('lizard'), held: true, holderName: 'Wild nest' } }),
+    ];
   return [];
 }
 
 /** Region 1's patches with something on them (the yard's borders and banners). */
 export const REGION_PATCHES = [
-  { patch: 44, colonies: 1, wild: false, mine: false },
+  { patch: 44, colonies: 1, wild: true, mine: false },
   { patch: 45, colonies: 2, wild: true, mine: true },
   { patch: 46, colonies: 1, wild: true, mine: true },
 ];

@@ -666,6 +666,62 @@ uniform vec3 uSpots[SIGHT_SPOTS];
         l.rotation.set(0.2 * (i % 2 ? 1 : -1), i * 0.9, 0.15);
         spotGroup.add(shadow(l));
       }
+    } else if (w.kind === 'beetle') {
+      // a ground beetle dead on its back: a glossy black shell, legs in the air
+      const shell = new THREE.Mesh(sk(new THREE.SphereGeometry(1.6, 16, 12).scale(1.25, 0.55, 0.85)), mat('#2A2420', { roughness: 0.25 }));
+      shell.position.set(x, y + 0.75, z);
+      shell.rotation.y = 0.4;
+      spotGroup.add(shadow(shell));
+      // six legs folded up off the belly, splayed outward, each bent at the knee
+      const thigh = sk(new THREE.CylinderGeometry(0.07, 0.06, 1, 4).translate(0, 0.5, 0));
+      const shin = sk(new THREE.CylinderGeometry(0.05, 0.03, 0.9, 4).translate(0, 0.45, 0));
+      for (let i = 0; i < 6; i++) {
+        const along = ((i % 3) - 1) * 1.1, side = i < 3 ? 1 : -1;
+        const hip = new THREE.Group();
+        hip.position.set(x + Math.cos(0.4) * along + Math.sin(0.4) * side * 0.5, y + 1.15, z - Math.sin(0.4) * along + Math.cos(0.4) * side * 0.5);
+        hip.rotation.set(side * 0.7, 0.4, -along * 0.35);
+        const t = new THREE.Mesh(thigh, mat('#1A1512'));
+        const k = new THREE.Mesh(shin, mat('#1A1512'));
+        k.position.y = 1;
+        k.rotation.x = -side * 1.1;
+        t.add(k);
+        hip.add(t);
+        spotGroup.add(hip);
+      }
+    } else if (w.kind === 'sugar') {
+      // a spilled puddle of sugar with loose crystals
+      const puddle = new THREE.Mesh(sk(new THREE.CircleGeometry(2.4, 18).scale(1.3, 1, 1)), mat('#F4EEE2', { roughness: 0.3, side: THREE.DoubleSide }));
+      puddle.rotation.x = -Math.PI / 2;
+      puddle.position.set(x, y + 0.06, z);
+      spotGroup.add(puddle);
+      const cube = sk(new THREE.BoxGeometry(0.4, 0.4, 0.4));
+      for (let i = 0; i < 9; i++) {
+        const c = new THREE.Mesh(cube, mat('#FFFFFF', { roughness: 0.2 }));
+        c.position.set(x - 2 + (i * 0.53) % 4, y + 0.25, z - 1 + ((i * 7) % 5) * 0.5);
+        c.rotation.set(i, i * 0.7, 0);
+        spotGroup.add(shadow(c));
+      }
+    } else if (w.kind === 'picnic') {
+      // picnic crumbs: a chunk of bread, a slice of tomato and crumbs all round
+      const bread = new THREE.Mesh(sk(new THREE.BoxGeometry(2.8, 1.3, 2)), mat('#D9A55A', { roughness: 0.8 }));
+      bread.position.set(x - 0.6, y + 0.65, z);
+      bread.rotation.y = 0.3;
+      spotGroup.add(shadow(bread));
+      const crumb = new THREE.Mesh(sk(new THREE.BoxGeometry(2.4, 0.2, 1.6)), mat('#F0D9A8'));
+      crumb.position.set(x - 0.6, y + 1.35, z);
+      crumb.rotation.y = 0.3;
+      spotGroup.add(crumb);
+      const tomato = new THREE.Mesh(sk(new THREE.CylinderGeometry(0.9, 0.9, 0.25, 14)), mat('#C8452F', { roughness: 0.4 }));
+      tomato.position.set(x + 1.8, y + 0.15, z + 0.8);
+      spotGroup.add(shadow(tomato));
+      const bit = sk(new THREE.BoxGeometry(0.35, 0.3, 0.35));
+      for (let i = 0; i < 10; i++) {
+        const b = new THREE.Mesh(bit, mat(i % 3 ? '#E3BD7A' : '#F0D9A8'));
+        const a = i * 2.4, r = 2.2 + (i % 3) * 0.5;
+        b.position.set(x + Math.cos(a) * r, y + 0.15, z + Math.sin(a) * r);
+        b.rotation.y = a;
+        spotGroup.add(b);
+      }
     } else if (w.kind === 'grasshopper') {
       // the Meshy grasshopper, on its back with its legs in the air
       const h = hoppers.make(!coarse);
@@ -893,11 +949,12 @@ uniform vec3 uSpots[SIGHT_SPOTS];
       const swarm = i.type === 'swarm', hostile = !!i.hostile;
       const k = i.departAt ? clamp01((d.now - i.departAt) / (i.arriveAt - i.departAt)) : 0.5;
       const units = Math.max(1, i.unitCount ?? 1);
-      const what = swarm ? 'Swarm' : i.type === 'raid' ? 'Raid' : i.type === 'scout' ? 'Scouts' : i.type === 'hold' ? 'Allied soldiers' : i.type === 'trade' ? 'Trade caravan' : 'Delivery';
+      // a claim coming at a windfall you hold is a fight for it: a wild nest's party, or another player's
+      const what = swarm ? 'Swarm' : i.type === 'claim' ? (i.wild ? 'Wild ants' : 'Raid') : i.type === 'raid' ? 'Raid' : i.type === 'scout' ? 'Scouts' : i.type === 'hold' ? 'Allied soldiers' : i.type === 'trade' ? 'Trade caravan' : 'Delivery';
       out.push({
         key: `i${i.id}`, from: endAt(i.origin, target), to: endAt(target, i.origin), k, units,
         n: Math.min(swarm ? SWARM_CAP : PARTY_CAP, units),
-        caste: (n) => (swarm ? (n % 5 === 2 ? 'army_major' : 'army') : i.type === 'raid' || i.type === 'hold' ? 'soldier' : 'worker'),
+        caste: (n) => (swarm ? (n % 5 === 2 ? 'army_major' : 'army') : i.type === 'raid' || i.type === 'hold' || i.type === 'claim' ? 'soldier' : 'worker'),
         color: swarm ? undefined : hostile ? CHITIN.raider : i.type === 'hold' ? '#3FA79E' : FLAG.other,
         trail: hostile ? '#C4473A' : i.type === 'hold' ? FLAG.ally : FLAG.other, cargo: [],
         label: what, tone: hostile ? 'raid' : 'ours', endsAt: i.arriveAt, unknownSize: swarm && !i.scouted,

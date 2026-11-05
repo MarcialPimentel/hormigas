@@ -188,7 +188,7 @@ export function Brood() {
         <ul className="units">
           {ids.map((id) => {
             const def: any = tab === 'caste' ? CASTES[id as CasteId] : DEFENSES[id as DefenseId];
-            const missing = missingRequirements(def.unlock, colony.chambers, state.player.research);
+            const missing = missingRequirements(def.unlock, colony.chambers, state.player.research, state.player.deeds);
             const have = tab === 'caste' ? lvl(colony.units, id as CasteId) : lvl(colony.defenses, id as DefenseId);
             const f: Feeding = tab === 'caste' ? feed : 'normal';
             const unitCost: Resources = fedCost(def.cost, f);

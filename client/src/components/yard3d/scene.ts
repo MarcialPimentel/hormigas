@@ -679,6 +679,27 @@ export async function createYardScene(host: HTMLElement, labels: HTMLElement, da
         g.add(h);
         return g;
       }
+      if (k === 'beetle') {
+        // a dead beetle on its back: a glossy black shell
+        const b = new THREE.Mesh(new THREE.SphereGeometry(4.5, 12, 8).scale(1.25, 0.55, 0.85), mat('#2A2420'));
+        b.position.y = 2; b.rotation.y = 0.4; b.castShadow = true; g.add(b);
+        return g;
+      }
+      if (k === 'sugar') {
+        // a white sugar spill with a few crystals
+        const p = new THREE.Mesh(new THREE.CylinderGeometry(7, 7.5, 0.5, 14), mat('#F4EEE2')); p.scale.x = 1.3; p.position.y = 0.3; g.add(p);
+        for (let i = 0; i < 5; i++) {
+          const c = new THREE.Mesh(new THREE.BoxGeometry(1.3, 1.3, 1.3), mat('#FFFFFF'));
+          c.position.set(-4 + i * 2, 1.1, (i % 2 ? 1.5 : -1.5)); c.rotation.set(i, i * 0.7, 0); g.add(c);
+        }
+        return g;
+      }
+      if (k === 'picnic') {
+        // picnic crumbs: a chunk of bread and a slice of tomato
+        const b = new THREE.Mesh(new THREE.BoxGeometry(10, 4.5, 7), mat('#D9A55A')); b.position.y = 2.3; b.rotation.y = 0.3; b.castShadow = true; g.add(b);
+        const t = new THREE.Mesh(new THREE.CylinderGeometry(3.2, 3.2, 0.8, 12), mat('#C8452F')); t.position.set(7, 0.5, 3); g.add(t);
+        return g;
+      }
       const m = k === 'fig' ? new THREE.Mesh(new THREE.SphereGeometry(4, 8, 6), mat('#7A3F6E'))
         : k === 'branch' ? new THREE.Mesh(new THREE.CylinderGeometry(1, 1.4, 30, 6), mat('#7A5536'))
         : new THREE.Mesh(new THREE.CapsuleGeometry(2.5, 16, 3, 8), mat('#6E8F3A'));
@@ -864,7 +885,7 @@ export async function createYardScene(host: HTMLElement, labels: HTMLElement, da
       want.set(`i${i.id}`, {
         key: `i${i.id}`, from: spotAt(i.origin), to: spotAt(target), color: swarm ? CHITIN.army : i.hostile ? CHITIN.raider : CHITIN.worker,
         caste: swarm ? 'army' : i.hostile ? 'soldier' : 'worker', units: i.unitCount ?? 30,
-        label: swarm ? `Army ants · ${i.scouted ? (i.unitCount ?? 0).toLocaleString('en') : '?'}` : i.hostile ? `${i.type === 'raid' ? 'Raid' : 'Scouts'} from ${i.from}` : `${i.type === 'trade' ? 'Trade caravan' : 'Delivery'} from ${i.from}`,
+        label: swarm ? `Army ants · ${i.scouted ? (i.unitCount ?? 0).toLocaleString('en') : '?'}` : i.hostile ? `${i.type === 'claim' && i.wild ? 'Wild ants' : i.type === 'raid' || i.type === 'claim' ? 'Raid' : 'Scouts'} from ${i.from}` : `${i.type === 'trade' ? 'Trade caravan' : 'Delivery'} from ${i.from}`,
         prog: (now) => ({ d: clamp((now - i.departAt) / Math.max(1, i.arriveAt - i.departAt), 0, 1), back: false }),
       });
     }

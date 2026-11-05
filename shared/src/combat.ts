@@ -63,6 +63,8 @@ export interface BattleResult {
   alliesSurvivors: UnitCounts[];
   /** The round after which the attackers fell back (fall-back order); missing if they didn't. Counts as a defender win. */
   retreatedAfterRound?: number;
+  /** Attackers carried home wounded after a won fight (Matabele Ants on a mound): already counted as survivors, not lost. */
+  rescued?: UnitCounts;
 }
 
 /** c: the side's own castes, d: defenses, a<i>: castes of allied group i. */
@@ -369,9 +371,19 @@ export function simulateBattle(attacker: CombatSide, defender: CombatSide, rng: 
     alliesLost.push(lost);
     alliesSurvivors.push(left);
   });
+  // Matabele Ants carry their wounded home from a won fight against termites (docs/05-castes-units.md)
+  const rescued = rescuedUnits(attackerLost, defender.units, winner === 'attacker');
+  for (const [id, k] of Object.entries(rescued)) {
+    const c = id as CasteId;
+    attackerSurvivors[c] = (attackerSurvivors[c] ?? 0) + (k ?? 0);
+    const lost = (attackerLost[c] ?? 0) - (k ?? 0);
+    if (lost > 0) attackerLost[c] = lost;
+    else delete attackerLost[c];
+  }
   return {
     winner, rounds, attackerLost, attackerSurvivors, defenderLost, defenderSurvivors, defensesDestroyed, alliesLost, alliesSurvivors,
     ...(retreatedAfterRound != null ? { retreatedAfterRound } : {}),
+    ...(Object.keys(rescued).length ? { rescued } : {}),
   };
 }
 
@@ -403,6 +415,22 @@ export function corpseCarry(units: UnitCounts): number {
   let n = 0;
   for (const [id, k] of Object.entries(units)) n += (CASTES[id as CasteId]?.corpseCargo ?? 0) * (k ?? 0);
   return n;
+}
+
+/**
+ * Matabele Ants carry their wounded home (docs/05-castes-units.md): after a won fight against an enemy that had any of
+ * a caste's `rescue.vs` units, that share of the caste's fallen come home alive. Returns who is saved.
+ */
+export function rescuedUnits(lost: UnitCounts, enemy: UnitCounts, won: boolean): UnitCounts {
+  const out: UnitCounts = {};
+  if (!won) return out;
+  for (const [id, k] of Object.entries(lost)) {
+    const r = CASTES[id as CasteId]?.rescue;
+    if (!r || !k || !r.vs.some((v) => (enemy[v as CasteId] ?? 0) > 0)) continue;
+    const n = Math.floor(k * r.share);
+    if (n > 0) out[id as CasteId] = n;
+  }
+  return out;
 }
 
 /** Protein left as corpses: 30% of Foliage+Protein value of destroyed units (both sides). */

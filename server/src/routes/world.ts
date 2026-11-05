@@ -128,7 +128,8 @@ async function patchesSpots(q: ReturnType<typeof getPool>, worldId: number, me: 
     ? (
         await q.query(
           `SELECT c.id, c.name, c.patch, c.spot, c.player_id, c.npc, c.units, c.foliage, c.protein, c.nectar, c.created_at, p.username, p.points_total, p.protected_until, p.last_active,
-                  (SELECT tp.username FROM players tp WHERE tp.id = (c.npc->'tender'->>'playerId')::int) AS tender_name
+                  (SELECT CASE WHEN tp.is_npc THEN (SELECT tc.name FROM colonies tc WHERE tc.id = (c.npc->'tender'->>'colonyId')::int) ELSE tp.username END
+                     FROM players tp WHERE tp.id = (c.npc->'tender'->>'playerId')::int) AS tender_name
              FROM colonies c JOIN players p ON p.id = c.player_id
             WHERE c.world_id = $1 AND c.region = $2 AND c.patch = ANY($3::int[]) ORDER BY c.patch, c.spot`,
           [worldId, region, open],

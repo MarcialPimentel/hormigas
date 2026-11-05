@@ -1,6 +1,6 @@
 // The Field Journal: a naturalist's notebook of what the colony has done and met (docs/26-come-back.md).
 import { useEffect, useState } from 'react';
-import { JOURNAL, JOURNAL_SECTIONS, stageName, type JournalEntryDef, type JournalSection } from '@hormigas/shared';
+import { JOURNAL, JOURNAL_SECTIONS, stageName, titleFor, allTitles, type JournalEntryDef, type JournalSection } from '@hormigas/shared';
 import { api } from '../api';
 import { useGame } from '../game';
 import { Panel, Pic } from '../components/ui';
@@ -26,6 +26,7 @@ const PIC: Record<string, [PicKind, string]> = {
   dutiful: ['chamber', 'queen_chamber'], fortunate: ['research', 'repletes'], peacemaker: ['research', 'chemical_mimicry'], supercolonist: ['research', 'supercolony'],
   boot: ['defense', 'pit_trap'], ambush: ['unit', 'spiderling'], rain: ['research', 'tandem_running'], shortcut: ['research', 'pheromone_trails'],
   lost: ['research', 'scent_reading'], lizard: ['unit', 'rhino_beetle'],
+  beetle: ['unit', 'carrion_beetle'], sugar: ['research', 'repletes'], picnic: ['chamber', 'granary'],
 };
 
 const STAGE_CLASS = ['blank', 'sketch', 'entry', 'plate'];
@@ -54,7 +55,7 @@ function Page({ e, s }: { e: JournalEntryDef; s: EntryState }) {
                   {' '}· {s.value.toLocaleString('en-US')} / {s.next.toLocaleString('en-US')} to the {['sketch', 'full entry', 'coloured plate'][s.tier]}
                 </span>
               )}
-              {s.tier > 0 && <span className="muted"> · title: “{e.title}”</span>}
+              {s.tier > 0 && <span className="muted"> · title: “{titleFor(e, s.tier)}”</span>}
             </>
           )}
         </p>
@@ -79,7 +80,8 @@ export function Journal() {
   const earned = JOURNAL.filter((e) => (byId.get(e.id)?.tier ?? 0) >= 1);
   const visible = JOURNAL.filter((e) => !e.hidden || (byId.get(e.id)?.tier ?? 0) > 0);
   const written = earned.length;
-  const current = JOURNAL.find((e) => e.title === (data.title ?? state?.journal?.title));
+  const wearing = data.title ?? state?.journal?.title;
+  const current = wearing ? JOURNAL.find((e) => allTitles(e).includes(wearing)) : undefined;
 
   return (
     <div className="stack journal">
@@ -103,7 +105,7 @@ export function Journal() {
             <option value="">No title</option>
             {earned.map((e) => (
               <option key={e.id} value={e.id}>
-                {e.title}
+                {titleFor(e, byId.get(e.id)?.tier ?? 1)}
               </option>
             ))}
           </select>

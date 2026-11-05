@@ -130,6 +130,26 @@ Marz's call: give each carrier a stage of the game.
 | Brood Hall 4 + Brood Science 2 | Hauler | Big hauls and moving goods between colonies (Winged Queens and trade trails come about then) |
 | Brood Hall 4 + Symbiosis 1 | Carrion Beetle | Corpses only |
 
+## The Matabele Ant
+_Build 18 ([#205](https://github.com/MarcialPimentel/hormigas/issues/205)), decided by Marz 5 Nov 2026. Numbers in `castes.json` (`matabele`), first pass for playtest._
+
+The first caste you **earn by deeds** rather than by chambers or research. *Megaponera analis* raids only termites. It marches in columns behind a scout and carries its injured nestmates home (pillar 4).
+
+- **Unlock:** Brood Hall 2 and **3 termite mounds beaten**, counted across all your colonies. In `castes.json` that's `"deed.beat:termite": 3`, a new kind of `unlock` that reads a lifetime counter (`shared/src/stats.ts`). The Brood Hall shows "Needs Termite mounds beaten: 1/3" until then.
+- **Stats:** costs like a Major Soldier (600 F / 400 P / 100 N); attack 140, guard 25, health 100. `frenzy` 3 on Termite Workers and 2 on Termite Soldiers.
+- **Countered like a Major:** Bullet Ants hunt it (frenzy 4) and Minor Soldiers outnumber it. Without that it had no counter and did a little better than a Major against a mixed army.
+- **Carries the wounded home:** after a won fight against termites, **40%** of its fallen come home alive (`rescue` in `castes.json`, applied in `simulateBattle`, so the battle preview, the report and `npm run combat` agree). The battle report says how many. Decided while building: only against termites, so it never helps against players (Marz can overrule).
+- **Fair (pillar 3), checked with the combat code:**
+
+  | Against | Matabele Ant | Major Soldier |
+  |---|---|---|
+  | Termite mound, tier 1–3, at a fair army's spend | wins, loses 4–5% | wins, loses 13–16% |
+  | Major Soldiers, equal spend | 42% wins | (mirror) |
+  | Acid Sprayers / Trap-jaw Ants, equal spend | loses (0–1%) | wins (100%) |
+  | An even mix of every soldier caste | does as much damage as a Major | — |
+
+  `shared/test/matabele.test.ts` guards this.
+
 ## Open Questions
 - Should units have upkeep (ongoing Protein cost)? Pro: limits hoarding armies. Con: punishes offline players. Proposal: no upkeep in MVP.
 - Do we show the squad size (e.g., "Major Soldiers ×40 squads") for flavor?
