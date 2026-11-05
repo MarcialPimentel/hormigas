@@ -773,6 +773,9 @@ export async function createYardScene(host: HTMLElement, labels: HTMLElement, da
     if (!at) { selRing.visible = false; return; }
     const p = spotAt(at);
     selRing.position.set(p.x, 0.7, p.z);
+    // one size at every zoom, like the mounds (Marz, 5 Nov 2026): just round a mound, or a spot's pebble ring
+    const m = moundSpots.get(selected!);
+    selRing.scale.setScalar(m ? (MOUNDS[m.stage].r * 1.3) / 7 : 1);
     selRing.visible = true;
   }
 
@@ -1216,7 +1219,6 @@ export async function createYardScene(host: HTMLElement, labels: HTMLElement, da
     grassU.uCamR.value = d < 260 ? clamp(d * 0.7, 6, 60) : 0;
     // mounds keep their true size at every zoom (Marz, 4 Nov 2026: no swelling far out like the ants)
     for (const [k, g] of farMounds) g.visible = !patchPlaces.has(k);
-    selRing.scale.setScalar(clamp(d / 200, 0.5, 6));
     // the server's state changed: rebuild the parties
     const dd = data();
     if (dd.state !== stateRef) { stateRef = dd.state; syncColumns(); }
