@@ -64,9 +64,9 @@ Scouts can scout the wilds of any patch, not only colonies. A survey always succ
 It gives Scouts a job that doesn't depend on neighbors, and lets a player in an empty patch finish the founding tasks. NPC nests (planned) will give empty patches something to scout and raid as well.
 
 ## Army saving (the core skill)
-Units at home are at risk while you're offline. The counter-play is sending your army on a long Transport/Relocate/Forage mission timed to return when you're back. The UI should support this directly:
-- **"Return at…"** time picker on the mission screen (auto-calculates speed %).
-- Speed slider (10%–100%): slower means a longer trip, for timing only. Fuel is the same at every speed (Marz, 2 Nov 2026, [03-economy](03-economy.md#mission-fuel)).
+Units at home are at risk while you're offline. The counter-play is sending your army on a long Transport/Relocate/Forage mission timed to return when you're back. Every mission goes at full speed, so the trip length comes from where you send them.
+- **Speed dial hidden** (Marz, 5 Nov 2026). The mission form used to have a Speed slider (10%–100%, slower = longer trip) and a **"Back no earlier than"** clock that set the speed for you. Once fuel stopped depending on speed ([03-economy](03-economy.md#mission-fuel)) the dial looked like a Nectar control that did nothing, so both are hidden. The code stays (`SHOW_SPEED_DIAL` in `client/src/screens/Missions.tsx`; the server still accepts `speedPct`), so it can come back as it was.
 
 ## Open Questions
+- Bring the Speed dial back for army saving (timing a party to be home when you are) if players miss it?
 - Should Forage roll events by terrain (creek → rainstorm more likely)?
