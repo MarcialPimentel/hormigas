@@ -356,8 +356,8 @@ export function Yard({ go }: { go: Nav }) {
                 </div>
                 <UnderWay onFocus={(_, at) => sceneRef.current?.flyTo(at, 'patch')} go={panelNav} />
                 {/* the daily goals the classic Colony screen shows; rewards go to the colony picked in the header */}
-                <QuestCard nav={panelNav} />
-                <NeedsCard nav={panelNav} />
+                <QuestCard nav={panelNav} here="missions" />
+                <NeedsCard nav={panelNav} here="missions" />
               </div>
             )}
           </div>
