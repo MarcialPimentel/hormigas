@@ -30,7 +30,7 @@ The **speaker** in the top bar opens a small card: **Turn off / Turn on** and a 
 All in the client, in `client/src/audio/`. Sound only reacts to the game state the client already has; it never changes anything.
 
 - `engine.ts`: the Web Audio graph (ported from Papercut): a music bus and an effects bus into one soft limiter. Volume sliders are squared so they feel even; music is ×0.55 under the effects. It can also load short recordings and make code-made noise bursts and tones, for sound effects later.
-- `music.ts`: the songs. They stream through two `<audio>` players routed into the music bus (decoding all three songs would hold over 100 MB in memory, too much for phones). The players take turns, which is how songs fade into each other and loop. Phones only let a page start a player during a tap, so both players are started silently on the first tap or key press.
+- `music.ts`: the songs. They stream through three `<audio>` players routed into the music bus (decoding all three songs would hold over 100 MB in memory, too much for phones). The players take turns, which is how songs fade into each other and loop: whichever player becomes the one you hear, every other player fades out, so only one song is left once a fade ends (a third player means a quick switch mid-fade never has to cut a song off). Phones only let a page start a player during a tap, so all players are started silently on the first tap or key press.
 - `useSound.ts`: wakes audio on the first click or key, pauses it when the tab is hidden, and picks the song from the game state (`musicFor`).
 - `components/SoundButton.tsx`: the speaker and its card.
 

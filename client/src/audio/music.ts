@@ -5,8 +5,9 @@
 //   tense — a raid or swarm is coming at you: Raid on the Nest
 //
 // The songs stream through <audio> elements (decoding all three would hold over 100 MB in memory), routed into
-// the engine's music bus so the volume slider and limiter still apply. Two players take turns: switching songs,
-// or a song wrapping around to its start, fades one out while the other fades in, so there is never a gap.
+// the engine's music bus so the volume slider and limiter still apply. Three players take turns: switching songs,
+// or a song wrapping around to its start, fades one in while every other one fades out, so there is never a gap
+// and, once the fade is done, only ever one song you can hear.
 
 import { engine as E } from './engine';
 
@@ -32,7 +33,7 @@ interface Player {
 
 export class Music {
   private want: MusicMode = 'off';
-  private players: Player[] = [0, 1].map(() => {
+  private players: Player[] = [0, 1, 2].map(() => {
     const el = new Audio();
     el.preload = 'auto';
     return { el, gain: null, song: null, stopAt: 0 };
@@ -90,7 +91,8 @@ export class Music {
   }
 
   private wakeUp() {
-    for (const p of this.paused) void p.el.play().catch(() => {});
+    // Only songs still wanted; one that finished fading out while the tab was hidden stays paused.
+    for (const p of this.paused) if (p.song) void p.el.play().catch(() => {});
     this.paused = [];
     this.sync();
   }
@@ -99,38 +101,57 @@ export class Music {
     const a = E.live;
     if (!a) return;
     if (this.want === 'off') {
-      const cur = this.players[this.active];
-      if (cur) {
-        if (cur.song && cur.song !== 'tense') this.resumeAt[cur.song] = cur.el.currentTime;
-        this.fadeOut(cur, 1.2);
-      }
+      for (const p of this.players) if (this.audible(p)) this.letGo(p, null, 1.2);
       this.active = -1;
       return;
     }
-    // Already playing this song, or it is still fading out from a moment ago: bring it back up.
+    // Already playing this song, or it is still fading out from a moment ago: bring it back up (and fade
+    // out whatever was playing instead).
     const same = [this.players[this.active], ...this.players].find((p) => p && p.song === this.want && !p.el.paused);
     if (same) {
-      this.active = this.players.indexOf(same);
-      this.fade(same, 1, 1);
+      this.focus(this.players.indexOf(same), SWITCH);
       return;
     }
     this.startOn(this.want, SWITCH);
   }
 
+  /** Make player i the one you hear: fade it up and fade every other player out. */
+  private focus(i: number, secs: number) {
+    const p = this.players[i];
+    this.active = i;
+    this.fade(p, 1, secs);
+    for (const o of this.players) if (o !== p && this.audible(o)) this.letGo(o, p.song, secs);
+  }
+
+  /** Playing, or about to: anything that still needs fading out. */
+  private audible(p: Player) {
+    return !p.el.paused || p.song !== null;
+  }
+
+  /** Fade a player out, remembering where calm or march got to so they can pick up there next time. */
+  private letGo(p: Player, next: Live | null, secs: number) {
+    if (p.song && p.song !== 'tense' && p.song !== next && !p.el.paused) this.resumeAt[p.song] = p.el.currentTime;
+    this.fadeOut(p, secs);
+  }
+
+  /** A player that is stopped, or else the quietest one that isn't the song you hear. */
+  private freePlayer(): number {
+    const others = this.players.map((_, i) => i).filter((i) => i !== this.active);
+    const idle = others.find((i) => !this.audible(this.players[i]));
+    if (idle !== undefined) return idle;
+    const vol = (i: number) => this.players[i].gain?.gain.value ?? 0;
+    return others.reduce((a, b) => (vol(b) < vol(a) ? b : a));
+  }
+
   /** Start a song on the free player and fade over to it. */
   private startOn(song: Live, secs: number, fromStart = false) {
     const a = E.live!;
-    const old = this.players[this.active];
-    const i = this.active === 0 ? 1 : 0;
+    const i = this.freePlayer();
     const p = this.players[i];
     if (!p.gain) {
       p.gain = a.createGain();
       p.gain.gain.value = 0;
       a.createMediaElementSource(p.el).connect(p.gain).connect(E.musicBus);
-    }
-    if (old) {
-      if (old.song && old.song !== 'tense' && old.song !== song) this.resumeAt[old.song] = old.el.currentTime;
-      this.fadeOut(old, secs);
     }
     clearTimeout(p.stopAt);
     p.gain.gain.cancelScheduledValues(a.currentTime);
@@ -141,8 +162,7 @@ export class Music {
     const at = fromStart || song === 'tense' ? 0 : this.resumeAt[song] ?? 0;
     this.seek(p.el, at);
     void p.el.play().catch(() => {});
-    this.fade(p, 1, secs);
-    this.active = i;
+    this.focus(i, secs);
     if (!this.timer) this.timer = window.setInterval(() => this.tick(), 200);
   }
 
@@ -182,6 +202,19 @@ export class Music {
       p.song = null;
     }, secs * 1000 + 150);
   }
+
+  /** Stop everything at once (a dev reload swapping this module out). */
+  stopAll() {
+    clearInterval(this.timer);
+    for (const p of this.players) {
+      clearTimeout(p.stopAt);
+      p.el.pause();
+      p.song = null;
+    }
+  }
 }
 
 export const music = new Music();
+
+// In development a hot reload makes a new Music; silence the old one so its songs don't carry on underneath.
+if (import.meta.hot) import.meta.hot.dispose(() => music.stopAll());
