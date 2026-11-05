@@ -8,6 +8,7 @@
 - Every mission consumes **Nectar** (fuel) up front.
 - Number of simultaneous missions is limited by **mission slots** (base 2, + Colony Mind research). Mission slots are shared by all of a player's colonies.
 - **Forage slots belong to each colony** (Marz, 30 Oct 2026): every colony can have **1** forage party out, plus 1 more every 2 levels of Foraging Instinct. A party uses a slot of the colony that sent it. Each new colony opens up its own patch's wilds instead of sharing one slot with the others. Numbers: `formulas.json` → `missions.baseForageSlots`, `research.json` → Foraging Instinct.
+- **Trade trails have their own slot per colony** (Build 16): each colony keeps **1** trail open (its caravan walking home still counts); trails never use a mission slot. Numbers: `trade.json` → `trailsPerColony`.
 - Missions can be **recalled** while outbound; they turn around immediately.
 
 ## Mission types
@@ -22,6 +23,7 @@
 | **Found Colony** | ✅ | A Winged Queen (plus escorts and cargo) founds a new colony at an empty spot ([19-colonies](19-colonies.md)) |
 | **Claim windfall** | ✅ | Send ants to food lying in the wilds. They fight whoever holds it, then stay and carry a load home every 2 h until it is gone or rots; call them home from its card ([25-windfalls](25-windfalls.md)) |
 | **Tend Aphids** | ✅ | Station ants at a scouted aphid herd. They stay, and carry its honeydew home as Nectar every 6 h; call them home from the herd's card ([24-npcs](24-npcs.md)) |
+| **Trade trail** | ✅ | A caravan of Workers, Media Workers or Haulers keeps a trail open to another of your colonies, or to a player you have a truce or a shared scent with, for 3 days; every 6 h it brings home goods chosen by that colony's ground, then walks home. Player trails pay more and the host gains too ([23-supercolonies](23-supercolonies.md#trade-trails-build-16)) |
 | **Hold Position** | ✅ | Station soldiers at a supercolony mate's colony; they fight in its battles until recalled ([23-supercolonies](23-supercolonies.md)) |
 | **Joint Raid** | v1 | Several supercolony members raid together (alliances stage B) |
 
@@ -62,9 +64,9 @@ Scouts can scout the wilds of any patch, not only colonies. A survey always succ
 It gives Scouts a job that doesn't depend on neighbors, and lets a player in an empty patch finish the founding tasks. NPC nests (planned) will give empty patches something to scout and raid as well.
 
 ## Army saving (the core skill)
-Units at home are at risk while you're offline. The counter-play is sending your army on a long Transport/Relocate/Forage mission timed to return when you're back. The UI should support this directly:
-- **"Return at…"** time picker on the mission screen (auto-calculates speed %).
-- Speed slider (10%–100%): slower means a longer trip, for timing only. Fuel is the same at every speed (Marz, 2 Nov 2026, [03-economy](03-economy.md#mission-fuel)).
+Units at home are at risk while you're offline. The counter-play is sending your army on a long Transport/Relocate/Forage mission timed to return when you're back. Every mission goes at full speed, so the trip length comes from where you send them.
+- **Speed dial hidden** (Marz, 5 Nov 2026). The mission form used to have a Speed slider (10%–100%, slower = longer trip) and a **"Back no earlier than"** clock that set the speed for you. Once fuel stopped depending on speed ([03-economy](03-economy.md#mission-fuel)) the dial looked like a Nectar control that did nothing, so both are hidden. The code stays (`SHOW_SPEED_DIAL` in `client/src/screens/Missions.tsx`; the server still accepts `speedPct`), so it can come back as it was.
 
 ## Open Questions
+- Bring the Speed dial back for army saving (timing a party to be home when you are) if players miss it?
 - Should Forage roll events by terrain (creek → rainstorm more likely)?

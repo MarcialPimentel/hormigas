@@ -3,7 +3,7 @@
 **Version:** 0.1
 
 ## Build status
-_Current as of Build 15 (2026-11-04)._ Hormigas has no GitHub milestones: each build is a GitHub issue and/or PR. What shipped in each build: [CHANGELOG](../CHANGELOG.md).
+_Current as of Build 16 (2026-11-05)._ Hormigas has no GitHub milestones: each build is a GitHub issue and/or PR. What shipped in each build: [CHANGELOG](../CHANGELOG.md).
 
 | Build | What it delivers | Status |
 |---|---|---|
@@ -24,8 +24,9 @@ _Current as of Build 15 (2026-11-04)._ Hormigas has no GitHub milestones: each b
 | 12 | Reasons to come back: colony needs, the Field Journal, Yesterday in the colony ([#124](https://github.com/MarcialPimentel/hormigas/issues/124), [26-come-back](26-come-back.md)) | done (live) |
 | 13 | Scout the swarm ([#153](https://github.com/MarcialPimentel/hormigas/pull/153)) | done (live) |
 | 14 | Swarm sizes ([#160](https://github.com/MarcialPimentel/hormigas/pull/160)) | done (live) |
-| 15 | Plan digs you can't afford yet ([#197](https://github.com/MarcialPimentel/hormigas/issues/197), [04-colony](04-colony.md#build-rules)) | in review |
-| 17 | Joint raids, and spider dens become alliance raids ([#98](https://github.com/MarcialPimentel/hormigas/issues/98), [#207](https://github.com/MarcialPimentel/hormigas/issues/207), [24-npcs](24-npcs.md#spider-den-boss)) | planned |
+| 15 | Plan digs you can't afford yet ([#197](https://github.com/MarcialPimentel/hormigas/issues/197), [04-colony](04-colony.md#build-rules)) | done (live) |
+| 16 | Trade trails: caravans between your colonies and to truce partners and supercolony mates ([#98](https://github.com/MarcialPimentel/hormigas/issues/98), [23-supercolonies](23-supercolonies.md#trade-trails-build-16)) | in review |
+| 17 | Joint raids and the members' board (alliances stage B, rest of [#98](https://github.com/MarcialPimentel/hormigas/issues/98)), and spider dens become alliance raids ([#207](https://github.com/MarcialPimentel/hormigas/issues/207), [24-npcs](24-npcs.md#spider-den-boss)) | next |
 | 18 | Goals in the wilds: the Matabele Ant earned on termite mounds, wild nests going out for windfalls, three new windfalls ([#205](https://github.com/MarcialPimentel/hormigas/issues/205), [#206](https://github.com/MarcialPimentel/hormigas/issues/206), [27-living-world](27-living-world.md#5-goals-in-the-wilds)) | in review |
 | — | Background music: the colony marches to its own footsteps ([#139](https://github.com/MarcialPimentel/hormigas/pull/139), [sound](sound.md)) | done (live) |
 | — | Music: three songs replace the code-made march (Suno, [sound](sound.md)) | in review |
@@ -36,7 +37,7 @@ _Current as of Build 15 (2026-11-04)._ Hormigas has no GitHub milestones: each b
 | — | New players get their own patch, next to the active players ([11-world](11-world.md#starting-placement)) | in review |
 | — | A better-looking ant: the 3D ant rebuilt in Blender from a Meshy concept ([18-art-direction](18-art-direction.md#in-3d-the-sunlit-microcosm)) | in review |
 | — | Aphid herds are a poppy with aphids on it, more aphids for a bigger herd (Meshy, [18-art-direction](18-art-direction.md#in-3d-the-sunlit-microcosm)) | in review |
-| v1 | Supercolonies stage B, joint raids on spider dens, more defenses | later |
+| v1 | More defenses | later |
 
 ## Guiding rule
 Keep the MVP **brutally small**. Its only job is to answer: *is the core loop fun?*

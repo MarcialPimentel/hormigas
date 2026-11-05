@@ -17,6 +17,7 @@ import { processDueEvents } from '../events';
 import { getWorld } from '../world';
 import { missionView, recallMission, sendMission } from '../game/missions';
 import { recallTenders } from '../game/herds';
+import { tradePreview } from '../game/trade';
 import { cachedWorldSpeed } from '../world';
 
 /** What a wild scent smells of (docs/24-npcs.md): sharp = ant nest, sweet = aphids, woody = termites, danger = spider. */
@@ -281,6 +282,13 @@ export async function worldRoutes(app: FastifyInstance) {
   app.post('/api/missions', async (req) => {
     const m = await tx((q) => sendMission(q, req.playerId, (req.body ?? {}) as any));
     return { ok: true, mission: missionView(m) };
+  });
+
+  /** What a trade trail from one of your colonies to a spot would bring (docs/23-supercolonies.md § Trade trails). */
+  app.get('/api/trade/preview', async (req) => {
+    const qs = req.query as any;
+    const target = { region: Number(qs.region), patch: Number(qs.patch), spot: Number(qs.spot) };
+    return tradePreview(getPool(), req.playerId, Number(qs.colonyId), target);
   });
 
   /** Call your tenders home from an aphid herd (docs/24-npcs.md). */

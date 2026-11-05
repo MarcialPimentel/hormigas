@@ -950,7 +950,7 @@ uniform vec3 uSpots[SIGHT_SPOTS];
       const k = i.departAt ? clamp01((d.now - i.departAt) / (i.arriveAt - i.departAt)) : 0.5;
       const units = Math.max(1, i.unitCount ?? 1);
       // a claim coming at a windfall you hold is a fight for it: a wild nest's party, or another player's
-      const what = swarm ? 'Swarm' : i.type === 'claim' ? (i.wild ? 'Wild ants' : 'Raid') : i.type === 'raid' ? 'Raid' : i.type === 'scout' ? 'Scouts' : i.type === 'hold' ? 'Allied soldiers' : 'Delivery';
+      const what = swarm ? 'Swarm' : i.type === 'claim' ? (i.wild ? 'Wild ants' : 'Raid') : i.type === 'raid' ? 'Raid' : i.type === 'scout' ? 'Scouts' : i.type === 'hold' ? 'Allied soldiers' : i.type === 'trade' ? 'Trade caravan' : 'Delivery';
       out.push({
         key: `i${i.id}`, from: endAt(i.origin, target), to: endAt(target, i.origin), k, units,
         n: Math.min(swarm ? SWARM_CAP : PARTY_CAP, units),

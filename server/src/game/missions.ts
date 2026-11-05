@@ -72,7 +72,7 @@ export interface Mission {
   departAt: number;
   arriveAt: number;
   returnAt: number | null;
-  /** holding: soldiers stationed at an ally's colony until recalled (docs/23-supercolonies.md) */
+  /** holding: soldiers stationed at an ally's colony until recalled, or a caravan keeping a trade trail open (docs/23-supercolonies.md) */
   status: 'outbound' | 'returning' | 'holding' | 'done';
   arriveEventId: number | null;
   returnEventId: number | null;
@@ -110,7 +110,7 @@ export async function lockMission(q: Q, id: number): Promise<Mission> {
   return fromRow(r.rows[0]);
 }
 
-async function saveMission(q: Q, m: Mission) {
+export async function saveMission(q: Q, m: Mission) {
   await q.query(
     `UPDATE missions SET units=$2, cargo=$3, return_at=$4, status=$5, arrive_event_id=$6, return_event_id=$7, result=$8 WHERE id=$1`,
     [m.id, JSON.stringify(m.units), JSON.stringify(m.cargo), m.returnAt, m.status, m.arriveEventId, m.returnEventId, m.result ? JSON.stringify(m.result) : null],
@@ -325,8 +325,8 @@ export async function recallMission(q: Tx, playerId: number, missionId: number):
   return m;
 }
 
-/** Soldiers holding position walk home: the trip back takes as long as the trip out did. */
-async function comeHome(q: Q, m: Mission, t: number, result: object): Promise<Mission> {
+/** Ants staying at a target (soldiers holding position, a trade caravan) walk home: the trip back takes as long as the trip out did. */
+export async function comeHome(q: Q, m: Mission, t: number, result: object): Promise<Mission> {
   m.status = 'returning';
   m.returnAt = t + returnLegMs(m.departAt, m.arriveAt);
   m.result = { ...(m.result ?? {}), ...result };
@@ -495,7 +495,7 @@ export async function repairStuckMissions(q: Tx, worldId: number, t: number): Pr
 
 // Every MissionType, as a value (the compiler insists each one is listed), so tests can check each has its rules.
 const EVERY_TYPE: Record<MissionType, true> = {
-  transport: true, relocate: true, scout: true, raid: true, haul: true, forage: true, colonize: true, swarm: true, hold: true, tend: true, claim: true,
+  transport: true, relocate: true, scout: true, raid: true, haul: true, forage: true, colonize: true, swarm: true, hold: true, tend: true, claim: true, trade: true,
 };
 export const ALL_MISSION_TYPES = Object.keys(EVERY_TYPE) as MissionType[];
 

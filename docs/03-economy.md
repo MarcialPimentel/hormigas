@@ -8,7 +8,7 @@
 |---|---|---|---|
 | **Foliage** | Bulk | Leaf Garden | Chambers, most castes |
 | **Protein** | Mid | Hunting Grounds, battlefield corpses | Castes, research (with Nectar) |
-| **Nectar** | Scarce | Aphid Pasture, tended aphid herds ([24-npcs](24-npcs.md)) | **Research** (with Protein), advanced castes, **mission fuel** |
+| **Nectar** | Scarce | Aphid Pasture, tended aphid herds ([24-npcs](24-npcs.md)), trade trails to Creek Bank colonies ([23-supercolonies](23-supercolonies.md#trade-trails-build-16)) | **Research** (with Protein), advanced castes, **mission fuel** |
 | **Workforce** | Capacity (not stored) | Nursery, Queen's Chamber | Required to run production chambers |
 
 ## Production
@@ -43,7 +43,7 @@ The tiniest leafcutter workers weed and tend the fungus garden. Each Gardener Mi
 
 ## Mission fuel
 - Every mission consumes Nectar based on distance, unit count and unit type: `sum(count × nectarUse) × distance ÷ 1,750`, paid once when the party leaves (`formulas.json` → `travel`).
-- **Speed doesn't change it** (Marz, 2 Nov 2026). The speed slider and Return at… only decide when the party gets home ([09-missions](09-missions.md#army-saving-the-core-skill)).
+- **Speed doesn't change it** (Marz, 2 Nov 2026). Since 5 Nov 2026 the Speed dial is hidden and every mission goes full speed ([09-missions](09-missions.md#army-saving-the-core-skill)).
 - Makes Nectar strategically important and turns distance into a real cost.
 - **Why the change:** fuel used to be `÷ 35,000 × (speed% + 1)²`, so 4× at full speed and 1.21× at 10%. It never followed gathering ×2 (30 Oct 2026), and a raid in your own patch cost 10–60 minutes of Nectar. Slowing down saved at most 70% of that small cost for a trip 10× as long, so the choice had no bearing. The divisor became 4,375, twice the old full-speed price; on 5 Nov 2026 it went to 1,750 so fuel costs the same hours of Nectar after Aphid Pastures started making 2.5× as much (research now pays in Nectar, [07-research](07-research.md#what-research-costs-protein-and-nectar)).
 - **What it costs now** (Aphid Pasture 8 makes about 850 Nectar an hour, Pasture 10 about 1,300):

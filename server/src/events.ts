@@ -21,6 +21,8 @@ export interface EventPayloads {
   windfall_wild: { colonyId: number; startedAt: number };
   truce_end: { truceId: number };
   scent_faded: { memberRowId: number };
+  /** a trade trail's next delivery: `n` counts from 1, so a stale event (recalled, renewed) does nothing */
+  trade_deliver: { missionId: number; n: number };
 }
 export type EventType = keyof EventPayloads;
 

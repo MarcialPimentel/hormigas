@@ -5,15 +5,18 @@ import { CASTES, type CasteId } from './data';
 import { lvl, missingRequirements, type ChamberLevels, type ResearchLevels, type UnitCounts } from './economy';
 import { forageSlots, maxColonies, missionSlots, presentUnits } from './world';
 import type { Blocker } from './blockers';
+import { TRADE, TRADE_MESSAGES, tradeSlots } from './trade';
 
-export type MissionType = 'transport' | 'relocate' | 'scout' | 'raid' | 'haul' | 'forage' | 'colonize' | 'swarm' | 'hold' | 'tend' | 'claim';
-export type MissionSlot = 'mission' | 'forage';
+export type MissionType = 'transport' | 'relocate' | 'scout' | 'raid' | 'haul' | 'forage' | 'colonize' | 'swarm' | 'hold' | 'tend' | 'claim' | 'trade';
+/** mission: shared by all your colonies; forage and trade: each colony has its own (docs/09-missions.md). */
+export type MissionSlot = 'mission' | 'forage' | 'trade';
 
 /** What kind of place a mission is aimed at. */
 export type MissionTarget =
   | 'colony' // someone's colony (transport, raid)
   | 'own' // one of your own colonies (relocate)
   | 'ally' // a supercolony mate's colony (hold)
+  | 'trade' // one of your colonies, or a truce partner's or supercolony mate's (trade)
   | 'herd' // an aphid herd (tend)
   | 'windfall' // food lying in the wilds (claim)
   | 'empty' // an empty colony spot, 1–12 (colonize)
@@ -92,6 +95,13 @@ export const MISSION_TYPES: Record<MissionType, MissionTypeDef> = {
     label: 'Hold position', help: "Station soldiers at a supercolony mate's colony. They fight in its battles until you recall them.",
     target: 'ally', allowsCargo: false, allowsWilds: false, allowsSites: true, slot: 'mission', oneWay: true, playerSent: true,
   },
+  trade: {
+    label: 'Trade trail',
+    help: `Carriers walk a pheromone trail to another of your colonies, or to a player you have a truce or a shared scent with. They stay ${TRADE.trailHours / 24} days and bring home goods made there every ${TRADE.deliverEveryHours} hours, chosen by that colony's ground. A player's trail pays more, and they gain too. Each colony keeps one trail.`,
+    target: 'trade', allowsCargo: false, allowsWilds: false, allowsSites: false, slot: 'trade', oneWay: true, playerSent: true,
+    onlyUnits: TRADE.carriers,
+    unitError: { code: 'carriers_only', message: TRADE_MESSAGES.carriers_only, short: 'Only Workers, Media Workers and Haulers can trade.' },
+  },
   swarm: {
     label: 'Army ant swarm', help: 'A swarm of army ants from the wilds. Only the wild sends these.',
     target: 'colony', allowsCargo: false, allowsWilds: false, allowsSites: true, slot: 'mission', oneWay: true, playerSent: false,
@@ -99,7 +109,7 @@ export const MISSION_TYPES: Record<MissionType, MissionTypeDef> = {
 };
 
 /** Mission types a player can send, in the order the Missions screen shows them. */
-export const PLAYER_MISSIONS: MissionType[] = ['raid', 'scout', 'forage', 'claim', 'tend', 'transport', 'relocate', 'haul', 'colonize', 'hold'];
+export const PLAYER_MISSIONS: MissionType[] = ['raid', 'scout', 'forage', 'claim', 'tend', 'transport', 'relocate', 'trade', 'haul', 'colonize', 'hold'];
 
 /** Castes allowed on a mission, or null for any. */
 export const missionUnitsAllowed = (type: MissionType): CasteId[] | null => MISSION_TYPES[type].onlyUnits ?? null;
@@ -127,14 +137,16 @@ export function missionSlotUsage(
   const used = missions.filter(
     (m) =>
       (MISSION_TYPES[m.type as MissionType]?.slot ?? 'mission') === pool &&
-      (pool !== 'forage' || colonyId === undefined || m.originColonyId === colonyId),
+      (pool === 'mission' || colonyId === undefined || m.originColonyId === colonyId),
   ).length;
-  return { used, max: pool === 'forage' ? forageSlots(research) : missionSlots(research) };
+  return { used, max: pool === 'forage' ? forageSlots(research) : pool === 'trade' ? tradeSlots(research) : missionSlots(research) };
 }
 
 /** What to say when every slot in a pool is taken. */
 export const noSlotsMessage = (pool: MissionSlot, max: number): string =>
-  pool === 'forage'
+  pool === 'trade'
+    ? TRADE_MESSAGES.one_per_colony(max)
+    : pool === 'forage'
     ? `All ${max === 1 ? 'this colony’s forage parties are' : `${max} of this colony’s forage parties are`} already out. Each colony forages on its own; Foraging Instinct adds more.`
     : `All ${max} mission slots are in use. Research Colony Mind for more.`;
 

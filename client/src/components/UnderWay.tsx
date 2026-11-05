@@ -126,8 +126,9 @@ export function UnderWay({ onFocus, compact, limit, go: nav }: { onFocus?: Focus
           const p = tripProgress(m, now);
           const n = sum(m.units);
           const from = homes.get(m.originColonyId);
-          const ends = p.phase === 'out' ? m.arriveAt : p.phase === 'back' ? m.returnAt : null;
-          const verb = p.phase === 'holding' ? (m.type === 'tend' ? 'Tending' : 'Holding') : p.phase === 'out' ? (p.oneWay ? 'Arrives' : 'There') : 'Home';
+          // a trade caravan holding its trail shows when the trail runs out (docs/23-supercolonies.md § Trade trails)
+          const ends = p.phase === 'out' ? m.arriveAt : p.phase === 'back' ? m.returnAt : p.phase === 'holding' && m.type === 'trade' ? m.result?.endsAt ?? null : null;
+          const verb = p.phase === 'holding' ? (m.type === 'tend' ? 'Tending' : m.type === 'trade' ? 'Trail ends' : 'Holding') : p.phase === 'out' ? (p.oneWay ? 'Arrives' : 'There') : 'Home';
           const go = click(`m${m.id}`, from?.coords ?? colony.coords, m.target);
           // where they're going by name (the server names what's there); coordinates only as a last resort
           const mine = (state.colonies ?? []).find((c) => c.coords.region === m.target.region && c.coords.patch === m.target.patch && c.coords.spot === m.target.spot);
@@ -161,6 +162,7 @@ export function UnderWay({ onFocus, compact, limit, go: nav }: { onFocus?: Focus
                 {homes.size > 1 && from ? `From ${from.name} · ` : ''}
                 {compact ? `${fmtFull(n)} ants` : what || `${fmtFull(n)} ants`}
                 {m.result?.recalled ? ' · recalled' : m.result?.turnedBack ? ' · turned back' : ''}
+                {m.type === 'trade' && m.result?.delivered && sum(m.result.delivered) > 0 ? ` · brought ${fmtFull(sum(m.result.delivered))} so far` : ''}
                 {p.phase === 'back' && m.cargo && sum(m.cargo) > 0 ? ` · carrying ${fmtFull(sum(m.cargo))}` : ''}
                 {!compact && (p.phase === 'holding' || (p.phase === 'out' && now < m.arriveAt)) && (
                   <button

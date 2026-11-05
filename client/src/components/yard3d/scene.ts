@@ -854,6 +854,7 @@ export async function createYardScene(host: HTMLElement, labels: HTMLElement, da
   const ants: Ants = createAnts(world, { worker: 2400, soldier: 1600, army: 900, army_major: 30, queen: 4, alate: 10 }, true);
   interface Column { key: string; from: THREE.Vector3; to: THREE.Vector3; path: Path; len: number; thread: THREE.Line; rib: THREE.Mesh; color: string; caste: 'worker' | 'soldier' | 'army'; /** ants really in the party: the column draws many more (march.json) */ units: number; el: HTMLDivElement; prog: (now: number) => { d: number; back: boolean } | null; cargo?: string }
   const columns = new Map<string, Column>();
+  const TRADE_GOODS = '#E0B54A'; // what a trade caravan carries home: a honey-gold load
   const colP = new THREE.Vector3(), colT = new THREE.Vector3(); // scratch: where an ant stands, and which way it faces
   const sumUnits = (u?: Record<string, number>) => Object.values(u ?? {}).reduce((a, b) => a + (b ?? 0), 0);
   function syncColumns() {
@@ -865,12 +866,16 @@ export async function createYardScene(host: HTMLElement, labels: HTMLElement, da
     for (const m of (st.missions ?? []) as any[]) {
       if (!m.origin || !m.target) continue;
       const soldiers = ['raid', 'hold', 'tend', 'claim'].includes(m.type);
+      // a trade caravan keeping its trail open walks to and fro along it, carrying goods home (docs/23-supercolonies.md)
+      const trading = m.type === 'trade' && m.status === 'holding';
       want.set(`m${m.id}`, {
         key: `m${m.id}`, from: spotAt(m.origin), to: spotAt(m.target), color: m.type === 'transport' || m.type === 'relocate' ? CHITIN.worker : soldiers ? CHITIN.soldier : CHITIN.worker,
         caste: soldiers ? 'soldier' : 'worker', units: sumUnits(m.units),
-        label: `${m.type[0].toUpperCase()}${m.type.slice(1)} · ${sumUnits(m.units).toLocaleString('en')}`,
-        prog: (now) => { const p = tripProgress(m, now); return p.oneWay ? { d: p.x, back: false } : { d: p.x <= 0.5 ? p.x * 2 : 2 - p.x * 2, back: p.x > 0.5 }; },
-        cargo: m.cargo && sumUnits(m.cargo) > 0 ? '#7FC24A' : undefined,
+        label: `${m.type === 'trade' ? 'Trade trail' : `${m.type[0].toUpperCase()}${m.type.slice(1)}`} · ${sumUnits(m.units).toLocaleString('en')}`,
+        prog: trading
+          ? (now) => { const t = (now / (MARCH.yard.tradeLeg * 1000)) % 2; return t < 1 ? { d: t, back: false } : { d: 2 - t, back: true }; }
+          : (now) => { const p = tripProgress(m, now); return p.oneWay ? { d: p.x, back: false } : { d: p.x <= 0.5 ? p.x * 2 : 2 - p.x * 2, back: p.x > 0.5 }; },
+        cargo: trading ? TRADE_GOODS : m.cargo && sumUnits(m.cargo) > 0 ? '#7FC24A' : undefined,
       });
     }
     for (const i of (st.incoming ?? []) as any[]) {
@@ -880,7 +885,7 @@ export async function createYardScene(host: HTMLElement, labels: HTMLElement, da
       want.set(`i${i.id}`, {
         key: `i${i.id}`, from: spotAt(i.origin), to: spotAt(target), color: swarm ? CHITIN.army : i.hostile ? CHITIN.raider : CHITIN.worker,
         caste: swarm ? 'army' : i.hostile ? 'soldier' : 'worker', units: i.unitCount ?? 30,
-        label: swarm ? `Army ants · ${i.scouted ? (i.unitCount ?? 0).toLocaleString('en') : '?'}` : i.hostile ? `${i.type === 'claim' && i.wild ? 'Wild ants' : i.type === 'raid' || i.type === 'claim' ? 'Raid' : 'Scouts'} from ${i.from}` : `Delivery from ${i.from}`,
+        label: swarm ? `Army ants · ${i.scouted ? (i.unitCount ?? 0).toLocaleString('en') : '?'}` : i.hostile ? `${i.type === 'claim' && i.wild ? 'Wild ants' : i.type === 'raid' || i.type === 'claim' ? 'Raid' : 'Scouts'} from ${i.from}` : `${i.type === 'trade' ? 'Trade caravan' : 'Delivery'} from ${i.from}`,
         prog: (now) => ({ d: clamp((now - i.departAt) / Math.max(1, i.arriveAt - i.departAt), 0, 1), back: false }),
       });
     }

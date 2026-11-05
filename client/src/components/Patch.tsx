@@ -612,6 +612,11 @@ export function SpotCard({ s, at, onAct }: { s: Spot; at: Coords; onAct: (type: 
                   Raid
                 </button>
               )}
+              {(c.relation === 'truce' || c.relation === 'ally') && can('trade') && (
+                <button className="btn small" onClick={() => go('trade')} title="Open a trade trail: both of you gain goods every few hours">
+                  Trade trail
+                </button>
+              )}
               {c.relation === 'ally' && can('hold') && (
                 <button className="btn small primary" onClick={() => go('hold')}>
                   Hold position
@@ -635,6 +640,11 @@ export function SpotCard({ s, at, onAct }: { s: Spot; at: Coords; onAct: (type: 
               {can('relocate') && (
                 <button className="btn small" onClick={() => go('relocate')} title="Move ants and food there; they stay">
                   Relocate
+                </button>
+              )}
+              {can('trade') && (
+                <button className="btn small" onClick={() => go('trade')} title="Open a trade trail: goods from there every few hours">
+                  Trade trail
                 </button>
               )}
               {c.id != null && (
