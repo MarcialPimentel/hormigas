@@ -206,7 +206,8 @@ function TradeReport({ d }: { d: any }) {
   if (d.host)
     return (
       <p className="report-body">
-        {why} Over {d.deliveries} {d.deliveries === 1 ? 'delivery' : 'deliveries'} {d.from}'s trail brought you <ResLine r={d.partnerGot} hideZero />
+        {d.from}'s trade trail to {d.colony} has closed. {why} Over {d.deliveries} {d.deliveries === 1 ? 'delivery' : 'deliveries'} it brought you{' '}
+        <ResLine r={d.partnerGot} hideZero />, and your colony gave nothing up.
       </p>
     );
   return (

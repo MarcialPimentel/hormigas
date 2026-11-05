@@ -460,7 +460,8 @@ export function SendMission({ type, setType, target, setTarget, onClose, onSent 
           {type === 'trade' && (
             <p className="muted small">
               What comes back depends on the ground there: Sunny Meadow and Sandy Soil send Foliage, Rotting Log Protein, Creek Bank Nectar, Grassland a bundle of
-              all three. Bigger producers and longer trails pay more, and it never takes anything from them. Call the caravan home early from Under way.
+              all three. Bigger producers and longer trails pay more, and it never takes anything from them. On a trail to another player both sides gain: they
+              get a share in the goods of your ground. Call the caravan home early from Under way.
             </p>
           )}
           {scoutingSwarm && swarmAt.scouted && (
@@ -633,29 +634,41 @@ function TradePreview({ target, capacity }: { target: Coords; capacity: number }
   // the host's share follows what the caravan really carries
   const host = p.partner && full > 0 ? (Object.fromEntries(Object.entries(p.partner).map(([k, v]) => [k, Math.floor((v * got) / full)])) as unknown as Resources) : null;
   const line = (r: Resources) => <ResLine r={r} hideZero />;
+  const every = fmtDuration(tradeEveryMs(state!.world.speed));
+  // how many of each carrier it takes to carry a full delivery, so nobody sends more than the trail can fill
+  const carriers = TRADE.carriers.map((c) => {
+    const k = Math.max(1, Math.ceil(full / CASTES[c].cargo));
+    return `${fmtFull(k)} ${k === 1 ? CASTES[c].name : `${CASTES[c].name}s`}`;
+  });
+  const carriersText = `${carriers.slice(0, -1).join(', ')} or ${carriers[carriers.length - 1]}`;
   return (
     <div className="preview">
       <strong>
         {p.kind === 'own' ? 'Trail between your colonies' : p.kind === 'ally' ? 'Trail with a supercolony mate (best pay)' : 'Trail under your truce'}: {p.goods}
       </strong>
-      {capacity === 0 ? (
-        <p className="muted small">Choose carriers to see what they'd bring. The trail could bring up to {fmtFull(full)} a time.</p>
-      ) : (
-        <>
-          <p className="small">
-            Every {fmtDuration(tradeEveryMs(state!.world.speed))} for {fmtDuration(tradeTrailMs(state!.world.speed))}: {line(each)} ({fmtFull(got * n)} over {n} deliveries).
-          </p>
-          {got < full && (
-            <p className="muted small">
-              The trail could bring {fmtFull(full)} a time, but these carriers hold {fmtFull(capacity)}. Send more to carry it all.
-            </p>
-          )}
-          {host && (
-            <p className="muted small">
-              They gain {line(host)} a time too ({p.partnerGoods}, from your ground).
-            </p>
-          )}
-        </>
+      <p className="small">
+        Each delivery brings at most {line(p.potential)}
+        {RESOURCE_IDS.filter((r) => p.potential![r] > 0).length > 1 ? ` (${fmtFull(full)} in all)` : ''}, every {every}, {n} times. Carrying all of it takes about {carriersText}.{' '}
+        {capacity === 0 ? null : got < full ? (
+          <span className="muted">This caravan carries {fmtFull(capacity)}, so each delivery is cut to {line(each)}.</span>
+        ) : (
+          capacity - full >= CASTES.worker.cargo ? (
+          <span className="muted">This caravan carries {fmtFull(capacity)}, more than it needs: extra carriers won't bring more, so send fewer and keep the rest at home.</span>
+        ) : (
+          <span className="muted">This caravan carries {fmtFull(capacity)}: enough for every delivery.</span>
+        )
+        )}
+      </p>
+      {capacity > 0 && (
+        <p className="small">
+          Over the whole trail: <strong>{fmtFull(got * n)}</strong> in {n} deliveries.
+        </p>
+      )}
+      {p.partner && (
+        <p className="small">
+          <strong>Both sides gain.</strong> Each time your caravan brings goods home, their colony gets half as much again in {p.partnerGoods}, the goods of your
+          ground{capacity > 0 && host ? <>: {line(host)} a time</> : null}. Neither colony gives anything up.
+        </p>
       )}
     </div>
   );
