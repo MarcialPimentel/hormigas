@@ -29,6 +29,20 @@
 | **Excavation Works** | Speeds up chamber construction | Queen L4 |
 | **Honeypot Gallery** | Protected storage | Queen L4 |
 
+## What chambers cost
+Numbers live in [`data/chambers.json`](data/chambers.json): `baseCost × costFactor^(L−1)`. Production chambers and the Nursery grow ×1.5–1.6 a level, everything else ×2.
+
+**Foliage builds** ([07-research](07-research.md#what-research-costs-protein-and-nectar) gives each resource its job). Most chambers are paid mostly in Foliage with some Protein, about what colonies earn, and almost none take Nectar, which goes to research and travel. Three exceptions, reviewed on 5 Nov 2026 (Marz):
+
+| Chamber | Before | Now | Why |
+|---|---|---|---|
+| **Nursery** | staffs 20 × L × 1.1^L | **30 × L × 1.1^L** (cost unchanged) | It had to sit 2–3 levels above the chambers it staffs, took about 40% of all chamber spending and its next level cost 42 hours of income on day 14 (a Leaf Garden: 15). Now it can sit at their level |
+| **Nectar Cellar** | 1,000 / 1,000 / 0 | **1,000 / 0 / 1,000** | Storing Nectar cost as much Protein as Foliage (about a million Protein over 40 days) right when Aphid Pastures went ×2.5. Now each store costs Foliage plus what it stores |
+| **Pheromone Chamber** | 200 / 400 / 200 | **180 / 310 / 310** | The research building costs like research: Protein and Nectar above Foliage |
+
+- The Cellar and Pheromone Chamber keep their totals, so nobody's points moved. Build time counts only Foliage + Protein, so a Cellar now digs twice as fast and a Pheromone Chamber a little faster.
+- The Nursery change speeds the whole economy up by about a third after the first day (pacing sim: Leaf Garden 20 at ~14 days instead of ~21; [16-milestones](16-milestones.md)). Players whose production was held back by workforce got the boost on deploy. If resources pile up too fast, 25 is the gentler setting.
+
 ## Build rules
 - One chamber construction per colony at a time.
 - **Dig plan** (from Queen's Chamber 4): the **dig line** holds two digs: the dig in progress and **one** planned behind it. With idle diggers, both places can hold planned digs that can't start yet, so a chamber you can't afford can still be lined up (Build 15). Numbers in [`data/formulas.json`](data/formulas.json) (`digPlan`; the line is `slots` + 1).

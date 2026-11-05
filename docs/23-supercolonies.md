@@ -84,7 +84,7 @@ Four new tables, read and written only through `server/src/game/diplomacy.ts`:
 ## Decisions (Marz, 29 Oct 2026)
 - **Two stages.** Stage A: contact, truces, supercolonies, slow break-up, Hold Position. Stage B: joint raids, trade trails, members' board. Reason: stage B depends on #65 and #67, and a smaller first step is safer on the live world and easier to playtest.
 - **Small dealings free, deep pacts researched, like Civilization.** Contact, gifts and truces need nothing more than having met. Supercolonies need research.
-- **The Supercolony research moves to around colonization:** Pheromone Chamber 3, Nuptial Flight 1, Colony Mind 1, costing about what Nuptial Flight 1 does (5,000 / 6,000 / 5,000), one level only. It was the tree's final goal (Pher 6, Nuptial Flight 5…), weeks away for most players.
+- **The Supercolony research moves to around colonization:** Pheromone Chamber 3, Nuptial Flight 1, Colony Mind 1, costing about what Nuptial Flight 1 does (listed 5,000 / 6,000 / 5,000; since 5 Nov 2026 players pay 3,560 / 6,220 / 6,220, [07-research](07-research.md#what-research-costs-protein-and-nectar)), one level only. It was the tree's final goal (Pher 6, Nuptial Flight 5…), weeks away for most players.
 - **Founder and joiners both need it.** Everyone in a supercolony has passed the colonization stage, and a brand-new player can't be pulled in on day 1.
 - **Truce notice 24 hours; scent fade 3 days.** Long enough for the betrayed side to log in and react, short enough not to trap people.
 - **6 players per supercolony.** With today's player count a bigger cap would let one supercolony hold most of the world, leaving nobody to raid.

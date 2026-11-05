@@ -58,7 +58,7 @@
       "unlock": {},
       "effect": {
         "type": "workforce",
-        "base": 20
+        "base": 30
       }
     },
     "granary": {
@@ -111,9 +111,9 @@
     "pheromone_chamber": {
       "name": "Pheromone Chamber",
       "baseCost": {
-        "foliage": 200,
-        "protein": 400,
-        "nectar": 200
+        "foliage": 180,
+        "protein": 310,
+        "nectar": 310
       },
       "costFactor": 2.0,
       "unlock": {
@@ -145,8 +145,8 @@
       "name": "Nectar Cellar",
       "baseCost": {
         "foliage": 1000,
-        "protein": 1000,
-        "nectar": 0
+        "protein": 0,
+        "nectar": 1000
       },
       "costFactor": 2.0,
       "unlock": {

@@ -22,9 +22,11 @@
 - If demand > supply, **all** production is multiplied by `supply / demand`.
 - This forces balanced growth: upgrading mines without the Nursery gives diminishing returns.
 - UI must show this clearly (red workforce bar + "production at 72%").
+- **A Nursery staffs 30 × L × 1.1^L** (was 20 until 5 Nov 2026), so a Nursery at the same level as your Leaf Garden and Hunting Grounds keeps both fully staffed. At 20 it had to sit 2–3 levels above them and was the biggest single cost in the game, about 40% of all chamber spending ([04-colony](04-colony.md#what-chambers-cost)).
 
 ## Storage
 - Each resource has its own storage chamber: Granary (Foliage), Larder (Protein), Nectar Cellar (Nectar).
+- **Each store costs Foliage plus the resource it stores:** Granary 1,000 Foliage, Larder 1,000 Foliage + 500 Protein, Nectar Cellar 1,000 Foliage + 1,000 Nectar (it cost 1,000 Protein instead of Nectar until 5 Nov 2026), each ×2 per level.
 - Capacity: `10,000 × 1.8^L` (L0 = base 10,000).
 - Production stops at the cap. Resources from missions/raids can exceed it temporarily but production pauses until below cap.
 
