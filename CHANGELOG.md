@@ -2,6 +2,13 @@
 
 _Current as of Build 13 (2026-11-02)._ Newest first. One entry per build, in players' words, built from the merged PRs. Smaller PRs merged between builds are listed with the nearest build.
 
+## Build 18: Goals in the wilds (unreleased)
+- **Termite hunters: the Matabele Ant.** Beat 3 termite mounds and you can raise a new ant in the Brood Hall: the Matabele Ant, a real African ant that hunts nothing but termites. It costs the same as a Major Soldier and cuts through termite armour, so a mound costs you about a third of the ants it used to. After a won fight on a mound it carries its wounded home: 4 in 10 of the ones that fell come back alive, and the battle report says how many. Against other ants it's an ordinary soldier, so it won't help you raid players. Until you've beaten 3 mounds, the Brood Hall shows how many you have so far.
+- **The Termites page grows with you.** In the Field Journal, Termites now has three stages (1, 10 and 50 mounds beaten), and its title grows too: Mound-breaker, then Termite-hunter, then Bane of the Mounds.
+- **Wild ants want windfalls too.** When food drops in the wilds, the wild nests nearby can smell it as well, and the ones that eat it send a party: Honeypot Ants go for figs and sugar, termites for leafy branches, the other ants for dead insects, and anyone for a dead lizard. If they get there first they hold it and carry it home to their nest, where you can raid it back. If you hold it, you'll see **Wild ants coming** and they'll fight your ants for it. While a nest's party is out, the nest has fewer ants at home.
+- **Three new windfalls.** A **dead beetle** (lots of Protein, but the shell makes it slow work: each load carries half), a **sugar spill** (pure Nectar that dries up in 4 hours) and, rarely, **picnic crumbs** (a huge pile of all three foods that every wild nest nearby comes for). Each has a page in the Journal.
+- Parties coming to fight for your windfall were labelled "Scouts" in the Whole Yard and "Delivery" in the 3D Patch. They now say Raid, or Wild ants.
+
 ## Build 15: Plan digs you can't afford yet (unreleased)
 - **Line up a chamber you can't afford yet.** When your diggers are idle and the stores can't pay for a chamber, a **Plan** button now sits next to Dig. The dig waits in line and starts on its own the moment the stores can pay, even while you sleep, and it's only paid for then. The Chambers screen says what it's waiting for and about how long. You can plan two this way; while something is being dug, you can still plan one behind it. Needs Queen's Chamber 4, like before. Remove takes a planned dig out (nothing was paid, so nothing comes back).
 

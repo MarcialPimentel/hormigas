@@ -78,7 +78,7 @@ They follow every wild-nest rule (levels 1–6, 24 h regrowth, gentle raids back
 - **A big store, mostly Foliage** (chewed wood): tier 1 holds 40k Foliage, 20k Protein and 3k Nectar. That's over three times a level-4 wild nest.
 - **Regrows over 72 h** instead of 24, so it's a target you come back to about weekly.
 - **Never raids.** No protection; the bash limit applies. Loot, corpses and defense rebuild work as for any raid.
-- **Planned: termite hunters** ([#205](https://github.com/MarcialPimentel/hormigas/issues/205), decided 5 Nov 2026). Beating mounds felt hollow, since the loot is mostly Foliage. Beat **3 mounds** and you can raise the **Matabele Ant**, a real termite-raiding specialist that is strong against termites and average elsewhere ([05-castes-units](05-castes-units.md#planned-the-matabele-ant)). The Termites Journal page grows to three stages with titles ([26-come-back](26-come-back.md#the-field-journal)).
+- **Termite hunters** (Build 18, [#205](https://github.com/MarcialPimentel/hormigas/issues/205)). Beating mounds felt hollow, since the loot is mostly Foliage. Beat **3 mounds** and you can raise the **Matabele Ant**, a real termite-raiding specialist: on a mound it loses about a third of what Majors lose, against ants it's an ordinary soldier ([05-castes-units](05-castes-units.md#the-matabele-ant)). The Termites Journal page grows to three stages with titles ([26-come-back](26-come-back.md#the-field-journal)).
 
 ### Spider den (boss)
 - One **Trapdoor Spider** and her **Spiderlings** under a silk lid. The spider has huge health and armour, and her fangs kill an ant with each strike, many times a round.

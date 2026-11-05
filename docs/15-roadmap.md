@@ -25,6 +25,8 @@ _Current as of Build 15 (2026-11-04)._ Hormigas has no GitHub milestones: each b
 | 13 | Scout the swarm ([#153](https://github.com/MarcialPimentel/hormigas/pull/153)) | done (live) |
 | 14 | Swarm sizes ([#160](https://github.com/MarcialPimentel/hormigas/pull/160)) | done (live) |
 | 15 | Plan digs you can't afford yet ([#197](https://github.com/MarcialPimentel/hormigas/issues/197), [04-colony](04-colony.md#build-rules)) | in review |
+| 17 | Joint raids, and spider dens become alliance raids ([#98](https://github.com/MarcialPimentel/hormigas/issues/98), [#207](https://github.com/MarcialPimentel/hormigas/issues/207), [24-npcs](24-npcs.md#spider-den-boss)) | planned |
+| 18 | Goals in the wilds: the Matabele Ant earned on termite mounds, wild nests going out for windfalls, three new windfalls ([#205](https://github.com/MarcialPimentel/hormigas/issues/205), [#206](https://github.com/MarcialPimentel/hormigas/issues/206), [27-living-world](27-living-world.md#5-goals-in-the-wilds)) | in review |
 | — | Background music: the colony marches to its own footsteps ([#139](https://github.com/MarcialPimentel/hormigas/pull/139), [sound](sound.md)) | done (live) |
 | — | Music: three songs replace the code-made march (Suno, [sound](sound.md)) | in review |
 | 13 | Scout the swarm: the swarm's size hidden until scouted, Scouts sent out to meet it with visible odds, live battle odds once scouted ([20-swarms](20-swarms.md)) | in review |

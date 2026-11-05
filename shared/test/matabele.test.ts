@@ -1,4 +1,4 @@
-// The Matabele Ant (docs/05-castes-units.md#planned-the-matabele-ant): earned by beating termite mounds, strong
+// The Matabele Ant (docs/05-castes-units.md#the-matabele-ant): earned by beating termite mounds, strong
 // against termites, an ordinary soldier against everything else. The Termites journal page grows with it.
 import { describe, expect, it } from 'vitest';
 import {

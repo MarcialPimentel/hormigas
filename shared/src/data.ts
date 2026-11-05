@@ -42,7 +42,7 @@ export const CASTE_IDS = [
   // Build 11: the full roster (docs/05-castes-units.md)
   'supermajor',
   'slave_maker',
-  // earned by beating termite mounds, not researched (docs/05-castes-units.md#planned-the-matabele-ant)
+  // earned by beating termite mounds, not researched (docs/05-castes-units.md#the-matabele-ant)
   'matabele',
   'desert_ant',
   'gardener_minim',

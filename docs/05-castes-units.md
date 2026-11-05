@@ -118,15 +118,25 @@ Rule: every unit should have **at least one counter** and **at least one thing i
 
 **Decisions (Marz, 29 Oct 2026, Build 10):** a triangle plus a siege caste, rather than retuning the two old castes (that stays knife-edge) or adding ally species now. Existing armies are unchanged; every player got a report explaining the change. No refunds.
 
-## Planned: the Matabele Ant
-_[#205](https://github.com/MarcialPimentel/hormigas/issues/205), decided by Marz 5 Nov 2026. Numbers to set in the build with `npm run combat`._
+## The Matabele Ant
+_Build 18 ([#205](https://github.com/MarcialPimentel/hormigas/issues/205)), decided by Marz 5 Nov 2026. Numbers in `castes.json` (`matabele`), first pass for playtest._
 
 The first caste you **earn by deeds** rather than by chambers or research. *Megaponera analis* raids only termites. It marches in columns behind a scout and carries its injured nestmates home (pillar 4).
 
-- **Unlock:** beat **3 termite mounds**, counted across all your colonies (`beat:termite`). `castes.json` needs a new kind of `unlock`: a deed count.
-- **Role:** soldier. `frenzy` on Termite Workers and Termite Soldiers, and enough attack to get past their guard.
-- **Fair (pillar 3):** against players and other ants it does no better than a Major Soldier of the same cost. It makes mounds easier, not players.
-- **Carries the wounded home:** after a fight it wins, some of its fallen come home alive. Open: in every fight, or only against termites.
+- **Unlock:** Brood Hall 2 and **3 termite mounds beaten**, counted across all your colonies. In `castes.json` that's `"deed.beat:termite": 3`, a new kind of `unlock` that reads a lifetime counter (`shared/src/stats.ts`). The Brood Hall shows "Needs Termite mounds beaten: 1/3" until then.
+- **Stats:** costs like a Major Soldier (600 F / 400 P / 100 N); attack 140, guard 25, health 100. `frenzy` 3 on Termite Workers and 2 on Termite Soldiers.
+- **Countered like a Major:** Bullet Ants hunt it (frenzy 4) and Minor Soldiers outnumber it. Without that it had no counter and did a little better than a Major against a mixed army.
+- **Carries the wounded home:** after a won fight against termites, **40%** of its fallen come home alive (`rescue` in `castes.json`, applied in `simulateBattle`, so the battle preview, the report and `npm run combat` agree). The battle report says how many. Decided while building: only against termites, so it never helps against players (Marz can overrule).
+- **Fair (pillar 3), checked with the combat code:**
+
+  | Against | Matabele Ant | Major Soldier |
+  |---|---|---|
+  | Termite mound, tier 1–3, at a fair army's spend | wins, loses 4–5% | wins, loses 13–16% |
+  | Major Soldiers, equal spend | 42% wins | (mirror) |
+  | Acid Sprayers / Trap-jaw Ants, equal spend | loses (0–1%) | wins (100%) |
+  | An even mix of every soldier caste | does as much damage as a Major | — |
+
+  `shared/test/matabele.test.ts` guards this.
 
 ## Open Questions
 - Should units have upkeep (ongoing Protein cost)? Pro: limits hoarding armies. Con: punishes offline players. Proposal: no upkeep in MVP.
