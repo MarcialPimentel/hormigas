@@ -3,7 +3,7 @@ import { api } from '../api';
 import { useGame } from '../game';
 import { fmtDuration } from '../format';
 import { CHAMBER_BLURB, chamberEffect } from '../describe';
-import { chamberPlan, plannedDig } from '../chamberPlan';
+import { chamberPlan, plannedDigs } from '../chamberPlan';
 import { Cost, Countdown, Panel, Pic } from '../components/ui';
 
 const GROUPS: { title: string; ids: ChamberId[] }[] = [
@@ -19,8 +19,8 @@ export function Chambers() {
   const used = spaceUsed(colony.chambers);
   const max = spaceMax(colony.baseSpace, research);
   const job = colony.buildJob;
-  const planned = plannedDig(colony, state, now);
-  const unplan = () => act(() => api.post(`/api/colonies/${colony.id}/plan/cancel`, { index: 0 }), 'Planned dig removed.');
+  const planned = plannedDigs(colony, state, now);
+  const unplan = (index: number) => act(() => api.post(`/api/colonies/${colony.id}/plan/cancel`, { index }), 'Planned dig removed.');
 
   return (
     <div className="stack">
@@ -42,27 +42,27 @@ export function Chambers() {
               Cancel
             </button>
           </div>
-        ) : planned ? null : (
+        ) : planned.length ? null : (
           <p className="muted">Your diggers are idle. Pick a chamber to expand.</p>
         )}
-        {planned && (
-          <div className="active-job planned-job">
+        {planned.map((p) => (
+          <div key={p.index} className="active-job planned-job">
             <div>
-              <strong>{planned.waiting ? 'Planned' : 'Next'}: {CHAMBERS[planned.id].name}</strong> to level {planned.level}
-              <div className="muted small">{planned.note}</div>
+              <strong>{p.waiting && p.index === 0 ? 'Planned' : 'Next'}: {CHAMBERS[p.id].name}</strong> to level {p.level}
+              <div className="muted small">{p.note}</div>
             </div>
-            <button className="btn ghost small" onClick={unplan}>
+            <button className="btn ghost small" onClick={() => unplan(p.index)}>
               Remove
             </button>
           </div>
-        )}
+        ))}
       </Panel>
 
       {GROUPS.map((g) => (
         <Panel key={g.title} title={g.title}>
           <ul className="rows">
             {g.ids.map((id) => {
-              const { level, next, locked, cost, secs, blocked, planning } = chamberPlan(colony, state, id);
+              const { level, next, locked, cost, secs, blocked, dig, plan } = chamberPlan(colony, state, id);
               return (
                 <li key={id} className={`row has-pic${locked ? ' locked' : ''}`}>
                   <Pic kind="chamber" id={id} />
@@ -89,18 +89,28 @@ export function Chambers() {
                       <>
                         <Cost cost={cost} have={colony.resources} />
                         <span className="time">{fmtDuration(secs * 1000)}</span>
-                        <button
-                          className="btn primary"
-                          disabled={!!blocked}
-                          title={blocked || undefined}
-                          onClick={() =>
-                            planning
-                              ? act(() => api.post(`/api/colonies/${colony.id}/plan`, { chamber: id }), `Planned: ${CHAMBERS[id].name} ${next} digs next.`)
-                              : act(() => api.post(`/api/colonies/${colony.id}/build`, { chamber: id }))
-                          }
-                        >
-                          {planning ? `Plan level ${next}` : level === 0 ? 'Build' : `Dig level ${next}`}
-                        </button>
+                        <span className="dig-buttons">
+                          {dig && (
+                            <button
+                              className="btn primary"
+                              disabled={!!dig.blocked}
+                              title={dig.blocked || undefined}
+                              onClick={() => act(() => api.post(`/api/colonies/${colony.id}/build`, { chamber: id }))}
+                            >
+                              {level === 0 ? 'Build' : `Dig level ${dig.next}`}
+                            </button>
+                          )}
+                          {plan && (
+                            <button
+                              className={dig ? 'btn' : 'btn primary'}
+                              disabled={!!plan.blocked}
+                              title={plan.blocked || 'Starts on its own when the diggers are free and the stores can pay. Nothing is paid until then.'}
+                              onClick={() => act(() => api.post(`/api/colonies/${colony.id}/plan`, { chamber: id }), dig ? `Planned: ${CHAMBERS[id].name} ${plan.next} starts on its own when the stores can pay.` : `Planned: ${CHAMBERS[id].name} ${plan.next} digs next.`)}
+                            >
+                              {`Plan level ${plan.next}`}
+                            </button>
+                          )}
+                        </span>
                         {blocked && <span className="why">{blocked}</span>}
                       </>
                     )}

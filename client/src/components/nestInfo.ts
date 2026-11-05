@@ -18,7 +18,7 @@ export function chamberTag(colony: ServerColony, state: ServerState | null, now:
   const job = colony.buildJob;
   if (job?.chamber === id) return { text: `Digging · ${fmtDuration(job.endAt - now)}`, tone: 'dig' };
   if (level === 0) return null;
-  if (colony.digPlan?.chambers[0] === id) return { text: 'Planned next', tone: 'dig' };
+  if (colony.digPlan?.chambers.includes(id)) return { text: colony.buildJob || colony.digPlan.chambers[0] === id ? 'Planned next' : 'Planned', tone: 'dig' };
   const rj = state?.player.researchJob;
   if (id === 'pheromone_chamber' && rj) return { text: `${RESEARCH[rj.research as ResearchId].name} · ${fmtDuration(rj.endAt - now)}`, tone: 'learn' };
   const qEnd = queueEndsAt(colony.unitQueue);

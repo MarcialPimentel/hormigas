@@ -1,5 +1,6 @@
-// The dig plan (docs/04-colony.md): chambers lined up behind the dig in progress. A planned dig costs nothing
-// until it starts; it starts, and is paid for, as soon as the diggers are free and the colony can afford it.
+// The dig plan (docs/04-colony.md): chambers lined up to dig next. A planned dig costs nothing until it starts;
+// it starts, and is paid for, as soon as the diggers are free and the colony can afford it. The dig line holds the
+// dig in progress plus the plan, so with idle diggers every place in it can wait for a dig you can't afford yet.
 // Written once here so the server's rules and the client's words always agree.
 import { CHAMBERS, FORMULAS, type ChamberId, type Resources } from './data';
 import {
@@ -14,6 +15,7 @@ import {
   storageCapacity,
   type ChamberLevels,
 } from './economy';
+import { canAfford } from './resources';
 import { chamberBlocker, type Blocker, type BlockerColony, type BlockerPlayer } from './blockers';
 import { queueEndsAt } from './queue';
 import type { ColonyState } from './colony';
@@ -41,6 +43,7 @@ export const digPlanNeeds = (): string =>
     .join(', ');
 
 export interface PlanColony extends BlockerColony {
+  resources: Resources;
   buildJob?: { chamber: string; level?: number } | null;
   digPlan?: DigPlan | null;
 }
@@ -62,24 +65,39 @@ export function plannedLevel(c: PlanColony, index: number): number {
 export const nextPlannedLevel = (c: PlanColony, id: ChamberId): number =>
   plannedLevel({ ...c, digPlan: { chambers: [...(c.digPlan?.chambers ?? []), id] } }, c.digPlan?.chambers.length ?? 0);
 
-/** Why `id` can't be added to the dig plan right now, or null. A busy Brood Hall or running research doesn't stop it: the planned dig waits. */
+/** How many digs the dig line holds: the dig in progress plus the planned ones (0 until the plan is unlocked). */
+export const digLineSize = (chambers: ChamberLevels, research: BlockerPlayer['research']): number => {
+  const slots = digPlanSlots(chambers, research);
+  return slots ? slots + 1 : 0;
+};
+
+/**
+ * Why `id` can't be added to the dig plan right now, or null. Planning works while something is being dug, and also
+ * while the diggers are idle if the dig can't start yet (the stores can't pay, the Brood Hall is raising units,
+ * research is running): it waits and starts on its own. The dig line holds the dig in progress plus the plan.
+ */
 export function planBlocker(id: ChamberId, c: PlanColony, p: BlockerPlayer): Blocker | null {
   const slots = digPlanSlots(c.chambers, p.research);
   if (slots === 0) {
     const list = digPlanNeeds();
-    return { code: 'locked', message: `Planning the next dig needs ${list}.`, short: `Planning needs ${list}` };
+    return { code: 'locked', message: `Planning digs needs ${list}.`, short: `Planning needs ${list}` };
   }
-  if (!c.buildJob) return { code: 'nothing', message: 'Your diggers are free: dig it now instead.', short: 'Dig it now' };
   const planned = c.digPlan?.chambers.length ?? 0;
-  if (planned >= slots)
-    return { code: 'full', message: slots === 1 ? 'The next dig is already planned.' : `${slots} digs are already planned.`, short: 'Next dig already planned' };
+  const digging = c.buildJob ? 1 : 0;
+  if (digging + planned >= slots + 1)
+    return c.buildJob
+      ? { code: 'full', message: slots === 1 ? 'The next dig is already planned.' : `${slots} digs are already planned.`, short: 'Next dig already planned' }
+      : { code: 'full', message: `${slots + 1} digs are already planned.`, short: 'Plan is full' };
+  // idle diggers and nothing waiting: if it can start right now, dig it instead of planning it
+  if (!c.buildJob && planned === 0 && !chamberBlocker(id, c, p) && canAfford(c.resources, chamberCost(id, lvl(c.chambers, id) + 1)))
+    return { code: 'nothing', message: 'Your diggers are free and the stores can pay: dig it now instead.', short: 'Dig it now' };
   const missing = missingRequirements(CHAMBERS[id].unlock, c.chambers, p.research);
   if (missing.length) {
     const list = missing.map((m) => `${m.name} ${m.need}`).join(', ');
     return { code: 'locked', message: `Requires ${list}.`, short: `Needs ${list}` };
   }
   // every level in progress or planned takes one more unit of space
-  if (spaceUsed(c.chambers) + 1 + planned + 1 > spaceMax(c.baseSpace ?? 0, p.research))
+  if (spaceUsed(c.chambers) + digging + planned + 1 > spaceMax(c.baseSpace ?? 0, p.research))
     return { code: 'no_space', message: 'No space left in this nest for another dig. Research Deep Digging to expand.', short: 'No space left' };
   const cost = chamberCost(id, nextPlannedLevel(c, id));
   const caps = storageCapacity(c.chambers, p.research);

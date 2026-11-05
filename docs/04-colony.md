@@ -31,13 +31,14 @@
 
 ## Build rules
 - One chamber construction per colony at a time.
-- **Dig plan** (from Queen's Chamber 4): while a dig is under way, you can plan **one** more behind it. Numbers in [`data/formulas.json`](data/formulas.json) (`digPlan`).
+- **Dig plan** (from Queen's Chamber 4): the **dig line** holds two digs: the dig in progress and **one** planned behind it. With idle diggers, both places can hold planned digs that can't start yet, so a chamber you can't afford can still be lined up (Build 15). Numbers in [`data/formulas.json`](data/formulas.json) (`digPlan`; the line is `slots` + 1).
   - A planned dig costs nothing until it starts. It starts, and is paid for, the moment the diggers are free and the stores can pay, offline too. If they can't pay yet, it waits, and the Chambers screen says what for and for how long.
-  - Planning the same chamber again counts the dig in progress (Leaf Garden 12 under way → plan Leaf Garden 13). Space is reserved for both.
+  - **Plan sits next to Dig.** While the diggers are idle and a dig can't start (not enough food, a busy Brood Hall, research running), the Chambers screen and the chamber card offer Plan beside Dig. If it can start right now, it's dug, not planned.
+  - Planning the same chamber again counts the dig in progress and earlier planned digs (Leaf Garden 12 under way → plan Leaf Garden 13). Space is reserved for each.
   - A planned Brood Hall waits for the units being raised; a planned Pheromone Chamber waits for the research.
-  - Cancelling the dig in progress moves the planned dig up. Removing a planned dig refunds nothing, because nothing was paid.
-  - Refused at planning time: no dig in progress (dig it now instead), plan already full, chamber locked, no space, or a cost bigger than storage.
-  - Why one slot, unlocked mid-game, paid at start: it covers a night's sleep or a workday (pillar 1) without letting anyone plan a week ahead, so check-ins still matter ([01-core-loop](01-core-loop.md)). Early digs take minutes and the game is meant to be hands-on then. Paying at start means the plan can't hide resources from raids, and full storage still nudges you to come back. Never sold ([14-monetization](14-monetization.md)).
+  - Digging something by hand while plans wait jumps the line: the plans wait behind it. Cancelling the dig in progress moves the planned dig up. Removing a planned dig refunds nothing, because nothing was paid.
+  - Refused at planning time: a dig that could start right now (dig it now instead), line already full, chamber locked, no space, or a cost bigger than storage.
+  - Why a line of two, unlocked mid-game, paid at start: it covers a night's sleep or a workday (pillar 1) without letting anyone plan a week ahead, so check-ins still matter ([01-core-loop](01-core-loop.md)). Early digs take minutes and the game is meant to be hands-on then. Paying at start means the plan can't hide resources from raids, and full storage still nudges you to come back. Never sold ([14-monetization](14-monetization.md)).
 - Brood Hall can't produce units while it is itself being upgraded.
 - Pheromone Chamber can't research while being upgraded.
 - Cancelling refunds 100% in MVP (tune later).

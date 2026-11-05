@@ -1,6 +1,6 @@
 // The dig plan's shared rules (docs/04-colony.md): what can be planned, which level it reaches, what it waits for.
 import { describe, expect, it } from 'vitest';
-import { DIG_PLAN, chamberCost, digPlanSlots, digPlanWait, planBlocker, plannedLevel, spaceUsed, type ChamberLevels } from '../src';
+import { DIG_PLAN, chamberCost, digLineSize, digPlanSlots, digPlanWait, planBlocker, plannedLevel, spaceUsed, type ChamberLevels } from '../src';
 
 const chambers: ChamberLevels = { queen_chamber: 4, leaf_garden: 5, hunting_grounds: 5, nursery: 6, granary: 5, larder: 5, brood_hall: 2 };
 const colony = {
@@ -27,6 +27,26 @@ describe('dig plan rules', () => {
     expect(plannedLevel(c, 0)).toBe(7);
     const other = { ...colony, buildJob: { chamber: 'nursery' }, digPlan: { chambers: ['leaf_garden' as const] } };
     expect(plannedLevel(other, 0)).toBe(6);
+  });
+
+  it('with idle diggers, plans only what cannot start now, and the line holds two', () => {
+    const idle = { ...colony, buildJob: null, digPlan: null };
+    expect(digLineSize(chambers, {})).toBe(2);
+    expect(digLineSize({ queen_chamber: 3 }, {})).toBe(0);
+    // the stores can pay: dig it now
+    expect(planBlocker('leaf_garden', idle, player)?.code).toBe('nothing');
+    // they can't: plan it
+    const poor = { ...idle, resources: { foliage: 0, protein: 0, nectar: 0 } };
+    expect(planBlocker('leaf_garden', poor, player)).toBeNull();
+    // a busy Brood Hall can be planned too: it waits for the units
+    const queue = [{ kind: 'caste' as const, id: 'minor_soldier' as const, count: 5, done: 0, perUnitMs: 60_000, startAt: T }];
+    expect(planBlocker('brood_hall', { ...idle, unitQueue: queue }, player)).toBeNull();
+    // one already waiting: a second can line up behind it, even if affordable; a third can't
+    const one = { ...poor, digPlan: { chambers: ['leaf_garden' as const] } };
+    expect(planBlocker('nursery', { ...one, resources: colony.resources }, player)).toBeNull();
+    expect(planBlocker('nursery', { ...poor, digPlan: { chambers: ['leaf_garden' as const, 'granary' as const] } }, player)?.code).toBe('full');
+    // while digging, one waits behind it
+    expect(planBlocker('nursery', { ...one, buildJob: { chamber: 'granary' } }, player)?.code).toBe('full');
   });
 
   it('reserves space for the dig in progress', () => {
