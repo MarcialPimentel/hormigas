@@ -1,7 +1,7 @@
 // Build 16: trade trails (docs/23-supercolonies.md § Trade trails).
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { FastifyInstance } from 'fastify';
-import { CASTES, TRADE, TRADE_MESSAGES, missionSlotUsage, terrainForSpot, tradeDelivery, tradeEveryMs, truceNoticeMs } from '@hormigas/shared';
+import { CASTES, TERRAIN, TRADE, TRADE_MESSAGES, missionSlotUsage, terrainForSpot, tradeDelivery, tradeEveryMs, truceNoticeMs } from '@hormigas/shared';
 import { getPool } from '../src/db';
 import { setupTest, teardownTest, newPlayer, newPlayerBeside, setColony, setPlayer, calmWildNests, calmNestEvents, knowAll, type Client } from './helpers';
 
@@ -27,8 +27,11 @@ beforeAll(async () => {
   [ca, cb] = [sa.colony, sb.colony];
   [ida, idb] = [sa.player.id, sb.player.id];
   speed = sa.world.speed;
-  // a second colony of a's on Sunny Meadow (spot 1) in the same patch: it makes Foliage, so its trail brings Foliage
-  const spot = 1;
+  // a second colony of a's on a free Sunny Meadow spot in the same patch: it makes Foliage, so its trail brings Foliage.
+  // Sign-ups land on any spot, so pick one nobody holds (a fixed spot 1 clashed whenever a player started there).
+  const taken = await getPool().query('SELECT spot FROM colonies WHERE world_id = 1 AND region = $1 AND patch = $2', [ca.coords.region, ca.coords.patch]);
+  const spot = TERRAIN.sunny_meadow.spots.find((s) => !taken.rows.some((row: { spot: number }) => row.spot === s));
+  if (spot === undefined) throw new Error('no free Sunny Meadow spot in the test patch');
   const r = await getPool().query(
     `INSERT INTO colonies (world_id, player_id, name, region, patch, spot, terrain, base_space, last_updated, chambers, created_at)
      VALUES (1, $1, 'Meadow Nest', $2, $3, $4, $5, 150, $6, $7, $6) RETURNING id`,
