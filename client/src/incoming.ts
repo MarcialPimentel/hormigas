@@ -2,7 +2,7 @@
 // A truce or a shared scent makes the sender's scouts visitors and turns their raids back (docs/23-supercolonies.md).
 import { RELATION_NAMES, type Relation } from '@hormigas/shared';
 
-const INCOMING: Record<string, string> = { swarm: 'Army ant swarm', raid: 'Raid', scout: 'Enemy scouts', hold: 'Allied soldiers', transport: 'Delivery' };
+const INCOMING: Record<string, string> = { swarm: 'Army ant swarm', raid: 'Raid', scout: 'Enemy scouts', hold: 'Allied soldiers', transport: 'Delivery', trade: 'Trade caravan' };
 
 export type IncomingLike = { type: string; pact?: Relation | null; scouted?: boolean; sizeName?: string };
 

@@ -95,13 +95,13 @@ defineMission('trade', {
     const perDelivery = tradeDelivery(tradePotential(destPerHour(dest), dest.terrain, distance(m.origin, m.target), kind), groupCargo(m.units));
     await addReport(q, m.worldId, m.playerId, 'trade', `Your caravan opened a trade trail to ${dest.name}`, {
       opened: true, colony: dest.name, from: home.name, kind, units: m.units, goods: tradeGoodsNames(dest.terrain), perDelivery,
-      everyHours: TRADE.deliverEveryHours, deliveries: TRADE.deliveries, endsAt: result.endsAt,
+      everyHours: TRADE.deliverEveryHours, everyMs: tradeEveryMs(speed), deliveries: TRADE.deliveries, endsAt: result.endsAt,
     }, at);
     if (dest.playerId !== m.playerId) {
       await addReport(q, m.worldId, dest.playerId, 'trade', `${sender.username}'s caravan opened a trade trail to ${dest.name}`, {
         opened: true, host: true, colony: dest.name, from: sender.username, fromColony: home.name, kind,
         goods: tradeGoodsNames(home.terrain), partnerPerDelivery: tradePartnerGoods(perDelivery, home.terrain),
-        everyHours: TRADE.deliverEveryHours, deliveries: TRADE.deliveries, endsAt: result.endsAt,
+        everyHours: TRADE.deliverEveryHours, everyMs: tradeEveryMs(speed), deliveries: TRADE.deliveries, endsAt: result.endsAt,
       }, at);
     }
     return { home: true, stay: true };

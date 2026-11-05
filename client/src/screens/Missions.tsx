@@ -29,7 +29,14 @@ import {
   speedForReturnIn,
   travelSeconds,
   validCoords,
+  TRADE,
+  TRADE_MESSAGES,
+  tradeDelivery,
+  tradeKindFor,
+  tradeTrailMs,
+  tradeEveryMs,
   type CasteId,
+  type Resources,
   type Coords,
   type UnitCounts,
 } from '@hormigas/shared';
@@ -45,6 +52,7 @@ import { SwarmScoutOdds } from '../components/SwarmIntel';
 import { ScoutRisk } from '../components/ScoutRisk';
 import { PatchView, isScent, usePatchMode, type PartyFocus, type Spot } from '../components/Patch';
 import { UnderWay, type FocusParty } from '../components/UnderWay';
+import { ResLine } from './Reports';
 
 export interface MissionDraft {
   type?: MissionType;
@@ -246,6 +254,13 @@ export function SendMission({ type, setType, target, setTarget, onClose, onSent 
   const rel = targetSpot?.colony?.relation;
   if (type === 'raid' && rel) problems.push(raidBlockMessage({ relation: rel, until: targetSpot?.colony?.relationUntil ?? undefined }));
   if (type === 'hold' && targetSpot !== undefined && rel !== 'ally') problems.push(DIPLOMACY_MESSAGES.hold_needs_ally);
+  // trade trails go to your colonies, or to a player you have a truce or a shared scent with (docs/23-supercolonies.md)
+  if (type === 'trade' && targetSpot !== undefined) {
+    const there = targetSpot?.colony;
+    if (!there || there.wild || herd || windfall) problems.push('Trade trails go to colonies: yours, or a player’s.');
+    else if (unscouted) problems.push(DISCOVERY_MESSAGES.send_needs_scout);
+    else if (!there.mine && !tradeKindFor(false, rel)) problems.push(rel ? TRADE_MESSAGES.pact_ending : TRADE_MESSAGES.needs_pact);
+  }
   if (presentUnits(chosen).length === 0) problems.push('Choose units to send.');
   const unitProblem = missionUnitProblem(type, chosen);
   if (unitProblem && presentUnits(chosen).length > 0) problems.push(unitProblem.short);
@@ -311,7 +326,7 @@ export function SendMission({ type, setType, target, setTarget, onClose, onSent 
         title={`${MISSION_LABEL[type]}: ${colony.name} → ${scoutingSwarm ? 'Army ant swarm' : toName}`}
         actions={
           <>
-            <span className="muted small">{used}/{max} {pool === 'forage' ? 'forage parties' : 'slots'} in use</span>
+            <span className="muted small">{used}/{max} {pool === 'forage' ? 'forage parties' : pool === 'trade' ? 'trade trails from here' : 'slots'} in use</span>
             {onClose && (
               <button className="btn ghost small" onClick={onClose} aria-label="Close the deploy card">
                 ✕
@@ -435,6 +450,12 @@ export function SendMission({ type, setType, target, setTarget, onClose, onSent 
               {fmtDuration(Math.max(0, windfall.endsAt - now))}. Send soldiers to win and keep it, and carriers to haul it.
             </p>
           )}
+          {type === 'trade' && (
+            <p className="muted small">
+              What comes back depends on the ground there: Sunny Meadow and Sandy Soil send Foliage, Rotting Log Protein, Creek Bank Nectar, Grassland a bundle of
+              all three. Bigger producers and longer trails pay more, and it never takes anything from them. Call the caravan home early from Under way.
+            </p>
+          )}
           {scoutingSwarm && swarmAt.scouted && (
             <p className="muted small">Your scouts have already seen this swarm: its size and your odds are on its card under Under way. More Scouts won't tell you more.</p>
           )}
@@ -532,6 +553,8 @@ export function SendMission({ type, setType, target, setTarget, onClose, onSent 
           <ScoutRisk target={target} scouts={lvl(chosen, 'scout')} colony={targetSpot?.colony} />
         )}
 
+        {type === 'trade' && valid && targetSpot?.colony && !unscouted && <TradePreview target={target} capacity={capacity} />}
+
         {type === 'raid' && !unscouted && <BattlePreview target={target} units={chosen} retreatPct={retreatPct} npcSite={npcSite} />}
         {/* claiming a windfall someone holds (or wild ants guard) is a fight under the raid rules (server/src/game/windfalls.ts) */}
         {type === 'claim' && windfall && !windfall.yours && (windfall.held || windfall.guarded) && (
@@ -548,7 +571,7 @@ export function SendMission({ type, setType, target, setTarget, onClose, onSent 
           <div><dt>Distance</dt><dd>{valid ? fmtNum(dist) : '—'}</dd></div>
           <div><dt>One way</dt><dd>{oneWay ? fmtDuration(oneWay * 1000) : '—'}</dd></div>
           <div><dt>Arrives</dt><dd>{times ? fmtClock(times.arriveAt) : '—'}</dd></div>
-          <div><dt>Back home</dt><dd>{times?.returnAt ? fmtClock(times.returnAt) : type === 'hold' ? 'when recalled' : stays ? 'stays' : '—'}</dd></div>
+          <div><dt>Back home</dt><dd>{times?.returnAt ? fmtClock(times.returnAt) : type === 'hold' ? 'when recalled' : type === 'trade' && times ? fmtClock(times.arriveAt + tradeTrailMs(state.world.speed) + oneWay * 1000) : stays ? 'stays' : '—'}</dd></div>
           <div><dt>Nectar fuel (paid once)</dt><dd className={fuel > colony.resources.nectar ? 'warn' : ''}>{fuel ? fmtFull(fuel) : '—'}</dd></div>
           {type !== 'scout' && <div><dt>{type === 'haul' ? 'Corpse capacity' : 'Capacity'}</dt><dd>{fmtFull(capacity)}</dd></div>}
         </dl>
@@ -566,6 +589,68 @@ export function SendMission({ type, setType, target, setTarget, onClose, onSent 
           Send {MISSION_LABEL[type].toLowerCase()} to {valid ? fmtCoords(target) : '…'}
         </button>
       </Panel>
+  );
+}
+
+interface TradePreviewData {
+  problem?: string;
+  kind?: 'own' | 'truce' | 'ally';
+  goods?: string;
+  potential?: Resources;
+  partner?: Resources | null;
+  partnerGoods?: string | null;
+  everyHours?: number;
+  deliveries?: number;
+}
+
+/** What a trail from this colony to the target would bring, per delivery and over the whole trail (server: GET /api/trade/preview). */
+function TradePreview({ target, capacity }: { target: Coords; capacity: number }) {
+  const { colony, state } = useGame();
+  const [p, setP] = useState<TradePreviewData | null>(null);
+  useEffect(() => {
+    if (!colony) return;
+    let live = true;
+    api
+      .get(`/api/trade/preview?colonyId=${colony.id}&region=${target.region}&patch=${target.patch}&spot=${target.spot}`)
+      .then((r) => live && setP(r))
+      .catch(() => live && setP(null));
+    return () => {
+      live = false;
+    };
+  }, [colony?.id, target.region, target.patch, target.spot, state?.serverNow]);
+  if (!p || p.problem || !p.potential) return null;
+  const full = p.potential.foliage + p.potential.protein + p.potential.nectar;
+  const each = tradeDelivery(p.potential, capacity);
+  const got = each.foliage + each.protein + each.nectar;
+  const n = p.deliveries ?? TRADE.deliveries;
+  // the host's share follows what the caravan really carries
+  const host = p.partner && full > 0 ? (Object.fromEntries(Object.entries(p.partner).map(([k, v]) => [k, Math.floor((v * got) / full)])) as unknown as Resources) : null;
+  const line = (r: Resources) => <ResLine r={r} hideZero />;
+  return (
+    <div className="preview">
+      <strong>
+        {p.kind === 'own' ? 'Trail between your colonies' : p.kind === 'ally' ? 'Trail with a supercolony mate (best pay)' : 'Trail under your truce'}: {p.goods}
+      </strong>
+      {capacity === 0 ? (
+        <p className="muted small">Choose carriers to see what they'd bring. The trail could bring up to {fmtFull(full)} a time.</p>
+      ) : (
+        <>
+          <p className="small">
+            Every {fmtDuration(tradeEveryMs(state!.world.speed))} for {fmtDuration(tradeTrailMs(state!.world.speed))}: {line(each)} ({fmtFull(got * n)} over {n} deliveries).
+          </p>
+          {got < full && (
+            <p className="muted small">
+              The trail could bring {fmtFull(full)} a time, but these carriers hold {fmtFull(capacity)}. Send more to carry it all.
+            </p>
+          )}
+          {host && (
+            <p className="muted small">
+              They gain {line(host)} a time too ({p.partnerGoods}, from your ground).
+            </p>
+          )}
+        </>
+      )}
+    </div>
   );
 }
 

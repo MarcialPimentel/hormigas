@@ -57,6 +57,8 @@ export const ORDERS: Order[] = [
   { id: 'claim_far', label: 'Claim far windfall', group: 'Send', type: 'claim', to: 'windfallFar', units: { minor_soldier: 0.4, worker: 0.6 }, back: { protein: 1 }, hold: 1 },
   { id: 'tend', label: 'Tend aphids', group: 'Send', type: 'tend', to: 'herd', units: { worker: 1 }, back: { nectar: 1 }, hold: 1 },
   { id: 'transport', label: 'Transport', group: 'Send', type: 'transport', to: 'second', units: { worker: 1 } },
+  // a caravan keeps a trail open (walking to and fro on the map), then walks home (docs/23-supercolonies.md § Trade trails)
+  { id: 'trade', label: 'Trade trail', group: 'Send', type: 'trade', to: 'second', units: { media_worker: 0.6, worker: 0.4 }, back: {}, hold: 3 },
   { id: 'colonize', label: 'Found colony', group: 'Send', type: 'colonize', to: 'empty', units: { winged_queen: 0, worker: 1 } },
   { id: 'raid_in', label: 'Raid on you', group: 'Incoming', type: 'raid_in', from: 'rivalFar', to: 'home' },
   { id: 'scout_in', label: 'Scouts on you', group: 'Incoming', type: 'scout_in', from: 'rival', to: 'home' },
@@ -100,7 +102,7 @@ export function send(o: Order, id: number, now: number, trip: number, size: numb
   return { id, order: o, size, from, originColonyId: home.id, departAt: now, arriveAt, leaveAt, returnAt: leaveAt + trip, scouted: true };
 }
 
-const ONE_WAY_STAYS = new Set(['claim', 'tend']);
+const ONE_WAY_STAYS = new Set(['claim', 'tend', 'trade']);
 const ONE_WAY_GONE = new Set(['colonize', 'relocate']);
 const incoming = (p: Party) => p.order.group === 'Incoming';
 
@@ -131,6 +133,8 @@ function missionRow(p: Party, now: number) {
     // a one-way party's walk home is timed from when it leaves the target, like the server's comeHome
     arriveAt: oneWay && back ? p.leaveAt : p.arriveAt,
     returnAt: oneWay && !back ? null : p.returnAt,
+    // a trade caravan's trail: when it runs out, and a made-up running total
+    ...(p.order.type === 'trade' && status === 'holding' ? { result: { trading: true, endsAt: p.leaveAt, delivered: { foliage: p.size * 40, protein: 0, nectar: 0 } } } : {}),
   };
 }
 function incomingRow(p: Party) {
