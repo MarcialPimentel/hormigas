@@ -78,6 +78,7 @@ They follow every wild-nest rule (levels 1–6, 24 h regrowth, gentle raids back
 - **A big store, mostly Foliage** (chewed wood): tier 1 holds 40k Foliage, 20k Protein and 3k Nectar. That's over three times a level-4 wild nest.
 - **Regrows over 72 h** instead of 24, so it's a target you come back to about weekly.
 - **Never raids.** No protection; the bash limit applies. Loot, corpses and defense rebuild work as for any raid.
+- **Planned: termite hunters** ([#205](https://github.com/MarcialPimentel/hormigas/issues/205), decided 5 Nov 2026). Beating mounds felt hollow, since the loot is mostly Foliage. Beat **3 mounds** and you can raise the **Matabele Ant**, a real termite-raiding specialist that is strong against termites and average elsewhere ([05-castes-units](05-castes-units.md#planned-the-matabele-ant)). The Termites Journal page grows to three stages with titles ([26-come-back](26-come-back.md#the-field-journal)).
 
 ### Spider den (boss)
 - One **Trapdoor Spider** and her **Spiderlings** under a silk lid. The spider has huge health and armour, and her fangs kill an ant with each strike, many times a round.
@@ -86,6 +87,7 @@ They follow every wild-nest rule (levels 1–6, 24 h regrowth, gentle raids back
 - **Regrows over a week** (168 h). Rich in Protein: tier 1 holds 10k Foliage, 40k Protein and 8k Nectar.
 - **Never raids.**
 - **For the Alliances build:** tier 2 is out of reach for one day-30 army. It's meant for joint raids, which come in alliances stage B ([23-supercolonies](23-supercolonies.md)). A joint raid can target the same colony row; nothing here needs to change.
+- **Planned: an alliance raid only** ([#207](https://github.com/MarcialPimentel/hormigas/issues/207), decided 5 Nov 2026). Both tiers get retuned so **no single player's army can win**, at any stage. Tier 1 needs about 3 players' big armies; tier 2 needs a full supercolony (placeholders). It ships with joint raids (Build 17, [#98](https://github.com/MarcialPimentel/hormigas/issues/98)) or right after, so spiders are never unbeatable with no way to try. The store is split by each player's share of the army, every member who took part gets the Spider-slayer page and title, and the alliance gets a Hall of Fame entry once it exists ([27-living-world](27-living-world.md#3-the-hall-of-fame)). Holding the empty burrow afterwards is an idea for later, alongside landmarks.
 
 ### Aphid herds
 - **Scout it first.** Then send a **Tend aphids** mission with any ants. When they arrive they **stay with the herd** (the mission ends there, like Relocate), and the herd is yours while they're there.
@@ -154,5 +156,6 @@ Re-checked for Build 10 (Pit Traps catch Minors, the Soil Wall shields): tier 1 
 ## Open Questions
 - Should wild nests raid untended (or weakly tended) herds, so herds are contested even in quiet areas? Proposal: yes, in a later build, once players have tried herds.
 - Should a herd's yield grow the longer one colony holds it (a reason to defend rather than hop)? Proposal: watch playtests first.
-- Should the first player to beat a spider get a lasting mark (a title, a milestone)? Proposal: decide with the Alliances build, which may make spiders a group goal.
+- ~~Should the first player to beat a spider get a lasting mark?~~ Decided (5 Nov 2026): spiders become an alliance goal; every member who takes part gets the page and title, and the alliance a Hall of Fame entry ([#207](https://github.com/MarcialPimentel/hormigas/issues/207)).
+- Should mounds and dens drop materials only they give (termite carton, spider silk) for some other use? Marz (5 Nov 2026): not yet; revisit along with any extra resources.
 - Should termite mounds and spider dens ever raid back? Decided for now: no. They are goals, not threats.

@@ -37,6 +37,7 @@ At the first visit of each day the counters are noted down. The needs card opens
 A new **Journal** tab: a naturalist's notebook of 37 pages in three sections.
 - **Discoveries** (one stage): each wild species beaten (Pavement, Fire, Carpenter, Honeypot and Trap-jaw Ants, Termites, the Trapdoor Spider), each kind of windfall claimed, and **The roster** (kinds of ant raised, three stages).
 - **Deeds** (three stages: sketch → full entry → coloured plate): Leaf Garden, Hunting Grounds and Aphid Pasture levels, digs, ants raised, research, forage parties, food carried home, corpses hauled, places scouted, fights won in the wilds, swarms beaten, raids held off, windfalls claimed, honeydew, colonies, needs met, nest gifts; plus a truce and a supercolony (one stage).
+- **Planned** ([#205](https://github.com/MarcialPimentel/hormigas/issues/205)): the Termites page grows to three stages, at 1, 10 and 50 mounds beaten (*Mound-breaker → Termite-hunter → Bane of the Mounds*, names to confirm). The Trapdoor Spider page goes to every member of an alliance raid that beats one ([#207](https://github.com/MarcialPimentel/hormigas/issues/207)).
 - **Oddities** (hidden until they happen): the Boot, a spider ambush, a rainstorm, a shortcut, a lost trail, a dead lizard. Never needed for anything.
 
 Rules that keep it achievable, eventually:

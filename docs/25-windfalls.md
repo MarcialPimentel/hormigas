@@ -54,8 +54,36 @@ This is real ant behaviour (pillar 4). Ants from neighbouring colonies race to l
 - **Reports:** a windfall dropped nearby (with **Show on the map**), your ants hold it, it was stripped clean, it rotted.
 - **Battle reports** read "Fight for Dead grasshopper", and "your ants were driven off" for the side that lost it.
 
+## Planned: wild ants come for windfalls
+_[#206](https://github.com/MarcialPimentel/hormigas/issues/206), decided by Marz 5 Nov 2026. Numbers are placeholders._
+
+Today wild ants only guard a windfall when it drops, so in a quiet area nobody contests it. Next, the wild nests nearby go out for food too, as real colonies do.
+
+- **Wild nests send parties** to windfalls, whether just dropped or already held, including ones you hold.
+- **Each species goes for the food it really eats**, so you can guess who's coming:
+
+  | Windfall | Who comes for it |
+  |---|---|
+  | Fallen fig, sugar spill | Honeypot Ants |
+  | Leafy branch | Termites |
+  | Dead grasshopper, dead beetle | Pavement, Fire and Carpenter Ants |
+  | Dead lizard, picnic crumbs | Any wild nest nearby |
+
+- **The party comes out of the nest's own ants.** The nest is weaker at home while they're out, which is a chance to raid it.
+- **If they win, they hold it** and haul loads home to the nest's store. Fight them off the windfall, or raid the store back.
+- **Seen and warned:** the party marches on the Whole Yard and the 3D Patch. When it heads for a windfall you hold, you get "Wild ants coming for your windfall". There's no report otherwise, to keep reports quiet.
+- **Spiders stay home**: they never raid.
+
+**New kinds of windfall:**
+
+| Kind | Food | What's different |
+|---|---|---|
+| Dead beetle | Protein | Hard shell, slow to strip |
+| Sugar spill | Nectar | Rots fast |
+| Picnic crumbs | Mixed, very large | Rare; draws every wild nest nearby |
+
 ## Open Questions
 - Is 8–16 h per site too many? With 5 sites in reach, an active player sees a few drops a day. Watch whether reports feel like noise.
-- Should wild nests send parties to windfalls that are already held, so quiet areas still get contested? (Today wild ants only guard at the start.)
+- ~~Should wild nests send parties to windfalls that are already held?~~ Decided (5 Nov 2026): yes, see Planned above.
 - Should the 3D patch show the holders' column walking loads home every 2 h? (Today only the party going out and coming back is drawn.)
 - War trails (standing raid orders that keep marching while you're away) are the next step towards constant marching. Design them with the trade-trail plumbing.

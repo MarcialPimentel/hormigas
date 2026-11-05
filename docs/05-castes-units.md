@@ -118,6 +118,16 @@ Rule: every unit should have **at least one counter** and **at least one thing i
 
 **Decisions (Marz, 29 Oct 2026, Build 10):** a triangle plus a siege caste, rather than retuning the two old castes (that stays knife-edge) or adding ally species now. Existing armies are unchanged; every player got a report explaining the change. No refunds.
 
+## Planned: the Matabele Ant
+_[#205](https://github.com/MarcialPimentel/hormigas/issues/205), decided by Marz 5 Nov 2026. Numbers to set in the build with `npm run combat`._
+
+The first caste you **earn by deeds** rather than by chambers or research. *Megaponera analis* raids only termites. It marches in columns behind a scout and carries its injured nestmates home (pillar 4).
+
+- **Unlock:** beat **3 termite mounds**, counted across all your colonies (`beat:termite`). `castes.json` needs a new kind of `unlock`: a deed count.
+- **Role:** soldier. `frenzy` on Termite Workers and Termite Soldiers, and enough attack to get past their guard.
+- **Fair (pillar 3):** against players and other ants it does no better than a Major Soldier of the same cost. It makes mounds easier, not players.
+- **Carries the wounded home:** after a fight it wins, some of its fallen come home alive. Open: in every fight, or only against termites.
+
 ## Open Questions
 - Should units have upkeep (ongoing Protein cost)? Pro: limits hoarding armies. Con: punishes offline players. Proposal: no upkeep in MVP.
 - Do we show the squad size (e.g., "Major Soldiers ×40 squads") for flavor?

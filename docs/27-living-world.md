@@ -63,6 +63,13 @@ _Idea: [#145](https://github.com/MarcialPimentel/hormigas/issues/145)._ The goal
 - **Holding gives** your (or your supercolony's) colour and name on the map and a Journal page; maybe a small, capped bonus (to decide; pillar 3).
 - Best once the Whole Yard is the main screen.
 
+## 5. Goals in the wilds
+Decided by Marz, 5 Nov 2026. Beating a mound or a den felt hollow: the loot is more of what players already have, plus one Journal page. Each wild goal now gets a reward only it gives:
+- **Termite mounds → the Matabele Ant**, a termite-hunting caste earned by beating 3 mounds, plus titles that grow ([#205](https://github.com/MarcialPimentel/hormigas/issues/205)).
+- **Spider dens → alliance raids.** Too strong for any one player; beaten by joint raids, with credit to every member ([#207](https://github.com/MarcialPimentel/hormigas/issues/207)).
+- **Windfalls → contested by the wilds.** Wild nests go out for windfalls too, and there are more kinds ([#206](https://github.com/MarcialPimentel/hormigas/issues/206)).
+- **Not yet:** extra resources (trade goods, or materials only bosses drop). Revisit later.
+
 ## Order (recommended)
 1. **Nuptial Flight with the calendar and the Hall of Fame**, as one build: it gives resources somewhere to go and war a reason now.
 2. **Landmarks**, once the Whole Yard is the main screen.
