@@ -28,7 +28,7 @@ When Build 12 went live, the counters were filled in from existing reports, the 
 - **Swap**: once a day, trade one of today's open needs for another. The new one counts from then.
 - No need ever asks you to raid a player: that would push the strong to farm the weak (pillar 2).
 
-The list (goals for a young colony; they grow later): bring home 2 forage parties; carry home 1,500 food; finish 2 digs; raise 10 ants; finish a piece of research; haul 300 Protein of corpses; scout 2 places; win a fight in the wilds; claim a windfall; bring home 100 Nectar from aphid herds. Numbers are in `needs.json`.
+The list (goals for a young colony; they grow later): bring home 2 forage parties; carry home 1,500 food; finish 2 digs; raise 10 ants; finish a piece of research; haul 300 Protein of corpses; scout 2 places; win a fight in the wilds; claim a windfall (offered once you have any 3 Workers, Media Workers or Haulers; before Build 17 it needed 3 Workers); bring home 100 Nectar from aphid herds. Numbers are in `needs.json`.
 
 ## Yesterday in the colony
 At the first visit of each day the counters are noted down. The needs card opens with what went up since the day before: "Yesterday in the colony: 2,500 food carried home · 6 ants raised · 2 digs finished …". **Got it** hides it until tomorrow. If you skipped days, it says "The last 3 days in the colony".

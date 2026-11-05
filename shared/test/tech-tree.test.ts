@@ -127,6 +127,20 @@ describe('tech tree effects', () => {
       .toBeLessThan(researchSeconds('mandibles', 6, { worldSpeed: 1, pheromone: 3 }));
   });
 
+  it('Digging Crews: Workers at home cut dig time, 5 per Excavation Works level, 0.5% each', () => {
+    const ctx = { worldSpeed: 1, excavation: 4, terrain: 'grassland' as const };
+    const plain = chamberBuildSeconds('granary', 12, ctx);
+    // no research: Workers do nothing
+    expect(chamberBuildSeconds('granary', 12, { ...ctx, units: { worker: 50 } })).toBe(plain);
+    const crews = { ...ctx, research: { digging_crews: 1 } };
+    // 10 Workers count fully (cap 20 at Excavation Works 4): 5% faster
+    expect(chamberBuildSeconds('granary', 12, { ...crews, units: { worker: 10 } })).toBe(Math.round(plain * 0.95));
+    // 50 Workers, but only 20 count: 10% faster
+    expect(chamberBuildSeconds('granary', 12, { ...crews, units: { worker: 50 } })).toBe(Math.round(plain * 0.9));
+    // other castes don't dig
+    expect(chamberBuildSeconds('granary', 12, { ...crews, units: { hauler: 50 } })).toBe(plain);
+  });
+
   it('Formic Acid strengthens defenses but not units', () => {
     // Acid Sentries alone against the same attackers: with Formic Acid, they kill more of them.
     const attackers = { major_soldier: 40 };

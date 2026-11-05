@@ -19,7 +19,7 @@ Every research is real ant behaviour (pillar 4).
 |---|---|---|---|
 | **Jaws** | Fighting | Mandibles, Chitin, Guard Formation | Formic Acid, Raiding Columns, Nest Plugging |
 | **Harvest** | Food | Foraging Instinct, Aphid Husbandry | Group Hunting, Fungus Farming, Repletes (Symbiosis later) |
-| **Nest** | The colony itself | Brood Science, Deep Digging, Nuptial Flight | Nurse Workers, Tunnel Engineering, Supercolony |
+| **Nest** | The colony itself | Brood Science, Deep Digging, Nuptial Flight | Nurse Workers, Tunnel Engineering, Digging Crews, Supercolony |
 | **Scent** | Pheromones and information | Pheromone Trails, Colony Mind, Scent Reading | Tandem Running, Chemical Mimicry |
 
 ## The new research
@@ -36,6 +36,7 @@ Pher = Pheromone Chamber level in the colony doing the research. Costs are level
 | **Repletes** | Pher 5, Aphid Husbandry 4, Fungus Farming 2 | +10% storage (all three resources) | — | Honeypot ant workers swell into living storage jars. |
 | **Nurse Workers** | Pher 3, Brood Science 1 | Units raised 5% faster | 6 (−30%) | Nurses feed, groom and move the brood. |
 | **Tunnel Engineering** | Pher 4, Deep Digging 2 | Chambers dug 5% faster | 6 (−30%) | Ants pack soil pellets to shore up tunnels. |
+| **Digging Crews** (Build 17) | Pher 4, Tunnel Engineering 2 | Each Worker at home cuts a dig's time by 0.5%, up to 5 Workers per Excavation Works level | 1 | Workers carry soil pellets out of the nest; the more hands, the faster the gallery grows. |
 | **Tandem Running** | Pher 4, Colony Mind 2, Pheromone Trails 2 | Research 5% faster | 6 (−30%) | *Temnothorax* leaders teach followers a route, step by step: real ant teaching. |
 | **Chemical Mimicry** | Pher 4, Scent Reading 3 | Each level halves the chance your scouts are spotted | 3 | Parasites and raiders copy a colony's smell to walk in unnoticed. |
 

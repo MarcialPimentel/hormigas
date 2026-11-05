@@ -13,10 +13,10 @@
     { "id": "digs", "title": "Finish {n} digs", "hint": "The queen's daughters want more room.", "screen": "chambers", "stat": "digs", "count": 2, "scale": [[8, 3]] },
     { "id": "raise", "title": "Raise {n} ants", "hint": "Any caste counts, allies too.", "screen": "brood", "stat": "raised", "count": 10, "scale": [[5, 25], [8, 60], [12, 120]], "unlock": { "chamber": "brood_hall", "level": 1 } },
     { "id": "research", "title": "Finish a piece of research", "hint": "The colony learns from what it smells.", "screen": "research", "stat": "research", "count": 1, "unlock": { "chamber": "pheromone_chamber", "level": 1 } },
-    { "id": "haul", "title": "Haul {n} Protein of corpses", "hint": "Every fight leaves the dead on the field. Workers and Haulers can carry them home.", "screen": "missions", "stat": "corpses_hauled", "count": 300, "scale": [[6, 1500], [10, 5000]], "unlock": { "stat": "wild_won", "count": 1 }, "weight": 0.6 },
+    { "id": "haul", "title": "Haul {n} Protein of corpses", "hint": "Every fight leaves the dead on the field. Workers, Media Workers and Haulers can carry them home.", "screen": "missions", "stat": "corpses_hauled", "count": 300, "scale": [[6, 1500], [10, 5000]], "unlock": { "stat": "wild_won", "count": 1 }, "weight": 0.6 },
     { "id": "scout", "title": "Scout {n} places", "hint": "Colonies, wild sites or the wilds: any scout report counts.", "screen": "missions", "stat": "scouted", "count": 2, "unlock": { "units": "scout", "count": 1 } },
     { "id": "fight", "title": "Win a fight in the wilds", "hint": "A wild nest, a termite mound, a spider den or a windfall.", "screen": "missions", "stat": "wild_won", "count": 1, "scale": [[8, 2]], "unlock": { "units": "minor_soldier", "count": 5 } },
-    { "id": "windfall", "title": "Claim a windfall", "hint": "Watch for food lying in the wilds near you.", "screen": "missions", "stat": "windfalls_claimed", "count": 1, "unlock": { "units": "worker", "count": 3 }, "weight": 0.7 },
+    { "id": "windfall", "title": "Claim a windfall", "hint": "Watch for food lying in the wilds near you.", "screen": "missions", "stat": "windfalls_claimed", "count": 1, "unlock": { "castes": ["worker", "media_worker", "hauler"], "count": 3 }, "weight": 0.7 },
     { "id": "honeydew", "title": "Bring home {n} Nectar from aphid herds", "hint": "Tended herds send honeydew home every few hours.", "screen": "missions", "stat": "herd_nectar", "count": 100, "scale": [[6, 400], [10, 1200]], "unlock": { "stat": "herds_claimed", "count": 1 } }
   ]
 }

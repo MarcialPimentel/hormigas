@@ -43,6 +43,15 @@ describe('colony needs', () => {
     expect(all).toEqual(NEEDS.map((n) => n.id));
   });
 
+  it('the windfall need unlocks with any 3 carrying ants, not only Workers', () => {
+    const windfall = NEEDS.find((n) => n.id === 'windfall')!;
+    const withUnits = (units: NeedInput['units']): NeedInput => ({ ...fresh, units });
+    expect(needUnlocked(windfall, withUnits({ worker: 2 }))).toBe(false);
+    expect(needUnlocked(windfall, withUnits({ hauler: 3 }))).toBe(true);
+    expect(needUnlocked(windfall, withUnits({ worker: 1, media_worker: 1, hauler: 1 }))).toBe(true);
+    expect(needUnlocked(windfall, withUnits({ minor_soldier: 10 }))).toBe(false);
+  });
+
   it('picks different needs, the same ones for the same seed', () => {
     const a = pickNeeds(grown, needSeed(7, 100), 3).map((n) => n.id);
     expect(new Set(a).size).toBe(3);

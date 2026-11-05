@@ -296,6 +296,12 @@ const RESEARCH: Record<ResearchId, () => string> = {
     `<path d="M14,58 L14,36 A18,18 0 0 1 50,36 L50,58Z" fill="#1c140e"/>` +
     [...Array(9)].map((_, i) => { const a = Math.PI * (i / 8); return `<ellipse cx="${f(32 - Math.cos(a) * 20)}" cy="${f(36 - Math.sin(a) * 20)}" rx="3.6" ry="3" fill="${i % 2 ? '#7a5c40' : '#8f6d4c'}" stroke="${INK}" stroke-width="1.2"/>`; }).join('') +
     `<path d="M22,48 L40,48 M34,42 L40,48 L34,54" fill="none" stroke="#e8b23a" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>`,
+  /** Two Workers digging side by side, a soil pellet held up in the jaws. */
+  digging_crews: () =>
+    `<rect x="4" y="34" width="56" height="26" rx="4" fill="#6b4f37" stroke="${INK}" stroke-width="2"/>` +
+    `<path d="M10,60 L10,48 A10,9 0 0 1 30,48 L30,60Z M34,60 L34,48 A10,9 0 0 1 54,48 L54,60Z" fill="#1c140e"/>` +
+    ground(35) + ant('worker', 18, 34, 26) + ant('worker', 46, 34, 26, {}, true) +
+    `<circle cx="29" cy="22" r="3.4" fill="#8f6d4c" stroke="${INK}" stroke-width="1.2"/><circle cx="35" cy="22" r="3.4" fill="#7a5c40" stroke="${INK}" stroke-width="1.2"/>`,
   /** A leader and a follower, antenna to gaster: tandem running. */
   tandem_running: () =>
     ground() + `<path d="M6,40 C14,36 20,44 28,40" stroke="${SCENT}" stroke-width="2" fill="none" stroke-dasharray="0.1 3.5" stroke-linecap="round"/>` +

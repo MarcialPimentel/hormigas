@@ -28,6 +28,7 @@ function digCost(colony: ServerColony, state: ServerState, id: ChamberId, level:
     terrain: colony.terrain,
     timeMultiplier: state.player.timeMultiplier ?? 1,
     research: state.player.research,
+    units: colony.units,
   });
   return { cost: chamberCost(id, level), secs };
 }
