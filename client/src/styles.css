@@ -214,6 +214,7 @@ input:focus, textarea:focus { border-color: var(--honey-ink); outline: none; }
 .effect .next { color: var(--leaf-ink); }
 .row-side { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 0.9rem; }
 .row-side .time { color: var(--muted); font-size: 0.875rem; }
+.row-side .dig-buttons { display: inline-flex; flex-wrap: wrap; gap: 0.4rem; }
 .row-side .why { flex-basis: 100%; font-size: 0.8rem; color: var(--muted); }
 .req { font-size: 0.875rem; color: var(--muted); }
 /* rows with a picture: the picture on the left, the actions under the text on phones */

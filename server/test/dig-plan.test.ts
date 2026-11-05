@@ -1,4 +1,4 @@
-// The dig plan (docs/04-colony.md): one chamber lined up behind the dig in progress, paid for when it starts.
+// The dig plan (docs/04-colony.md): digs lined up to start next, paid for when each starts.
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import type { FastifyInstance } from 'fastify';
 import { chamberCost } from '@hormigas/shared';
@@ -40,7 +40,7 @@ describe('dig plan', () => {
     expect(r.error.message).toContain("Queen's Chamber 4");
   });
 
-  it('needs a dig in progress, and holds one planned dig', async () => {
+  it('holds one planned dig behind the dig in progress; a dig the stores can pay for is dug, not planned', async () => {
     const idle = await p.post(url('/plan'), { chamber: 'leaf_garden' });
     expect(idle.error.code).toBe('nothing');
 
@@ -50,6 +50,33 @@ describe('dig plan', () => {
     expect(r.colony.digPlan.chambers).toEqual(['hunting_grounds']);
     const full = await p.post(url('/plan'), { chamber: 'nursery' });
     expect(full.error.code).toBe('full');
+  });
+
+  it("with idle diggers and empty stores, plans two digs that start on their own when the food comes", async () => {
+    await setColony(colonyId, { foliage: 0, protein: 0, last_updated: clock.t });
+    const a = await p.post(url('/plan'), { chamber: 'leaf_garden' });
+    expect(a.ok).toBe(true);
+    expect(a.colony.buildJob).toBeNull();
+    expect(a.colony.digPlan.waiting).toBe('resources');
+    expect(a.colony.digPlan.checkAt).toBeGreaterThan(clock.t);
+    // nothing paid
+    expect(a.colony.resources.foliage).toBeLessThan(1);
+
+    const b = await p.post(url('/plan'), { chamber: 'leaf_garden' });
+    expect(b.ok).toBe(true);
+    expect(b.colony.digPlan.chambers).toEqual(['leaf_garden', 'leaf_garden']);
+    // the line holds two: the third is refused
+    const full = await p.post(url('/plan'), { chamber: 'nursery' });
+    expect(full.error.code).toBe('full');
+
+    // while you sleep, production pays for the first and it starts
+    await clock.advance(a.colony.digPlan.checkAt - clock.t + 1);
+    const s = await p.get('/api/state');
+    expect(s.colony.buildJob.chamber).toBe('leaf_garden');
+    expect(s.colony.buildJob.level).toBe(6);
+    expect(s.colony.buildJob.cost).toEqual(chamberCost('leaf_garden', 6));
+    expect(s.colony.digPlan.chambers).toEqual(['leaf_garden']);
+    expect(s.colony.digPlan.waiting).toBe('queued');
   });
 
   it('costs nothing when planned, and starts the moment the dig in progress ends', async () => {

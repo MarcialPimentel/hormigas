@@ -1,4 +1,4 @@
-// Chamber construction, and the dig plan lined up behind it (docs/04-colony.md).
+// Chamber construction, and the dig plan of digs lined up to start next (docs/04-colony.md).
 import {
   CHAMBER_IDS,
   chamberBlocker,
@@ -117,15 +117,22 @@ export async function cancelBuild(q: Tx, playerId: number, colonyId: number) {
   return c;
 }
 
-/** Line `chamber` up behind the dig in progress. It costs nothing until it starts. */
+/**
+ * Line `chamber` up to dig next: behind the dig in progress, or, with idle diggers, until the stores can pay
+ * (or the Brood Hall or research it waits for is done). It costs nothing until it starts.
+ */
 export async function planDig(q: Tx, playerId: number, colonyId: number, chamber: string) {
   const id = chamberId(chamber);
   const player = await getPlayer(q, playerId, true);
   let c = await lockOwnColony(q, colonyId, playerId);
-  c = advance(c, now());
+  const t = now();
+  c = advance(c, t);
   const blocked = planBlocker(id, c, player);
   if (blocked) throw new GameError(blocked.code, blocked.message);
+  const first = !c.digPlan?.chambers.length;
   c.digPlan = { chambers: [...(c.digPlan?.chambers ?? []), id], eventId: c.digPlan?.eventId ?? null, checkAt: c.digPlan?.checkAt ?? null, waiting: c.digPlan?.waiting ?? 'queued' };
+  // idle diggers: the first planned dig gets its look now (it schedules its own wake-up for when it can start)
+  if (first && !c.buildJob) await settleDigPlan(q, c, t);
   await saveColony(q, c);
   return c;
 }

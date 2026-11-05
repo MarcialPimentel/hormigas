@@ -46,7 +46,17 @@ export function ActivityList({ go, trips = true, quiet = false }: { go: (screen:
     items.push({
       key: 'plan',
       endAt: colony.digPlan.checkAt,
-      label: <>Planned dig <strong>{CHAMBERS[planned].name}</strong> {plannedLevel(colony, 0)} waiting to start</>,
+      label: (
+        <>
+          Planned dig <strong>{CHAMBERS[planned].name}</strong> {plannedLevel(colony, 0)} waiting to start
+          {colony.digPlan.chambers[1] && (
+            <span className="muted small">
+              {' '}
+              · then {CHAMBERS[colony.digPlan.chambers[1]].name} {plannedLevel(colony, 1)}
+            </span>
+          )}
+        </>
+      ),
       screen: 'chambers',
     });
   }

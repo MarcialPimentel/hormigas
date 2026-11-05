@@ -6,7 +6,7 @@ import { api } from '../api';
 import { useGame } from '../game';
 import { fmtDuration, fmtFull } from '../format';
 import { CHAMBER_BLURB, RESOURCE_LABEL, chamberEffect } from '../describe';
-import { chamberPlan, plannedDig } from '../chamberPlan';
+import { chamberPlan, plannedDigs } from '../chamberPlan';
 import { Cost } from './ui';
 
 export const STORE_OF: Partial<Record<ChamberId, ResourceId>> = { granary: 'foliage', larder: 'protein', nectar_cellar: 'nectar' };
@@ -68,19 +68,21 @@ export function ChamberSheet({ id, onClose, onLookInside, onAllChambers }: Sheet
   }, [onClose]);
 
   if (!colony || !state) return null;
-  const { level, next, locked, cost, secs, blocked, planning } = chamberPlan(colony, state, id);
+  const { level, next, locked, cost, secs, blocked, dig, plan } = chamberPlan(colony, state, id);
   const def = CHAMBERS[id];
   const store = STORE_OF[id];
   const cap = storageCapacity(colony.chambers, colony.research);
   const safe = protectedAmount(colony.chambers, colony.research);
   const job = colony.buildJob?.chamber === id ? colony.buildJob : null;
-  const planned = colony.digPlan?.chambers[0] === id ? plannedDig(colony, state, now) : null;
-  // the next level can be dug now, or planned behind the dig in progress
-  const offer = !locked && !planned && (!job || planning);
-  const dig = () =>
-    planning
-      ? act(() => api.post(`/api/colonies/${colony.id}/plan`, { chamber: id }), `Planned: ${def.name} ${next} digs next.`)
-      : act(() => api.post(`/api/colonies/${colony.id}/build`, { chamber: id }));
+  const planned = plannedDigs(colony, state, now).filter((p) => p.id === id);
+  // the next level can be dug now and/or planned to start on its own
+  const offer = !locked && (!!dig || !!plan);
+  const digNow = () => act(() => api.post(`/api/colonies/${colony.id}/build`, { chamber: id }));
+  const planIt = () =>
+    act(
+      () => api.post(`/api/colonies/${colony.id}/plan`, { chamber: id }),
+      dig ? `Planned: ${def.name} ${plan?.next} starts on its own when the stores can pay.` : `Planned: ${def.name} ${plan?.next} digs next.`,
+    );
 
   return (
     <section className="sheet" aria-label={`${def.name}`}>
@@ -105,13 +107,13 @@ export function ChamberSheet({ id, onClose, onLookInside, onAllChambers }: Sheet
           <strong>Digging level {job.level}</strong> · {fmtDuration(job.endAt - now)} left
         </p>
       )}
-      {planned && (
-        <p className="small sheet-next">
-          <strong>Planned next: level {planned.level}</strong>
+      {planned.map((p) => (
+        <p key={p.index} className="small sheet-next">
+          <strong>Planned: level {p.level}</strong>
           <br />
-          <span className="muted">{planned.note}</span>
+          <span className="muted">{p.note}</span>
         </p>
-      )}
+      ))}
       {locked ? (
         <p className="small sheet-next">{blocked}</p>
       ) : (
@@ -119,14 +121,25 @@ export function ChamberSheet({ id, onClose, onLookInside, onAllChambers }: Sheet
           <p className="small sheet-next">
             <strong>{next > 1 ? `Level ${next}` : 'At level 1'}:</strong> {chamberEffect(id, next, colony, state.player.research, state.world.speed)}
             <br />
-            <Cost cost={cost} have={colony.resources} /> · {fmtDuration(secs * 1000)} to dig{planning ? ' · paid when it starts' : ''}
+            <Cost cost={cost} have={colony.resources} /> · {fmtDuration(secs * 1000)} to dig{!dig ? ' · paid when it starts' : ''}
           </p>
         )
       )}
       <div className="sheet-actions">
-        {offer && (
-          <button type="button" className="btn primary" disabled={!!blocked} title={blocked || undefined} onClick={dig}>
-            {planning ? 'Plan next' : level === 0 ? 'Dig it' : 'Dig deeper'}
+        {dig && !locked && (
+          <button type="button" className="btn primary" disabled={!!dig.blocked} title={dig.blocked || undefined} onClick={digNow}>
+            {level === 0 ? 'Dig it' : 'Dig deeper'}
+          </button>
+        )}
+        {plan && (
+          <button
+            type="button"
+            className={dig ? 'btn' : 'btn primary'}
+            disabled={!!plan.blocked}
+            title={plan.blocked || 'Starts on its own when the diggers are free and the stores can pay. Nothing is paid until then.'}
+            onClick={planIt}
+          >
+            {dig ? 'Plan it' : 'Plan next'}
           </button>
         )}
         {level > 0 && onLookInside && (
