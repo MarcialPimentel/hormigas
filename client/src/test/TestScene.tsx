@@ -135,7 +135,7 @@ export default function TestScene() {
       map === 'yard'
         ? import('../components/yard3d/scene').then((m) =>
             m.createYardScene(h, l, () => ({ state: view.current.state, now: view.current.now, colonyId: 1 }), {
-              onPick: (at) => setPicked(`${at.region}:${at.patch}:${at.spot}`),
+              onPick: (at) => (setPicked(`${at.region}:${at.patch}:${at.spot}`), yard.current?.setSelected(at)), // ring it, like the Yard screen
               onDive: () => {},
               onLook: (region, p) => yard.current?.setSpots(region, p, spotsFor(region, p), 'visible'),
               onRung: () => {},
