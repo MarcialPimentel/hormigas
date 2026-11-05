@@ -177,6 +177,48 @@ function SwarmScoutReport({ d }: { d: any }) {
   );
 }
 
+/** Trade trails (docs/23-supercolonies.md § Trade trails): opened, turned back or closed, for the sender or the host. */
+function TradeReport({ d }: { d: any }) {
+  // how often, at this world's speed (older reports only kept the hours at speed 1)
+  const every = d.everyMs ? fmtDuration(d.everyMs) : `${d.everyHours} hours`;
+  const days = d.everyMs ? fmtDuration(d.everyMs * d.deliveries) : `${(d.deliveries * d.everyHours) / 24} days`;
+  const kind = d.kind === 'own' ? 'between your colonies' : d.kind === 'ally' ? 'with a supercolony mate' : 'under your truce';
+  if (d.turnedBack) return <p className="report-body">Your caravan turned back from {d.colony ?? 'the trail'}: {d.why} It is walking home.</p>;
+  if (d.opened && d.host)
+    return (
+      <div className="report-body">
+        <p>
+          {d.from}'s caravan from {d.fromColony} keeps a trail open to {d.colony} for {days}. Both sides gain: every {every} you get {d.goods} from their ground, about <ResLine r={d.partnerPerDelivery} hideZero /> a time. Your colony gives nothing up.
+        </p>
+      </div>
+    );
+  if (d.opened)
+    return (
+      <div className="report-body">
+        <p>
+          Your caravan from {d.from} keeps a trail open to {d.colony} ({kind}). Every {every} it brings home {d.goods}, about{' '}
+          <ResLine r={d.perDelivery} hideZero /> a time, {d.deliveries} times. Then it walks home and you can open the trail again.
+        </p>
+        {d.units && <Counts counts={d.units} />}
+      </div>
+    );
+  const why = d.closed === 'pact_ended' ? 'Your pact ended, so the trail closed early.' : d.closed === 'gone' ? 'The colony was gone.' : 'It ran its full course.';
+  if (d.host)
+    return (
+      <p className="report-body">
+        {why} Over {d.deliveries} {d.deliveries === 1 ? 'delivery' : 'deliveries'} {d.from}'s trail brought you <ResLine r={d.partnerGot} hideZero />
+      </p>
+    );
+  return (
+    <div className="report-body">
+      <p>
+        {why} Over {d.deliveries} {d.deliveries === 1 ? 'delivery' : 'deliveries'} it brought home <ResLine r={d.delivered} hideZero />
+        {d.kind !== 'own' && d.partnerGot ? <> and gave your partner <ResLine r={d.partnerGot} hideZero /></> : null}. The caravan is walking home; send it out again from Missions to renew the trail.
+      </p>
+    </div>
+  );
+}
+
 function ReportBody({ r, go }: { r: Report; go?: Nav }) {
   const d = r.data;
   switch (r.type) {
@@ -298,6 +340,8 @@ function ReportBody({ r, go }: { r: Report; go?: Nav }) {
       );
     case 'windfall':
       return <WindfallReport d={d} go={go} />;
+    case 'trade':
+      return <TradeReport d={d} />;
     case 'hold':
       return (
         <div className="report-body">

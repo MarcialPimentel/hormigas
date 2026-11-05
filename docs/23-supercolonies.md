@@ -1,8 +1,8 @@
 # 23 — Truces and Supercolonies
 
 **Version:** 0.1
-**Data:** [`data/diplomacy.json`](data/diplomacy.json), [`data/research.json`](data/research.json) (`supercolony`)
-**Code:** `shared/src/diplomacy.ts` (rules), `server/src/game/diplomacy.ts` (the record), migration `010_supercolonies.sql`
+**Data:** [`data/diplomacy.json`](data/diplomacy.json), [`data/research.json`](data/research.json) (`supercolony`), [`data/trade.json`](data/trade.json) (trade trails)
+**Code:** `shared/src/diplomacy.ts` (rules), `server/src/game/diplomacy.ts` (the record), migration `010_supercolonies.sql`; trade trails in `shared/src/trade.ts` and `server/src/game/trade.ts`
 
 ## Why
 Marz (29 Oct 2026) wants more player interaction than raiding, modelled on 4X games like Civilization: **you meet someone before you can deal with them, and deeper pacts come later**. Real ants give the ladder its shape. Colonies recognise each other by smell. Argentine ants form **supercolonies**: millions of nests that share one scent and never fight each other (pillar 4).
@@ -49,6 +49,41 @@ How OGame and Civilization compare, and why we sit in between: OGame lets anyone
 - **Soldiers holding position** on either side (the leaver's at mates' nests, and mates' at the leaver's) turn for home at once: a garrison inside a former ally's nest is too dangerous to leave.
 - When the fade ends, everyone involved gets a report and raids are possible again (all the usual PvP rules apply).
 
+## Trade trails (Build 16)
+Real ants lay pheromone trails between nests and walk them for days, carrying food both ways (pillar 4). Modelled on Civilization's trade routes ([#98](https://github.com/MarcialPimentel/hormigas/issues/98), Marz 30 Oct and 5 Nov 2026): a trail is income you set up once and renew, and peace makes it pay more.
+
+- **A new mission, Trade trail.** Send a caravan of **Workers, Media Workers or Haulers** to another colony: **one of yours**, or a **player's** you have met (scouted) and have a **truce** or a **shared scent** with. A truce in its notice period or a fading scent opens no new trails.
+- **One trail per colony,** a slot pool of its own like forage parties: it doesn't use a mission slot. A caravan walking home still holds the slot. More trails from research later (`trade.json` → `trailsPerColony`).
+- **The caravan stays 3 days** (`trailHours` 72) at the far end; its ants are away from home the whole time (no defending, foraging or fighting). Fuel is paid once, as for any mission.
+- **Every 6 hours** (`deliverEveryHours`) one scheduled event brings home goods, 12 deliveries in all, then the caravan walks home on its own and the colony can open a new trail. Computed, not ticked, like aphid herds: it runs offline.
+- **What comes back depends on the destination's ground** (`trade.json` → `goods`):
+
+| Ground | Brings back |
+|---|---|
+| Sunny Meadow | Foliage |
+| Sandy Soil | Foliage |
+| Rotting Log | Protein |
+| Creek Bank | Nectar |
+| Grassland | A bundle: half a share each of Foliage, Protein and Nectar |
+
+- **How much:** each delivery is `share × the destination's own production of that good per hour (world speed 1) × 6 h × the distance factor`, never more than the caravan carries (bring more carriers to carry it all). The destination **loses nothing**: the goods are what the trail adds, not what it takes.
+  - **Share** by who it goes to: your own colony **15%**, a truce partner **25%**, a supercolony mate **30%** (peace pays).
+  - **Distance factor:** `1 + distance ÷ 10,000 × 0.5`, at most ×2. Same patch about ×1.05, the next patch ×1.14, another region ×2: a long trail pays more.
+  - **Example** (own trail to a Creek Bank colony with Aphid Pasture 8, about 1,060 Nectar an hour there): about 1,000 Nectar a delivery, 12,000 over the trail, if the caravan can carry it (3 Media Workers can).
+- **On a player trail both sides gain:** the host gets **half the delivery's total** (`partnerShare`) in the goods of the **sender's** ground, every delivery. So two players trading both ways each get a share of the other's specialty.
+- **When a pact ends,** the trail keeps going through the notice or the fade (raids are still off), then closes at the next delivery; the caravan walks home and both sides get a report.
+- **Call home** from Under way ends the trail early; nothing more arrives.
+- **Reports:** the sender when the trail opens and when it closes (with totals); the host when it opens (what they'll gain) and when it closes.
+- **On the maps:** in the Whole Yard, a caravan holding its trail walks to and fro along it, ants heading home carrying a gold load (`march.json` → `yard.tradeLeg`, seconds a leg). A player's caravan coming to you shows as "Trade caravan from …".
+- **Not built:** plundering caravans (decided: later, with joint raids), more trails from research, a trail upkeep.
+
+### Decisions (Marz, 5 Nov 2026)
+- **Trails now, joint raids next build.** Build 16 is own and player trade trails; joint raids and the members' board are Build 17. Reason: each is a large change with its own playtest (joint raids need two accounts in a supercolony).
+- **One trail per colony, research for more later.** With today's player count one each is plenty; add a research once trails are used.
+- **Grassland sends a bundle, Sandy Soil sends Foliage.** Every trail brings food, and a trail to the ground most players start on still pays.
+- **No plunder yet.** Ship peaceful trails first; ambushing caravans needs scouting caravans and open-ground fights, so it can come with joint raids.
+- Decided in the build (Marz may overrule): trails use their own per-colony slot, not a mission slot; the host gains half the delivery in the sender's goods; the destination never loses anything; numbers are first-pass for playtest.
+
 ## World speed
 All the times above are at world speed ×1 and divide by the world speed, like every other duration: at ×5 a truce's notice is about 5 hours and a scent fades in about 14 hours.
 
@@ -69,12 +104,8 @@ Four new tables, read and written only through `server/src/game/diplomacy.ts`:
 
 ### Notes for stage B
 - **Joint Raid:** missions from several members that wait at a muster point and arrive together, fought as one attacker with per-owner groups. `simulateBattle` already supports per-owner groups on the defending side (`allies`); the attacking side needs the same. Bosses from #67 are the natural targets.
-- **Trade trails** (design from Marz, 30 Oct 2026, tracked in [#98](https://github.com/MarcialPimentel/hormigas/issues/98)), modelled on Civilization's trade routes:
-  - **Capacity:** one trail per colony, plus more from research.
-  - **Caravan:** Workers or Haulers walk the trail and are away from home while it runs. A trail lasts about 3 days, then is renewed. Deliveries every ~6 h as one scheduled event (like aphid herds).
-  - **Yield follows the destination's colony type (terrain):** Sunny Meadow sends Foliage, Rotting Log Protein, Creek Bank Nectar. Sandy Soil and Grassland are open. The amount grows with the destination's production chambers and the trail's length.
-  - **Own colonies first** (a smaller yield), then players you've met with a truce. Both sides gain on a player trail, and supercolony members get a bonus.
-  - **Open:** whether caravans can be plundered by players without a truce.
+- **Trade trails** shipped in Build 16 (above). A trail is a mission (`type = 'trade'`) that is `holding` while it runs; its totals live in `missions.result`, and one `trade_deliver` event at a time carries its delivery number (`n`), so an old event after a recall does nothing. No migration.
+- **Plunder** (Build 17 or later): players without a truce ambush a caravan they've scouted.
 - **Declared wars** (lifting the bash limit between enemies, [10-pvp-rules](10-pvp-rules.md)) are not built.
 
 ## Launch on the live world (migration 010)
@@ -97,4 +128,6 @@ In the 3D Garden ([11-world](11-world.md)), patches where your supercolony mates
 ## Open Questions
 - Should the host be able to send an ally's garrison home without leaving the supercolony? Proposal: yes, if playtests show unwanted garrisons.
 - Should a truce offer expire if unanswered? Proposal: not until unanswered offers clutter the Allies screen.
+- Trade trails: is 15 / 25 / 30% the right pay, and should a long trail or a supercolony mate pay more? Tune `trade.json` from playtest.
+- Trade trails: should research add trails (a Scent branch level), and should players be able to see trails other players run near them?
 - Should Hold Position cost Nectar over time (upkeep), so garrisons aren't free forever? Proposal: no for now; the mission slot is the cost.

@@ -1,6 +1,9 @@
 # Hormigas — Changelog
 
-_Current as of Build 13 (2026-11-02)._ Newest first. One entry per build, in players' words, built from the merged PRs. Smaller PRs merged between builds are listed with the nearest build.
+_Current as of Build 16 (2026-11-05)._ Newest first. One entry per build, in players' words, built from the merged PRs. Smaller PRs merged between builds are listed with the nearest build.
+
+## Build 16: Trade trails (unreleased)
+- **Trade trails.** Send a caravan of Workers, Media Workers or Haulers to another of your colonies, or to a player you have a truce or a shared scent with. It keeps a pheromone trail open there for 3 days and brings home goods every 6 hours, chosen by the ground at the other end: Sunny Meadow and Sandy Soil send Foliage, Rotting Log Protein, Creek Bank Nectar, Grassland a bundle of all three. Bigger producers and longer trails pay more, and the other colony never loses anything. A trail to a truce partner pays more than one between your own colonies, a supercolony mate's more still, and **both sides gain**: they get a share in your ground's goods every delivery. Each colony keeps one trail, and it doesn't use a mission slot. When the trail runs out the caravan walks home and you can open it again; Call home ends it early. In the Whole Yard the caravan walks to and fro along its trail carrying gold loads home. Joint raids come in the next build.
 
 ## Build 15: Plan digs you can't afford yet (unreleased)
 - **Line up a chamber you can't afford yet.** When your diggers are idle and the stores can't pay for a chamber, a **Plan** button now sits next to Dig. The dig waits in line and starts on its own the moment the stores can pay, even while you sleep, and it's only paid for then. The Chambers screen says what it's waiting for and about how long. You can plan two this way; while something is being dug, you can still plan one behind it. Needs Queen's Chamber 4, like before. Remove takes a planned dig out (nothing was paid, so nothing comes back).

@@ -893,7 +893,7 @@ uniform vec3 uSpots[SIGHT_SPOTS];
       const swarm = i.type === 'swarm', hostile = !!i.hostile;
       const k = i.departAt ? clamp01((d.now - i.departAt) / (i.arriveAt - i.departAt)) : 0.5;
       const units = Math.max(1, i.unitCount ?? 1);
-      const what = swarm ? 'Swarm' : i.type === 'raid' ? 'Raid' : i.type === 'scout' ? 'Scouts' : i.type === 'hold' ? 'Allied soldiers' : 'Delivery';
+      const what = swarm ? 'Swarm' : i.type === 'raid' ? 'Raid' : i.type === 'scout' ? 'Scouts' : i.type === 'hold' ? 'Allied soldiers' : i.type === 'trade' ? 'Trade caravan' : 'Delivery';
       out.push({
         key: `i${i.id}`, from: endAt(i.origin, target), to: endAt(target, i.origin), k, units,
         n: Math.min(swarm ? SWARM_CAP : PARTY_CAP, units),

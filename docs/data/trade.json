@@ -1,0 +1,22 @@
+{
+  "_version": "0.1",
+  "_note": "Trade trails (Build 16, docs/23-supercolonies.md § Trade trails). A caravan of carriers walks to another colony and keeps a trail open there; every deliverEveryHours it brings home goods made at the destination, for trailHours, then walks home. Times are hours at world speed 1 (divide by world speed). First-pass numbers for playtest.",
+  "trailsPerColony": 1,
+  "trailHours": 72,
+  "deliverEveryHours": 6,
+  "carriers": ["worker", "media_worker", "hauler"],
+  "_shareNote": "Each delivery = share × the destination's own production of that resource per hour (world speed 1) × deliverEveryHours × the distance factor, and never more than the caravan can carry. The destination loses nothing.",
+  "share": { "own": 0.15, "truce": 0.25, "ally": 0.3 },
+  "_goodsNote": "What a trail brings back, by the destination's ground: the weight on each resource's share. Grassland sends a bundle (half a share of each); Sandy Soil sends Foliage (Marz, 5 Nov 2026).",
+  "goods": {
+    "sunny_meadow": { "foliage": 1 },
+    "rotting_log": { "protein": 1 },
+    "creek_bank": { "nectar": 1 },
+    "sandy_soil": { "foliage": 1 },
+    "grassland": { "foliage": 0.5, "protein": 0.5, "nectar": 0.5 }
+  },
+  "_distanceNote": "Longer trails pay more: × (1 + distance / 10,000 × perTenThousand), at most maxFactor. Same patch about ×1.05, the next patch ×1.14, another region ×2.",
+  "distance": { "perTenThousand": 0.5, "maxFactor": 2 },
+  "_partnerNote": "On a trail to another player, the host gains too: partnerShare of each delivery's total, in the goods of the sender's ground.",
+  "partnerShare": 0.5
+}
