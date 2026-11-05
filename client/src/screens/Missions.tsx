@@ -176,6 +176,13 @@ export function Missions({ draft, go }: { draft?: MissionDraft; go?: (screen: st
 }
 
 /**
+ * The Speed dial (slider + "Back no earlier than") is hidden since fuel stopped depending on speed
+ * (Decision Log 2026-11-05): every mission goes full speed. The server still accepts speedPct, so
+ * setting this to true brings the dial back as it was.
+ */
+const SHOW_SPEED_DIAL = false;
+
+/**
  * The mission form: type, target, units, cargo, speed, fall-back, and Send. In the war room it's the Deploy card
  * that opens over the patch when you pick an action on a spot (`onClose` set); on phones it sits under the patch.
  */
@@ -517,7 +524,7 @@ export function SendMission({ type, setType, target, setTarget, onClose, onSent 
           </fieldset>
         )}
 
-        <fieldset className="field">
+        {SHOW_SPEED_DIAL && <fieldset className="field">
           <legend>Speed {speedPct}%</legend>
           <div className="speed">
             <input type="range" min={MISSION_SPEED.min} max={MISSION_SPEED.max} step={MISSION_SPEED.step} value={speedPct} onChange={(e) => { setSpeedPct(Number(e.target.value)); setReturnBy(''); }} aria-label="Speed" />
@@ -528,8 +535,8 @@ export function SendMission({ type, setType, target, setTarget, onClose, onSent 
               </label>
             )}
           </div>
-          <p className="muted small">Slower missions use less Nectar. Use "back no earlier than" to keep your army safely away while you're offline.</p>
-        </fieldset>
+          <p className="muted small">Slower missions arrive later. Use "back no earlier than" to keep your army safely away while you're offline.</p>
+        </fieldset>}
 
         {type === 'raid' && (
           <fieldset className="field">
@@ -577,7 +584,7 @@ export function SendMission({ type, setType, target, setTarget, onClose, onSent 
         </dl>
         <p className="muted small">
           Fuel is taken from your Nectar once, when the party leaves, and covers the whole trip; your Nectar per hour doesn't change. It grows with how many
-          ants you send (soldiers drink more than workers, scouts hardly any) and how far they go. Speed only changes when they get home.
+          ants you send (soldiers drink more than workers, scouts hardly any) and how far they go.
         </p>
 
         {problems.length > 0 && presentUnits(chosen).length > 0 && (
