@@ -32,6 +32,7 @@ import {
   swarmSize,
   isHeldState,
   isWindfallState,
+  nestTargets,
   coordsKey,
   type CasteId,
   type MissionType,
@@ -475,6 +476,12 @@ async function comeBack(q: Tx, ev: GameEvent<{ missionId: number }>) {
   let c = await lockColony(q, m.originColonyId);
   c = advance(c, ev.due_at);
   c.units = addCounts(c.units, m.units);
+  // a wild nest regrows while its party is out (a raid or a windfall claim), so what comes home tops it up to full
+  // strength but never past it: otherwise every trip would leave the nest a little bigger (docs/24-npcs.md)
+  if (c.npc && !isHeldState(c.npc) && 'species' in c.npc) {
+    const full = nestTargets(c.npc.species, c.npc.level).units;
+    for (const [k, n] of Object.entries(full) as [CasteId, number][]) if ((c.units[k] ?? 0) > n) c.units[k] = n;
+  }
   c.resources = add(c.resources, m.cargo);
   await saveColony(q, c);
   // counters for colony needs and the Field Journal (wild nests' parties don't count)
