@@ -23,6 +23,11 @@ Every now and then a column of army ants marches out of the wilds toward a colon
 - **Scout the swarm.** Players can send Scouts out to meet the column. Scouts shouldn't just walk up unthreatened, so the chance is shown before they go, like a raid's odds: **each Scout rolls on its own**, the report gets back if any of them do, and army ants eat the rest. More Scouts, Scent Reading and Chemical Mimicry raise the odds.
 - **A good report shows size, make-up and live odds:** the real ant count, how many Minors and Majors, and the colony's win / draw / lose odds against it with the ants at home right now, updating as the player raises soldiers or sends them away (pillar 5).
 
+## Decisions (Marz, 6 Nov 2026): scout any incoming raid
+- **The same across the board.** Every hostile party heading your way works like a swarm: wild-nest raids, other players' raids, wild ants coming for a windfall you hold, and swarms. Until scouted, its size shows as "?"; its card has a **Scout the raid** (or **Scout the swarm**) button; Scouts go out to meet it with the same per-Scout odds; a good report gives its real count and make-up, and the card then shows the live win / draw / lose odds.
+- A raid's odds use the raider's research (what your scouts saw), so they match the real fight. A raid on a herd or windfall you hold shows its size and make-up but no colony odds: it fights the ants you keep there.
+- Raids that turn back (a truce or a shared scent) aren't hostile, so they show their size and can't be scouted. Enemy scouts coming at you stay as they were.
+
 ## Decisions (Marz, 2 Nov 2026): Build 14, Swarm sizes
 Playtest: Marz's main colony (about 44k of ants and 44k of defenses, twice the swarm's worth) beat a swarm of 64 Minors and 16 Majors and still lost 40,300 of ants, about 91%. Re-run 3,000 times with the real combat code it won every time and lost about 35k on average. Two causes: every swarm bite kills one ant, so losses follow how many bites the swarm gets rather than how strong you are, and the old sizing (the biggest swarm you beat 70% of the time) meant a "win" cost nearly the whole army. Corpses and 4 hours of Protein didn't make up for it.
 - **Three sizes, rolled at each sighting, hidden until scouted:** a **foraging column** (60%), a **war column** (30%) and, now and then, a **great swarm** (10%). Most are survivable; any one might be the big one. Marz turned down a single "always about 30% losses" size: there must be a real chance of losing at any army size, so players fear the swarm and spend on soldiers and defenses.
@@ -48,11 +53,19 @@ Playtest: Marz's main colony (about 44k of ants and 44k of defenses, twice the s
 - Players can't send swarms, and swarms don't count toward anyone's bash limit.
 
 ### Scouting the swarm
+_Since 6 Nov 2026 this is how every incoming raid is scouted, not only swarms: see § Scouting an incoming raid below._
 - While a swarm is on its way to one of your colonies, **Scouts sent at that colony** (from it or from any of your colonies) go out to meet the column. It's an ordinary Scout mission: a mission slot, Nectar fuel, Scouts only. Any other time, scouting your own colony is refused.
 - **Each Scout slips past on its own** with `basePct` 30%, plus `perScentReadingPct` 10% per Scent Reading level and `perMimicryPct` 10% per Chemical Mimicry level, up to `maxPct` 90% (`npc.json` → `swarm.scouting`). Army ants are nearly blind and hunt by smell, so the scent research is what helps (pillar 4).
 - The Missions form shows the odds before you send: the chance one Scout gets back, the chance **a report** gets back (`1 − (1 − p)^scouts`), and how many Scouts you'll likely lose. More Scouts make a report likelier and cost more Scouts; each is 100 Protein.
 - **On arrival:** if any Scout gets back, the swarm is **scouted** for good (it can't change after it's spotted): a scout report gives which size it is (foraging column, war column or great swarm), its real count and make-up, and the colony's swarm card shows them with live odds. Survivors walk home; the rest are eaten. If none get back, the report says so and the swarm stays unknown; you can try again until it lands. Scouts that arrive after it landed find nothing and come home.
 - Scouting a swarm doesn't count as scouting a colony (no discovery, no Field Journal "scouted" count).
+
+### Scouting an incoming raid
+- **What can be scouted:** any hostile raid, claim or swarm on its way to one of your colonies, or to an aphid herd or windfall your ants hold. Until it is, the card, the nest, the map label and the Activity list show its size as "?" (the column is still drawn about the right size).
+- **How:** the card's **Scout the raid** button opens the send card aimed at the place being raided, with the raid named on the To line ("Raid from Pavement Ant Nest → The Hatch"). The mission carries the raid's id (`meet`), so with two raids coming the Scouts meet the one you chose; Scouts sent at the place without one meet the next to land. With nothing coming, scouting your own colony is refused.
+- **Odds:** the same as the swarm's (`npc.json` → `swarm.scouting`): each Scout slips past on its own, the raiders kill the rest.
+- **On arrival:** if any get back, the raid is scouted for good: a report gives the sender, real count and make-up, and its card shows them, plus the win / draw / lose bar against the ants home now, using the raider's research. A raid that already landed or turned back is "found no raid", and the Scouts come home.
+- Scouting a raid doesn't tell the raider and doesn't count as scouting their colony.
 
 - **First swarms on the live world** (Marz, 29 Oct 2026): brought forward once, by migration `007_first_swarms_soon.sql`, to be spotted 2–24 h after that deploy instead of 72–120 h, so players meet one within about a day. After that, the normal schedule.
 

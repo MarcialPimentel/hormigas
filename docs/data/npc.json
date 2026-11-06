@@ -202,7 +202,7 @@
     ],
     "prey": {"pctOfWorth": 75, "mixPct": {"foliage": 55, "protein": 30, "nectar": 15}, "minHours": 4, "min": 300},
     "scouting": {
-      "_note": "Scouting the swarm (docs/20-swarms.md): each Scout sent slips up to the column and back on its own with basePct, plus perScentReadingPct per Scent Reading level and perMimicryPct per Chemical Mimicry level, up to maxPct. The report comes back if at least one does; the rest are eaten.",
+      "_note": "Scouting the swarm, or any incoming raid (docs/20-swarms.md): each Scout sent slips up to the column and back on its own with basePct, plus perScentReadingPct per Scent Reading level and perMimicryPct per Chemical Mimicry level, up to maxPct. The report comes back if at least one does; the rest are eaten.",
       "basePct": 30,
       "perScentReadingPct": 10,
       "perMimicryPct": 10,

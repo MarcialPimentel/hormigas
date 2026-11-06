@@ -56,7 +56,7 @@ import { Empty, Panel, ResDot } from '../components/ui';
 import { ENABLED_MISSIONS, MISSION_HELP, MISSION_LABEL, type MissionType } from '../nav';
 import { BattlePreview } from '../components/BattlePreview';
 import { ForageOdds } from '../components/ForageOdds';
-import { SwarmScoutOdds } from '../components/SwarmIntel';
+import { SwarmScoutOdds, scoutable } from '../components/SwarmIntel';
 import { ScoutRisk } from '../components/ScoutRisk';
 import { PatchView, isScent, usePatchMode, type PartyFocus, type Spot } from '../components/Patch';
 import { UnderWay, type FocusParty } from '../components/UnderWay';
@@ -70,6 +70,8 @@ export interface MissionDraft {
   view?: { region: number; patch: number };
   /** a battle report's data to replay on the 3D patch */
   replay?: unknown;
+  /** scouts: the incoming raid or swarm to go out and meet */
+  meet?: number;
 }
 
 /** What's at the target spot, as this player knows it (scent or known colony), for the form's summary and checks. */
@@ -120,6 +122,7 @@ export function Missions({ draft, go }: { draft?: MissionDraft; go?: (screen: st
   const { colony, state } = useGame();
   const [type, setType] = useState<MissionType>(draft?.type && ENABLED_MISSIONS.includes(draft.type) ? draft.type : 'transport');
   const [target, setTarget] = useState<Coords>(draft?.target ?? colony?.coords ?? { region: 1, patch: 1, spot: 1 });
+  const [meet, setMeet] = useState<number | undefined>(draft?.meet);
   const [deploy, setDeploy] = useState(!!draft?.type);
   const [focus, setFocus] = useState<PartyFocus | null>(null);
   const formRef = useRef<HTMLDivElement>(null);
@@ -133,6 +136,7 @@ export function Missions({ draft, go }: { draft?: MissionDraft; go?: (screen: st
       setDeploy(true);
     }
     if (draft?.target) setTarget(draft.target);
+    setMeet(draft?.meet);
   }, [draft]);
 
   if (!colony || !state) return null;
@@ -150,6 +154,7 @@ export function Missions({ draft, go }: { draft?: MissionDraft; go?: (screen: st
       setType={setType}
       target={target}
       setTarget={setTarget}
+      meet={meet}
       onClose={staged ? () => setDeploy(false) : undefined}
       onSent={staged ? () => setDeploy(false) : undefined}
     />
@@ -195,11 +200,13 @@ const SHOW_SPEED_DIAL = false;
  * The mission form: type, target, units, cargo, speed, fall-back, and Send. In the war room it's the Deploy card
  * that opens over the patch when you pick an action on a spot (`onClose` set); on phones it sits under the patch.
  */
-export function SendMission({ type, setType, target, setTarget, onClose, onSent }: {
+export function SendMission({ type, setType, target, setTarget, meet, onClose, onSent }: {
   type: MissionType;
   setType: (t: MissionType) => void;
   target: Coords;
   setTarget: (c: Coords) => void;
+  /** scouts: the incoming raid or swarm the player chose to meet (else the next one to land here) */
+  meet?: number;
   onClose?: () => void;
   onSent?: () => void;
 }) {
@@ -250,10 +257,15 @@ export function SendMission({ type, setType, target, setTarget, onClose, onSent 
   const missions: any[] = state.missions ?? [];
   const { used, max } = missionSlotUsage(missions, pool, research, colony.id);
 
-  // Scouts sent at one of your own colonies while an army-ant swarm is coming go out to meet it (docs/20-swarms.md)
+  // Scouts sent at a place of yours that a raid or swarm is heading for go out to meet it (docs/20-swarms.md § Scouting an incoming raid)
   const ownTarget = valid ? state.colonies.find((c) => c.coords.region === target.region && c.coords.patch === target.patch && c.coords.spot === target.spot) : undefined;
-  const swarmAt = ownTarget ? ((state.incoming ?? []) as any[]).find((i) => i.type === 'swarm' && i.targetColonyId === ownTarget.id) : undefined;
-  const scoutingSwarm = type === 'scout' && !!swarmAt;
+  const atTarget = (c?: Coords) => !!c && c.region === target.region && c.patch === target.patch && c.spot === target.spot;
+  const meetable = ((state.incoming ?? []) as any[])
+    .filter((i) => scoutable(i) && (i.herd ? atTarget(i.herd) : !!ownTarget && i.targetColonyId === ownTarget.id))
+    .sort((a, b) => a.arriveAt - b.arriveAt);
+  const meetAt = type === 'scout' ? meetable.find((i) => i.id === meet) ?? meetable[0] : undefined;
+  const scoutingSwarm = !!meetAt;
+  const meetName = meetAt ? (meetAt.type === 'swarm' ? 'Army ant swarm' : `${meetAt.type === 'claim' && meetAt.wild ? 'Wild ants' : 'Raid'} from ${meetAt.from}`) : '';
   const toName = targetName(targetSpot, target, colony.coords);
 
   const problems: string[] = [];
@@ -294,7 +306,7 @@ export function SendMission({ type, setType, target, setTarget, onClose, onSent 
   if (cargoAmounts.nectar + fuel > colony.resources.nectar) problems.push(`Not enough Nectar: needs ${fmtFull(fuel)} for the trip${cargoAmounts.nectar ? ' plus cargo' : ''}.`);
   for (const r of ['foliage', 'protein'] as const) if (cargoAmounts[r] > colony.resources[r]) problems.push(`Not enough ${RESOURCE_LABEL[r]} to load.`);
   if (used >= max) problems.push(noSlotsMessage(pool, max));
-  if (type === 'scout' && ownTarget && !swarmAt) problems.push("You don't need to scout your own colony. When an army ant swarm is coming, Scouts sent here go out to meet it.");
+  if (type === 'scout' && ownTarget && !meetAt) problems.push("You don't need to scout your own colony. When a raid or an army ant swarm is coming, Scouts sent here go out to meet it.");
   // hauling at home is fine: a fight at your own nest leaves corpses on your own doorstep
   else if (!scoutingSwarm && type !== 'haul' && valid && target.region === colony.coords.region && target.patch === colony.coords.patch && target.spot === colony.coords.spot) problems.push("That's this colony.");
   if (type === 'colonize') {
@@ -351,7 +363,7 @@ export function SendMission({ type, setType, target, setTarget, onClose, onSent 
 
   async function send() {
     const ok = await act(
-      () => api.post('/api/missions', { colonyId: colony!.id, type, target, units: chosen, cargo: cargoAllowed ? cargoAmounts : undefined, speedPct, ...(type === 'raid' ? { retreatPct } : {}), ...(joint ? { joint } : {}) }),
+      () => api.post('/api/missions', { colonyId: colony!.id, type, target, units: chosen, cargo: cargoAllowed ? cargoAmounts : undefined, speedPct, ...(type === 'raid' ? { retreatPct } : {}), ...(joint ? { joint } : {}), ...(meetAt ? { meet: meetAt.id } : {}) }),
       joint ? (joint.open != null ? 'Joint raid opened: your supercolony can join from the members’ board.' : 'Your army joined the joint raid.') : `${MISSION_LABEL[type]} mission sent.`,
     );
     if (ok) {
@@ -364,7 +376,7 @@ export function SendMission({ type, setType, target, setTarget, onClose, onSent 
 
   return (
       <Panel
-        title={`${MISSION_LABEL[type]}: ${colony.name} → ${scoutingSwarm ? 'Army ant swarm' : toName}`}
+        title={`${MISSION_LABEL[type]}: ${colony.name} → ${scoutingSwarm ? meetName : toName}`}
         actions={
           <>
             <span className="muted small">{used}/{max} {pool === 'forage' ? 'forage parties' : pool === 'trade' ? 'trade trails from here' : 'slots'} in use</span>
@@ -416,12 +428,12 @@ export function SendMission({ type, setType, target, setTarget, onClose, onSent 
                   .filter((c) => c.id !== colony.id || c.id === ownTarget?.id || type === 'haul')
                   .map((c) => (
                     <option key={c.id} value={c.id}>
-                      {scoutingSwarm && c.id === ownTarget?.id ? `Army ant swarm → ${c.name}` : c.name} ({fmtCoords(c.coords)})
+                      {scoutingSwarm && c.id === ownTarget?.id ? `${meetName} → ${c.name}` : c.name} ({fmtCoords(c.coords)})
                     </option>
                   ))}
               </select>
             ) : (
-              <strong>{scoutingSwarm ? `Army ant swarm → ${ownTarget!.name}` : toName}</strong>
+              <strong>{scoutingSwarm ? `${meetName} → ${ownTarget?.name ?? toName}` : toName}</strong>
             )}
             {!(ownTarget && state.colonies.length > 1) && <span className="muted small">{valid ? fmtCoords(target) : 'not a place'}</span>}
             {unscouted && <span className="scent-tag">Not scouted</span>}
@@ -507,8 +519,8 @@ export function SendMission({ type, setType, target, setTarget, onClose, onSent 
               get a share in the goods of your ground. Call the caravan home early from Under way.
             </p>
           )}
-          {scoutingSwarm && swarmAt.scouted && (
-            <p className="muted small">Your scouts have already seen this swarm: its size and your odds are on its card under Under way. More Scouts won't tell you more.</p>
+          {scoutingSwarm && meetAt.scouted && (
+            <p className="muted small">Your scouts have already seen this {meetAt.type === 'swarm' ? 'swarm' : 'raid'}: its size and your odds are on its card under Under way. More Scouts won't tell you more.</p>
           )}
           {type === 'scout' && unscouted && (
             <p className="muted small">Scouting turns this scent into a colony you know: its name, owner and what's inside. Then you can raid it.</p>
@@ -616,7 +628,7 @@ export function SendMission({ type, setType, target, setTarget, onClose, onSent 
           </fieldset>
         )}
 
-        {scoutingSwarm && <SwarmScoutOdds scouts={lvl(chosen, 'scout')} research={research} />}
+        {scoutingSwarm && <SwarmScoutOdds scouts={lvl(chosen, 'scout')} research={research} swarm={meetAt.type === 'swarm'} />}
 
         {type === 'scout' && !scoutingSwarm && valid && target.spot !== WILDS_SPOT && !ownTarget && (
           <ScoutRisk target={target} scouts={lvl(chosen, 'scout')} colony={targetSpot?.colony} />
