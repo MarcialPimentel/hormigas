@@ -185,6 +185,8 @@ export default function TestScene() {
   // ---------- actions
   const add = (o: Order, n = size, offset = 0) => {
     parties.current.push(send(o, nextId.current++, clock.current + offset, trip * 1000, n));
+    // a joint raid: the second colony's army lands at the same moment
+    if (o.joint) parties.current.push(send(o, nextId.current++, clock.current + offset, trip * 1000, n, 2));
     refresh();
   };
   const clearAll = () => {

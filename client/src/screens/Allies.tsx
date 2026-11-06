@@ -1,11 +1,12 @@
 // Allies: truces and supercolonies with the players you've met (docs/23-supercolonies.md).
 import { useCallback, useEffect, useState } from 'react';
-import { SUPERCOLONY_MAX_MEMBERS, SUPERCOLONY_NAME_LENGTH, scentFadeMs, supercolonyNameProblem, truceNoticeMs, RELATION_NAMES, type RelationInfo } from '@hormigas/shared';
+import { BOARD, SUPERCOLONY_MAX_MEMBERS, SUPERCOLONY_NAME_LENGTH, scentFadeMs, supercolonyNameProblem, truceNoticeMs, RELATION_NAMES, type RelationInfo } from '@hormigas/shared';
 import { api } from '../api';
 import { useGame } from '../game';
-import { fmtCoords, fmtNum, fmtSpan } from '../format';
+import { fmtClock, fmtCoords, fmtDuration, fmtFull, fmtNum, fmtSpan } from '../format';
 import { Countdown, Empty, Panel } from '../components/ui';
 import type { Nav } from '../nav';
+import { useBoard, type BoardPost } from '../board';
 
 interface Member {
   playerId: number;
@@ -135,7 +136,9 @@ export function Allies({ go }: { go: Nav }) {
             </>
           )}
         </Panel>
-      ) : (
+      ) : null}
+      {sc && member && <MembersBoard name={sc.name} go={go} />}
+      {sc ? null : (
         <FoundPanel canFound={view.canFound} onFound={(name) => run(() => api.post('/api/supercolony', { name }), `${name} founded.`)} goResearch={() => go('research')} />
       )}
 
@@ -277,5 +280,105 @@ function FoundPanel({ canFound, onFound, goResearch }: { canFound: boolean; onFo
         </>
       )}
     </Panel>
+  );
+}
+
+/**
+ * The members' board (docs/23-supercolonies.md § Joint raids): the supercolony's open joint raids, each with a Join
+ * button that opens the raid on its target, and short posts from members and the game.
+ */
+function MembersBoard({ name, go }: { name: string; go: Nav }) {
+  const { state, act, now } = useGame();
+  const { board, reload } = useBoard(true);
+  const [text, setText] = useState('');
+  if (!state) return null;
+  const post = async () => {
+    if (await act(() => api.post('/api/board', { text }), 'Posted.')) {
+      setText('');
+      reload();
+    }
+  };
+  const cancel = async (id: number) => {
+    if (await act(() => api.post(`/api/joint-raids/${id}/cancel`), 'Joint raid called off: everyone is walking home.')) reload();
+  };
+  const raids = board?.jointRaids ?? [];
+  return (
+    <Panel title={<>Members' board</>} actions={<span className="muted small">{name}</span>}>
+      <h4>Joint raids</h4>
+      {raids.length === 0 ? (
+        <p className="muted small">
+          None open. To open one, pick a wild nest, termite mound or spider den on the map, choose Raid, then Open a joint raid. Spider dens only fight
+          joint raids.
+        </p>
+      ) : (
+        <ul className="board-raids">
+          {raids.map((j) => (
+            <li key={j.id}>
+              <div>
+                <strong>{j.targetName}</strong> <span className="muted small">({fmtCoords(j.target)})</span>
+                <div className="small">
+                  Lands at {fmtClock(j.landAt)} (in {fmtDuration(Math.max(0, j.landAt - now))}) · opened by {j.leaderName}
+                </div>
+                <div className="small muted">
+                  In: {j.joined.map((a) => `${a.username} (${fmtFull(a.unitCount)} ants)`).join(', ') || 'nobody yet'}
+                  {j.playersNeeded > 1 ? ` · needs at least ${j.playersNeeded} players (${j.playerCount} so far)` : ''}
+                </div>
+              </div>
+              <div className="board-actions">
+                {!j.mine && (
+                  <button className="btn small primary" onClick={() => go('missions', { type: 'raid', target: j.target })}>
+                    Join
+                  </button>
+                )}
+                {j.mine && <span className="muted small">Your army is in</span>}
+                {j.leaderId === state.player.id && (
+                  <button className="btn small" onClick={() => cancel(j.id)}>
+                    Call off
+                  </button>
+                )}
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      <h4>Posts</h4>
+      <div className="board-new">
+        <textarea
+          value={text}
+          maxLength={BOARD.postLength}
+          rows={2}
+          placeholder="Plan the next raid, call for help…"
+          aria-label="Write a post"
+          onChange={(e) => setText(e.target.value)}
+        />
+        <div className="board-actions">
+          <span className="muted small">{BOARD.postLength - text.length} left</span>
+          <button className="btn small primary" disabled={!text.trim()} onClick={post}>
+            Post
+          </button>
+        </div>
+      </div>
+      {(board?.posts ?? []).length === 0 ? (
+        <p className="muted small">Nothing yet. Only members of {name} see this board.</p>
+      ) : (
+        <ul className="board-posts">
+          {board!.posts.map((p) => (
+            <BoardLine key={p.id} p={p} />
+          ))}
+        </ul>
+      )}
+    </Panel>
+  );
+}
+
+function BoardLine({ p }: { p: BoardPost }) {
+  const game = p.kind !== 'post';
+  return (
+    <li className={game ? 'board-note' : undefined}>
+      <span className="muted small">{fmtClock(p.at)}</span> {p.username && !game ? <strong>{p.username}: </strong> : null}
+      <span>{p.text}</span>
+      {p.kind === 'joint_open' && p.data?.landAt ? <span className="muted small"> Lands at {fmtClock(p.data.landAt)}.</span> : null}
+    </li>
   );
 }

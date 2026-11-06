@@ -45,10 +45,31 @@ export function BattleReport({ data, onReplay }: { data: any; onReplay?: () => v
       <div className="sides">
         <section>
           <h4>Attacker: {data.attacker.name}</h4>
-          <p className="muted small">From {fmtCoords(data.attacker.origin)} · {bonus(data.attacker.bonuses)}</p>
-          <Counts counts={data.attacker.units} />
-          <p className="small">Lost:</p>
-          <Counts counts={data.attacker.lost} empty="Nothing" />
+          {data.joint ? (
+            // a joint raid (docs/23-supercolonies.md § Joint raids): every member's army, its losses and its share of the loot
+            (data.joint.members ?? []).map((m: any, i: number) => (
+              <div key={i} className="ally-group">
+                <p className="small">
+                  <strong>{i === data.jointIndex ? 'Your army' : `${m.name}'s army`}</strong>
+                </p>
+                <Counts counts={m.units} />
+                <p className="small">Lost:</p>
+                <Counts counts={m.lost} empty="Nothing" />
+                {data.winner === 'attacker' && (
+                  <p className="small">
+                    Carried home: <ResLine r={m.loot} />
+                  </p>
+                )}
+              </div>
+            ))
+          ) : (
+            <>
+              <p className="muted small">From {fmtCoords(data.attacker.origin)} · {bonus(data.attacker.bonuses)}</p>
+              <Counts counts={data.attacker.units} />
+              <p className="small">Lost:</p>
+              <Counts counts={data.attacker.lost} empty="Nothing" />
+            </>
+          )}
         </section>
         <section>
           <h4>Defender: {data.defender.name}</h4>
@@ -97,7 +118,7 @@ export function BattleReport({ data, onReplay }: { data: any; onReplay?: () => v
       {/* what in the enemy's force struck your castes again and again, and what counters it (docs/05-castes-units.md) */}
       {(() => {
         const allyUnits = (data.defender.allies ?? []).reduce((u: UnitCounts, a: any) => addCounts(u, a.units ?? {}), {});
-        const mine: UnitCounts = youAttacked ? data.attacker.lost ?? {} : asAlly ? data.defender.allies?.[data.allyIndex]?.lost ?? {} : data.defender.lost ?? {};
+        const mine: UnitCounts = youAttacked ? (data.joint ? data.joint.members?.[data.jointIndex]?.lost : data.attacker.lost) ?? {} : asAlly ? data.defender.allies?.[data.allyIndex]?.lost ?? {} : data.defender.lost ?? {};
         const hints = youAttacked
           ? counterHints(mine, addCounts(data.defender.units ?? {}, allyUnits), data.defender.defenses ?? {})
           : counterHints(mine, data.attacker.units ?? {});
@@ -112,6 +133,7 @@ export function BattleReport({ data, onReplay }: { data: any; onReplay?: () => v
       {data.winner === 'attacker' && (
         <p>
           Loot carried off: <ResLine r={data.loot} />
+          {data.joint ? <span className="muted small"> (split by each army's worth)</span> : null}
         </p>
       )}
       {data.corpsesCarried > 0 && (
@@ -143,8 +165,10 @@ const signed = (n: number) => `${n >= 0 ? '+' : '−'}${fmtFull(Math.abs(n))}`;
  */
 function NetResult({ data, youAttacked }: { data: any; youAttacked: boolean }) {
   if (youAttacked) {
-    const lost: Resources = unitsValue(data.attacker?.lost ?? {});
-    const gained: Resources = add(data.loot ?? res(), res(0, data.corpsesCarried ?? 0, 0));
+    // in a joint raid, only your own army's losses and share count
+    const me = data.joint?.members?.[data.jointIndex];
+    const lost: Resources = unitsValue((me ? me.lost : data.attacker?.lost) ?? {});
+    const gained: Resources = add((me ? me.loot : data.loot) ?? res(), res(0, (me ? me.corpsesCarried : data.corpsesCarried) ?? 0, 0));
     const net = total(gained) - total(lost);
     return (
       <div className="net-result">
