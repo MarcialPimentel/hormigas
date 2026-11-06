@@ -55,7 +55,9 @@ describe('fall-back order on raids', () => {
   });
 
   it('raiders who meet their counter fall back, keep the rest of the army, and both reports say so', async () => {
-    await setColony(cb.id, { foliage: 20000, protein: 20000, nectar: 2000, last_updated: clock.t, units: { acid_sprayer: 40 }, defenses: {} });
+    // 21 Acid Sprayers: enough to cost the raiders a quarter in round 1, too few to wipe them out in that same round (then
+    // there's no one left to fall back). With 40, about 1 fight in 45 ended that way; 21 fell back in 100,000 of 100,000.
+    await setColony(cb.id, { foliage: 20000, protein: 20000, nectar: 2000, last_updated: clock.t, units: { acid_sprayer: 21 }, defenses: {} });
     const r = await a.post('/api/missions', { colonyId: ca.id, type: 'raid', target: cb.coords, units: { minor_soldier: 60 }, retreatPct: 25 });
     expect(r.ok).toBe(true);
     expect(r.mission.retreatPct).toBe(25);
