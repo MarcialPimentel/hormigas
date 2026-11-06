@@ -149,16 +149,18 @@ function WindfallReport({ d, go }: { d: any; go?: Nav }) {
   );
 }
 
-/** Scouts sent out to meet an army-ant swarm heading for your colony (docs/20-swarms.md § Scouting the swarm). */
+/** Scouts sent out to meet a raid or an army-ant swarm heading your way (docs/20-swarms.md § Scouting an incoming raid). */
 function SwarmScoutReport({ d }: { d: any }) {
-  const s = d.swarm;
-  const lost = d.lost ? ` Army ants ate ${fmtFull(d.lost)} of the ${fmtFull(d.scouts)} you sent.` : '';
-  if (s.gone) return <div className="report-body"><p>By the time your scouts got out, the swarm had already reached {s.colony}. They came home.</p></div>;
+  const swarm = !!d.swarm;
+  const s = d.swarm ?? d.party;
+  const what = swarm ? 'swarm' : 'raid';
+  const lost = d.lost ? ` ${swarm ? 'Army ants ate' : 'The raiders killed'} ${fmtFull(d.lost)} of the ${fmtFull(d.scouts)} you sent.` : '';
+  if (s.gone) return <div className="report-body"><p>By the time your scouts got out, the {what} had already reached {s.colony} or turned back. They came home.</p></div>;
   if (!s.units)
     return (
       <div className="report-body">
         <p>
-          None of your {fmtFull(d.scouts)} {d.scouts === 1 ? 'scout' : 'scouts'} came back from the army ant column heading for {s.colony}. You still don't know how big it is.
+          None of your {fmtFull(d.scouts)} {d.scouts === 1 ? 'scout' : 'scouts'} came back from the {swarm ? 'army ant column' : `raid from ${s.from}`} heading for {s.colony}. You still don't know how big it is.
         </p>
         <p className="muted small">Send more Scouts to try again before it lands at {fmtClock(s.arriveAt)}. Scent Reading and Chemical Mimicry help them slip past.</p>
       </div>
@@ -167,12 +169,12 @@ function SwarmScoutReport({ d }: { d: any }) {
   return (
     <div className="report-body">
       <p>
-        Your scouts got close to the column heading for {s.colony} ({fmtCoords(s.coords)}):{' '}
+        Your scouts got close to the {swarm ? 'column' : `raid from ${s.from}`} heading for {s.colony} ({fmtCoords(s.coords)}):{' '}
         {s.sizeName ? <>a <strong>{s.sizeName.toLowerCase()}</strong> ({s.sizeBlurb}) of </> : null}
-        <strong>{fmtFull(n)} army ants</strong>, {swarmMakeUp(s.units)}. It lands at{' '}
+        <strong>{fmtFull(n)} {swarm ? 'army ants' : 'ants'}</strong>, {swarmMakeUp(s.units)}. It lands at{' '}
         {fmtClock(s.arriveAt)}.{lost}
       </p>
-      <p className="muted small">Its size and your live odds against it are on its card under Under way. They change as you raise soldiers or send them away.</p>
+      <p className="muted small">Its size{s.held ? '' : ' and your live odds against it'} are on its card under Under way.{s.held ? '' : ' They change as you raise soldiers or send them away.'}</p>
     </div>
   );
 }
@@ -252,7 +254,7 @@ function ReportBody({ r, go }: { r: Report; go?: Nav }) {
   switch (r.type) {
     case 'scout':
       if (d.wilds) return <WildsReport d={d} />;
-      if (d.swarm) return <SwarmScoutReport d={d} />;
+      if (d.swarm || d.party) return <SwarmScoutReport d={d} />;
       return (
         <div className="report-body">
           <p>

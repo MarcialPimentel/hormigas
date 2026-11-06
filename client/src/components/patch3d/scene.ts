@@ -957,7 +957,7 @@ uniform vec3 uSpots[SIGHT_SPOTS];
         caste: (n) => (swarm ? (n % 5 === 2 ? 'army_major' : 'army') : i.type === 'raid' || i.type === 'hold' || i.type === 'claim' ? 'soldier' : 'worker'),
         color: swarm ? undefined : hostile ? CHITIN.raider : i.type === 'hold' ? '#3FA79E' : FLAG.other,
         trail: hostile ? '#C4473A' : i.type === 'hold' ? FLAG.ally : FLAG.other, cargo: [],
-        label: what, tone: hostile ? 'raid' : 'ours', endsAt: i.arriveAt, unknownSize: swarm && !i.scouted,
+        label: what, tone: hostile ? 'raid' : 'ours', endsAt: i.arriveAt, unknownSize: i.scouted === false,
         rate: i.departAt ? 1 / Math.max(1, i.arriveAt - i.departAt) : 0,
       });
     }

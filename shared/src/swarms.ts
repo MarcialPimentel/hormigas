@@ -131,7 +131,7 @@ export function swarmParty(target: SwarmTarget, seed: number, size: SwarmSize = 
 }
 
 
-// ---------- scouting the swarm (docs/20-swarms.md § Scouting the swarm) ----------
+// ---------- scouting the swarm or any incoming raid (docs/20-swarms.md § Scouting an incoming raid) ----------
 
 /**
  * Chance one Scout slips up to the column and gets back: a base, plus Scent Reading and Chemical Mimicry

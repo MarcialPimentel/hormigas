@@ -163,6 +163,8 @@ export interface SendContext {
   t: number;
   /** raids: opening or joining a joint raid */
   joint?: JointInput;
+  /** scouts: which incoming raid or swarm to go out and meet (docs/20-swarms.md § Scouting an incoming raid) */
+  meet?: number;
 }
 
 export interface ArrivalOutcome {
@@ -179,8 +181,8 @@ export interface ArrivalOutcome {
  * live in MISSION_TYPES in shared/src/missions.ts, so the Missions screen previews the same rules.
  */
 interface TypeRules {
-  /** Validate the dispatch; throw GameError to refuse. */
-  validate: (ctx: SendContext) => Promise<void>;
+  /** Validate the dispatch; throw GameError to refuse. May return a starting `result` for the mission. */
+  validate: (ctx: SendContext) => Promise<void | { result?: Record<string, unknown> }>;
   /** Resolve arrival at the target. May mutate m.units / m.cargo / m.result. */
   arrive: (q: Tx, m: Mission, at: number) => Promise<ArrivalOutcome>;
 }
@@ -205,6 +207,8 @@ export interface SendInput {
   retreatPct?: number;
   /** Raids only: open a joint raid ({ open: hours }) or join one ({ id }) (docs/23-supercolonies.md § Joint raids). */
   joint?: JointInput;
+  /** Scouts only: the id of the incoming raid or swarm to meet. */
+  meet?: number;
 }
 
 function parseUnits(raw: Record<string, unknown>, home: UnitCounts): UnitCounts {
@@ -262,7 +266,8 @@ export async function sendMission(q: Tx, playerId: number, input: SendInput): Pr
 
   const world = await getWorld(q);
   const targetColony = target.spot === WILDS_SPOT ? null : await colonyAt(q, world.id, target.region, target.patch, target.spot);
-  await rules.validate({ q, player, colony, units, cargo, target, targetColony, t, joint });
+  const meet = input.meet != null && Number.isInteger(Number(input.meet)) ? Number(input.meet) : undefined;
+  const checked = await rules.validate({ q, player, colony, units, cargo, target, targetColony, t, joint, meet });
 
   // slots
   const active = await activeMissions(q, playerId);
@@ -291,6 +296,7 @@ export async function sendMission(q: Tx, playerId: number, input: SendInput): Pr
   return launchMission(q, {
     worldId: world.id, playerId, type, origin: colony, target, targetColony, units, cargo, speedPct, retreatPct, fuel,
     departAt: t, arriveAt: prepared ? prepared.landAt : t + secs * 1000, senderName: player.username,
+    ...(checked?.result ? { result: checked.result } : {}),
     ...(prepared ? { joint: { id: prepared.id, eventId: prepared.eventId, travelMs: secs * 1000 } } : {}),
   });
 }
@@ -305,6 +311,8 @@ export async function launchMission(
     senderName: string;
     /** a joint raid's army: it lands on the joint raid's event, and walks home in its own travel time */
     joint?: { id: number; eventId: number; travelMs: number };
+    /** a starting result, e.g. which incoming party scouts go out to meet */
+    result?: Record<string, unknown>;
   },
 ): Promise<Mission> {
   const { origin, target } = o;
@@ -316,6 +324,7 @@ export async function launchMission(
       o.targetColony?.id ?? null, JSON.stringify(o.units), JSON.stringify(o.cargo), o.speedPct, o.fuel, o.departAt, o.arriveAt, o.retreatPct ?? 0],
   );
   const m = fromRow(r.rows[0]);
+  if (o.result) m.result = { ...(m.result ?? {}), ...o.result };
   if (o.joint) {
     m.jointRaidId = o.joint.id;
     m.arriveEventId = o.joint.eventId;
@@ -604,24 +613,32 @@ export async function missionViews(q: Q, missions: Mission[]) {
   return missions.map((m) => ({ ...missionView(m), targetName: targetName(m.type, m.target.spot, at.get(coordsKey(m.target)) ?? null) }));
 }
 
+/** Incoming parties your Scouts can go out to meet: raids, claims on what you hold, and swarms (docs/20-swarms.md). */
+export const SCOUTABLE_INCOMING = ['raid', 'claim', 'swarm'];
+
 /**
- * How big an incoming party looks. A swarm shows only a rough size until the colony's scouts reach it; then its
- * real size and make-up, for the live odds on its card (docs/20-swarms.md § Scouting the swarm).
+ * How big an incoming party looks. A hostile raid, claim or swarm shows only a rough size until the colony's scouts
+ * reach it; then its real size and make-up (and the sender's research), for the live odds on its card
+ * (docs/20-swarms.md § Scouting an incoming raid). Friendly parties show their size.
  */
-function incomingSize(row: { type: string; units: Record<string, number>; result: any }) {
+function incomingSize(row: { type: string; units: Record<string, number>; result: any; sender_research?: any }, hostile: boolean) {
   const n = Object.values(row.units).reduce((a, b) => a + b, 0);
-  if (row.type !== 'swarm') return { unitCount: n };
+  if (!hostile || !SCOUTABLE_INCOMING.includes(row.type)) return { unitCount: n };
   if (!row.result?.scouted) return { unitCount: roughSwarmSize(n), scouted: false };
-  // once scouted, the size it was rolled as (foraging column, war column, great swarm) shows too
-  const size = swarmSize(row.result?.size);
-  return { unitCount: n, scouted: true, units: row.units, ...(size ? { size: size.id, sizeName: size.name, sizeBlurb: size.blurb } : {}) };
+  // once scouted, a swarm's rolled size (foraging column, war column, great swarm) shows too
+  const size = row.type === 'swarm' ? swarmSize(row.result?.size) : null;
+  return {
+    unitCount: n, scouted: true, units: row.units,
+    ...(row.type !== 'swarm' ? { research: row.sender_research ?? {} } : {}),
+    ...(size ? { size: size.id, sizeName: size.name, sizeBlurb: size.blurb } : {}),
+  };
 }
 
 /** Hostile or friendly missions heading to the player's colonies (attacker's units hidden unless scouts). */
 export async function incomingMissions(q: Q, playerId: number) {
   const r = await q.query(
     `SELECT m.id, m.type, m.player_id, m.depart_at, m.arrive_at, m.target_colony_id, m.origin_region, m.origin_patch, m.origin_spot, m.units, m.result,
-            CASE WHEN m.type = 'swarm' THEN $2 WHEN p.is_npc THEN o.name ELSE p.username END AS username, p.is_npc,
+            CASE WHEN m.type = 'swarm' THEN $2 WHEN p.is_npc THEN o.name ELSE p.username END AS username, p.is_npc, p.research AS sender_research,
             c.npc->>'kind' IN ('herd', 'windfall') AS at_herd, c.npc->>'kind' = 'windfall' AS at_windfall, c.region AS t_region, c.patch AS t_patch, c.spot AS t_spot
        FROM missions m JOIN colonies c ON c.id = m.target_colony_id JOIN players p ON p.id = m.player_id
        JOIN colonies o ON o.id = m.origin_colony_id
@@ -632,6 +649,8 @@ export async function incomingMissions(q: Q, playerId: number) {
   const pacts = await relationsOf(q, playerId, [...new Set(r.rows.filter((row: any) => !row.is_npc).map((row: any) => Number(row.player_id)))]);
   return r.rows.map((row: any) => {
     const pact = row.is_npc ? null : pacts.get(Number(row.player_id))?.relation ?? null;
+    // ants coming to claim a windfall you hold come to fight for it (docs/25-windfalls.md)
+    const hostile = row.type === 'swarm' || ((row.type === 'raid' || row.type === 'scout' || row.type === 'claim') && !blocksRaids(pact));
     return {
       id: row.id,
       type: row.type,
@@ -645,13 +664,12 @@ export async function incomingMissions(q: Q, playerId: number) {
       wild: row.is_npc,
       /** your pact with the sender, if any: truce, truce_ending, ally or fading */
       pact,
-      // ants coming to claim a windfall you hold come to fight for it (docs/25-windfalls.md)
-      hostile: row.type === 'swarm' || ((row.type === 'raid' || row.type === 'scout' || row.type === 'claim') && !blocksRaids(pact)),
+      hostile,
       /** aimed at the ants you keep at an aphid herd, not at a colony (docs/24-npcs.md) */
       herd: row.at_herd ? { region: row.t_region, patch: row.t_patch, spot: row.t_spot } : null,
       /** the held site is a windfall, not an aphid herd (docs/25-windfalls.md) */
       windfall: !!row.at_windfall,
-      ...incomingSize(row),
+      ...incomingSize(row, hostile),
     };
   });
 }
