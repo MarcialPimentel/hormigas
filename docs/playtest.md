@@ -16,6 +16,8 @@ You see the patches round your colonies; the rest is greyed (explored, as last s
 ### Scouting the swarm
 A swarm comes every 1.5–2.5 days. To meet one sooner on a test world, wait for the "Army ant swarm" warning, then press **Scout the swarm** on its card under Under way and send a few Scouts. Check that the odds on the form go up as you add Scouts, that the report says how many came back, and that the card then shows the swarm's size and a win / draw / lose bar that moves when you raise or send away soldiers ([20-swarms](20-swarms.md)).
 
+Raids work the same way: when a wild nest or another player raids you, the card shows "? ants" and a **Scout the raid** button. The send card's To line names the raid ("Raid from … → your colony"); once the report is back, the card shows the real count, the make-up and the odds ([20-swarms](20-swarms.md#scouting-an-incoming-raid)).
+
 ### Trade trails
 Tap another of your colonies (or a truce partner's or supercolony mate's) and press **Trade trail**, or pick Trade trail on the send card. Send Workers, Media Workers or Haulers; the card shows what each delivery brings and, for a player, what they gain. While the trail is open the caravan walks to and fro on the Whole Yard, and Under way shows when it ends and what it has brought so far ([23-supercolonies](23-supercolonies.md#trade-trails-build-16)).
 

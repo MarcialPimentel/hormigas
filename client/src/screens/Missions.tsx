@@ -17,6 +17,10 @@ import {
   groupSpeed,
   lvl,
   missionFuel,
+  fuelCutPct,
+  windfallDeliverEveryHours,
+  windfallLoadCutPct,
+  herdBonusPct,
   missionSlotUsage,
   missionTimes,
   missionUnitProblem,
@@ -46,13 +50,13 @@ import {
 } from '@hormigas/shared';
 import { api } from '../api';
 import { useGame } from '../game';
-import { fmtClock, fmtCoords, fmtDuration, fmtFull, fmtNum } from '../format';
+import { fmtClock, fmtCoords, fmtDuration, fmtFull, fmtHours, fmtNum } from '../format';
 import { RESOURCE_LABEL } from '../describe';
 import { Empty, Panel, ResDot } from '../components/ui';
 import { ENABLED_MISSIONS, MISSION_HELP, MISSION_LABEL, type MissionType } from '../nav';
 import { BattlePreview } from '../components/BattlePreview';
 import { ForageOdds } from '../components/ForageOdds';
-import { SwarmScoutOdds } from '../components/SwarmIntel';
+import { SwarmScoutOdds, scoutable } from '../components/SwarmIntel';
 import { ScoutRisk } from '../components/ScoutRisk';
 import { PatchView, isScent, usePatchMode, type PartyFocus, type Spot } from '../components/Patch';
 import { UnderWay, type FocusParty } from '../components/UnderWay';
@@ -66,6 +70,8 @@ export interface MissionDraft {
   view?: { region: number; patch: number };
   /** a battle report's data to replay on the 3D patch */
   replay?: unknown;
+  /** scouts: the incoming raid or swarm to go out and meet */
+  meet?: number;
 }
 
 /** What's at the target spot, as this player knows it (scent or known colony), for the form's summary and checks. */
@@ -116,6 +122,7 @@ export function Missions({ draft, go }: { draft?: MissionDraft; go?: (screen: st
   const { colony, state } = useGame();
   const [type, setType] = useState<MissionType>(draft?.type && ENABLED_MISSIONS.includes(draft.type) ? draft.type : 'transport');
   const [target, setTarget] = useState<Coords>(draft?.target ?? colony?.coords ?? { region: 1, patch: 1, spot: 1 });
+  const [meet, setMeet] = useState<number | undefined>(draft?.meet);
   const [deploy, setDeploy] = useState(!!draft?.type);
   const [focus, setFocus] = useState<PartyFocus | null>(null);
   const formRef = useRef<HTMLDivElement>(null);
@@ -129,6 +136,7 @@ export function Missions({ draft, go }: { draft?: MissionDraft; go?: (screen: st
       setDeploy(true);
     }
     if (draft?.target) setTarget(draft.target);
+    setMeet(draft?.meet);
   }, [draft]);
 
   if (!colony || !state) return null;
@@ -146,6 +154,7 @@ export function Missions({ draft, go }: { draft?: MissionDraft; go?: (screen: st
       setType={setType}
       target={target}
       setTarget={setTarget}
+      meet={meet}
       onClose={staged ? () => setDeploy(false) : undefined}
       onSent={staged ? () => setDeploy(false) : undefined}
     />
@@ -191,11 +200,13 @@ const SHOW_SPEED_DIAL = false;
  * The mission form: type, target, units, cargo, speed, fall-back, and Send. In the war room it's the Deploy card
  * that opens over the patch when you pick an action on a spot (`onClose` set); on phones it sits under the patch.
  */
-export function SendMission({ type, setType, target, setTarget, onClose, onSent }: {
+export function SendMission({ type, setType, target, setTarget, meet, onClose, onSent }: {
   type: MissionType;
   setType: (t: MissionType) => void;
   target: Coords;
   setTarget: (c: Coords) => void;
+  /** scouts: the incoming raid or swarm the player chose to meet (else the next one to land here) */
+  meet?: number;
   onClose?: () => void;
   onSent?: () => void;
 }) {
@@ -239,15 +250,22 @@ export function SendMission({ type, setType, target, setTarget, onClose, onSent 
   const dist = valid ? distance(colony.coords, target) : 0;
   const speed = groupSpeed(chosen, research);
   const oneWay = speed > 0 && valid ? travelSeconds(dist, speed, speedPct, state.world.speed) : 0;
-  const fuel = speed > 0 && valid ? missionFuel(chosen, dist) : 0;
+  // Social Stomach burns less (docs/09-missions.md § Fuel); the line below says by how much
+  const fuel = speed > 0 && valid ? missionFuel(chosen, dist, research) : 0;
+  const fuelCut = fuelCutPct(research);
   const pool = rules.slot;
   const missions: any[] = state.missions ?? [];
   const { used, max } = missionSlotUsage(missions, pool, research, colony.id);
 
-  // Scouts sent at one of your own colonies while an army-ant swarm is coming go out to meet it (docs/20-swarms.md)
+  // Scouts sent at a place of yours that a raid or swarm is heading for go out to meet it (docs/20-swarms.md § Scouting an incoming raid)
   const ownTarget = valid ? state.colonies.find((c) => c.coords.region === target.region && c.coords.patch === target.patch && c.coords.spot === target.spot) : undefined;
-  const swarmAt = ownTarget ? ((state.incoming ?? []) as any[]).find((i) => i.type === 'swarm' && i.targetColonyId === ownTarget.id) : undefined;
-  const scoutingSwarm = type === 'scout' && !!swarmAt;
+  const atTarget = (c?: Coords) => !!c && c.region === target.region && c.patch === target.patch && c.spot === target.spot;
+  const meetable = ((state.incoming ?? []) as any[])
+    .filter((i) => scoutable(i) && (i.herd ? atTarget(i.herd) : !!ownTarget && i.targetColonyId === ownTarget.id))
+    .sort((a, b) => a.arriveAt - b.arriveAt);
+  const meetAt = type === 'scout' ? meetable.find((i) => i.id === meet) ?? meetable[0] : undefined;
+  const scoutingSwarm = !!meetAt;
+  const meetName = meetAt ? (meetAt.type === 'swarm' ? 'Army ant swarm' : `${meetAt.type === 'claim' && meetAt.wild ? 'Wild ants' : 'Raid'} from ${meetAt.from}`) : '';
   const toName = targetName(targetSpot, target, colony.coords);
 
   const problems: string[] = [];
@@ -288,7 +306,7 @@ export function SendMission({ type, setType, target, setTarget, onClose, onSent 
   if (cargoAmounts.nectar + fuel > colony.resources.nectar) problems.push(`Not enough Nectar: needs ${fmtFull(fuel)} for the trip${cargoAmounts.nectar ? ' plus cargo' : ''}.`);
   for (const r of ['foliage', 'protein'] as const) if (cargoAmounts[r] > colony.resources[r]) problems.push(`Not enough ${RESOURCE_LABEL[r]} to load.`);
   if (used >= max) problems.push(noSlotsMessage(pool, max));
-  if (type === 'scout' && ownTarget && !swarmAt) problems.push("You don't need to scout your own colony. When an army ant swarm is coming, Scouts sent here go out to meet it.");
+  if (type === 'scout' && ownTarget && !meetAt) problems.push("You don't need to scout your own colony. When a raid or an army ant swarm is coming, Scouts sent here go out to meet it.");
   // hauling at home is fine: a fight at your own nest leaves corpses on your own doorstep
   else if (!scoutingSwarm && type !== 'haul' && valid && target.region === colony.coords.region && target.patch === colony.coords.patch && target.spot === colony.coords.spot) problems.push("That's this colony.");
   if (type === 'colonize') {
@@ -345,7 +363,7 @@ export function SendMission({ type, setType, target, setTarget, onClose, onSent 
 
   async function send() {
     const ok = await act(
-      () => api.post('/api/missions', { colonyId: colony!.id, type, target, units: chosen, cargo: cargoAllowed ? cargoAmounts : undefined, speedPct, ...(type === 'raid' ? { retreatPct } : {}), ...(joint ? { joint } : {}) }),
+      () => api.post('/api/missions', { colonyId: colony!.id, type, target, units: chosen, cargo: cargoAllowed ? cargoAmounts : undefined, speedPct, ...(type === 'raid' ? { retreatPct } : {}), ...(joint ? { joint } : {}), ...(meetAt ? { meet: meetAt.id } : {}) }),
       joint ? (joint.open != null ? 'Joint raid opened: your supercolony can join from the members’ board.' : 'Your army joined the joint raid.') : `${MISSION_LABEL[type]} mission sent.`,
     );
     if (ok) {
@@ -358,7 +376,7 @@ export function SendMission({ type, setType, target, setTarget, onClose, onSent 
 
   return (
       <Panel
-        title={`${MISSION_LABEL[type]}: ${colony.name} → ${scoutingSwarm ? 'Army ant swarm' : toName}`}
+        title={`${MISSION_LABEL[type]}: ${colony.name} → ${scoutingSwarm ? meetName : toName}`}
         actions={
           <>
             <span className="muted small">{used}/{max} {pool === 'forage' ? 'forage parties' : pool === 'trade' ? 'trade trails from here' : 'slots'} in use</span>
@@ -410,12 +428,12 @@ export function SendMission({ type, setType, target, setTarget, onClose, onSent 
                   .filter((c) => c.id !== colony.id || c.id === ownTarget?.id || type === 'haul')
                   .map((c) => (
                     <option key={c.id} value={c.id}>
-                      {scoutingSwarm && c.id === ownTarget?.id ? `Army ant swarm → ${c.name}` : c.name} ({fmtCoords(c.coords)})
+                      {scoutingSwarm && c.id === ownTarget?.id ? `${meetName} → ${c.name}` : c.name} ({fmtCoords(c.coords)})
                     </option>
                   ))}
               </select>
             ) : (
-              <strong>{scoutingSwarm ? `Army ant swarm → ${ownTarget!.name}` : toName}</strong>
+              <strong>{scoutingSwarm ? `${meetName} → ${ownTarget?.name ?? toName}` : toName}</strong>
             )}
             {!(ownTarget && state.colonies.length > 1) && <span className="muted small">{valid ? fmtCoords(target) : 'not a place'}</span>}
             {unscouted && <span className="scent-tag">Not scouted</span>}
@@ -463,12 +481,20 @@ export function SendMission({ type, setType, target, setTarget, onClose, onSent 
         {type === 'raid' && targetSpot?.colony?.wild?.style && <p className="small counter-hint">{targetSpot.colony.wild.style}</p>}
 
         <div className="target-notes">
+          {type === 'haul' && (targetSpot?.corpses ?? 0) > 0 && targetSpot?.corpsesRotAt != null && (
+            <p className="muted small">
+              {fmtFull(targetSpot.corpses)} Protein lies here.{' '}
+              {targetSpot.corpsesRotAt > now ? `It starts to rot in ${fmtDuration(targetSpot.corpsesRotAt - now)}` : 'It is rotting away'}
+              {targetSpot.corpsesRotDelayHours ? `, ${targetSpot.corpsesRotDelayHours} hours later than usual (Necrophoresis)` : ''}.
+            </p>
+          )}
           {type === 'scout' && target.spot === WILDS_SPOT && (
             <p className="muted small">Scouts will survey the wilds: what foragers can expect there, who lives in the patch, and any corpses lying around.</p>
           )}
           {type === 'tend' && herd && (
             <p className="muted small">
-              This herd makes {fmtFull(herd.nectarPerHour)} Nectar an hour while tended, carried home every {HERDS.deliverEveryHours} hours. Tenders stay
+              This herd makes {fmtFull(herd.nectarPerHour)} Nectar an hour while tended, carried home every {HERDS.deliverEveryHours} hours
+              {herdBonusPct(research) > 0 ? <>, and your Aphid Husbandry adds {herdBonusPct(research)}% to each delivery</> : null}. Tenders stay
               until you call them home from the herd's card. Anyone can raid them to take the herd, so soldiers make good tenders.
             </p>
           )}
@@ -481,7 +507,8 @@ export function SendMission({ type, setType, target, setTarget, onClose, onSent 
                 : windfall.guarded
                 ? 'Wild ants got there first. Yours fight them when they arrive; win, and they take it over.'
                 : 'Nobody holds it yet. The first ants to arrive take it, and anyone can fight them for it.'}{' '}
-              Holders carry a load home every {windfall.deliverEveryHours} hours (as much as they can carry) until it's gone or rots in{' '}
+              Your holders would carry a load home every {fmtHours(windfallDeliverEveryHours(research))}
+              {windfallLoadCutPct(research) > 0 ? ` (${windfallLoadCutPct(research)}% sooner: Recruitment Trails)` : ''} (as much as they can carry) until it's gone or rots in{' '}
               {fmtDuration(Math.max(0, windfall.endsAt - now))}. Send soldiers to win and keep it, and carriers to haul it.
             </p>
           )}
@@ -492,8 +519,8 @@ export function SendMission({ type, setType, target, setTarget, onClose, onSent 
               get a share in the goods of your ground. Call the caravan home early from Under way.
             </p>
           )}
-          {scoutingSwarm && swarmAt.scouted && (
-            <p className="muted small">Your scouts have already seen this swarm: its size and your odds are on its card under Under way. More Scouts won't tell you more.</p>
+          {scoutingSwarm && meetAt.scouted && (
+            <p className="muted small">Your scouts have already seen this {meetAt.type === 'swarm' ? 'swarm' : 'raid'}: its size and your odds are on its card under Under way. More Scouts won't tell you more.</p>
           )}
           {type === 'scout' && unscouted && (
             <p className="muted small">Scouting turns this scent into a colony you know: its name, owner and what's inside. Then you can raid it.</p>
@@ -601,7 +628,7 @@ export function SendMission({ type, setType, target, setTarget, onClose, onSent 
           </fieldset>
         )}
 
-        {scoutingSwarm && <SwarmScoutOdds scouts={lvl(chosen, 'scout')} research={research} />}
+        {scoutingSwarm && <SwarmScoutOdds scouts={lvl(chosen, 'scout')} research={research} swarm={meetAt.type === 'swarm'} />}
 
         {type === 'scout' && !scoutingSwarm && valid && target.spot !== WILDS_SPOT && !ownTarget && (
           <ScoutRisk target={target} scouts={lvl(chosen, 'scout')} colony={targetSpot?.colony} />
@@ -634,8 +661,8 @@ export function SendMission({ type, setType, target, setTarget, onClose, onSent 
           <div><dt>Distance</dt><dd>{valid ? fmtNum(dist) : '—'}</dd></div>
           <div><dt>One way</dt><dd>{oneWay ? fmtDuration(oneWay * 1000) : '—'}</dd></div>
           <div><dt>Arrives</dt><dd>{times ? fmtClock(times.arriveAt) : '—'}</dd></div>
-          <div><dt>Back home</dt><dd>{times?.returnAt ? fmtClock(times.returnAt) : type === 'hold' ? 'when recalled' : type === 'trade' && times ? fmtClock(times.arriveAt + tradeTrailMs(state.world.speed) + oneWay * 1000) : stays ? 'stays' : '—'}</dd></div>
-          <div><dt>Nectar fuel (paid once)</dt><dd className={fuel > colony.resources.nectar ? 'warn' : ''}>{fuel ? fmtFull(fuel) : '—'}</dd></div>
+          <div><dt>Back home</dt><dd>{times?.returnAt ? fmtClock(times.returnAt) : type === 'hold' ? 'when recalled' : type === 'trade' && times ? fmtClock(times.arriveAt + tradeTrailMs(state.world.speed, research) + oneWay * 1000) : stays ? 'stays' : '—'}</dd></div>
+          <div><dt>Nectar fuel (paid once)</dt><dd className={fuel > colony.resources.nectar ? 'warn' : ''}>{fuel ? fmtFull(fuel) : '—'}{fuel && fuelCut ? <span className="muted small"> (−{fuelCut}% Social Stomach)</span> : null}</dd></div>
           {type !== 'scout' && <div><dt>{type === 'haul' ? 'Corpse capacity' : 'Capacity'}</dt><dd>{fmtFull(capacity)}</dd></div>}
         </dl>
         <p className="muted small">
@@ -738,7 +765,10 @@ interface TradePreviewData {
   partnerGoods?: string | null;
   everyHours?: number;
   deliveries?: number;
+  extraDeliveries?: number;
 }
+
+const fmtDays = (d: number) => (Number.isInteger(d) ? `${d} ${d === 1 ? 'day' : 'days'}` : fmtHours(d * 24));
 
 /** What a trail from this colony to the target would bring, per delivery and over the whole trail (server: GET /api/trade/preview). */
 function TradePreview({ target, capacity }: { target: Coords; capacity: number }) {
@@ -791,6 +821,9 @@ function TradePreview({ target, capacity }: { target: Coords; capacity: number }
       {capacity > 0 && (
         <p className="small">
           Over the whole trail: <strong>{fmtFull(got * n)}</strong> in {n} deliveries.
+          {(p.extraDeliveries ?? 0) > 0 ? (
+            <span className="muted"> Trophallaxis keeps it open {fmtDays(((p.extraDeliveries ?? 0) * (p.everyHours ?? TRADE.deliverEveryHours)) / 24)} longer: {p.extraDeliveries} more deliveries.</span>
+          ) : null}
         </p>
       )}
       {p.partner && (

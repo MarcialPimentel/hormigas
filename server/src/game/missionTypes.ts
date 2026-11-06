@@ -43,7 +43,7 @@ import { discover, requireKnown, smelledBy } from './discovery';
 import { areAllies, relationOf } from './diplomacy';
 import { DIPLOMACY_MESSAGES } from '@hormigas/shared';
 import { bump } from './stats';
-import { scoutSwarm, swarmHeadingFor } from './swarms';
+import { defendsPlace, incomingParty, scoutIncoming } from './scoutIncoming';
 
 defineMission('transport', {
   async validate({ q, targetColony, colony, player }) {
@@ -117,21 +117,25 @@ defineMission('hold', {
 });
 
 defineMission('scout', {
-  async validate({ q, targetColony, player, units, target }) {
+  async validate({ q, targetColony, player, units, target, meet }) {
     // only Scouts may go: checked from MISSION_TYPES before this runs
     if (target.spot === WILDS_SPOT) return; // surveying the wilds is always allowed
     if (!targetColony) throw new GameError('bad_target', 'There is no colony there to scout.');
-    if (targetColony.playerId === player.id && !targetColony.npc) {
-      // a swarm is coming: scouts go out to meet the column (docs/20-swarms.md § Scouting the swarm)
-      if (await swarmHeadingFor(q, targetColony.id)) return;
-      throw new GameError('bad_target', "You don't need to scout your own colony. When an army ant swarm is coming, Scouts sent here go out to meet it.");
+    if (defendsPlace(targetColony, player.id)) {
+      // a raid or a swarm is coming: scouts go out to meet it (docs/20-swarms.md § Scouting an incoming raid)
+      const party = await incomingParty(q, targetColony.id, player.id, meet);
+      if (party) return { result: { meet: party.id } };
+      if (meet != null) throw new GameError('bad_target', 'That raid has already landed or turned back.');
+      if (!targetColony.npc) throw new GameError('bad_target', "You don't need to scout your own colony. When a raid or an army ant swarm is coming, Scouts sent here go out to meet it.");
     }
   },
   async arrive(q, m, at) {
     if (m.target.spot === WILDS_SPOT) return surveyWilds(q, m, at);
     if (!m.targetColonyId) return { home: true };
     const found = await getColony(q, m.targetColonyId);
-    if (!found.npc && found.playerId === m.playerId) return scoutSwarm(q, m, found, at);
+    // out to meet a raid or swarm (older missions sent at your own colony carry no id: they meet the next one)
+    const meet = (m.result as { meet?: number } | null)?.meet;
+    if (meet != null || (!found.npc && found.playerId === m.playerId)) return scoutIncoming(q, m, found, meet ?? undefined, at);
     const target = found.npc ? await syncNest(q, await lockColony(q, found.id), at) : advance(found, at);
     const attacker = await getPlayer(q, m.playerId);
     // at an aphid herd or a windfall, the ants holding it (if any) are the ones who might spot the scouts (docs/24-npcs.md)
@@ -225,8 +229,8 @@ async function surveyWilds(q: Tx, m: Mission, at: number): Promise<ArrivalOutcom
   );
   const others = cols.rows.filter((r: any) => r.id !== m.playerId);
   const inactive = others.filter((r: any) => isInactive({ points: r.points_total, protectedUntil: r.protected_until, lastActive: r.last_active }, at)).length;
-  const corpses = (await q.query('SELECT protein, created_at FROM corpse_fields WHERE world_id = $1 AND region = $2 AND patch = $3', [m.worldId, region, patch])).rows
-    .reduce((sum: number, r: any) => sum + corpseFieldAmount(r.protein, r.created_at, at), 0);
+  const corpses = (await q.query('SELECT protein, created_at, rot_delay_hours FROM corpse_fields WHERE world_id = $1 AND region = $2 AND patch = $3', [m.worldId, region, patch])).rows
+    .reduce((sum: number, r: any) => sum + corpseFieldAmount(r.protein, r.created_at, at, Number(r.rot_delay_hours)), 0);
   const rng = createRng(randomSeed());
   const data = {
     wilds: true,

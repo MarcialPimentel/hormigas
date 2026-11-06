@@ -17,7 +17,7 @@ import {
   tradeKindFor,
   tradePartnerGoods,
   tradePotential,
-  tradeTrailMs,
+  tradeDeliveries,
   type Resources,
   type TradeKind,
 } from '@hormigas/shared';
@@ -39,6 +39,8 @@ interface TradeResult {
   kind: TradeKind;
   /** the next delivery's number (1-based); the pending trade_deliver event carries the same */
   next: number;
+  /** deliveries in this trail, fixed when it opens (Trophallaxis adds some); missing on trails opened before Build 20 */
+  deliveries?: number;
   endsAt: number;
   /** totals so far: what the sender got, and what the host got (player trails) */
   delivered: Resources;
@@ -87,21 +89,24 @@ defineMission('trade', {
       return { home: true };
     }
     const speed = (await getWorld(q)).speed;
-    const result: TradeResult = { trading: true, kind, next: 1, endsAt: at + tradeTrailMs(speed), delivered: res(), partnerGot: res() };
+    const sender = await getPlayer(q, m.playerId);
+    // Trophallaxis keeps the trail open longer: set when it opens, like other time research (docs/23-supercolonies.md)
+    const deliveries = tradeDeliveries(sender.research);
+    const extraDays = (deliveries - TRADE.deliveries) * TRADE.deliverEveryHours / 24;
+    const result: TradeResult = { trading: true, kind, next: 1, deliveries, endsAt: at + deliveries * tradeEveryMs(speed), delivered: res(), partnerGot: res() };
     m.result = result;
     await schedule(q, m.worldId, 'trade_deliver', at + tradeEveryMs(speed), { missionId: m.id, n: 1 });
     const home = await getColony(q, m.originColonyId);
-    const sender = await getPlayer(q, m.playerId);
     const perDelivery = tradeDelivery(tradePotential(destPerHour(dest), dest.terrain, distance(m.origin, m.target), kind), groupCargo(m.units));
     await addReport(q, m.worldId, m.playerId, 'trade', `Your caravan opened a trade trail to ${dest.name}`, {
       opened: true, colony: dest.name, from: home.name, kind, units: m.units, goods: tradeGoodsNames(dest.terrain), perDelivery,
-      everyHours: TRADE.deliverEveryHours, everyMs: tradeEveryMs(speed), deliveries: TRADE.deliveries, endsAt: result.endsAt,
+      everyHours: TRADE.deliverEveryHours, everyMs: tradeEveryMs(speed), deliveries, endsAt: result.endsAt, ...(extraDays > 0 ? { extraDays } : {}),
     }, at);
     if (dest.playerId !== m.playerId) {
       await addReport(q, m.worldId, dest.playerId, 'trade', `${sender.username}'s caravan opened a trade trail to ${dest.name}`, {
         opened: true, host: true, colony: dest.name, from: sender.username, fromColony: home.name, kind,
         goods: tradeGoodsNames(home.terrain), partnerPerDelivery: tradePartnerGoods(perDelivery, home.terrain),
-        everyHours: TRADE.deliverEveryHours, everyMs: tradeEveryMs(speed), deliveries: TRADE.deliveries, endsAt: result.endsAt,
+        everyHours: TRADE.deliverEveryHours, everyMs: tradeEveryMs(speed), deliveries, endsAt: result.endsAt,
       }, at);
     }
     return { home: true, stay: true };
@@ -157,7 +162,7 @@ onEvent('trade_deliver', async (q, ev) => {
   r.kind = kind;
   r.next += 1;
   m.result = r;
-  if (r.next > TRADE.deliveries) return closeTrail(q, m, dest, t, 'done');
+  if (r.next > (r.deliveries ?? TRADE.deliveries)) return closeTrail(q, m, dest, t, 'done');
   await saveMission(q, m);
   const speed = (await getWorld(q)).speed;
   await schedule(q, m.worldId, 'trade_deliver', t + tradeEveryMs(speed), { missionId: m.id, n: r.next });
@@ -179,6 +184,7 @@ export async function tradePreview(q: Q, playerId: number, colonyId: number, tar
     throw e;
   }
   const dist = distance(from, target);
+  const deliveries = tradeDeliveries((await getPlayer(q, playerId)).research);
   const potential = tradePotential(destPerHour(dest!), dest!.terrain, dist, kind);
   return {
     kind,
@@ -190,6 +196,8 @@ export async function tradePreview(q: Q, playerId: number, colonyId: number, tar
     partnerGoods: kind === 'own' ? null : tradeGoodsNames(from.terrain),
     distanceFactor: tradeDistanceFactor(dist),
     everyHours: TRADE.deliverEveryHours,
-    deliveries: TRADE.deliveries,
+    deliveries,
+    /** extra deliveries from Trophallaxis, for the send card */
+    extraDeliveries: deliveries - TRADE.deliveries,
   };
 }

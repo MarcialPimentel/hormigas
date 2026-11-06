@@ -1,5 +1,5 @@
 import { add, addCounts, counterHintText, counterHints, defensesValue, res, subCounts, total, unitsValue, type Resources, type UnitCounts } from '@hormigas/shared';
-import { fmtCoords, fmtFull } from '../format';
+import { fmtClock, fmtCoords, fmtFull } from '../format';
 import { Counts, ResLine } from '../screens/Reports';
 
 // The replay plays on the 3D patch, which is for computers (a fine pointer and WebGL).
@@ -55,6 +55,7 @@ export function BattleReport({ data, onReplay }: { data: any; onReplay?: () => v
                 <Counts counts={m.units} />
                 <p className="small">Lost:</p>
                 <Counts counts={m.lost} empty="Nothing" />
+                {m.carriedHome && <RescueLine counts={m.carriedHome} level={m.rescueLevel} />}
                 {data.winner === 'attacker' && (
                   <p className="small">
                     Carried home: <ResLine r={m.loot} />
@@ -146,13 +147,30 @@ export function BattleReport({ data, onReplay }: { data: any; onReplay?: () => v
           The Matabele Ants carried their wounded home: <Counts counts={data.rescued} /> will fight again.
         </p>
       )}
+      {!data.joint && data.carriedHome && <RescueLine counts={data.carriedHome} level={data.rescueLevel} raiders={!youAttacked} />}
       {data.corpses > 0 && (
         <p className="small">
           The fallen left <strong>{fmtFull(data.corpses)} Protein</strong> in corpses at {fmtCoords(data.target)}. Anyone can haul them — be quick.
+          {data.corpsesRotAt ? (
+            <>
+              {' '}They start to rot at {fmtClock(data.corpsesRotAt)}
+              {data.rotDelayHours ? <>, {data.rotDelayHours} hours later than usual (Necrophoresis)</> : null}.
+            </>
+          ) : null}
         </p>
       )}
       {!asAlly && <NetResult data={data} youAttacked={youAttacked} />}
     </div>
+  );
+}
+
+/** Rescue research (docs/08-combat.md § Rescue): fallen raiders carried home after the fight, already left out of "Lost". */
+function RescueLine({ counts, level, raiders }: { counts: UnitCounts; level?: number; raiders?: boolean }) {
+  if (!counts || Object.keys(counts).length === 0) return null;
+  return (
+    <p className="small">
+      {raiders ? 'The raiders' : 'Your survivors'} carried some of their fallen home (Rescue{level ? ` ${level}` : ''}): <Counts counts={counts} /> will fight again.
+    </p>
   );
 }
 

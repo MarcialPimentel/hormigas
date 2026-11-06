@@ -50,6 +50,7 @@ Different species make scouting matter: the right army depends on what lives nex
 
 ### Regrowth
 - Lost soldiers, destroyed defenses and taken food **grow back over 12 h** (`regrowHours`, ÷ world speed; 24 h until 1 Nov 2026), in a straight line toward the level's targets, so a nest can be raided about twice a day.
+- A nest also regrows the ants it sent out (a raid back, or a party fetching a windfall). When that party comes home, it tops the nest up to its level's targets and no further, so a nest never grows past full size (fixed 6 Nov 2026).
 - Computed from elapsed time like everything else (see [13-tech](13-tech.md)): nothing ticks.
 - With the bash limit, one patch can take roughly one store's worth per day from its nest: about 8 hours of a nearby player's production. That's worth doing, but not worth more than growing your own economy (pillar 3).
 

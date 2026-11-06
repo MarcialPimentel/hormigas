@@ -322,6 +322,31 @@ const RESEARCH: Record<ResearchId, () => string> = {
   snap_reflex: () => instinct('trap_jaw'),
   crushing_heads: () => instinct('supermajor'),
   propaganda_glands: () => instinct('slave_maker'),
+  // Build 20: research for the missions players run
+  /** A soldier carrying a wounded nestmate home on its back, legs up, like Megaponera. */
+  rescue: () =>
+    ground(56) + ant('soldier', 32, 55, 52) +
+    `<g transform="translate(0 60) scale(1 -1)"><g opacity="0.9">${ant('worker', 33, 30, 34, {}, true)}</g></g>` +
+    `<path d="M54,6 v12 M48,12 h12" stroke="#d06a6a" stroke-width="4" stroke-linecap="round"/>`,
+  /** An ant on a trail with a full crop of Nectar, burning only a little of it. */
+  social_stomach: () =>
+    ground(56) + `<path d="M2,52 C16,46 26,56 44,50" stroke="${SCENT}" stroke-width="2.2" fill="none" stroke-dasharray="0.1 3.8" stroke-linecap="round"/>` +
+    ant('worker', 28, 55, 50) + `<circle cx="11" cy="44" r="7.5" fill="#e8b23a" opacity="0.75" stroke="${INK}" stroke-width="1.6"/>` +
+    drop(50, 10, 1.9) + `<path d="M50,24 v10 M45,29 l5,5 l5,-5" stroke="${INK}" stroke-width="2.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`,
+  /** Ants hurrying along a scent trail to a windfall. */
+  recruitment_trails: () =>
+    ground(56) + `<path d="M2,55 L40,55" stroke="${SCENT}" stroke-width="2.4" stroke-dasharray="0.1 4.4" stroke-linecap="round"/>` +
+    beetle(48, 50, 1.6) + ant('worker', 11, 55, 24) + ant('worker', 30, 55, 24) +
+    `<path d="M4,30 h14 M8,38 h14" stroke="${INK}" stroke-width="2.2" stroke-linecap="round" opacity="0.55"/>`,
+  /** A worker carrying a dead nestmate, legs up, out of the nest before it spoils. */
+  necrophoresis: () =>
+    ground(56) + ant('worker', 26, 55, 46) +
+    `<g transform="translate(0 72) scale(1 -1)"><g opacity="0.75">${ant('worker', 36, 36, 30, {}, true)}</g></g>` +
+    `<path d="M48,4 h12 l-12,14 h12 l-12,-14Z" fill="#e8d7b0" stroke="${INK}" stroke-width="1.8" stroke-linejoin="round"/>`,
+  /** Two ants mouth to mouth, passing a drop of food. */
+  trophallaxis: () =>
+    ground(56) + ant('worker', 15, 55, 38) + ant('worker', 49, 55, 38, {}, true) + drop(32, 34, 1.6) +
+    `<path d="M8,26 C20,10 44,10 56,26" stroke="${SCENT}" stroke-width="2.4" fill="none" stroke-dasharray="0.1 4" stroke-linecap="round"/>`,
   chemical_mimicry: () =>
     ground() + `<ellipse cx="32" cy="38" rx="27" ry="17" fill="${SCENT}" opacity="0.14"/>` +
     `<g opacity="0.55">${ant('worker', 32, 49, 50)}</g>` +

@@ -1,14 +1,27 @@
 # Hormigas — Changelog
 
-_Current as of Build 19 (2026-11-05)._ Newest first. One entry per build, in players' words, built from the merged PRs. Smaller PRs merged between builds are listed with the nearest build.
+_Current as of Build 20 (2026-11-06)._ Newest first. One entry per build, in players' words, built from the merged PRs. Smaller PRs merged between builds are listed with the nearest build.
+
+## Build 20: Research for the missions you run (unreleased)
+- **Rescue** (Jaws). Your raiders carry some of their fallen home, like Matabele Ants: 5% per level, up to 15%, after every attack you send, joint raids included, as long as anyone survives to carry them. The battle report says who came home. The fight itself doesn't change.
+- **Social Stomach** (Scent). Every mission burns 5% less Nectar fuel per level, up to 25% less. The send card shows the cut.
+- **Recruitment Trails** (Harvest). Ants holding a windfall carry a load home 10% sooner per level: every 2 hours becomes 1 h 24 min at level 3. The windfall card shows your pace.
+- **Necrophoresis** (Nest). Corpse fields from your fights start rotting 12 hours later per level (48 hours at level 2). It counts if anyone who fought there knows it, on either side. The map and the battle report say when the corpses start to rot.
+- **Trophallaxis** (Harvest). Your trade trails stay open one more day per level: up to 5 days and 20 deliveries. The trade send card shows the extra deliveries.
+- **Aphid Husbandry now helps wild herds too.** Its +5% Nectar per level also goes on the honeydew your tenders bring home from aphid herds, not only on your Aphid Pastures.
 
 ## Between builds (unreleased)
 - **New garden flowers.** The flowers in the Old Garden and on the 3D Patch's meadow are now chunky cartoon daisies drawn like the ants, in pink, yellow, white, lilac and orange, instead of the old flat stem-and-star flowers.
 
 ## Build 19: Stronger together (unreleased)
+- **Scout any raid coming at you, not just swarms.** A raid from a wild nest or another player, or wild ants coming for your windfall, now hides its size ("?") until your Scouts go out and meet it. Its card under Under way has a **Scout the raid** button with the same odds as scouting a swarm. If any Scout gets back, the card shows exactly what's coming and your win / draw / lose odds with the ants you have at home.
+- **Trade caravans step faster in the Whole Yard.** A caravan walks its trail to and fro in seconds, much faster than a march, so its legs moved at the march pace and the ants seemed to slide. Their legs now step more than twice as fast (a new "Trade caravan leg speed" slider in the test scene).
+- **Wild nests no longer grow past full size.** A wild nest regrows while its party is out raiding or fetching a windfall, and when the party came home its ants were added on top, so a nest that went out often slowly grew bigger than its level allows. Now a returning party only tops the nest up to full strength.
 - **Joint raids.** In a supercolony you can now raid together. Pick a wild nest, termite mound or spider den, choose Raid, then **Open a joint raid** and when it lands (in 2 to 24 hours). Everyone in your supercolony gets a report and sees it on the members' board, and can **Join** with an army that can get there in time. All the armies land at the same moment and fight as one, each with its own research. The loot is split by how much each army was worth, and each walks home with its own survivors. You can recall your army to leave, and whoever opened it can call it off. Joint raids only go to wild things, never to other players.
 - **The members' board.** The Allies screen has a board for your supercolony: the joint raids that are open (who's in, when it lands, Join), and short posts from members. It also says when a joint raid opens, is called off or lands.
 - **Spider dens are a goal for a whole supercolony.** A den is now a cluster of trapdoor-spider burrows, and no single colony can take it: it only fights a joint raid of at least 2 players (3 for the bigger dens), and takes about 3 big armies (4 for the bigger dens). With fewer at the landing, the raid is called off and everyone walks home. The store is much bigger and is split between everyone who came, and every one of them gets the Spider-slayer page and title. Existing dens grow to their new size over a week.
+- **Spider dens look like a boss.** In the Whole Yard and the Patch, a den is now a trapdoor spider waiting in its silk-lined burrow: red eyes and black fangs at the rim, four hairy legs gripping the ground, the mossy lid propped open on a twig and two shut trapdoors beside it. It used to be a dark dome with a silk disc.
+- **Picnic crumbs look like a picnic.** The windfall is now a bitten corner of a sandwich (crusty bread, lettuce, tomato, ham and cheese) with crumbs around it, drawn like the ants, in the Whole Yard and up close, instead of a brown box.
 
 ## Build 18: Goals in the wilds (unreleased)
 - **Termite hunters: the Matabele Ant.** Beat 3 termite mounds and you can raise a new ant in the Brood Hall: the Matabele Ant, a real African ant that hunts nothing but termites. It costs the same as a Major Soldier and cuts through termite armour, so a mound costs you about a third of the ants it used to. After a won fight on a mound it carries its wounded home: 4 in 10 of the ones that fell come back alive, and the battle report says how many. Against other ants it's an ordinary soldier, so it won't help you raid players. Until you've beaten 3 mounds, the Brood Hall shows how many you have so far.

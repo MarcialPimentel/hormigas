@@ -75,6 +75,7 @@ export const RESEARCH_IDS = [
   'formic_acid',
   'raiding_columns',
   'nest_plugging',
+  'rescue',
   // Harvest
   'foraging_instinct',
   'group_hunting',
@@ -82,6 +83,8 @@ export const RESEARCH_IDS = [
   'fungus_farming',
   'repletes',
   'symbiosis',
+  'recruitment_trails',
+  'trophallaxis',
   // Nest
   'brood_science',
   'nurse_workers',
@@ -90,12 +93,14 @@ export const RESEARCH_IDS = [
   'digging_crews',
   'nuptial_flight',
   'supercolony',
+  'necrophoresis',
   // Scent
   'pheromone_trails',
   'colony_mind',
   'scent_reading',
   'tandem_running',
   'chemical_mimicry',
+  'social_stomach',
   // Instincts (Build 11): each sharpens one caste (Jaws branch)
   'swarm_raiding',
   'armoured_heads',
@@ -194,6 +199,8 @@ export const RESEARCH_NUMBER_EFFECTS = [
   'foliagePct', 'proteinPct', 'nectarPct', 'storagePct', 'protectedPct', 'buildTimePct', 'unitTimePct', 'researchTimePct', 'space', 'digCrewsPerExcavationLevel',
   // missions and the map (world.ts, forage.ts)
   'speedPct', 'missionSlots', 'forageSlotsPer2Levels', 'forageLuck', 'scoutLevel', 'scoutStealth', 'coloniesPerLevel',
+  // research for the missions players run (Build 20): Rescue, Social Stomach, Recruitment Trails, Necrophoresis, Trophallaxis
+  'rescuePct', 'fuelPct', 'windfallLoadTimePct', 'corpseRotDelayHours', 'tradeTrailHours',
 ] as const;
 export type ResearchNumberEffect = (typeof RESEARCH_NUMBER_EFFECTS)[number];
 

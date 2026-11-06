@@ -1,0 +1,9 @@
+{
+ "ai_model": "nano-banana-2",
+ "references": [
+  "art/meshy/grasshopper/concepts/concept1_image_0.png",
+  "art/meshy/termite-mound/concepts/concept2_image_0.png"
+ ],
+ "prompt": "Chunky cartoon 3D game prop in the same style as the reference grasshopper and termite mound: smooth rounded simple shapes, flat colour with two or three soft shading bands, a thick dark brown ink outline, one small glossy highlight. Menacing, not cute, no cartoon face. A trapdoor spider den on a wide, flat, wavy-edged slab of tan soil #B0814F. In the middle, a raised collar of soil around a deep round burrow, its mouth lined with white silk #F2EEE6. The burrow's thick round lid of brown soil #7A5C40 with a fringe of olive moss #7A7A2E is propped wide open above the hole on a small twig. A big trapdoor spider waits INSIDE the burrow in ambush: its body is sunk down in the dark hole, only the top of its head shows at the rim, with a tight cluster of eight small glinting red #C43A3A eyes and two glossy black fangs resting on the silk lip. Only its FOUR front legs come out: two on each side, long, thick, hairy, near-black #2B201C with pale #5A4636 bands at each joint, bent at the knee and reaching over the rim, the feet gripping the soil in front of the hole. Its abdomen and back legs are not visible. Two smaller closed trapdoors with mossy lids sit on the slab beside the main burrow. Single object, centred, three-quarter view from the front and slightly above, plain white background, even lighting, no text, no ground shadow.",
+ "remove_background": true
+}
