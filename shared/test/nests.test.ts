@@ -3,7 +3,7 @@ import {
   NEST_SPECIES, NEST_MAX_LEVEL, nestAt, nestUnitsAt, nestLevelFor, nestRaidParty, nestTargets, previewBattle, speciesForTerrain,
   total, unitsValue, maxLevel, regrowHours, nestRaidsBack, speciesOfKind, SPECIES, NPC_DATA,
   herdHoneydewAt, herdLevelFor, herdNectarPerHour, herdStoreCap, wildThingsAround, isSiteSpot, validCoords, GATHER_MULTIPLIER,
-  type UnitCounts, type NestSpecies, CASTES, FAIR_NEST_ARMIES, FAIR_MOUND_ARMIES, FAIR_DEN_ARMIES,
+  type UnitCounts, type NestSpecies, CASTES, FAIR_NEST_ARMIES, FAIR_MOUND_ARMIES, FAIR_DEN_ARMIES, BIG_ARMY, timesArmy, minRaidPlayers,
 } from '../src';
 
 // Fair armies per level live in docs/data/npc.json (tuning), shared with `npm run combat`.
@@ -92,7 +92,7 @@ describe('wild nests', () => {
 
 // Termite mounds and spider dens (docs/24-npcs.md, tuning check). The armies a player is expected to bring.
 const MOUND_FAIR = FAIR_MOUND_ARMIES;
-const DEN_FAIR = FAIR_DEN_ARMIES; // tier 1: a solo player around day 30; tier 2: a bigger army, or several players together
+const DEN_FAIR = FAIR_DEN_ARMIES; // joint armies: 3 big armies for tier 1, 4 for tier 2
 
 describe('termite mounds and spider dens', () => {
   const fight = (army: UnitCounts, species: NestSpecies, level: number) => {
@@ -133,17 +133,23 @@ describe('termite mounds and spider dens', () => {
     });
   });
 
-  it('the spider is a boss: a fair army brings her down, half of it never does', () => {
+  it('spider dens are alliance raids: 3 big armies take tier 1, 4 take tier 2, one never does (Marz, 5 Nov 2026)', () => {
     DEN_FAIR.forEach((army, i) => {
       const fair = fight(army, 'spider', i + 1);
       expect(fair.win, `den ${i + 1}`).toBeGreaterThanOrEqual(0.9);
       expect(fair.loss, `den ${i + 1} losses`).toBeLessThan(0.4);
       expect(fight(half(army), 'spider', i + 1).win, `den ${i + 1} half`).toBeLessThan(0.1);
     });
-    // a day-14 army (level-5 fair) can't take even the first tier alone
-    expect(fight(FAIR[5], 'spider', 1).win).toBeLessThan(0.1);
-    // tier 2 is out of reach for one day-30 army: a target for several players
-    expect(fight(DEN_FAIR[0], 'spider', 2).win).toBeLessThan(0.1);
+    expect(DEN_FAIR[0]).toEqual(timesArmy(BIG_ARMY, 3));
+    expect(DEN_FAIR[1]).toEqual(timesArmy(BIG_ARMY, 4));
+    // one strong solo army never wins, even at tier 1; two can't either, and three can't take tier 2
+    expect(fight(BIG_ARMY, 'spider', 1).win).toBe(0);
+    expect(fight(timesArmy(BIG_ARMY, 2), 'spider', 1).win).toBeLessThan(0.1);
+    expect(fight(timesArmy(BIG_ARMY, 3), 'spider', 2).win).toBeLessThan(0.1);
+    // and the rule backs it up as armies keep growing: dens only fight joint raids of 2 (tier 1) or 3 (tier 2) players
+    expect([minRaidPlayers('spider', 1), minRaidPlayers('spider', 2)]).toEqual([2, 3]);
+    expect(minRaidPlayers('termite', 3)).toBe(1);
+    expect(minRaidPlayers('pavement', 6)).toBe(1);
   });
 
   it('every unit a wild thing fields exists, and the NPC-only ones are never raised by players', () => {

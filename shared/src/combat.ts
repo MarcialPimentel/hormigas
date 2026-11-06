@@ -31,8 +31,9 @@ export interface CombatSide {
   groundDefensePct?: number;
   research: ResearchLevels;
   /**
-   * Defender only: allied soldiers holding position at the colony (docs/23-supercolonies.md).
-   * Each group fights with its own owner's research and is counted separately in the result.
+   * Groups fighting on this side under other owners, each with its own owner's research and counted separately in the
+   * result. Defender: allied soldiers holding position at the colony. Attacker: the members of a joint raid
+   * (docs/23-supercolonies.md); a joint raid puts every member here and leaves `units` empty.
    */
   allies?: { units: UnitCounts; research: ResearchLevels }[];
 }
@@ -61,6 +62,9 @@ export interface BattleResult {
   /** Per allied group (same order as defender.allies): losses and survivors. Empty without allies. */
   alliesLost: UnitCounts[];
   alliesSurvivors: UnitCounts[];
+  /** Per attacking group (same order as attacker.allies): losses and survivors, Matabele rescues counted. Empty without. */
+  attackerAlliesLost: UnitCounts[];
+  attackerAlliesSurvivors: UnitCounts[];
   /** The round after which the attackers fell back (fall-back order); missing if they didn't. Counts as a defender win. */
   retreatedAfterRound?: number;
   /** Attackers carried home wounded after a won fight (Matabele Ants on a mound): already counted as survivors, not lost. */
@@ -357,31 +361,44 @@ export function simulateBattle(attacker: CombatSide, defender: CombatSide, rng: 
     const left = dLeft.get(`d:${id as DefenseId}`) ?? 0;
     if (n - left > 0) defensesDestroyed[id as DefenseId] = n - left;
   }
-  const alliesLost: UnitCounts[] = [];
-  const alliesSurvivors: UnitCounts[] = [];
-  (defender.allies ?? []).forEach((g, i) => {
-    const lost: UnitCounts = {};
-    const left: UnitCounts = {};
-    for (const [id, n] of Object.entries(g.units)) {
-      if (!n) continue;
-      const k = dLeft.get(`a${i}:${id as CasteId}`) ?? 0;
-      left[id as CasteId] = k;
-      if (n - k > 0) lost[id as CasteId] = n - k;
-    }
-    alliesLost.push(lost);
-    alliesSurvivors.push(left);
-  });
+  const groupsOf = (side: CombatSide, left: Map<EntityKey, number>) => {
+    const lostAll: UnitCounts[] = [];
+    const leftAll: UnitCounts[] = [];
+    (side.allies ?? []).forEach((g, i) => {
+      const lost: UnitCounts = {};
+      const kept: UnitCounts = {};
+      for (const [id, n] of Object.entries(g.units)) {
+        if (!n) continue;
+        const k = left.get(`a${i}:${id as CasteId}`) ?? 0;
+        kept[id as CasteId] = k;
+        if (n - k > 0) lost[id as CasteId] = n - k;
+      }
+      lostAll.push(lost);
+      leftAll.push(kept);
+    });
+    return [lostAll, leftAll] as const;
+  };
+  const [alliesLost, alliesSurvivors] = groupsOf(defender, dLeft);
+  const [attackerAlliesLost, attackerAlliesSurvivors] = groupsOf(attacker, aLeft);
   // Matabele Ants carry their wounded home from a won fight against termites (docs/05-castes-units.md)
-  const rescued = rescuedUnits(attackerLost, defender.units, winner === 'attacker');
-  for (const [id, k] of Object.entries(rescued)) {
-    const c = id as CasteId;
-    attackerSurvivors[c] = (attackerSurvivors[c] ?? 0) + (k ?? 0);
-    const lost = (attackerLost[c] ?? 0) - (k ?? 0);
-    if (lost > 0) attackerLost[c] = lost;
-    else delete attackerLost[c];
-  }
+  const rescue = (lostUnits: UnitCounts, survivors: UnitCounts): UnitCounts => {
+    const saved = rescuedUnits(lostUnits, defender.units, winner === 'attacker');
+    for (const [id, k] of Object.entries(saved)) {
+      const c = id as CasteId;
+      survivors[c] = (survivors[c] ?? 0) + (k ?? 0);
+      const lost = (lostUnits[c] ?? 0) - (k ?? 0);
+      if (lost > 0) lostUnits[c] = lost;
+      else delete lostUnits[c];
+    }
+    return saved;
+  };
+  const rescued = rescue(attackerLost, attackerSurvivors);
+  attackerAlliesLost.forEach((l, i) => {
+    for (const [id, k] of Object.entries(rescue(l, attackerAlliesSurvivors[i]))) rescued[id as CasteId] = (rescued[id as CasteId] ?? 0) + (k ?? 0);
+  });
   return {
     winner, rounds, attackerLost, attackerSurvivors, defenderLost, defenderSurvivors, defensesDestroyed, alliesLost, alliesSurvivors,
+    attackerAlliesLost, attackerAlliesSurvivors,
     ...(retreatedAfterRound != null ? { retreatedAfterRound } : {}),
     ...(Object.keys(rescued).length ? { rescued } : {}),
   };
@@ -509,6 +526,7 @@ export function previewBattle(
 ): BattlePreview {
   const totalEntities =
     Object.values(attacker.units).reduce((a, b) => a + (b ?? 0), 0) +
+    (attacker.allies ?? []).reduce((s, g) => s + Object.values(g.units).reduce((a, b) => a + (b ?? 0), 0), 0) +
     Object.values(defender.units).reduce((a, b) => a + (b ?? 0), 0) +
     Object.values(defender.defenses ?? {}).reduce((a, b) => a + (b ?? 0), 0) +
     (defender.allies ?? []).reduce((s, g) => s + Object.values(g.units).reduce((a, b) => a + (b ?? 0), 0), 0);
@@ -521,7 +539,7 @@ export function previewBattle(
     if (r.winner === 'attacker') win++;
     else if (r.winner === 'draw') draw++;
     if (r.retreatedAfterRound != null) retreat++;
-    const la = unitsValue(r.attackerLost);
+    const la = r.attackerAlliesLost.reduce((v, l) => add(v, unitsValue(l)), unitsValue(r.attackerLost));
     const ld = r.alliesLost.reduce((v, l) => add(v, unitsValue(l)), add(unitsValue(r.defenderLost), defensesValue(r.defensesDestroyed)));
     lossA += la.foliage + la.protein + la.nectar;
     lossD += ld.foliage + ld.protein + ld.nectar;

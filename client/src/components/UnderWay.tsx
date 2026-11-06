@@ -161,6 +161,7 @@ export function UnderWay({ onFocus, compact, limit, go: nav }: { onFocus?: Focus
               <p className="uw-sub">
                 {homes.size > 1 && from ? `From ${from.name} · ` : ''}
                 {compact ? `${fmtFull(n)} ants` : what || `${fmtFull(n)} ants`}
+                {m.jointRaidId ? (m.result?.jointCalledOff ? ' · joint raid called off' : m.result?.jointCancelled ? ' · joint raid called off' : ' · joint raid') : ''}
                 {m.result?.recalled ? ' · recalled' : m.result?.turnedBack ? ' · turned back' : ''}
                 {m.type === 'trade' && m.result?.delivered && sum(m.result.delivered) > 0 ? ` · brought ${fmtFull(sum(m.result.delivered))} so far` : ''}
                 {p.phase === 'back' && m.cargo && sum(m.cargo) > 0 ? ` · carrying ${fmtFull(sum(m.cargo))}` : ''}

@@ -86,13 +86,13 @@
     },
     "spider": {
       "kind": "den", "name": "Trapdoor Spider", "nest": "Spider Den", "terrains": [],
-      "_note": "A boss (docs/24-npcs.md): one huge spider and her young under a silk lid. One player can beat it late in the game; the Alliances build may reuse it for joint raids. Regrows over a week and never raids.",
-      "style": "One giant spider and her spiderlings. Her fangs cut through any ant; only a large army brings her down. A small raid can't wear her down: she's whole again next time.",
+      "_note": "A boss (docs/24-npcs.md): a cluster of trapdoor-spider burrows and their young. Too strong for any one player: it only fights a supercolony's joint raid of at least minPlayers players (Marz, 5 Nov 2026), and it takes about 3 big armies (tier 1) or 4 (tier 2). Regrows over a week and never raids.",
+      "style": "A cluster of trapdoor-spider burrows, a giant spider under every silk lid and their young all round. Their fangs cut through any ant. No single colony can take them: only a supercolony's joint raid.",
       "regrowHours": 168,
       "raids": false,
       "levels": [
-        {"minPoints": 0,    "units": {"trapdoor_spider": 1, "spiderling": 80}, "defenses": {}, "stock": {"foliage": 10000, "protein": 40000, "nectar": 8000}},
-        {"minPoints": 1500, "units": {"trapdoor_spider": 2, "spiderling": 200}, "defenses": {}, "stock": {"foliage": 20000, "protein": 80000, "nectar": 15000}}
+        {"minPoints": 0,    "minPlayers": 2, "units": {"trapdoor_spider": 9, "spiderling": 1000}, "defenses": {}, "stock": {"foliage": 30000, "protein": 150000, "nectar": 25000}},
+        {"minPoints": 1500, "minPlayers": 3, "units": {"trapdoor_spider": 12, "spiderling": 1500}, "defenses": {}, "stock": {"foliage": 60000, "protein": 300000, "nectar": 50000}}
       ]
     }
   },
@@ -165,7 +165,7 @@
     "revengeWeight": 2
   },
   "tuning": {
-    "_note": "The armies the balance checks use (npm run combat, shared/test/nests.test.ts): a fair army for a player whose area is at each wild-nest level, and for each termite mound and spider den tier. A fair army should win at least 90% of the time with moderate losses; half of it should pay far more. Not used by the game itself.",
+    "_note": "The armies the balance checks use (npm run combat, shared/test/nests.test.ts): a fair army for a player whose area is at each wild-nest level, and for each termite mound tier. Spider dens only fight joint raids, so denArmies are joint armies: 3 bigArmy for tier 1, 4 for tier 2 (one bigArmy is a strong late solo army). A fair army should win at least 90% of the time with moderate losses; half of it should pay far more. Not used by the game itself.",
     "nestArmies": {
       "1": {"minor_soldier": 8},
       "2": {"minor_soldier": 20},
@@ -179,9 +179,10 @@
       {"minor_soldier": 250, "major_soldier": 110},
       {"minor_soldier": 450, "major_soldier": 220}
     ],
+    "bigArmy": {"minor_soldier": 450, "major_soldier": 220},
     "denArmies": [
-      {"minor_soldier": 250, "major_soldier": 100},
-      {"minor_soldier": 450, "major_soldier": 220}
+      {"minor_soldier": 1350, "major_soldier": 660},
+      {"minor_soldier": 1800, "major_soldier": 880}
     ]
   },
   "swarm": {

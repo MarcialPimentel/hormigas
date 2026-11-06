@@ -15,6 +15,8 @@ import {
   removeMember,
   withdrawInvite,
 } from '../game/diplomacy';
+import { boardView, cancelJointRaid, postToBoard } from '../game/joint';
+import { now } from '../clock';
 
 const body = (req: any) => (req.body ?? {}) as Record<string, unknown>;
 const idParam = (req: any) => Number((req.params as any).id);
@@ -60,6 +62,17 @@ export async function diplomacyRoutes(app: FastifyInstance) {
     await tx((q) => leaveSupercolony(q, req.playerId));
     return { ok: true };
   });
+  /** The members' board: posts and the supercolony's open joint raids (docs/23-supercolonies.md § Joint raids). */
+  app.get('/api/board', async (req) => boardView(getPool(), req.playerId));
+  app.post('/api/board', async (req) => {
+    await tx((q) => postToBoard(q, req.playerId, String(body(req).text ?? ''), now()));
+    return { ok: true };
+  });
+  app.post('/api/joint-raids/:id/cancel', async (req) => {
+    await tx((q) => cancelJointRaid(q, req.playerId, idParam(req), now()));
+    return { ok: true };
+  });
+
   app.post('/api/supercolony/remove', async (req) => {
     await tx((q) => removeMember(q, req.playerId, Number(body(req).playerId)));
     return { ok: true };

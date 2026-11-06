@@ -16,6 +16,7 @@ import './game/research';
 import './game/missions';
 import './game/missionTypes';
 import './game/trade';
+import './game/joint';
 import './game/combat';
 import './game/forage';
 import './game/nests';

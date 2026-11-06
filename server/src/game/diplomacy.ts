@@ -235,7 +235,7 @@ async function lockSupercolony(q: Q, id: number) {
 }
 
 /** Current members (not fading), oldest first. */
-async function memberIds(q: Q, supercolonyId: number): Promise<number[]> {
+export async function memberIds(q: Q, supercolonyId: number): Promise<number[]> {
   const r = await q.query("SELECT player_id FROM supercolony_members WHERE supercolony_id = $1 AND status = 'member' ORDER BY joined_at, id", [supercolonyId]);
   return r.rows.map((x: any) => x.player_id);
 }

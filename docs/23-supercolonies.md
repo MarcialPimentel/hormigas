@@ -2,12 +2,12 @@
 
 **Version:** 0.1
 **Data:** [`data/diplomacy.json`](data/diplomacy.json), [`data/research.json`](data/research.json) (`supercolony`), [`data/trade.json`](data/trade.json) (trade trails)
-**Code:** `shared/src/diplomacy.ts` (rules), `server/src/game/diplomacy.ts` (the record), migration `010_supercolonies.sql`; trade trails in `shared/src/trade.ts` and `server/src/game/trade.ts`
+**Code:** `shared/src/diplomacy.ts` (rules), `server/src/game/diplomacy.ts` (the record), migration `010_supercolonies.sql`; trade trails in `shared/src/trade.ts` and `server/src/game/trade.ts`; joint raids and the members' board in `shared/src/joint.ts`, `server/src/game/joint.ts`, migration `018_joint_raids.sql`
 
 ## Why
 Marz (29 Oct 2026) wants more player interaction than raiding, modelled on 4X games like Civilization: **you meet someone before you can deal with them, and deeper pacts come later**. Real ants give the ladder its shape. Colonies recognise each other by smell. Argentine ants form **supercolonies**: millions of nests that share one scent and never fight each other (pillar 4).
 
-This is **stage A** of [#68](https://github.com/MarcialPimentel/hormigas/issues/68). Stage B (joint raids, trade trails, a members' message board) waits for the NPC bosses (#67) and the Protein build's trade rules (#65), so nothing is built twice.
+This started as **stage A** of [#68](https://github.com/MarcialPimentel/hormigas/issues/68). Stage B ([#98](https://github.com/MarcialPimentel/hormigas/issues/98)) is built: trade trails in Build 16, joint raids and the members' board in Build 19.
 
 ## The ladder
 | Step | What it takes | What it gives |
@@ -84,6 +84,31 @@ Real ants lay pheromone trails between nests and walk them for days, carrying fo
 - **No plunder yet.** Ship peaceful trails first; ambushing caravans needs scouting caravans and open-ground fights, so it can come with joint raids.
 - Decided in the build (Marz may overrule): trails use their own per-colony slot, not a mission slot; the host gains half the delivery in the sender's goods; the destination never loses anything; numbers are first-pass for playtest.
 
+## Joint raids (Build 19)
+Real ant colonies of one supercolony gang up on what no single nest could take. A **joint raid** lets members do the same: several armies land together and fight as one.
+
+- **Who:** members of a supercolony (not a fading member, not truce partners).
+- **What:** wild things only: wild nests, termite mounds and spider dens (Marz, 5 Nov 2026). Never a player colony, so a whole supercolony can't pile onto one player (pillar 2). Not aphid herds or windfalls.
+- **Opening one:** pick the target, choose Raid, then **Open a joint raid**, and pick when it lands: in 2, 4, 8, 12 or 24 hours (`diplomacy.json` → `jointRaid`, hours at speed ×1). Your own army has to be able to get there by then. One open joint raid per target per supercolony.
+- **Everyone hears about it:** a note on the members' board and a report to every other member with a **Join** button. Members can see the target from then on (the opener's scouting is shared), so they don't have to scout it first.
+- **Joining:** send a raid to the same target and choose **Join**. The army has to be able to get there by the landing time; it lands then, whenever it set out. One army per player. The opener's fall-back order holds for the whole joint army. The send card's battle preview counts the armies already in (their research unboosted).
+- **Landing:** at the landing time everyone who came fights **as one attacking side**, each army with its own owner's research (`simulateBattle`'s `attacker.allies`). One battle, one report per member listing every army, its losses and its share.
+- **Loot** is split by each army's worth when it set out, and nobody takes more than their surviving ants can carry; what nobody can carry stays. Slave-makers carry corpses home as usual. Each army walks home in its own travel time.
+- **Credit:** every member who took part counts the win (`wild_won`, `joint_won`, and `beat:<species>`, so a den gives everyone the Spider-slayer page and title).
+- **Leaving early:** Recall takes your army out; the joint raid goes on for the others. The opener can **Call off** the raid before it lands: everyone turns back. A member who leaves the supercolony before the landing turns back too.
+- **Too few:** a spider den only fights a joint raid of at least 2 players (tier 1) or 3 (tier 2) ([24-npcs](24-npcs.md#spider-den-boss)). With fewer at the landing, the raid is called off: nobody fights and everyone walks home.
+- **Not built:** joint raids on players; a Hall of Fame entry for the alliance (#144 is not built yet).
+
+### The members' board
+Each supercolony's page in **Allies**: its open joint raids (who's in, when it lands, Join, and Call off for the opener) and short posts from members, newest first. The game posts there too when a joint raid opens, is called off, or lands. Posts are up to 280 characters; the newest 50 are kept (`diplomacy.json` → `board`). Only current members see it.
+
+### Decisions (Marz, 5 Nov 2026)
+- **A set landing time,** not a muster point. Nobody has to be online together, and no army sits idle at a meeting spot (pillar 1, short check-ins).
+- **Wild targets only.** A supercolony piling onto one player is a quit moment (pillar 2); player targets can come later once we see how joint raids play.
+- **Spider dens fight joint raids only:** tier 1 needs at least 2 players, tier 2 at least 3, on top of being too strong for one army. Armies keep growing in a world that never resets, so strength alone would stop working within weeks.
+- **Tier 2 takes about 4 big armies,** not a full supercolony of 6: with today's player count a 6-player target could mean nobody ever wins it.
+- Decided in the build (Marz may overrule): landing 2–24 hours ahead; the opener's fall-back order holds for everyone; loot split by army worth; members' posts up to 280 characters, newest 50 kept.
+
 ## World speed
 All the times above are at world speed ×1 and divide by the world speed, like every other duration: at ×5 a truce's notice is about 5 hours and a scent fades in about 14 hours.
 
@@ -103,9 +128,9 @@ Four new tables, read and written only through `server/src/game/diplomacy.ts`:
 - Discovery gets one new `via` value, `ally`, for colonies learned by sharing a scent.
 
 ### Notes for stage B
-- **Joint Raid:** missions from several members that wait at a muster point and arrive together, fought as one attacker with per-owner groups. `simulateBattle` already supports per-owner groups on the defending side (`allies`); the attacking side needs the same. Bosses from #67 are the natural targets.
+- **Joint raids** shipped in Build 19 (above). A joint raid is a row in `joint_raids`; each member's army is an ordinary raid mission with `joint_raid_id` set, whose arrival event is the joint raid's one `joint_raid_land` event (so the startup repair sees it pending). The posts live in `board_posts`. Migration 018 adds the two tables and the column, nothing else.
 - **Trade trails** shipped in Build 16 (above). A trail is a mission (`type = 'trade'`) that is `holding` while it runs; its totals live in `missions.result`, and one `trade_deliver` event at a time carries its delivery number (`n`), so an old event after a recall does nothing. No migration.
-- **Plunder** (Build 19 or later): players without a truce ambush a caravan they've scouted.
+- **Plunder** (later): players without a truce ambush a caravan they've scouted.
 - **Declared wars** (lifting the bash limit between enemies, [10-pvp-rules](10-pvp-rules.md)) are not built.
 
 ## Launch on the live world (migration 010)
@@ -131,3 +156,6 @@ In the 3D Garden ([11-world](11-world.md)), patches where your supercolony mates
 - Trade trails: is 15 / 25 / 30% the right pay, and should a long trail or a supercolony mate pay more? Tune `trade.json` from playtest.
 - Trade trails: should research add trails (a Scent branch level), and should players be able to see trails other players run near them?
 - Should Hold Position cost Nectar over time (upkeep), so garrisons aren't free forever? Proposal: no for now; the mission slot is the cost.
+- Joint raids: should they ever go to player colonies (with limits, e.g. only against a rival supercolony)? Decided for now: no (5 Nov 2026).
+- Joint raids: should each member keep their own fall-back order? For now the opener's holds for all, which keeps one battle readable.
+- The members' board: does it need a way to remove a post, or a mute? Not with today's player count.

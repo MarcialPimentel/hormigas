@@ -30,16 +30,22 @@ export function useIntel(target: Coords): any {
  * to dig into (the server's resolveRaid gives NPC spots no ground bonus). `claim` is a fight over a windfall: the
  * winners stay to haul it, so there's no loot to carry home.
  */
-export function BattlePreview({ target, units, retreatPct = 0, npcSite = false, claim = false }: { target: Coords; units: UnitCounts; retreatPct?: number; npcSite?: boolean; claim?: boolean }) {
+export function BattlePreview({ target, units, retreatPct = 0, npcSite = false, claim = false, alongside, joint = false }: {
+  target: Coords; units: UnitCounts; retreatPct?: number; npcSite?: boolean; claim?: boolean;
+  /** a joint raid: the armies already in it fight beside yours (their research unknown, so counted unboosted) */
+  alongside?: { name: string; units: UnitCounts }[];
+  /** a joint raid: losses are the whole joint army's, and loot is split, so it isn't shown */
+  joint?: boolean;
+}) {
   const { state, now } = useGame();
   const intel = useIntel(target);
 
-  const unitsKey = JSON.stringify(units);
+  const unitsKey = JSON.stringify(units) + JSON.stringify(alongside ?? []);
   const preview = useMemo(() => {
     if (!intel || !state || presentUnits(units).length === 0) return null;
     const d = intel.data;
     return previewBattle(
-      { units, research: state.player.research, retreatPct },
+      { units, research: state.player.research, retreatPct, allies: (alongside ?? []).map((a) => ({ units: a.units, research: {} })) },
       // allied soldiers holding position fight too; their research is unknown, so count them unboosted
       // a player colony's ground counts too (Sandy Soil's walls crumble); wild nests keep their own
       { units: d.units ?? {}, defenses: d.defenses ?? {}, groundDefensePct: d.wild || npcSite ? 0 : groundDefensePct(terrainForSpot(target.spot)), research: d.research ?? {}, allies: d.garrison ? [{ units: d.garrison, research: {} }] : [] },
@@ -67,7 +73,7 @@ export function BattlePreview({ target, units, retreatPct = 0, npcSite = false, 
   return (
     <div className="preview">
       <div className="preview-head">
-        <strong>Battle preview</strong>
+        <strong>{joint ? (alongside?.length ? `Battle preview with ${alongside.map((a) => a.name).join(', ')}` : 'Battle preview (your army so far)') : 'Battle preview'}</strong>
         <span className="muted small">from a scout report {fmtDuration(age)} old</span>
       </div>
       {!preview ? (
@@ -83,10 +89,12 @@ export function BattlePreview({ target, units, retreatPct = 0, npcSite = false, 
             <div><dt>Win</dt><dd>{Math.round(preview.winRate * 100)}%</dd></div>
             <div><dt>Draw</dt><dd>{Math.round(preview.drawRate * 100)}%</dd></div>
             <div><dt>Lose</dt><dd>{Math.round(preview.lossRate * 100)}%{preview.retreatRate > 0 ? ` (fall back ${Math.round(preview.retreatRate * 100)}%)` : ''}</dd></div>
-            <div><dt>Your losses</dt><dd>~{fmtNum(preview.avgAttackerLossValue)}</dd></div>
+            <div><dt>{joint ? 'Joint army losses' : 'Your losses'}</dt><dd>~{fmtNum(preview.avgAttackerLossValue)}</dd></div>
             <div><dt>Their losses</dt><dd>~{fmtNum(preview.avgDefenderLossValue)}</dd></div>
             {claim ? (
               <div><dt>If you win</dt><dd>they hold it</dd></div>
+            ) : joint ? (
+              <div><dt>Loot if you win</dt><dd>split by army</dd></div>
             ) : (
               <div><dt>Loot if you win</dt><dd>~{fmtNum(preview.avgLootOnWin)}</dd></div>
             )}

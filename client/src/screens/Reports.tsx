@@ -220,6 +220,33 @@ function TradeReport({ d }: { d: any }) {
   );
 }
 
+/** Joint raid news (docs/23-supercolonies.md § Joint raids): one opened, called off by its opener, or called off at landing. */
+function JointReport({ d, go }: { d: any; go?: Nav }) {
+  if (d.opened)
+    return (
+      <div className="report-body">
+        <p>
+          {d.leader} opened a joint raid on {d.colony} ({fmtCoords(d.target)}). It lands at <strong>{fmtClock(d.landAt)}</strong>: send an army that can get there
+          by then and it fights beside theirs. {d.playersNeeded > 1 ? `It needs at least ${d.playersNeeded} players. ` : ''}Loot is split by each army's worth.
+        </p>
+        {go && d.target && (
+          <p>
+            <button type="button" className="btn small primary" onClick={() => go('missions', { type: 'raid', target: d.target })}>
+              Join the joint raid
+            </button>
+          </p>
+        )}
+      </div>
+    );
+  if (d.calledOff)
+    return (
+      <p className="report-body">
+        {d.why} Nobody fought; your army is walking home{d.returnAt ? `, back at ${fmtClock(d.returnAt)}` : ''}.
+      </p>
+    );
+  return <p className="report-body">The joint raid on {d.colony} was called off before it landed. Your army is walking home{d.returnAt ? `, back at ${fmtClock(d.returnAt)}` : ''}.</p>;
+}
+
 function ReportBody({ r, go }: { r: Report; go?: Nav }) {
   const d = r.data;
   switch (r.type) {
@@ -343,6 +370,8 @@ function ReportBody({ r, go }: { r: Report; go?: Nav }) {
       return <WindfallReport d={d} go={go} />;
     case 'trade':
       return <TradeReport d={d} />;
+    case 'joint':
+      return <JointReport d={d} go={go} />;
     case 'hold':
       return (
         <div className="report-body">

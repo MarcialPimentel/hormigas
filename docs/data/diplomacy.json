@@ -5,5 +5,9 @@
   "scentFadeHours": 72,
   "supercolonyMaxMembers": 6,
   "supercolonyNameLength": [3, 24],
-  "unlockResearch": "supercolony"
+  "unlockResearch": "supercolony",
+  "_jointRaidNote": "Joint raids (Build 19, docs/23-supercolonies.md § Joint raids): a supercolony member opens one on a wild target (wild nest, termite mound, spider den) with a landing time leadHours ahead; members join by sending armies that can get there by then, and all land and fight as one. Loot is split by each player's share of the army's worth. Hours at world speed 1.",
+  "jointRaid": { "leadHours": [2, 24], "leadOptions": [2, 4, 8, 12, 24] },
+  "_boardNote": "The members' board: short posts from members, plus joint raids opening and their results. Only the newest `keep` are kept.",
+  "board": { "postLength": 280, "keep": 50 }
 }

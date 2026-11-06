@@ -35,6 +35,10 @@ import {
   tradeKindFor,
   tradeTrailMs,
   tradeEveryMs,
+  JOINT_RAID,
+  JOINT_MESSAGES,
+  jointLeadOptionMs,
+  minRaidPlayers,
   type CasteId,
   type Resources,
   type Coords,
@@ -52,6 +56,7 @@ import { SwarmScoutOdds } from '../components/SwarmIntel';
 import { ScoutRisk } from '../components/ScoutRisk';
 import { PatchView, isScent, usePatchMode, type PartyFocus, type Spot } from '../components/Patch';
 import { UnderWay, type FocusParty } from '../components/UnderWay';
+import { sameSpot, useBoard, type JointRaidView } from '../board';
 import { ResLine } from './Reports';
 
 export interface MissionDraft {
@@ -199,6 +204,9 @@ export function SendMission({ type, setType, target, setTarget, onClose, onSent 
   const [cargo, setCargo] = useState<Record<string, string>>({});
   const [speedPct, setSpeedPct] = useState(100);
   const [retreatPct, setRetreatPct] = useState(0);
+  // joint raids (docs/23-supercolonies.md § Joint raids): raid alone, open one (landing in `lead` hours), or join one by id
+  const [jointPick, setJointPick] = useState<'solo' | 'open' | number | null>(null);
+  const [lead, setLead] = useState<number>(JOINT_RAID.leadOptions[1] ?? JOINT_RAID.leadOptions[0]);
   const [returnBy, setReturnBy] = useState('');
   const [manual, setManual] = useState(false);
   const chosen: UnitCounts = useMemo(() => {
@@ -211,6 +219,10 @@ export function SendMission({ type, setType, target, setTarget, onClose, onSent 
   }, [units]);
 
   const targetSpot = useTargetSpot(target, validCoords(target, true, true));
+  const inSupercolony = !!state?.player.supercolony;
+  const { board } = useBoard(type === 'raid' && inSupercolony);
+  // a new target starts from that target's default choice
+  useEffect(() => setJointPick(null), [target.region, target.patch, target.spot]);
 
   if (!colony || !state) return null;
   const research = state.player.research;
@@ -289,7 +301,23 @@ export function SendMission({ type, setType, target, setTarget, onClose, onSent 
   const homeAnts = Object.values(colony.units).reduce((a, b) => a + (b ?? 0), 0);
   // sending to another of your colonies: offer to send the other way round
   const swapWith = state.colonies.find((c) => c.id !== colony.id && c.coords.region === target.region && c.coords.patch === target.patch && c.coords.spot === target.spot);
-  const times = oneWay ? missionTimes(type, now, oneWay) : null;
+  // joint raids go to wild nests, termite mounds and spider dens; dens only fight them
+  const wildTarget = type === 'raid' && !!targetSpot?.colony?.wild && !targetSpot?.colony?.herd && !targetSpot?.colony?.windfall ? targetSpot.colony.wild : null;
+  const playersNeeded = wildTarget ? minRaidPlayers(wildTarget.species as any, wildTarget.level) : 1;
+  const openHere: JointRaidView | undefined = wildTarget ? board?.jointRaids.find((j) => sameSpot(j.target, target)) : undefined;
+  const pick = !wildTarget ? 'solo' : jointPick ?? (openHere && !openHere.mine ? openHere.id : playersNeeded > 1 && inSupercolony ? 'open' : 'solo');
+  const joining = typeof pick === 'number' ? board?.jointRaids.find((j) => j.id === pick) : undefined;
+  const joint = pick === 'open' ? { open: lead } : joining ? { id: joining.id } : undefined;
+  if (wildTarget && pick === 'solo' && playersNeeded > 1) problems.push(JOINT_MESSAGES.solo_den(playersNeeded));
+  if (pick === 'open' && openHere) problems.push(JOINT_MESSAGES.open_here);
+  if (pick === 'open' && oneWay * 1000 > jointLeadOptionMs(lead, state.world.speed))
+    problems.push(JOINT_MESSAGES.too_far(fmtDuration(oneWay * 1000 - jointLeadOptionMs(lead, state.world.speed))) + ' Or pick a later landing time.');
+  if (joining && now + oneWay * 1000 > joining.landAt) problems.push(JOINT_MESSAGES.too_far(fmtDuration(now + oneWay * 1000 - joining.landAt)));
+  if (joining?.mine) problems.push(JOINT_MESSAGES.one_army);
+  const landAt = pick === 'open' ? now + jointLeadOptionMs(lead, state.world.speed) : joining?.landAt;
+  const plain = oneWay ? missionTimes(type, now, oneWay) : null;
+  // a joint raid's army lands with the others, and walks home in its own time
+  const times = plain && landAt ? { ...plain, arriveAt: landAt, returnAt: landAt + oneWay * 1000 } : plain;
 
   function applyReturnBy(value: string) {
     setReturnBy(value);
@@ -317,8 +345,8 @@ export function SendMission({ type, setType, target, setTarget, onClose, onSent 
 
   async function send() {
     const ok = await act(
-      () => api.post('/api/missions', { colonyId: colony!.id, type, target, units: chosen, cargo: cargoAllowed ? cargoAmounts : undefined, speedPct, ...(type === 'raid' ? { retreatPct } : {}) }),
-      `${MISSION_LABEL[type]} mission sent.`,
+      () => api.post('/api/missions', { colonyId: colony!.id, type, target, units: chosen, cargo: cargoAllowed ? cargoAmounts : undefined, speedPct, ...(type === 'raid' ? { retreatPct } : {}), ...(joint ? { joint } : {}) }),
+      joint ? (joint.open != null ? 'Joint raid opened: your supercolony can join from the members’ board.' : 'Your army joined the joint raid.') : `${MISSION_LABEL[type]} mission sent.`,
     );
     if (ok) {
       setUnits({});
@@ -539,7 +567,25 @@ export function SendMission({ type, setType, target, setTarget, onClose, onSent 
           <p className="muted small">Slower missions arrive later. Use "back no earlier than" to keep your army safely away while you're offline.</p>
         </fieldset>}
 
-        {type === 'raid' && (
+        {wildTarget && (
+          <JointRaidChoice
+            pick={pick}
+            setPick={setJointPick}
+            lead={lead}
+            setLead={setLead}
+            openHere={openHere}
+            playersNeeded={playersNeeded}
+            inSupercolony={inSupercolony}
+            kind={wildTarget.kind ?? 'nest'}
+          />
+        )}
+
+        {type === 'raid' && joining && (
+          <p className="muted small">
+            {joining.leaderName}'s fall-back order holds for the whole joint army: {joining.retreatPct ? `fall back after ${joining.retreatPct}% losses` : 'fight to the end'}.
+          </p>
+        )}
+        {type === 'raid' && !joining && (
           <fieldset className="field">
             <legend>Fall back</legend>
             <div className="tabs" role="radiogroup" aria-label="Fall back">
@@ -563,7 +609,16 @@ export function SendMission({ type, setType, target, setTarget, onClose, onSent 
 
         {type === 'trade' && valid && targetSpot?.colony && !unscouted && <TradePreview target={target} capacity={capacity} />}
 
-        {type === 'raid' && !unscouted && <BattlePreview target={target} units={chosen} retreatPct={retreatPct} npcSite={npcSite} />}
+        {type === 'raid' && !unscouted && (
+          <BattlePreview
+            target={target}
+            units={chosen}
+            retreatPct={joining ? joining.retreatPct : retreatPct}
+            npcSite={npcSite}
+            alongside={joining ? joining.joined.filter((a) => a.playerId !== state.player.id).map((a) => ({ name: a.username, units: a.units })) : undefined}
+            joint={!!joint}
+          />
+        )}
         {/* claiming a windfall someone holds (or wild ants guard) is a fight under the raid rules (server/src/game/windfalls.ts) */}
         {type === 'claim' && windfall && !windfall.yours && (windfall.held || windfall.guarded) && (
           <BattlePreview target={target} units={chosen} npcSite claim />
@@ -594,9 +649,83 @@ export function SendMission({ type, setType, target, setTarget, onClose, onSent 
           </ul>
         )}
         <button className="btn primary wide" disabled={problems.length > 0} onClick={send}>
-          Send {MISSION_LABEL[type].toLowerCase()} to {valid ? fmtCoords(target) : '…'}
+          {pick === 'open' ? 'Open joint raid on' : joining ? 'Join the joint raid on' : `Send ${MISSION_LABEL[type].toLowerCase()} to`} {valid ? fmtCoords(target) : '…'}
         </button>
       </Panel>
+  );
+}
+
+/** "2 h", "24 min", "1 h 36 min": a landing-time choice, without the seconds */
+const leadLabel = (ms: number) => {
+  const m = Math.round(ms / 60_000);
+  return m < 60 ? `${m} min` : m % 60 ? `${Math.floor(m / 60)} h ${m % 60} min` : `${m / 60} h`;
+};
+
+/**
+ * Raid alone, open a joint raid, or join one your supercolony has open on this target (docs/23-supercolonies.md
+ * § Joint raids). Spider dens only fight joint raids, so "alone" is off there.
+ */
+function JointRaidChoice({ pick, setPick, lead, setLead, openHere, playersNeeded, inSupercolony, kind }: {
+  pick: 'solo' | 'open' | number;
+  setPick: (p: 'solo' | 'open' | number) => void;
+  lead: number;
+  setLead: (h: number) => void;
+  openHere?: JointRaidView;
+  playersNeeded: number;
+  inSupercolony: boolean;
+  kind: 'nest' | 'mound' | 'den';
+}) {
+  const { state, now } = useGame();
+  const speed = state!.world.speed;
+  const what = kind === 'den' ? 'These spiders' : kind === 'mound' ? 'This mound' : 'This nest';
+  if (!inSupercolony)
+    return playersNeeded > 1 ? (
+      <div className="preview">
+        <strong>Only a joint raid can take this</strong>
+        <p className="muted small">
+          {what} only fight a supercolony's joint raid of at least {playersNeeded} players. Found or join a supercolony in Allies, then open a joint raid
+          here together.
+        </p>
+      </div>
+    ) : null;
+  const opts: { id: 'solo' | 'open' | number; label: string; off?: boolean }[] = [
+    { id: 'solo', label: 'Raid alone', off: playersNeeded > 1 },
+    ...(openHere ? [{ id: openHere.id, label: openHere.mine ? 'Your army is in' : `Join ${openHere.leaderName}'s`, off: openHere.mine }] : [{ id: 'open' as const, label: 'Open a joint raid' }]),
+  ];
+  return (
+    <fieldset className="field">
+      <legend>Joint raid</legend>
+      <div className="tabs" role="radiogroup" aria-label="Joint raid">
+        {opts.map((o) => (
+          <button key={String(o.id)} role="radio" aria-checked={pick === o.id} className={pick === o.id ? 'on' : ''} disabled={o.off} onClick={() => setPick(o.id)}>
+            {o.label}
+          </button>
+        ))}
+      </div>
+      {openHere ? (
+        <p className="small">
+          Lands at <strong>{fmtClock(openHere.landAt)}</strong> (in {fmtDuration(Math.max(0, openHere.landAt - now))}).{' '}
+          {openHere.joined.map((a) => `${a.username} (${fmtFull(a.unitCount)} ants)`).join(', ')} {openHere.joined.length === 1 ? 'is' : 'are'} in
+          {playersNeeded > 1 ? `; it needs at least ${playersNeeded} players` : ''}.
+        </p>
+      ) : pick === 'open' ? (
+        <>
+          <div className="tabs" role="radiogroup" aria-label="Lands in">
+            {JOINT_RAID.leadOptions.map((h) => (
+              <button key={h} role="radio" aria-checked={lead === h} className={lead === h ? 'on' : ''} onClick={() => setLead(h)}>
+                {leadLabel(jointLeadOptionMs(h, speed))}
+              </button>
+            ))}
+          </div>
+          <p className="small">Lands at <strong>{fmtClock(now + jointLeadOptionMs(lead, speed))}</strong>.</p>
+        </>
+      ) : null}
+      <p className="muted small">
+        Everyone's armies land together and fight as one. Loot is split by each army's worth, and each walks home with its own survivors.
+        {playersNeeded > 1 ? ` ${what} only fight a joint raid of at least ${playersNeeded} players; with fewer, it's called off and everyone walks home.` : ''}
+        {pick === 'open' ? ' Your supercolony sees it on the members’ board in Allies and can join until it lands.' : ''}
+      </p>
+    </fieldset>
   );
 }
 

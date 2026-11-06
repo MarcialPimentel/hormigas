@@ -22,7 +22,8 @@ interface SpeciesDef {
   raids?: boolean;
   /** percent of the level's normal food store, per resource (default 100) */
   stockPct?: Partial<Resources>;
-  levels: { units: UnitCounts; defenses: DefenseCounts; minPoints?: number; stock?: Resources }[];
+  /** minPlayers: the fewest players a joint raid needs to fight this tier (spider dens; docs/23-supercolonies.md § Joint raids) */
+  levels: { units: UnitCounts; defenses: DefenseCounts; minPoints?: number; stock?: Resources; minPlayers?: number }[];
 }
 export const SPECIES = NPC_DATA.species as unknown as Record<NestSpecies, SpeciesDef>;
 const ALL_SPECIES = Object.keys(NPC_DATA.species) as NestSpecies[];
@@ -38,6 +39,14 @@ export const NEST_REGROW_HOURS = NPC_DATA.regrowHours;
 export const maxLevel = (s: NestSpecies): number => (speciesKind(s) === 'nest' ? NEST_MAX_LEVEL : SPECIES[s].levels.length);
 export const regrowHours = (s: NestSpecies): number => SPECIES[s].regrowHours ?? NEST_REGROW_HOURS;
 export const nestRaidsBack = (s: NestSpecies): boolean => SPECIES[s].raids !== false;
+/**
+ * How many players must raid this tier together. 1 for every wild thing except spider dens, which only fight a
+ * supercolony's joint raid of at least this many players (Marz, 5 Nov 2026).
+ */
+export const minRaidPlayers = (s: NestSpecies, level: number): number => {
+  const l = SPECIES[s].levels;
+  return speciesKind(s) === 'nest' || !l.length ? 1 : l[Math.max(0, Math.min(l.length, level) - 1)].minPlayers ?? 1;
+};
 export const NEST_RAIDS = NPC_DATA.raids as unknown as {
   everyHours: [number, number];
   partyShare: number;

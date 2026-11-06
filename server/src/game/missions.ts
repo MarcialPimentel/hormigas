@@ -52,6 +52,30 @@ import { notify } from '../realtime';
 import { bump, foodIn } from './stats';
 import { explore, requireExploredFor } from './fog';
 
+/** Joint raids (./joint.ts) plug in here, so the two modules don't load each other. */
+export interface JointInput {
+  /** open a new joint raid landing this many hours ahead (one of JOINT_RAID.leadOptions, at world speed 1) */
+  open?: number;
+  /** join this open joint raid */
+  id?: number;
+}
+interface JointHooks {
+  prepare: (q: Tx, o: { player: Player; colony: Colony; targetColony: Colony | null; joint: JointInput; travelMs: number; retreatPct: number; t: number }) => Promise<{ id: number; landAt: number; eventId: number; retreatPct: number }>;
+  turnBack: (q: Q, m: Mission, t: number, result: object) => Promise<void>;
+}
+let JOINT: JointHooks | null = null;
+export const setJointHooks = (h: JointHooks) => {
+  JOINT = h;
+};
+const prepareJoint: JointHooks['prepare'] = (q, o) => {
+  if (!JOINT) throw new Error('Joint raids are not loaded');
+  return JOINT.prepare(q, o);
+};
+const turnJointArmyBack: JointHooks['turnBack'] = (q, m, t, r) => {
+  if (!JOINT) throw new Error('Joint raids are not loaded');
+  return JOINT.turnBack(q, m, t, r);
+};
+
 export type { MissionType };
 
 export interface Mission {
@@ -77,6 +101,8 @@ export interface Mission {
   arriveEventId: number | null;
   returnEventId: number | null;
   result: any;
+  /** a raid in a supercolony's joint raid (docs/23-supercolonies.md § Joint raids): it lands on that raid's event */
+  jointRaidId: number | null;
 }
 
 function fromRow(r: any): Mission {
@@ -101,6 +127,7 @@ function fromRow(r: any): Mission {
     arriveEventId: r.arrive_event_id,
     returnEventId: r.return_event_id,
     result: r.result,
+    jointRaidId: r.joint_raid_id == null ? null : Number(r.joint_raid_id),
   };
 }
 
@@ -133,6 +160,8 @@ export interface SendContext {
   target: Coords;
   targetColony: Colony | null;
   t: number;
+  /** raids: opening or joining a joint raid */
+  joint?: JointInput;
 }
 
 export interface ArrivalOutcome {
@@ -173,6 +202,8 @@ export interface SendInput {
   speedPct?: number;
   /** Raids only: fall back after losing this percent of the army's worth (one of RETREAT_PCTS). */
   retreatPct?: number;
+  /** Raids only: open a joint raid ({ open: hours }) or join one ({ id }) (docs/23-supercolonies.md § Joint raids). */
+  joint?: JointInput;
 }
 
 function parseUnits(raw: Record<string, unknown>, home: UnitCounts): UnitCounts {
@@ -220,7 +251,9 @@ export async function sendMission(q: Tx, playerId: number, input: SendInput): Pr
   const cargo = fixed.allowsCargo ? parseCargo(input.cargo) : res();
   const speedPct = Number(input.speedPct ?? 100);
   if (!isValidSpeedPct(speedPct)) throw new GameError('bad_speed', 'Speed must be 10%–100% in steps of 10.');
-  const retreatPct = type === 'raid' ? Number(input.retreatPct ?? 0) : 0;
+  let retreatPct = type === 'raid' ? Number(input.retreatPct ?? 0) : 0;
+  const joint = input.joint && (input.joint.open != null || input.joint.id != null) ? input.joint : undefined;
+  if (joint && type !== 'raid') throw new GameError('bad_type', 'Only raids can be joint raids.');
   if (!isValidRetreatPct(retreatPct)) throw new GameError('bad_retreat', `Fall back after ${RETREAT_PCTS.filter((p) => p > 0).join('% or ')}% losses, or fight to the end.`);
 
   // fog of war: into a patch you've never explored, only Scouts or foragers surveying its wilds can go (docs/22-discovery.md)
@@ -228,7 +261,7 @@ export async function sendMission(q: Tx, playerId: number, input: SendInput): Pr
 
   const world = await getWorld(q);
   const targetColony = target.spot === WILDS_SPOT ? null : await colonyAt(q, world.id, target.region, target.patch, target.spot);
-  await rules.validate({ q, player, colony, units, cargo, target, targetColony, t });
+  await rules.validate({ q, player, colony, units, cargo, target, targetColony, t, joint });
 
   // slots
   const active = await activeMissions(q, playerId);
@@ -246,13 +279,18 @@ export async function sendMission(q: Tx, playerId: number, input: SendInput): Pr
   if (!canAfford(colony.resources, needed))
     throw new GameError('cant_afford', colony.resources.nectar < fuel ? `Not enough Nectar for the trip (needs ${fuel}).` : 'Not enough resources to load.');
 
+  // a joint raid: the army lands with the others at the landing time, on the joint raid's event
+  const prepared = joint ? await prepareJoint(q, { player, colony, targetColony, joint, travelMs: secs * 1000, retreatPct, t }) : null;
+  if (prepared) retreatPct = prepared.retreatPct;
+
   colony.resources = sub(colony.resources, needed);
   colony.units = subCounts(colony.units, units);
   await saveColony(q, colony);
 
   return launchMission(q, {
     worldId: world.id, playerId, type, origin: colony, target, targetColony, units, cargo, speedPct, retreatPct, fuel,
-    departAt: t, arriveAt: t + secs * 1000, senderName: player.username,
+    departAt: t, arriveAt: prepared ? prepared.landAt : t + secs * 1000, senderName: player.username,
+    ...(prepared ? { joint: { id: prepared.id, eventId: prepared.eventId, travelMs: secs * 1000 } } : {}),
   });
 }
 
@@ -264,6 +302,8 @@ export async function launchMission(
     units: UnitCounts; cargo: Resources; speedPct: number; retreatPct?: number; fuel: number; departAt: number; arriveAt: number;
     /** shown to the target in "incoming" notices */
     senderName: string;
+    /** a joint raid's army: it lands on the joint raid's event, and walks home in its own travel time */
+    joint?: { id: number; eventId: number; travelMs: number };
   },
 ): Promise<Mission> {
   const { origin, target } = o;
@@ -275,7 +315,12 @@ export async function launchMission(
       o.targetColony?.id ?? null, JSON.stringify(o.units), JSON.stringify(o.cargo), o.speedPct, o.fuel, o.departAt, o.arriveAt, o.retreatPct ?? 0],
   );
   const m = fromRow(r.rows[0]);
-  m.arriveEventId = await schedule(q, o.worldId, 'mission_arrive', o.arriveAt, { missionId: m.id });
+  if (o.joint) {
+    m.jointRaidId = o.joint.id;
+    m.arriveEventId = o.joint.eventId;
+    m.result = { travelMs: o.joint.travelMs };
+    await q.query('UPDATE missions SET joint_raid_id = $2 WHERE id = $1', [m.id, o.joint.id]);
+  } else m.arriveEventId = await schedule(q, o.worldId, 'mission_arrive', o.arriveAt, { missionId: m.id });
   await saveMission(q, m);
   // warn whoever is on the receiving end: the colony's owner, or the ants holding a herd or windfall (docs/24-npcs.md, 25-windfalls.md)
   const warned = isHeldState(o.targetColony?.npc) ? o.targetColony!.npc.tender?.playerId : o.targetColony?.playerId;
@@ -315,6 +360,11 @@ export async function recallMission(q: Tx, playerId: number, missionId: number):
   const t = now();
   if (m.status === 'holding') return comeHome(q, m, t, { recalled: true });
   if (m.status !== 'outbound' || t >= m.arriveAt) throw new GameError('too_late', 'This mission can no longer be recalled.');
+  // an army in a joint raid leaves it; the joint raid itself (and its event) goes on for the others
+  if (m.jointRaidId) {
+    await turnJointArmyBack(q, m, t, { recalled: true });
+    return m;
+  }
   if (m.arriveEventId) await cancelEvent(q, m.arriveEventId);
   m.arriveEventId = null;
   m.returnAt = recallReturnAt(m.departAt, t);
@@ -519,6 +569,7 @@ export function missionView(m: Mission) {
     returnAt: m.returnAt,
     status: m.status,
     result: m.result,
+    jointRaidId: m.jointRaidId,
   };
 }
 

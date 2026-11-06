@@ -43,6 +43,8 @@ export interface Order {
   back?: Record<string, number>;
   /** for windfall claims and herd tenders: how long they stay before walking home, × the trip */
   hold?: number;
+  /** a joint raid: both your colonies send an army that lands at the same moment (docs/23-supercolonies.md § Joint raids) */
+  joint?: boolean;
 }
 export const ORDERS: Order[] = [
   { id: 'forage', label: 'Forage', group: 'Send', type: 'forage', to: 'wilds', units: { worker: 1 }, back: { foliage: 1, protein: 1 } },
@@ -51,7 +53,8 @@ export const ORDERS: Order[] = [
   { id: 'scout_far', label: 'Scout spider den', group: 'Send', type: 'scout', to: 'spider', units: { scout: 1 } },
   { id: 'raid_nest', label: 'Raid wild nest', group: 'Send', type: 'raid', to: 'wildNest', units: { minor_soldier: 0.7, worker: 0.3 }, back: { protein: 1 } },
   { id: 'raid_termites', label: 'Raid termites', group: 'Send', type: 'raid', to: 'termites', units: { major_soldier: 0.6, worker: 0.4 }, back: { foliage: 1 } },
-  { id: 'raid_spider', label: 'Raid spider den', group: 'Send', type: 'raid', to: 'spider', units: { major_soldier: 0.8, worker: 0.2 }, back: { protein: 1 } },
+  // spider dens only fight joint raids: armies from several colonies land together (Build 19)
+  { id: 'joint_spider', label: 'Joint raid on spider den', group: 'Send', type: 'raid', to: 'spider', units: { minor_soldier: 0.6, major_soldier: 0.4 }, back: { protein: 1 }, joint: true },
   { id: 'raid_rival', label: 'Raid rival', group: 'Send', type: 'raid', to: 'rival', units: { minor_soldier: 0.8, worker: 0.2 }, back: { nectar: 1 } },
   { id: 'claim', label: 'Claim windfall', group: 'Send', type: 'claim', to: 'windfall', units: { minor_soldier: 0.4, worker: 0.6 }, back: { protein: 1 }, hold: 1 },
   { id: 'claim_far', label: 'Claim far windfall', group: 'Send', type: 'claim', to: 'windfallFar', units: { minor_soldier: 0.4, worker: 0.6 }, back: { protein: 1 }, hold: 1 },
@@ -136,6 +139,7 @@ function missionRow(p: Party, now: number) {
     arriveAt: oneWay && back ? p.leaveAt : p.arriveAt,
     returnAt: oneWay && !back ? null : p.returnAt,
     // a trade caravan's trail: when it runs out, and a made-up running total
+    ...(p.order.joint ? { jointRaidId: 1 } : {}),
     ...(p.order.type === 'trade' && status === 'holding' ? { result: { trading: true, endsAt: p.leaveAt, delivered: { foliage: p.size * 40, protein: 0, nectar: 0 } } } : {}),
   };
 }

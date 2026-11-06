@@ -14,6 +14,7 @@ export * from './brood';
 export * from './colony';
 export * from './quests';
 export * from './nests';
+export * from './joint';
 export * from './herds';
 export * from './windfalls';
 export * from './nestEvents';

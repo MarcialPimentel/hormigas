@@ -23,6 +23,8 @@ export interface EventPayloads {
   scent_faded: { memberRowId: number };
   /** a trade trail's next delivery: `n` counts from 1, so a stale event (recalled, renewed) does nothing */
   trade_deliver: { missionId: number; n: number };
+  /** a joint raid lands: every member's army fights together (docs/23-supercolonies.md § Joint raids) */
+  joint_raid_land: { jointRaidId: number };
 }
 export type EventType = keyof EventPayloads;
 

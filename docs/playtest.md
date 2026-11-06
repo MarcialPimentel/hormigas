@@ -19,6 +19,9 @@ A swarm comes every 1.5–2.5 days. To meet one sooner on a test world, wait for
 ### Trade trails
 Tap another of your colonies (or a truce partner's or supercolony mate's) and press **Trade trail**, or pick Trade trail on the send card. Send Workers, Media Workers or Haulers; the card shows what each delivery brings and, for a player, what they gain. While the trail is open the caravan walks to and fro on the Whole Yard, and Under way shows when it ends and what it has brought so far ([23-supercolonies](23-supercolonies.md#trade-trails-build-16)).
 
+### Joint raids
+In a supercolony, pick a wild nest, termite mound or spider den, choose **Raid**, then **Open a joint raid** and when it lands. Your mates get a report and see it on the **members' board** in Allies; they press **Join** and send an army that can get there in time. Everyone lands together and fights as one, and the battle report lists every army and its share. Spider dens only fight joint raids of 2 or more players ([23-supercolonies](23-supercolonies.md#joint-raids-build-19)). Testing needs two or three accounts in one supercolony (see below).
+
 ### The test scene
 Open https://hormigas.marz.gg/?test to check ant models and trails without playing: the real Whole Yard and 3D Patch with made-up parties (forage, scouts, raids, termites, windfalls, herds, swarms) sent from buttons on the right, a lineup of every ant, and sliders for how columns march. It never touches the real game. See [test-bed](test-bed.md).
 
@@ -32,6 +35,7 @@ Open https://hormigas.marz.gg/?test to check ant models and trails without playi
 
 ## Testing with more than one player
 - Open a second browser or a private window and sign up a second player. New players get their own patch next to an active player's ([11-world](11-world.md#starting-placement)), so the two can scout across the border, raid, truce, trade and form a supercolony.
+- **Joint raids** need two or three accounts in one supercolony: each needs the Supercolony research, one founds it in Allies and invites the others. Spider den tier 1 needs 2 players in the raid, tier 2 needs 3.
 - For fast checks, run the game locally at ×5 speed (see the [README](../README.md#run-it-locally)).
 
 ## Daily needs and the Journal
