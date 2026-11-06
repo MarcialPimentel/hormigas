@@ -230,20 +230,13 @@ describe('aphid herds', () => {
 });
 
 describe('spider den', () => {
-  it('a day-14 army bounces off; a day-30 army brings her down', async () => {
+  it('no single colony can raid it: it only fights a joint raid (Build 19; b19-joint-raids.test.ts fights one)', async () => {
     await knowAll();
     const target = at(8, SITE_SPOTS.den);
     await setColony(ca.id, { units: { minor_soldier: 400, major_soldier: 200, scout: 5, worker: 40 }, nectar: 1e6, last_updated: clock.t });
-    const weak = await a.post('/api/missions', { colonyId: ca.id, type: 'raid', target, units: { minor_soldier: 150, major_soldier: 40 } });
-    expect(weak.error).toBeUndefined();
-    await clock.advance(weak.mission.arriveAt - clock.t + 1000);
-    expect((await latest(a, 'battle')).data.winner).not.toBe('attacker');
+    const solo = await a.post('/api/missions', { colonyId: ca.id, type: 'raid', target, units: { minor_soldier: 400, major_soldier: 200 } });
+    expect(solo.error).toMatchObject({ code: 'joint_only' });
     const den = await wildRow(ca.coords.region, 8, SITE_SPOTS.den);
-    expect(den.units.trapdoor_spider).toBe(1); // she's whole: a small raid can't wear her down
-    const strong = await a.post('/api/missions', { colonyId: ca.id, type: 'raid', target, units: { minor_soldier: 250, major_soldier: 100, worker: 10 } });
-    await clock.advance(strong.mission.arriveAt - clock.t + 1000);
-    const win = await latest(a, 'battle');
-    expect(win.data.winner).toBe('attacker');
-    expect(win.data.loot.protein).toBeGreaterThan(0);
+    expect(den.units.trapdoor_spider).toBeGreaterThan(1); // a cluster of burrows, not one spider
   });
 });

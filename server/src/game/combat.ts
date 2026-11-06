@@ -25,6 +25,8 @@ import {
   coordsKey,
   CASTES,
   isHeldState,
+  JOINT_MESSAGES,
+  minRaidPlayers,
   type Coords,
   type UnitCounts,
 } from '@hormigas/shared';
@@ -77,8 +79,10 @@ export async function addCorpses(q: Q, worldId: number, c: Coords, protein: numb
 }
 
 defineMission('raid', {
-  async validate({ q, player, colony, targetColony, units, t }) {
+  async validate({ q, player, colony, targetColony, units, t, joint }) {
     if (!targetColony) throw new GameError('bad_target', 'There is no colony there to raid.');
+    // joint raids go to wild nests, mounds and dens only (Marz, 5 Nov 2026); the rest is checked when it opens or joins
+    if (joint && (!targetColony.npc || isHeldState(targetColony.npc))) throw new GameError('wild_only', JOINT_MESSAGES.wild_only);
     if (targetColony.playerId === player.id) throw new GameError('bad_target', "You can't raid your own colony.");
     if (!presentUnits(units).some((u) => CASTES[u].attack > 0)) throw new GameError('no_fighters', 'Send at least one unit that can fight.');
     const held = heldOf(targetColony);
@@ -95,8 +99,8 @@ defineMission('raid', {
       if ((await raidsInLast24h(q, player.id, targetColony.id, t)) >= BASH_LIMIT_PER_24H) throw new GameError('bash_limit', BLOCK_MESSAGES.bash_limit);
       return;
     }
-    // Scout before raiding: nobody raids a scent (docs/22-discovery.md).
-    await requireKnown(q, player.id, targetColony.id, 'raid');
+    // Scout before raiding: nobody raids a scent (docs/22-discovery.md). Joining a joint raid shares the opener's scouting.
+    if (joint?.id == null) await requireKnown(q, player.id, targetColony.id, 'raid');
     const recentWins = await raidsInLast24h(q, player.id, targetColony.id, t);
     const herd = herdOf(targetColony);
     if (herd) {
@@ -113,6 +117,9 @@ defineMission('raid', {
       return;
     }
     if (targetColony.npc) {
+      // Spider dens only fight a supercolony's joint raid (docs/23-supercolonies.md § Joint raids)
+      const need = 'species' in targetColony.npc ? minRaidPlayers(targetColony.npc.species, targetColony.npc.level) : 1;
+      if (need > 1 && !joint) throw new GameError('joint_only', JOINT_MESSAGES.solo_den(need));
       // Wild nests: no protection of any kind, but the bash limit still applies.
       // Raiding one is PvE practice, so it doesn't end your own new-colony protection (docs/17-wild-nests.md).
       if (recentWins >= BASH_LIMIT_PER_24H) throw new GameError('bash_limit', BLOCK_MESSAGES.bash_limit);
