@@ -225,8 +225,8 @@ async function surveyWilds(q: Tx, m: Mission, at: number): Promise<ArrivalOutcom
   );
   const others = cols.rows.filter((r: any) => r.id !== m.playerId);
   const inactive = others.filter((r: any) => isInactive({ points: r.points_total, protectedUntil: r.protected_until, lastActive: r.last_active }, at)).length;
-  const corpses = (await q.query('SELECT protein, created_at FROM corpse_fields WHERE world_id = $1 AND region = $2 AND patch = $3', [m.worldId, region, patch])).rows
-    .reduce((sum: number, r: any) => sum + corpseFieldAmount(r.protein, r.created_at, at), 0);
+  const corpses = (await q.query('SELECT protein, created_at, rot_delay_hours FROM corpse_fields WHERE world_id = $1 AND region = $2 AND patch = $3', [m.worldId, region, patch])).rows
+    .reduce((sum: number, r: any) => sum + corpseFieldAmount(r.protein, r.created_at, at, Number(r.rot_delay_hours)), 0);
   const rng = createRng(randomSeed());
   const data = {
     wilds: true,

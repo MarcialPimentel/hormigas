@@ -34,24 +34,46 @@ Since Build 6 research is a **tree**: research can need other research (not only
 | **Formic Acid** | Jaws | Pher 4, Mandibles 3, Chitin 2 | Defenses +10% attack, guard, health per level |
 | **Raiding Columns** | Jaws | Pher 5, Mandibles 5, Guard Formation 3, Pheromone Trails 4 | Winning raids take +5% of unprotected stores per level (max 3) |
 | **Nest Plugging** | Jaws | Pher 5, Chitin 4, Guard Formation 4 | +25% protected storage per level |
+| **Rescue** (Build 20) | Jaws | Pher 4, Chitin 2, Guard Formation 2 | After every attack you send, 5% of your fallen per level come home alive (max 3) |
 | **Foraging Instinct** | Harvest | Pher 3 | +1 forage slot **in each colony** every 2 levels; better forage outcomes |
 | **Group Hunting** | Harvest | Pher 3, Mandibles 1, Pheromone Trails 2 | +5% Protein from Hunting Grounds per level |
-| **Aphid Husbandry** | Harvest | Pher 3 | +5% Nectar from Aphid Pastures per level |
+| **Aphid Husbandry** | Harvest | Pher 3 | +5% Nectar per level from Aphid Pastures, and (Build 20) on the honeydew your tenders bring home from wild aphid herds |
 | **Fungus Farming** | Harvest | Pher 3, Aphid Husbandry 2 | +5% Foliage from Leaf Gardens per level |
+| **Recruitment Trails** (Build 20) | Harvest | Pher 4, Foraging Instinct 1, Pheromone Trails 2 | Windfall holders carry a load home 10% sooner per level (max 3) |
+| **Trophallaxis** (Build 20) | Harvest | Pher 4, Aphid Husbandry 3 | Trade trails stay open one more day per level (max 2) |
 | **Repletes** | Harvest | Pher 5, Aphid Husbandry 4, Fungus Farming 2 | +10% storage per level |
 | **Brood Science** | Nest | Pher 1 | Major Soldier and Acid Sprayer (1), Hauler (2, with Brood Hall 4); max 2 |
 | **Nurse Workers** | Nest | Pher 3, Brood Science 1 | Units raised 5% faster per level (max 6) |
 | **Deep Digging** | Nest | Pher 4 | +5 space per level in all colonies |
 | **Tunnel Engineering** | Nest | Pher 4, Deep Digging 2 | Chambers dug 5% faster per level (max 6); level 1 also opens the Narrow Tunnel defense |
+| **Necrophoresis** (Build 20) | Nest | Pher 3, Brood Science 1 | Corpse fields from your fights start rotting 12 h later per level (max 2) |
 | **Nuptial Flight** | Nest | Pher 3 | Unlocks the Winged Queen; +1 colony per level ([19-colonies](19-colonies.md)) |
 | **Pheromone Trails** | Scent | Pher 1 | +10% unit speed per level |
 | **Colony Mind** | Scent | Pher 1 | +1 mission slot per level |
 | **Scent Reading** | Scent | Pher 2 | Better scouting reports; harder to scout |
 | **Tandem Running** | Scent | Pher 4, Colony Mind 2, Pheromone Trails 2 | Research 5% faster per level (max 6) |
 | **Chemical Mimicry** | Scent | Pher 4, Scent Reading 3 | Each level halves the chance your scouts are spotted (max 3) |
+| **Social Stomach** (Build 20) | Scent | Pher 4, Pheromone Trails 3, Colony Mind 1 | Every mission burns 5% less Nectar fuel per level (max 5) |
 | **Supercolony** | Nest | Pher 3, Nuptial Flight 1, Colony Mind 1 | Found or join a supercolony (max 1; [23-supercolonies](23-supercolonies.md)) |
 | **Symbiosis** | Harvest | Pher 5, Aphid Husbandry 3, Chemical Mimicry 1 | Allies (max 4): Carrion Beetle (1), Assassin Bug (2), Bullet Ant (3), Rhinoceros Beetle (4). Playable since Build 11 |
 | **Instincts** (6) | Jaws | the same research as their caste | +5% attack and health per level for one caste only, max 10 ([05](05-castes-units.md#instincts-build-11)) |
+
+### Research for the missions you run (Build 20)
+Marz, 6 Nov 2026 ([#220](https://github.com/MarcialPimentel/hormigas/issues/220)): research should deepen the missions players already run rather than add new missions. Before this build raids, forage, scouting and founding had research behind them; corpse hauling, windfalls, aphid herds, trade trails and fuel had none. Each effect shows where it applies, so a player can see why a mission went better (pillar 5). Details and the ant behaviour: [21-tech-tree](21-tech-tree.md#research-for-the-missions-you-run-build-20).
+
+| Mission | Research that helps it |
+|---|---|
+| Raid (and joint raids) | Mandibles, Chitin, Guard Formation, Instincts, Raiding Columns, **Rescue** |
+| Scout | Scent Reading, Chemical Mimicry |
+| Forage | Foraging Instinct |
+| Found Colony | Nuptial Flight |
+| Claim windfall | **Recruitment Trails** |
+| Tend aphids | **Aphid Husbandry** (now also on herds) |
+| Haul corpses | **Necrophoresis** |
+| Trade trail | **Trophallaxis** |
+| Every mission | Pheromone Trails (speed), Colony Mind (slots), **Social Stomach** (fuel) |
+
+Transports, relocations and Hold Position still have none of their own beyond speed, slots and fuel.
 
 ## Scouting detail by Scent Reading difference
 `diff = yourScentReading − theirScentReading + (scouts sent − 1) / 2` (rounded down). Scent Reading counts through its `scoutLevel` effect; the 2 and the thresholds below are in `formulas.json` → `scouting.detail`.

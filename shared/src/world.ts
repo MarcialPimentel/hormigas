@@ -1,6 +1,6 @@
 // Map, distance, travel and mission rules. Spec: docs/09-missions.md, docs/11-world.md
 import { CASTES, FORMULAS, NPC_DATA, TERRAIN, TERRAIN_IDS, type CasteId, type TerrainId } from './data';
-import { researchFraction, researchSum, type ResearchLevels, type UnitCounts } from './economy';
+import { researchFactor, researchFraction, researchSum, type ResearchLevels, type UnitCounts } from './economy';
 
 const D = FORMULAS.distance;
 const T = FORMULAS.travel;
@@ -97,13 +97,19 @@ export function travelSeconds(dist: number, slowestSpeed: number, speedPct: numb
   return Math.max(1, Math.round(t / worldSpeed));
 }
 
-/** Nectar consumed for the whole trip (paid at departure). Speed doesn't change it. */
-export function missionFuel(units: UnitCounts, dist: number): number {
+/**
+ * Nectar consumed for the whole trip (paid at departure). Speed doesn't change it. Social Stomach (the sender's
+ * research) burns 5% less a level (docs/09-missions.md § Fuel).
+ */
+export function missionFuel(units: UnitCounts, dist: number, research?: ResearchLevels): number {
   let use = 0;
   for (const id of presentUnits(units)) use += (units[id] ?? 0) * CASTES[id].nectarUse;
-  const fuel = (use * dist) / T.fuelDivisor;
+  const fuel = ((use * dist) / T.fuelDivisor) * researchFactor(research, 'fuelPct');
   return Math.max(1, Math.round(fuel));
 }
+
+/** How much less fuel Social Stomach burns, in percent (0 without it). */
+export const fuelCutPct = (research?: ResearchLevels): number => Math.max(0, -researchSum(research, 'fuelPct'));
 
 export const missionSlots = (research: ResearchLevels): number =>
   FORMULAS.missions.baseSlots + researchSum(research, 'missionSlots');

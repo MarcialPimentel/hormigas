@@ -30,6 +30,9 @@ import {
   addCounts,
   add,
   simulateBattle,
+  applyRescueResearch,
+  corpseRotDelayHours,
+  corpseRotStartsAt,
   splitLoot,
   sub,
   subCounts,
@@ -338,13 +341,16 @@ async function fight(q: Tx, j: JointRaid, armies: Mission[], target: Colony, at:
   const start = armies.map((m) => nonZero(m.units));
   const startDefender = nonZero(target.units);
   const startDefenses = nonZero(target.defenses);
+  // the whole joint army fights as one side; the opener's fall-back order holds for everyone
+  const attackerSide = { units: {}, research: {}, retreatPct: j.retreatPct, allies: armies.map((m, i) => ({ units: start[i], research: players[i].research })) };
   const result = simulateBattle(
-    // the whole joint army fights as one side; the opener's fall-back order holds for everyone
-    { units: {}, research: {}, retreatPct: j.retreatPct, allies: armies.map((m, i) => ({ units: start[i], research: players[i].research })) },
+    attackerSide,
     { units: startDefender, defenses: target.defenses, groundDefensePct: 0, research: defender.research },
     rng,
   );
   const rebuilt = rebuildDefenses(result.defensesDestroyed, rng);
+  // Rescue research: each member's own level saves some of their own fallen, after the battle (docs/08-combat.md § Rescue)
+  const carriedHome = applyRescueResearch(result, attackerSide).allies.map((u) => nonZero(u));
   target.units = nonZero(result.defenderSurvivors);
   target.defenses = nonZero(addCounts(subCounts(target.defenses, result.defensesDestroyed), rebuilt));
   const survivors = result.attackerAlliesSurvivors.map((u) => nonZero(u));
@@ -368,7 +374,8 @@ async function fight(q: Tx, j: JointRaid, armies: Mission[], target: Colony, at:
     corpses -= k;
     return k;
   });
-  await addCorpses(q, j.worldId, j.target, corpses, at);
+  const rotDelay = corpseRotDelayHours(defender.research, ...players.map((p) => p.research));
+  await addCorpses(q, j.worldId, j.target, corpses, at, rotDelay);
   await saveColony(q, target);
 
   const sum = (list: UnitCounts[]) => list.reduce((s, u) => addCounts(s, u), {} as UnitCounts);
@@ -380,6 +387,7 @@ async function fight(q: Tx, j: JointRaid, armies: Mission[], target: Colony, at:
     lost: lost[i],
     loot: shares[i],
     ...(carried[i] > 0 ? { corpsesCarried: carried[i] } : {}),
+    ...(Object.keys(carriedHome[i]).length ? { carriedHome: carriedHome[i], rescueLevel: players[i].research.rescue ?? 0 } : {}),
   }));
   const leader = armies.find((m) => m.playerId === j.leaderId) ?? armies[0];
   const data = {
@@ -412,6 +420,7 @@ async function fight(q: Tx, j: JointRaid, armies: Mission[], target: Colony, at:
     loot: totalLoot,
     corpses: field,
     ...(result.rescued ? { rescued: result.rescued } : {}),
+    ...(corpses > 0 ? { corpsesRotAt: corpseRotStartsAt(at, rotDelay), ...(rotDelay > 0 ? { rotDelayHours: rotDelay } : {}) } : {}),
     joint: { id: j.id, supercolony: sc?.name ?? null, members: memberLines },
   };
   const verb = result.retreatedAfterRound != null ? 'fell back' : result.winner === 'attacker' ? 'won' : result.winner === 'defender' ? 'lost' : 'drew';

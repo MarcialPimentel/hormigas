@@ -17,10 +17,10 @@ Every research is real ant behaviour (pillar 4).
 
 | Branch | Theme | Roots (existing) | New |
 |---|---|---|---|
-| **Jaws** | Fighting | Mandibles, Chitin, Guard Formation | Formic Acid, Raiding Columns, Nest Plugging |
-| **Harvest** | Food | Foraging Instinct, Aphid Husbandry | Group Hunting, Fungus Farming, Repletes (Symbiosis later) |
-| **Nest** | The colony itself | Brood Science, Deep Digging, Nuptial Flight | Nurse Workers, Tunnel Engineering, Digging Crews, Supercolony |
-| **Scent** | Pheromones and information | Pheromone Trails, Colony Mind, Scent Reading | Tandem Running, Chemical Mimicry |
+| **Jaws** | Fighting | Mandibles, Chitin, Guard Formation | Formic Acid, Raiding Columns, Nest Plugging, Rescue |
+| **Harvest** | Food | Foraging Instinct, Aphid Husbandry | Group Hunting, Fungus Farming, Repletes, Symbiosis, Recruitment Trails, Trophallaxis |
+| **Nest** | The colony itself | Brood Science, Deep Digging, Nuptial Flight | Nurse Workers, Tunnel Engineering, Digging Crews, Supercolony, Necrophoresis |
+| **Scent** | Pheromones and information | Pheromone Trails, Colony Mind, Scent Reading | Tandem Running, Chemical Mimicry, Social Stomach |
 
 ## The new research
 Pher = Pheromone Chamber level in the colony doing the research. Costs are level 1; each level doubles ([formulas.json](data/formulas.json) `researchCostFactor`). Players pay each listed total split by branch, mostly Protein and Nectar ([07-research](07-research.md#what-research-costs-protein-and-nectar)).
@@ -76,6 +76,26 @@ Proposed by the rules session as defaults and approved by Marz on 2026-10-29 bef
 - **Tree lives inside the Research tab**, with the four branches (the art session designs the view).
 - **Production bonuses are +5% per level, chamber output only** (not the base trickle), like OGame's Plasma Tech: small, steady, always worth one more level.
 - **Symbiosis and Supercolony stay "later"** but appear on the tree with their prerequisites.
+
+## Research for the missions you run (Build 20)
+Marz, 6 Nov 2026 ([#220](https://github.com/MarcialPimentel/hormigas/issues/220)): research that deepens missions players already run, instead of new missions. Everyone can still learn everything (the 29 Oct rule). Numbers are first-pass, for playtest tuning. Costs are level 1, doubling per level, paid split by branch like all research.
+
+| Research | Branch | Needs | Cost (listed) | Effect per level | Cap | The ant behaviour |
+|---|---|---|---|---|---|---|
+| **Rescue** | Jaws | Pher 4, Chitin 2, Guard Formation 2 | 4,500 | 5% of your fallen come home alive after an attack you send | 3 (15%) | *Megaponera* (the Matabele Ant) carry injured nestmates home after a raid. |
+| **Social Stomach** | Scent | Pher 4, Pheromone Trails 3, Colony Mind 1 | 4,000 | Missions burn 5% less Nectar fuel | 5 (−25%) | Ants carry liquid food in a shared crop and only digest what they need. |
+| **Recruitment Trails** | Harvest | Pher 4, Foraging Instinct 1, Pheromone Trails 2 | 5,000 | Windfall loads come home 10% sooner (every 2 h → 1 h 24 min) | 3 (−30%) | A scout that finds food lays a trail back and recruits nestmates to it. |
+| **Necrophoresis** | Nest | Pher 3, Brood Science 1 | 3,500 | Corpse fields from your fights start rotting 12 h later (24 h → 48 h) | 2 | Undertaker ants carry the dead out and keep them from spoiling the nest. |
+| **Trophallaxis** | Harvest | Pher 4, Aphid Husbandry 3 | 7,000 | Trade trails stay open one more day (3 → 5 days) | 2 | Ants pass food mouth to mouth; it is how a colony shares everything. |
+
+Changed: **Aphid Husbandry** now also adds its +5% Nectar per level to the honeydew tenders bring home from wild aphid herds (it was only the Aphid Pasture).
+
+How each applies (decided in the build, Marz can overrule):
+- **Rescue** is the attacker's, for every attack the player sends: player raids, wild nests, mounds, dens, fights for a windfall or herd, and joint raids (each member with their own level, for their own army). It runs **after** the battle, never inside it, so the battle, the preview and the `npm run combat` tables are unchanged. Someone has to carry them: an army wiped out to the last ant saves nobody, and it counts on lost fights and fall-backs too. Rounded down per caste, and on top of the Matabele Ants' own rescue. Saved ants leave no corpses and carry loot. The battle report says who came home.
+- **Recruitment Trails** is read as each load sets off, so a level learned while holding a windfall counts from the next load (the "time research applies when a job starts" rule, where each load is the job).
+- **Necrophoresis:** a corpse field belongs to the battle, so it takes the best level among everyone whose ants fought there: raiders, defenders, allies holding position and every joint-raid member. Fair to both sides (the defender's undertakers keep their doorstep fresh too) and the same for everyone who sees the field. More corpses landing on a field keep the longer delay. The map and battle report say when it starts to rot.
+- **Trophallaxis** is fixed when the caravan arrives and opens the trail; trails already open keep their length.
+- **Social Stomach** uses the sender's research; the send card's fuel line shows the cut.
 
 ## Instincts (Build 11)
 Each branch had been "everyone gets the same percentages". Instincts let a player commit to a style: one research per fighting ant caste (Swarm Raiding, Armoured Heads, Acid Glands, Snap Reflex, Crushing Heads, Propaganda Glands), +5% attack and health per level for that caste only, capped at 10. They need the same research as the caste itself, so they appear as soon as the caste does. Read through `casteResearchFraction`, never by level. Symbiosis became playable as a 4-level ally ladder, like OGame's drive levels unlocking ships.

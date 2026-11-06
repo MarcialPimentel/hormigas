@@ -17,6 +17,10 @@ import {
   groupSpeed,
   lvl,
   missionFuel,
+  fuelCutPct,
+  windfallDeliverEveryHours,
+  windfallLoadCutPct,
+  herdBonusPct,
   missionSlotUsage,
   missionTimes,
   missionUnitProblem,
@@ -46,7 +50,7 @@ import {
 } from '@hormigas/shared';
 import { api } from '../api';
 import { useGame } from '../game';
-import { fmtClock, fmtCoords, fmtDuration, fmtFull, fmtNum } from '../format';
+import { fmtClock, fmtCoords, fmtDuration, fmtFull, fmtHours, fmtNum } from '../format';
 import { RESOURCE_LABEL } from '../describe';
 import { Empty, Panel, ResDot } from '../components/ui';
 import { ENABLED_MISSIONS, MISSION_HELP, MISSION_LABEL, type MissionType } from '../nav';
@@ -239,7 +243,9 @@ export function SendMission({ type, setType, target, setTarget, onClose, onSent 
   const dist = valid ? distance(colony.coords, target) : 0;
   const speed = groupSpeed(chosen, research);
   const oneWay = speed > 0 && valid ? travelSeconds(dist, speed, speedPct, state.world.speed) : 0;
-  const fuel = speed > 0 && valid ? missionFuel(chosen, dist) : 0;
+  // Social Stomach burns less (docs/09-missions.md § Fuel); the line below says by how much
+  const fuel = speed > 0 && valid ? missionFuel(chosen, dist, research) : 0;
+  const fuelCut = fuelCutPct(research);
   const pool = rules.slot;
   const missions: any[] = state.missions ?? [];
   const { used, max } = missionSlotUsage(missions, pool, research, colony.id);
@@ -463,12 +469,20 @@ export function SendMission({ type, setType, target, setTarget, onClose, onSent 
         {type === 'raid' && targetSpot?.colony?.wild?.style && <p className="small counter-hint">{targetSpot.colony.wild.style}</p>}
 
         <div className="target-notes">
+          {type === 'haul' && (targetSpot?.corpses ?? 0) > 0 && targetSpot?.corpsesRotAt != null && (
+            <p className="muted small">
+              {fmtFull(targetSpot.corpses)} Protein lies here.{' '}
+              {targetSpot.corpsesRotAt > now ? `It starts to rot in ${fmtDuration(targetSpot.corpsesRotAt - now)}` : 'It is rotting away'}
+              {targetSpot.corpsesRotDelayHours ? `, ${targetSpot.corpsesRotDelayHours} hours later than usual (Necrophoresis)` : ''}.
+            </p>
+          )}
           {type === 'scout' && target.spot === WILDS_SPOT && (
             <p className="muted small">Scouts will survey the wilds: what foragers can expect there, who lives in the patch, and any corpses lying around.</p>
           )}
           {type === 'tend' && herd && (
             <p className="muted small">
-              This herd makes {fmtFull(herd.nectarPerHour)} Nectar an hour while tended, carried home every {HERDS.deliverEveryHours} hours. Tenders stay
+              This herd makes {fmtFull(herd.nectarPerHour)} Nectar an hour while tended, carried home every {HERDS.deliverEveryHours} hours
+              {herdBonusPct(research) > 0 ? <>, and your Aphid Husbandry adds {herdBonusPct(research)}% to each delivery</> : null}. Tenders stay
               until you call them home from the herd's card. Anyone can raid them to take the herd, so soldiers make good tenders.
             </p>
           )}
@@ -481,7 +495,8 @@ export function SendMission({ type, setType, target, setTarget, onClose, onSent 
                 : windfall.guarded
                 ? 'Wild ants got there first. Yours fight them when they arrive; win, and they take it over.'
                 : 'Nobody holds it yet. The first ants to arrive take it, and anyone can fight them for it.'}{' '}
-              Holders carry a load home every {windfall.deliverEveryHours} hours (as much as they can carry) until it's gone or rots in{' '}
+              Your holders would carry a load home every {fmtHours(windfallDeliverEveryHours(research))}
+              {windfallLoadCutPct(research) > 0 ? ` (${windfallLoadCutPct(research)}% sooner: Recruitment Trails)` : ''} (as much as they can carry) until it's gone or rots in{' '}
               {fmtDuration(Math.max(0, windfall.endsAt - now))}. Send soldiers to win and keep it, and carriers to haul it.
             </p>
           )}
@@ -634,8 +649,8 @@ export function SendMission({ type, setType, target, setTarget, onClose, onSent 
           <div><dt>Distance</dt><dd>{valid ? fmtNum(dist) : '—'}</dd></div>
           <div><dt>One way</dt><dd>{oneWay ? fmtDuration(oneWay * 1000) : '—'}</dd></div>
           <div><dt>Arrives</dt><dd>{times ? fmtClock(times.arriveAt) : '—'}</dd></div>
-          <div><dt>Back home</dt><dd>{times?.returnAt ? fmtClock(times.returnAt) : type === 'hold' ? 'when recalled' : type === 'trade' && times ? fmtClock(times.arriveAt + tradeTrailMs(state.world.speed) + oneWay * 1000) : stays ? 'stays' : '—'}</dd></div>
-          <div><dt>Nectar fuel (paid once)</dt><dd className={fuel > colony.resources.nectar ? 'warn' : ''}>{fuel ? fmtFull(fuel) : '—'}</dd></div>
+          <div><dt>Back home</dt><dd>{times?.returnAt ? fmtClock(times.returnAt) : type === 'hold' ? 'when recalled' : type === 'trade' && times ? fmtClock(times.arriveAt + tradeTrailMs(state.world.speed, research) + oneWay * 1000) : stays ? 'stays' : '—'}</dd></div>
+          <div><dt>Nectar fuel (paid once)</dt><dd className={fuel > colony.resources.nectar ? 'warn' : ''}>{fuel ? fmtFull(fuel) : '—'}{fuel && fuelCut ? <span className="muted small"> (−{fuelCut}% Social Stomach)</span> : null}</dd></div>
           {type !== 'scout' && <div><dt>{type === 'haul' ? 'Corpse capacity' : 'Capacity'}</dt><dd>{fmtFull(capacity)}</dd></div>}
         </dl>
         <p className="muted small">
@@ -738,7 +753,10 @@ interface TradePreviewData {
   partnerGoods?: string | null;
   everyHours?: number;
   deliveries?: number;
+  extraDeliveries?: number;
 }
+
+const fmtDays = (d: number) => (Number.isInteger(d) ? `${d} ${d === 1 ? 'day' : 'days'}` : fmtHours(d * 24));
 
 /** What a trail from this colony to the target would bring, per delivery and over the whole trail (server: GET /api/trade/preview). */
 function TradePreview({ target, capacity }: { target: Coords; capacity: number }) {
@@ -791,6 +809,9 @@ function TradePreview({ target, capacity }: { target: Coords; capacity: number }
       {capacity > 0 && (
         <p className="small">
           Over the whole trail: <strong>{fmtFull(got * n)}</strong> in {n} deliveries.
+          {(p.extraDeliveries ?? 0) > 0 ? (
+            <span className="muted"> Trophallaxis keeps it open {fmtDays(((p.extraDeliveries ?? 0) * (p.everyHours ?? TRADE.deliverEveryHours)) / 24)} longer: {p.extraDeliveries} more deliveries.</span>
+          ) : null}
         </p>
       )}
       {p.partner && (

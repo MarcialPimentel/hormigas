@@ -3,13 +3,13 @@
 // Used by the Missions screen: tap a spot, then scout, raid, send or forage from its card.
 import { Suspense, lazy, useEffect, useState, type ReactNode } from 'react';
 import {
-  WORLD, WILDS_SPOT, TERRAIN, CHAMBERS, CASTES, DEFENSES, DISCOVERY_MESSAGES, WILD_SCENTS, HERDS, foundColonyBlocker, isSiteSpot, raidBlockMessage, terrainForSpot, terrainTraits,
+  WORLD, WILDS_SPOT, TERRAIN, CHAMBERS, CASTES, DEFENSES, DISCOVERY_MESSAGES, WILD_SCENTS, HERDS, herdBonusPct, windfallDeliverEveryHours, windfallLoadCutPct, foundColonyBlocker, isSiteSpot, raidBlockMessage, terrainForSpot, terrainTraits,
   RESOURCE_IDS, type Knowledge, type Relation, type Resources, type ScentHint, type ScentKind, type TerrainId, type WindfallKind,
 } from '@hormigas/shared';
 import { RESOURCE_LABEL } from '../describe';
 import { api } from '../api';
 import { useGame } from '../game';
-import { fmtAgo, fmtCoords, fmtDuration, fmtNum } from '../format';
+import { fmtAgo, fmtCoords, fmtDuration, fmtHours, fmtNum } from '../format';
 import { Trip } from './ui';
 import { incomingName } from '../incoming';
 import { ENABLED_MISSIONS, MISSION_LABEL, type MissionType } from '../nav';
@@ -95,6 +95,9 @@ export interface Spot {
   spot: number;
   colony: SpotColony | null;
   corpses: number;
+  /** when the corpse field starts to rot, and how much later than usual that is (Necrophoresis) */
+  corpsesRotAt?: number;
+  corpsesRotDelayHours?: number;
 }
 
 export const isScent = (c: SpotColony | null | undefined) => !!c && (c.known === 'scent' || c.known === 'familiar');
@@ -527,7 +530,8 @@ export function SpotCard({ s, at, onAct }: { s: Spot; at: Coords; onAct: (type: 
               {windfall.yours && (
                 <span className="muted small">
                   Your ants there: {Object.entries(windfall.holders ?? {}).filter(([, n]) => n > 0).map(([k, n]) => `${fmtNum(n)} ${CASTES[k as keyof typeof CASTES]?.name ?? k}`).join(', ') || 'none'}.
-                  {' '}They carry a load home every {windfall.deliverEveryHours} hours.
+                  {' '}They carry a load home every {fmtHours(windfallDeliverEveryHours(state.player.research))}
+                  {windfallLoadCutPct(state.player.research) > 0 ? ` (${windfallLoadCutPct(state.player.research)}% sooner: Recruitment Trails)` : ''}.
                 </span>
               )}
             </>
@@ -544,7 +548,8 @@ export function SpotCard({ s, at, onAct }: { s: Spot; at: Coords; onAct: (type: 
               {herd.yours && (
                 <span className="muted small">
                   Your tenders: {Object.entries(herd.tenders ?? {}).filter(([, n]) => n > 0).map(([k, n]) => `${fmtNum(n)} ${CASTES[k as keyof typeof CASTES]?.name ?? k}`).join(', ') || 'none'}.
-                  {' '}Honeydew waiting: {fmtNum(herd.honeydew ?? 0)} of {fmtNum(herd.storeCap)}, carried home every {HERDS.deliverEveryHours} hours.
+                  {' '}Honeydew waiting: {fmtNum(herd.honeydew ?? 0)} of {fmtNum(herd.storeCap)}, carried home every {HERDS.deliverEveryHours} hours
+                  {herdBonusPct(state.player.research) > 0 ? ` with +${herdBonusPct(state.player.research)}% from Aphid Husbandry` : ''}.
                 </span>
               )}
             </>
@@ -660,7 +665,17 @@ export function SpotCard({ s, at, onAct }: { s: Spot; at: Coords; onAct: (type: 
       </div>
       {c && scent && <p className="why small">{c.hint === 'herd' ? DISCOVERY_MESSAGES.tend_needs_scout : DISCOVERY_MESSAGES.raid_needs_scout}</p>}
       {pact && <p className="muted small">{pact}</p>}
-      {s.corpses > 0 && <span className="corpses">{fmtNum(s.corpses)} protein in corpses</span>}
+      {s.corpses > 0 && (
+        <span className="corpses">
+          {fmtNum(s.corpses)} protein in corpses
+          {s.corpsesRotAt != null && (
+            <span className="muted small">
+              {' '}· {s.corpsesRotAt > now ? `rots from ${fmtDuration(s.corpsesRotAt - now)} from now` : 'rotting away'}
+              {s.corpsesRotDelayHours ? ` (+${s.corpsesRotDelayHours} h, Necrophoresis)` : ''}
+            </span>
+          )}
+        </span>
+      )}
       {c && !c.mine && !scent && !herd && !windfall?.yours && <ScoutView at={at} />}
       <Movements at={at} home={colony.coords} />
     </div>

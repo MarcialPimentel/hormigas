@@ -1,6 +1,14 @@
 # Hormigas — Changelog
 
-_Current as of Build 19 (2026-11-05)._ Newest first. One entry per build, in players' words, built from the merged PRs. Smaller PRs merged between builds are listed with the nearest build.
+_Current as of Build 20 (2026-11-06)._ Newest first. One entry per build, in players' words, built from the merged PRs. Smaller PRs merged between builds are listed with the nearest build.
+
+## Build 20: Research for the missions you run (unreleased)
+- **Rescue** (Jaws). Your raiders carry some of their fallen home, like Matabele Ants: 5% per level, up to 15%, after every attack you send, joint raids included, as long as anyone survives to carry them. The battle report says who came home. The fight itself doesn't change.
+- **Social Stomach** (Scent). Every mission burns 5% less Nectar fuel per level, up to 25% less. The send card shows the cut.
+- **Recruitment Trails** (Harvest). Ants holding a windfall carry a load home 10% sooner per level: every 2 hours becomes 1 h 24 min at level 3. The windfall card shows your pace.
+- **Necrophoresis** (Nest). Corpse fields from your fights start rotting 12 hours later per level (48 hours at level 2). It counts if anyone who fought there knows it, on either side. The map and the battle report say when the corpses start to rot.
+- **Trophallaxis** (Harvest). Your trade trails stay open one more day per level: up to 5 days and 20 deliveries. The trade send card shows the extra deliveries.
+- **Aphid Husbandry now helps wild herds too.** Its +5% Nectar per level also goes on the honeydew your tenders bring home from aphid herds, not only on your Aphid Pastures.
 
 ## Build 19: Stronger together (unreleased)
 - **Joint raids.** In a supercolony you can now raid together. Pick a wild nest, termite mound or spider den, choose Raid, then **Open a joint raid** and when it lands (in 2 to 24 hours). Everyone in your supercolony gets a report and sees it on the members' board, and can **Join** with an army that can get there in time. All the armies land at the same moment and fight as one, each with its own research. The loot is split by how much each army was worth, and each walks home with its own survivors. You can recall your army to leave, and whoever opened it can call it off. Joint raids only go to wild things, never to other players.

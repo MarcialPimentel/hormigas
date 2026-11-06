@@ -2,7 +2,7 @@
 // A windfall lives on the patch's windfall site, a colony row owned by the hidden wild player, like an aphid herd.
 // Ants that claim it hold it the way tenders hold a herd: they fight whoever is there, then carry loads home.
 import { NPC_DATA, RESOURCE_IDS, type Resources } from './data';
-import type { UnitCounts } from './economy';
+import { researchFactor, researchSum, type ResearchLevels, type UnitCounts } from './economy';
 import type { HerdState, HerdTender } from './herds';
 import type { Rng } from './rng';
 
@@ -134,6 +134,15 @@ export const windfallName = (state: WindfallState) => (state.drop ? WINDFALLS.ki
 // ---------- wild ants come for windfalls (docs/25-windfalls.md#wild-ants-come-for-windfalls) ----------
 
 /** Hours (world speed 1) a windfall of this kind lies there before it rots. */
+/**
+ * Hours between the loads a windfall's holders carry home: deliverEveryHours, 10% sooner a level of the holder's
+ * Recruitment Trails (docs/25-windfalls.md). Read when each load sets off, so new levels count from the next load.
+ */
+export const windfallDeliverEveryHours = (research?: ResearchLevels): number => WINDFALLS.deliverEveryHours * researchFactor(research, 'windfallLoadTimePct');
+
+/** How much sooner Recruitment Trails brings each load, in percent (0 without it). */
+export const windfallLoadCutPct = (research?: ResearchLevels): number => Math.max(0, -researchSum(research, 'windfallLoadTimePct'));
+
 export const windfallLastsHours = (kind: WindfallKind): number => WINDFALLS.kinds[kind].lastsHours ?? WINDFALLS.lastsHours;
 
 /** How much a holding party can strip per load: its cargo, less for a hard-shelled beetle. */

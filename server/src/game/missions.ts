@@ -272,7 +272,7 @@ export async function sendMission(q: Tx, playerId: number, input: SendInput): Pr
   const dist = distance(origin, target);
   const speed = groupSpeed(units, player.research);
   const secs = travelSeconds(dist, speed, speedPct, world.speed);
-  const fuel = missionFuel(units, dist);
+  const fuel = missionFuel(units, dist, player.research);
 
   if (total(cargo) > groupCargo(units)) throw new GameError('over_cargo', 'Your units can’t carry that much.');
   const needed = add(cargo, res(0, 0, fuel));
