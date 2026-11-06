@@ -172,16 +172,7 @@ for i in range(7):
 clump(m, rnd, 8, 3.0, 34.0, 1.8, (0.25, 0.7), hexc('#386440'), hexc('#86AE6C'), seg=4)
 models['reeds'] = m
 
-# a garden flower: stem, two leaves and a yellow eye; the petals are their own model so the game colours them
-m = Model(); rnd = random.Random(13)
-prism(m, (0, 0, 0), (0.6, 0.3, 26), 0.45, 4, hexc('#3F7A2C'), hexc('#5C9A3A'))
-blade(m, (0, 0, 0), 0.4, 11, 2.6, 0.75, hexc('#3B6E2A'), hexc('#6FA845'), 3)
-blade(m, (0, 0, 0), 3.6, 9, 2.2, 0.8, hexc('#3B6E2A'), hexc('#6FA845'), 3)
-blob(m, (0.6, 0.3, 26.2), 1.5, 1.5, 0.9, 1, lambda p, n: mix(hexc('#D99A2B'), hexc('#F2C64A'), max(0, n.z)), rnd)
-models['flower_stem'] = m
-m = Model()
-petals(m, (0.6, 0.3, 26.0), 7, 4.4, 2.2, 0.32, (1.0, 1.0, 1.0), random.Random(14))
-models['flower_petals'] = m
+# (the garden flower is a Meshy daisy since 6 Nov 2026: art/meshy/garden-flower/)
 
 # a flowering shrub: lumpy leaf mass, darker underneath; its blossom sits on the same shape
 SHRUB = [((0, 0, 7), 9), ((6, 3, 6), 7), ((-5, 4, 6), 7), ((3, -6, 5), 6.5), ((-4, -5, 5), 6), ((1, 1, 12), 6.5)]
@@ -310,10 +301,9 @@ ca = mat.node_tree.nodes.new('ShaderNodeVertexColor'); ca.layer_name = 'col'
 mat.node_tree.links.new(ca.outputs['Color'], bsdf.inputs['Base Color'])
 bsdf.inputs['Roughness'].default_value = 0.85
 mat.use_backface_culling = False
-TINT = {'flower_petals': hexc('#F2A0C4'), 'blossom': hexc('#F7F4EA')}
+TINT = {'blossom': hexc('#F7F4EA')}
 SHEET = [  # name, scale to fit a cell, cell
     ('grass_short', 3.0, (0, 0)), ('grass_mid', 2.0, (1, 0)), ('grass_tall', 1.4, (2, 0)), ('tussock', 0.42, (3, 0)), ('reeds', 0.42, (4, 0)),
-    (['flower_stem', 'flower_petals'], 0.7, (5, 0)),
     (['shrub', 'blossom'], 0.9, (0, 1)), ('rock', 9, (1, 1)), ('rock_moss', 9, (2, 1)), ('pebble', 9, (3, 1)), ('stone_a', 0.5, (4, 1)),
     ('log', 0.07, (5, 1)), ('chip_a', 1.6, (0, 2)), ('chip_b', 1.6, (1, 2)), ('leaf', 1.4, (2, 2)), ('stone_b', 0.5, (3, 2)),
 ]

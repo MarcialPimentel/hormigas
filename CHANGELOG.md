@@ -2,6 +2,9 @@
 
 _Current as of Build 19 (2026-11-05)._ Newest first. One entry per build, in players' words, built from the merged PRs. Smaller PRs merged between builds are listed with the nearest build.
 
+## Between builds (unreleased)
+- **New garden flowers.** The flowers in the Old Garden and on the 3D Patch's meadow are now chunky cartoon daisies drawn like the ants, in pink, yellow, white, lilac and orange, instead of the old flat stem-and-star flowers.
+
 ## Build 19: Stronger together (unreleased)
 - **Joint raids.** In a supercolony you can now raid together. Pick a wild nest, termite mound or spider den, choose Raid, then **Open a joint raid** and when it lands (in 2 to 24 hours). Everyone in your supercolony gets a report and sees it on the members' board, and can **Join** with an army that can get there in time. All the armies land at the same moment and fight as one, each with its own research. The loot is split by how much each army was worth, and each walks home with its own survivors. You can recall your army to leave, and whoever opened it can call it off. Joint raids only go to wild things, never to other players.
 - **The members' board.** The Allies screen has a board for your supercolony: the joint raids that are open (who's in, when it lands, Join), and short posts from members. It also says when a joint raid opens, is called off or lands.

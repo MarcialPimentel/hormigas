@@ -12,6 +12,7 @@ import propsUrl from './props.json?url';
 import { CHITIN, antUniforms, createAnts, type Ants } from '../nest3d/ants3d';
 import { colonyMoundHeights, createColonyMounds, createGrasshoppers, createTermiteMounds } from '../three/toonModel';
 import { createAphidHerds } from '../three/aphidHerd';
+import { createGardenFlowers, FLOWER_COLOURS } from '../three/gardenFlower';
 import { tripProgress } from '../UnderWay';
 import { TIMING, drawnFor, momentAt, planBattle, replayLength, type BattlePlan, type ReplayMoment } from '../patch3d/battle';
 import { makePath, pitchAhead, pointAlong, type Path } from '../three/path';
@@ -70,6 +71,8 @@ function rng(seed: number) {
 }
 
 // ---------- layout: where each region, patch and spot sits
+/** a garden daisy's height in the Whole Yard (the old stem-and-star flower was 27) */
+const DAISY_H = 22;
 const HR = 50, HW = Math.sqrt(3) * HR, ROW = 1.5 * HR;
 /** by region number (WORLD.regionNames order): The Backyard, The Old Garden, Creekside, The Woodpile, The Long Grass */
 // The beds sit 1.5 m apart, with paths between them. Each has its own ground: a striped lawn, dark flowerbed soil,
@@ -184,7 +187,8 @@ export async function createYardScene(host: HTMLElement, labels: HTMLElement, da
   const hoppers = createGrasshoppers(fogify), termites = createTermiteMounds(fogify), colonyMounds = createColonyMounds(fogify);
   disposables.push(hoppers, termites, colonyMounds);
   const herds = createAphidHerds(fogify);
-  disposables.push(herds);
+  const flowers = createGardenFlowers(fogify);
+  disposables.push(herds, flowers);
   const mats = new Map<string, THREE.MeshStandardMaterial>();
   const mat = (color: string) => {
     if (!mats.has(color)) mats.set(color, fogify(new THREE.MeshStandardMaterial({ color, flatShading: true, roughness: 0.9 })));
@@ -462,19 +466,17 @@ export async function createYardScene(host: HTMLElement, labels: HTMLElement, da
     scatter(prop('pebble'), propMat, n, inBed(r), (t) => lying(t.x, -0.1, t.z, 0.4 + R() * 1.2, 1.5), false);
   for (const [r, n] of [[2, 400], [3, 250]] as const) if (r <= NREG)
     scatter(prop('leaf'), propMat2, n, inBed(r), (t) => lying(t.x, 0, t.z, 0.6 + R() * 0.5, 0.3), false);
-  const FLOWERS = ['#F2A0C4', '#FFD84D', '#F7F4EA', '#B98CFF', '#FF8A5C'];
+  const FLOWERS = FLOWER_COLOURS;
   if (NREG >= 2) {
-    // the Old Garden: flowers on stems, the petals coloured per flower
-    const pick = inBed(2, 8), n = 350;
-    const stems = new THREE.InstancedMesh(prop('flower_stem'), propMat2, n), heads = new THREE.InstancedMesh(prop('flower_petals'), propMat2, n);
+    // the Old Garden: Meshy daisies drawn like the ants, the petals coloured per flower
+    const pick = inBed(2, 8), n = 350, daisies = flowers.many(n);
     for (let i = 0; i < n; i++) {
-      const t = pick(), sc = 0.8 + R() * 0.45;
-      m4.compose(v.set(t.x, 0, t.z), q.setFromEuler(e3.set((R() - 0.5) * 0.2, R() * 6.3, (R() - 0.5) * 0.2)), s3.set(sc, sc * (0.8 + R() * 0.5), sc));
-      stems.setMatrixAt(i, m4); heads.setMatrixAt(i, m4);
-      heads.setColorAt(i, col.set(FLOWERS[i % FLOWERS.length]));
+      const t = pick(), sc = DAISY_H * (0.8 + R() * 0.45);
+      m4.compose(v.set(t.x, 0, t.z), q.setFromEuler(e3.set((R() - 0.5) * 0.2, R() * 6.3, (R() - 0.5) * 0.2)), s3.set(sc, sc * (0.85 + R() * 0.3), sc));
+      daisies.set(i, m4, FLOWERS[i % FLOWERS.length]);
     }
-    stems.castShadow = heads.castShadow = true;
-    world.add(stems, heads);
+    daisies.done();
+    world.add(daisies.group);
     // flowering shrubs big enough to read from the top
     const shrubs = new THREE.InstancedMesh(prop('shrub'), propMat, 70), bloom = new THREE.InstancedMesh(prop('blossom'), propMat2, 70);
     const sp = inBed(2, 25);

@@ -13,6 +13,7 @@ import { fmtDuration } from '../../format';
 import { CHITIN, antUniforms, createAnts, type CargoKind } from '../nest3d/ants3d';
 import { colonyMoundHeights, createColonyMounds, createGrasshoppers, createTermiteMounds } from '../three/toonModel';
 import { createAphidHerds } from '../three/aphidHerd';
+import { createGardenFlowers, FLOWER_COLOURS } from '../three/gardenFlower';
 import { leftOf } from '../nestScene';
 import type { Spot, SpotColony } from '../Patch';
 import { moveKeys } from './keys';
@@ -137,7 +138,8 @@ export async function createPatchScene(
   const moundTones = { mine: createColonyMounds(undefined, 0.03), other: createColonyMounds(), wild: createColonyMounds(undefined, -0.04) };
   disposables.push(hoppers, termites, moundTones.mine, moundTones.other, moundTones.wild);
   const herds = createAphidHerds();
-  disposables.push(herds);
+  const flowers = createGardenFlowers();
+  disposables.push(herds, flowers);
   const keep = <T extends { dispose(): void }>(x: T) => (disposables.push(x), x);
   const matCache = new Map<string, THREE.MeshStandardMaterial>();
   const mat = (hex: string, extra: THREE.MeshStandardMaterialParameters = {}) => {
@@ -360,31 +362,22 @@ uniform vec3 uSpots[SIGHT_SPOTS];
       const s = TERRAIN[t].spots;
       return [pxToX((Math.min(...s) - 1) * SPOT_PX), pxToX(Math.max(...s) * SPOT_PX)] as const;
     };
-    const FL: [string, string][] = [['#FFD23F', '#E39B12'], ['#F6B6D2', '#F7E9A6'], ['#FF6B4F', '#2B1D13'], ['#FBF7EE', '#F2B92B'], ['#B49BFF', '#F7E9A6']];
-    const petal = keep(new THREE.SphereGeometry(1, 10, 6).scale(0.55, 0.08, 0.24).translate(0.55, 0, 0));
-    const heart = keep(new THREE.SphereGeometry(0.26, 12, 8).scale(1, 0.55, 1));
-    const flower = (x: number, z: number, h: number) => {
-      const [pc, hc] = pick(FL), y = gH(x, z);
-      const stem = new THREE.Mesh(keep(new THREE.CylinderGeometry(0.05, 0.07, h, 5).translate(0, h / 2, 0)), mat('#4F8A35'));
-      stem.position.set(x, y, z);
-      scene.add(shadow(stem));
-      const head = new THREE.Group();
-      head.position.set(x, y + h, z);
-      head.rotation.set(rr(-0.3, 0.3), rr(0, 6), rr(-0.3, 0.3));
-      for (let k = 0; k < 7; k++) {
-        const p = new THREE.Mesh(petal, mat(pc, { side: THREE.DoubleSide, roughness: 0.55 }));
-        p.rotation.set(0, (k / 7) * 6.28, 0.2);
-        head.add(p);
-      }
-      head.add(new THREE.Mesh(heart, mat(hc)));
-      scene.add(shadow(head));
-    };
+    // Meshy daisies drawn like the ants, the petals coloured per flower
+    const spots: [number, number, number][] = [];
     const [m0, m1] = range('sunny_meadow');
     for (let i = 0; i < 14; i++) {
       const x = rr(m0 + 0.5, m1 - 0.5), z = rr(-HALF_D + 1, HALF_D - 2);
-      if (!nearSpot(x, z, 2.2)) flower(x, z, rr(2.5, 6));
+      if (!nearSpot(x, z, 2.2)) spots.push([x, z, rr(2.5, 6)]);
     }
-    for (let i = 0; i < 10; i++) flower(rr(-60, 60), rr(-40, -HALF_D - 3), rr(5, 10));
+    for (let i = 0; i < 10; i++) spots.push([rr(-60, 60), rr(-40, -HALF_D - 3), rr(5, 10)]);
+    const daisies = flowers.many(spots.length), fm = new THREE.Matrix4(), fq = new THREE.Quaternion(), fe = new THREE.Euler();
+    spots.forEach(([x, z, h], i) => {
+      fm.compose(new THREE.Vector3(x, gH(x, z), z), fq.setFromEuler(fe.set(rr(-0.1, 0.1), rr(0, 6.3), rr(-0.1, 0.1))), new THREE.Vector3(h, h, h));
+      daisies.set(i, fm, pick(FLOWER_COLOURS));
+    });
+    daisies.done();
+    for (const m of daisies.meshes) m.receiveShadow = true;
+    scene.add(daisies.group);
     // pebbles on the sand
     const [s0, s1] = range('sandy_soil');
     const stone = keep(new THREE.IcosahedronGeometry(1, 0));
