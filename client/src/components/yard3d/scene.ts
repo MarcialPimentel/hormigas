@@ -10,7 +10,7 @@ import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js
 import { WILDS_SPOT, WORLD } from '@hormigas/shared';
 import propsUrl from './props.json?url';
 import { CHITIN, antUniforms, createAnts, type Ants } from '../nest3d/ants3d';
-import { colonyMoundHeights, createColonyMounds, createGrasshoppers, createPicnics, createTermiteMounds } from '../three/toonModel';
+import { colonyMoundHeights, createColonyMounds, createGrasshoppers, createPicnics, createSpiderDens, createTermiteMounds } from '../three/toonModel';
 import { createAphidHerds } from '../three/aphidHerd';
 import { tripProgress } from '../UnderWay';
 import { TIMING, drawnFor, momentAt, planBattle, replayLength, type BattlePlan, type ReplayMoment } from '../patch3d/battle';
@@ -181,9 +181,9 @@ export async function createYardScene(host: HTMLElement, labels: HTMLElement, da
     m.customProgramCacheKey = () => key + '|fog';
     return m;
   }
-  const hoppers = createGrasshoppers(fogify), termites = createTermiteMounds(fogify), colonyMounds = createColonyMounds(fogify);
+  const hoppers = createGrasshoppers(fogify), termites = createTermiteMounds(fogify), spiders = createSpiderDens(fogify), colonyMounds = createColonyMounds(fogify);
   const picnics = createPicnics(fogify);
-  disposables.push(hoppers, termites, colonyMounds, picnics);
+  disposables.push(hoppers, termites, spiders, colonyMounds, picnics);
   const herds = createAphidHerds(fogify);
   disposables.push(herds);
   const mats = new Map<string, THREE.MeshStandardMaterial>();
@@ -668,8 +668,11 @@ export async function createYardScene(host: HTMLElement, labels: HTMLElement, da
       t.scale.setScalar(17);
       g.add(t);
     } else if (c.wild?.kind === 'den') {
-      const d = new THREE.Mesh(new THREE.SphereGeometry(7, 10, 6, 0, Math.PI * 2, 0, Math.PI / 2), mat('#3A2E2A')); d.scale.y = 0.4; g.add(d);
-      const silk = new THREE.Mesh(new THREE.CircleGeometry(6, 10), new THREE.MeshStandardMaterial({ color: '#EDE8E0', transparent: true, opacity: 0.8 })); silk.rotation.x = -Math.PI / 2; silk.position.y = 2.9; g.add(silk);
+      // the Meshy spider den: a trapdoor spider in its silk-lined burrow, four legs out, the lid propped open
+      const d = spiders.make();
+      d.scale.setScalar(17);
+      d.rotation.y = -0.5; // the spider looks towards the camera's usual heading
+      g.add(d);
     } else if (c.windfall) {
       const k = c.windfall.kind;
       if (k === 'grasshopper') {
