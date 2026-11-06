@@ -1,0 +1,12 @@
+{
+ "task": "image-to-3d",
+ "task_id": "01a1b16e-c83e-7516-a61a-ee4dcf947bb3",
+ "input_task_id": "01a1b16d-a155-76a3-8351-030d025e340e",
+ "model_type": "smart-topology",
+ "ai_model": "meshy-t2.5",
+ "target_polycount": 2500,
+ "should_texture": false,
+ "target_formats": [
+  "glb"
+ ]
+}

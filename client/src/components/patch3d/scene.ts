@@ -11,7 +11,7 @@ import type { ServerColony, ServerState } from '../../game';
 import type { Caste } from '../../art/ants';
 import { fmtDuration } from '../../format';
 import { CHITIN, antUniforms, createAnts, type CargoKind } from '../nest3d/ants3d';
-import { colonyMoundHeights, createColonyMounds, createGrasshoppers, createTermiteMounds } from '../three/toonModel';
+import { colonyMoundHeights, createColonyMounds, createGrasshoppers, createSpiderDens, createTermiteMounds } from '../three/toonModel';
 import { createAphidHerds } from '../three/aphidHerd';
 import { leftOf } from '../nestScene';
 import type { Spot, SpotColony } from '../Patch';
@@ -132,10 +132,10 @@ export async function createPatchScene(
   scene.fog = new THREE.Fog('#B8DCEA', 70, 190);
   const camera = new THREE.PerspectiveCamera(40, 1, 0.05, 600);
   const disposables: { dispose(): void }[] = [];
-  const hoppers = createGrasshoppers(), termites = createTermiteMounds();
+  const hoppers = createGrasshoppers(), termites = createTermiteMounds(), spiders = createSpiderDens();
   // colony mounds by owner: your own a touch lighter (fresh-dug), wild ones a touch darker
   const moundTones = { mine: createColonyMounds(undefined, 0.03), other: createColonyMounds(), wild: createColonyMounds(undefined, -0.04) };
-  disposables.push(hoppers, termites, moundTones.mine, moundTones.other, moundTones.wild);
+  disposables.push(hoppers, termites, spiders, moundTones.mine, moundTones.other, moundTones.wild);
   const herds = createAphidHerds();
   disposables.push(herds);
   const keep = <T extends { dispose(): void }>(x: T) => (disposables.push(x), x);
@@ -619,23 +619,12 @@ uniform vec3 uSpots[SIGHT_SPOTS];
       return;
     }
     if (c.wild?.kind === 'den') {
-      // a silk-lidded burrow
-      const hole = new THREE.Mesh(sk(new THREE.CircleGeometry(1.1, 18)), mat('#120C08'));
-      hole.rotation.x = -Math.PI / 2;
-      hole.position.set(x, y + 0.02, z);
-      spotGroup.add(hole);
-      const lid = new THREE.Mesh(sk(new THREE.CylinderGeometry(1.15, 1.15, 0.12, 18)), mat('#7A5C40', { roughness: 1 }));
-      lid.position.set(x - 0.5, y + 0.55, z - 0.6);
-      lid.rotation.set(-1.0, 0, 0.3);
-      spotGroup.add(shadow(lid));
-      const silk = mat('#F2EEE6', { roughness: 0.4, transparent: true, opacity: 0.7 });
-      for (let k = 0; k < 8; k++) {
-        const a = (k / 8) * 6.28;
-        const s = new THREE.Mesh(sk(new THREE.CylinderGeometry(0.015, 0.015, 2.2, 3)), silk);
-        s.position.set(x + Math.cos(a) * 1.6, y + 0.05, z + Math.sin(a) * 1.6);
-        s.rotation.set(Math.PI / 2, 0, -a + Math.PI / 2);
-        spotGroup.add(s);
-      }
+      // the Meshy spider den: a trapdoor spider in its silk-lined burrow, four legs out, the lid propped open
+      const d = spiders.make(!coarse);
+      d.scale.setScalar(6);
+      d.position.set(x, y, z);
+      d.rotation.y = -0.5; // the spider looks towards the camera
+      spotGroup.add(d);
       return;
     }
     addMound(x, z, 'wild', c.wild ? FLAG.wild : null, 0.9);
