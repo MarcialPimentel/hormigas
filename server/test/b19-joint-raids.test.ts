@@ -170,6 +170,9 @@ describe('spider dens are alliance raids', () => {
   it('three big armies together take tier 1, and every member gets the Spider-slayer credit', async () => {
     await clock.advance(24 * 3600_000);
     await restock();
+    // Build 20: Rescue is each member's own; Necrophoresis from any fighter keeps the field fresh (docs/08-combat.md)
+    await setPlayer(ida, { research: { supercolony: 1, rescue: 3 } });
+    await setPlayer(idc, { research: { supercolony: 1, necrophoresis: 2 } });
     const open = await raid(a, ca.id, den(), BIG_ARMY, { open: 24 });
     expect(open.error).toBeUndefined();
     const id = (await b.get('/api/board')).jointRaids[0].id;
@@ -180,6 +183,16 @@ describe('spider dens are alliance raids', () => {
     expect(r.data.joint.members).toHaveLength(3);
     expect(r.data.loot.protein).toBeGreaterThan(0);
     for (const pid of [ida, idb, idc]) expect(await stat(pid, 'beat:spider')).toBe(1);
+    const [atta, bala] = r.data.joint.members;
+    expect(atta.rescueLevel).toBe(3);
+    const saved = Object.values(atta.carriedHome as Record<string, number>).reduce((s, n) => s + n, 0);
+    const lost = Object.values(atta.lost as Record<string, number>).reduce((s, n) => s + n, 0);
+    expect(saved).toBeGreaterThan(0);
+    expect(saved).toBeLessThanOrEqual(Math.ceil(((saved + lost) * 15) / 100));
+    expect(bala.carriedHome).toBeUndefined();
+    expect(r.data.rotDelayHours).toBe(24);
+    const field = await getPool().query('SELECT rot_delay_hours FROM corpse_fields WHERE region = $1 AND patch = $2 AND spot = $3', [den().region, den().patch, den().spot]);
+    expect(Number(field.rows[0].rot_delay_hours)).toBe(24);
   });
 });
 

@@ -28,6 +28,8 @@ import {
   windfallPile,
   windfallLastsHours,
   windfallLoadCap,
+  windfallDeliverEveryHours,
+  windfallLoadCutPct,
   eatsWindfall,
   wildPartiesFor,
   wildPartyDelayHours,
@@ -93,9 +95,14 @@ async function holdersGoHome(q: Tx, site: Colony, cargo: Resources, at: number, 
   await refreshPointsAfterCommit(q, player.id);
 }
 
-async function scheduleDelivery(q: Q, worldId: number, siteId: number, since: number, from: number) {
+/**
+ * The holders' next load. Recruitment Trails (the holder's research) brings it sooner; it is read as each load sets
+ * off, so a level learned while holding counts from the next load (docs/25-windfalls.md).
+ */
+async function scheduleDelivery(q: Q, worldId: number, siteId: number, since: number, from: number, holderId: number) {
   const speed = (await getWorld(q)).speed;
-  await schedule(q, worldId, 'windfall_deliver', from + gameHoursMs(WINDFALLS.deliverEveryHours, speed), { colonyId: siteId, since });
+  const research = (await getPlayer(q, holderId)).research;
+  await schedule(q, worldId, 'windfall_deliver', from + gameHoursMs(windfallDeliverEveryHours(research), speed), { colonyId: siteId, since });
 }
 
 /**
@@ -189,7 +196,7 @@ onEvent('windfall_deliver', async (q, ev) => {
     return;
   }
   await saveColony(q, site);
-  await scheduleDelivery(q, site.worldId, site.id, npc.tender.since, t);
+  await scheduleDelivery(q, site.worldId, site.id, npc.tender.since, t, npc.tender.playerId);
 });
 
 /** The windfall rots. Whoever holds it carries one last load home; the rest is lost. */
@@ -291,7 +298,7 @@ async function hold(q: Tx, m: Mission, site: Colony, at: number, wild = false) {
   const tender = fresh ? { playerId: m.playerId, colonyId: m.originColonyId, since: at } : npc.tender!;
   site = { ...site, units: addCounts(fresh ? {} : site.units, m.units), npc: { ...npc, tender } };
   await saveColony(q, site);
-  if (fresh) await scheduleDelivery(q, m.worldId, site.id, tender.since, at);
+  if (fresh) await scheduleDelivery(q, m.worldId, site.id, tender.since, at, m.playerId);
   if (wild) {
     m.result = { ...(m.result ?? {}), holding: true, claimed: fresh };
     m.units = {};
@@ -302,9 +309,10 @@ async function hold(q: Tx, m: Mission, site: Colony, at: number, wild = false) {
     if (npc.drop?.kind) await bump(q, m.playerId, `windfall:${npc.drop.kind}`);
   }
   const home = await getColony(q, m.originColonyId);
+  const research = (await getPlayer(q, m.playerId)).research;
   await addReport(q, m.worldId, m.playerId, 'windfall', fresh ? `Your ants hold the ${site.name.toLowerCase()} (${coordsKey(m.target)})` : `More of your ants reached the ${site.name.toLowerCase()}`, {
     event: 'windfall_held', windfall: site.name, coords: m.target, colony: home.name, units: m.units, holders: site.units, claimed: fresh,
-    left: floorRes(site.resources), carryPerLoad: loadCap(site, false), deliverEveryHours: WINDFALLS.deliverEveryHours, endsAt: npc.drop!.endsAt,
+    left: floorRes(site.resources), carryPerLoad: loadCap(site, false), deliverEveryHours: windfallDeliverEveryHours(research), loadCutPct: windfallLoadCutPct(research), endsAt: npc.drop!.endsAt,
   }, at);
   m.result = { ...(m.result ?? {}), holding: true, claimed: fresh };
   m.units = {};

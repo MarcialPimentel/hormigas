@@ -5,7 +5,7 @@ import { CASTES, CHAMBERS, DEFENSES, RESEARCH, RESOURCE_IDS, type Relation } fro
 const PACT_PHRASE: Record<Relation, string> = { truce: 'your truce', truce_ending: 'your truce (still in its notice)', ally: 'your shared supercolony scent', fading: 'your shared scent (still fading)' };
 import { api } from '../api';
 import { useGame } from '../game';
-import { fmtClock, fmtCoords, fmtDuration, fmtFull } from '../format';
+import { fmtClock, fmtCoords, fmtDuration, fmtFull, fmtHours } from '../format';
 import { RESOURCE_LABEL } from '../describe';
 import { Empty, Panel, ResDot } from '../components/ui';
 import type { Nav } from '../nav';
@@ -128,7 +128,8 @@ function WindfallReport({ d, go }: { d: any; go?: Nav }) {
       <div className="report-body">
         <p>
           {d.claimed ? `Your ants from ${d.colony} hold the ${String(d.windfall).toLowerCase()} (${fmtCoords(d.coords)}).` : `More of your ants joined the others at the ${String(d.windfall).toLowerCase()}.`}{' '}
-          They carry up to {fmtFull(d.carryPerLoad)} home every {d.deliverEveryHours} hours until it's gone or rots. Anyone can fight them for it; call them home from its card.
+          They carry up to {fmtFull(d.carryPerLoad)} home every {fmtHours(d.deliverEveryHours)}
+          {d.loadCutPct ? ` (${d.loadCutPct}% sooner: Recruitment Trails)` : ''} until it's gone or rots. Anyone can fight them for it; call them home from its card.
         </p>
         <h4>Left on it</h4>
         <ResLine r={d.left} />
@@ -199,7 +200,7 @@ function TradeReport({ d }: { d: any }) {
       <div className="report-body">
         <p>
           Your caravan from {d.from} keeps a trail open to {d.colony} ({kind}). Every {every} it brings home {d.goods}, about{' '}
-          <ResLine r={d.perDelivery} hideZero /> a time, {d.deliveries} times. Then it walks home and you can open the trail again.
+          <ResLine r={d.perDelivery} hideZero /> a time, {d.deliveries} times{d.extraDays ? ` (${d.extraDays} ${d.extraDays === 1 ? 'day' : 'days'} longer: Trophallaxis)` : ''}. Then it walks home and you can open the trail again.
         </p>
         {d.units && <Counts counts={d.units} />}
       </div>
@@ -361,7 +362,7 @@ function ReportBody({ r, go }: { r: Report; go?: Nav }) {
         <div className="report-body">
           <p>
             {d.claimed ? `Your ants from ${d.colony} now tend ${d.herd} (${fmtCoords(d.coords)}).` : `More of your ants joined the tenders at ${d.herd}.`} It makes{' '}
-            {fmtFull(d.nectarPerHour)} Nectar an hour, carried home every {d.deliverEveryHours} hours. Anyone can raid the tenders to take it; call them home
+            {fmtFull(d.nectarPerHour)} Nectar an hour, carried home every {d.deliverEveryHours} hours{d.bonusPct ? `, and your Aphid Husbandry adds ${d.bonusPct}% to each delivery` : ''}. Anyone can raid the tenders to take it; call them home
             from the herd's card on the Missions tab.
           </p>
           <h4>Tenders now</h4>

@@ -1,7 +1,7 @@
 // Map, missions and reports routes.
 import type { FastifyInstance } from 'fastify';
 import {
-  WORLD, WILDS_SPOT, SPECIES, SCENT_NAME, WILD_SCENTS, HERDS, MAX_SPOT, isInactive, isNewPlayerProtected, corpseFieldAmount, nestLevelFor, isHerdState,
+  WORLD, WILDS_SPOT, SPECIES, SCENT_NAME, WILD_SCENTS, HERDS, MAX_SPOT, isInactive, isNewPlayerProtected, corpseFieldAmount, corpseRotStartsAt, nestLevelFor, isHerdState,
   herdNectarPerHour, herdStoreCap, herdHoneydewAt, speciesKind, type ScentHint, isWindfallState, WINDFALLS, type WindfallState,
 } from '@hormigas/shared';
 import { leaderOf } from '../game/nests';
@@ -142,7 +142,7 @@ async function patchesSpots(q: ReturnType<typeof getPool>, worldId: number, me: 
   const lit = open.filter((p) => fogs.get(p)!.fog === 'visible');
   const hasCorpses = lit.length > 0 && (await q.query("SELECT to_regclass('corpse_fields') IS NOT NULL AS ok")).rows[0].ok;
   const corpses: any[] = hasCorpses
-    ? (await q.query('SELECT patch, spot, protein, created_at FROM corpse_fields WHERE world_id = $1 AND region = $2 AND patch = ANY($3::int[])', [worldId, region, lit])).rows
+    ? (await q.query('SELECT patch, spot, protein, created_at, rot_delay_hours FROM corpse_fields WHERE world_id = $1 AND region = $2 AND patch = ANY($3::int[])', [worldId, region, lit])).rows
     : [];
   const known = await knowledgeOf(q, me, rows.map((x) => x.id));
   const owners = [...new Set(rows.filter((x) => !x.npc).map((x) => x.player_id as number))];
@@ -165,7 +165,9 @@ async function patchesSpots(q: ReturnType<typeof getPool>, worldId: number, me: 
       spots.push({
         spot,
         colony: c ? colonyView(c, known.get(c.id)!, leader, t, me, rels.get(c.player_id), tags.get(c.player_id)) : null,
-        corpses: corpse ? corpseFieldAmount(corpse.protein, corpse.created_at, t) : 0,
+        corpses: corpse ? corpseFieldAmount(corpse.protein, corpse.created_at, t, Number(corpse.rot_delay_hours)) : 0,
+        // when the field starts to rot (Necrophoresis pushes it back), for the corpse card
+        ...(corpse ? { corpsesRotAt: corpseRotStartsAt(Number(corpse.created_at), Number(corpse.rot_delay_hours)), corpsesRotDelayHours: Number(corpse.rot_delay_hours) } : {}),
       });
     }
     return { patch, fog: f.fog, seenAt: f.seenAt, spots };

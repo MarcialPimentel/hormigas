@@ -5,7 +5,7 @@
 
 ## General rules
 - Missions travel between coordinates; travel time depends on distance and the **slowest** unit.
-- Every mission consumes **Nectar** (fuel) up front.
+- Every mission consumes **Nectar** (fuel) up front. **Social Stomach** research (Build 20) burns 5% less per level, up to −25%; the send card's fuel line shows the cut.
 - Number of simultaneous missions is limited by **mission slots** (base 2, + Colony Mind research). Mission slots are shared by all of a player's colonies.
 - **Forage slots belong to each colony** (Marz, 30 Oct 2026): every colony can have **1** forage party out, plus 1 more every 2 levels of Foraging Instinct. A party uses a slot of the colony that sent it. Each new colony opens up its own patch's wilds instead of sharing one slot with the others. Numbers: `formulas.json` → `missions.baseForageSlots`, `research.json` → Foraging Instinct.
 - **Trade trails have their own slot per colony** (Build 16): each colony keeps **1** trail open (its caravan walking home still counts); trails never use a mission slot. Numbers: `trade.json` → `trailsPerColony`.
@@ -18,14 +18,16 @@
 | **Scout** | ✅ | Send Scouts to gather a report on a colony, or to survey the wilds (below) |
 | **Transport** | ✅ | Move resources to any colony; units return |
 | **Relocate** | ✅ | Move units + resources to one of your own colonies; units stay |
-| **Haul Corpses** | ✅ | Collect a corpse field (Workers / Carrion Beetles) |
+| **Haul Corpses** | ✅ | Collect a corpse field (Workers / Carrion Beetles). It starts rotting after 24 h, later with Necrophoresis ([08-combat](08-combat.md#corpses-debris)) |
 | **Forage** | ✅ | Expedition into the wilds (below) |
 | **Found Colony** | ✅ | A Winged Queen (plus escorts and cargo) founds a new colony at an empty spot ([19-colonies](19-colonies.md)) |
-| **Claim windfall** | ✅ | Send ants to food lying in the wilds. They fight whoever holds it, then stay and carry a load home every 2 h until it is gone or rots; call them home from its card ([25-windfalls](25-windfalls.md)) |
-| **Tend Aphids** | ✅ | Station ants at a scouted aphid herd. They stay, and carry its honeydew home as Nectar every 6 h; call them home from the herd's card ([24-npcs](24-npcs.md)) |
-| **Trade trail** | ✅ | A caravan of Workers, Media Workers or Haulers keeps a trail open to another of your colonies, or to a player you have a truce or a shared scent with, for 3 days; every 6 h it brings home goods chosen by that colony's ground, then walks home. Player trails pay more and the host gains too ([23-supercolonies](23-supercolonies.md#trade-trails-build-16)) |
+| **Claim windfall** | ✅ | Send ants to food lying in the wilds. They fight whoever holds it, then stay and carry a load home every 2 h (sooner with Recruitment Trails) until it is gone or rots; call them home from its card ([25-windfalls](25-windfalls.md)) |
+| **Tend Aphids** | ✅ | Station ants at a scouted aphid herd. They stay, and carry its honeydew home as Nectar every 6 h (Aphid Husbandry adds its % to each delivery); call them home from the herd's card ([24-npcs](24-npcs.md)) |
+| **Trade trail** | ✅ | A caravan of Workers, Media Workers or Haulers keeps a trail open to another of your colonies, or to a player you have a truce or a shared scent with, for 3 days (up to 5 with Trophallaxis); every 6 h it brings home goods chosen by that colony's ground, then walks home. Player trails pay more and the host gains too ([23-supercolonies](23-supercolonies.md#trade-trails-build-16)) |
 | **Hold Position** | ✅ | Station soldiers at a supercolony mate's colony; they fight in its battles until recalled ([23-supercolonies](23-supercolonies.md)) |
 | **Joint Raid** | v1 | Several supercolony members raid together (alliances stage B) |
+
+Which research helps which mission: [07-research](07-research.md#research-for-the-missions-you-run-build-20).
 
 ## Scout before you raid
 Raids and transports need a target you have scouted. A colony you haven't is a **scent** on the map, and the game refuses with "Scout this scent first" ([22-discovery](22-discovery.md)). Scouting is always allowed. Targets are picked by tapping them on the patch at the top of the Missions tab; typing coordinates is still possible behind **Enter coordinates**.

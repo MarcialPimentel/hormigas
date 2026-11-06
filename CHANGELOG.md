@@ -1,6 +1,14 @@
 # Hormigas — Changelog
 
-_Current as of Build 19 (2026-11-05)._ Newest first. One entry per build, in players' words, built from the merged PRs. Smaller PRs merged between builds are listed with the nearest build.
+_Current as of Build 20 (2026-11-06)._ Newest first. One entry per build, in players' words, built from the merged PRs. Smaller PRs merged between builds are listed with the nearest build.
+
+## Build 20: Research for the missions you run (unreleased)
+- **Rescue** (Jaws). Your raiders carry some of their fallen home, like Matabele Ants: 5% per level, up to 15%, after every attack you send, joint raids included, as long as anyone survives to carry them. The battle report says who came home. The fight itself doesn't change.
+- **Social Stomach** (Scent). Every mission burns 5% less Nectar fuel per level, up to 25% less. The send card shows the cut.
+- **Recruitment Trails** (Harvest). Ants holding a windfall carry a load home 10% sooner per level: every 2 hours becomes 1 h 24 min at level 3. The windfall card shows your pace.
+- **Necrophoresis** (Nest). Corpse fields from your fights start rotting 12 hours later per level (48 hours at level 2). It counts if anyone who fought there knows it, on either side. The map and the battle report say when the corpses start to rot.
+- **Trophallaxis** (Harvest). Your trade trails stay open one more day per level: up to 5 days and 20 deliveries. The trade send card shows the extra deliveries.
+- **Aphid Husbandry now helps wild herds too.** Its +5% Nectar per level also goes on the honeydew your tenders bring home from aphid herds, not only on your Aphid Pastures.
 
 ## Build 19: Stronger together (unreleased)
 - **Scout any raid coming at you, not just swarms.** A raid from a wild nest or another player, or wild ants coming for your windfall, now hides its size ("?") until your Scouts go out and meet it. Its card under Under way has a **Scout the raid** button with the same odds as scouting a swarm. If any Scout gets back, the card shows exactly what's coming and your win / draw / lose odds with the ants you have at home.

@@ -1,5 +1,6 @@
 // Aphid herds and where wild things live. Spec: docs/24-npcs.md
 import { GATHER_MULTIPLIER, NPC_DATA, WILDS_SPOT } from './data';
+import { researchFactor, researchSum, type ResearchLevels } from './economy';
 import { WORLD } from './world';
 import { nestLevelFor, type NestKind, type NestState } from './nests';
 import type { WindfallState } from './windfalls';
@@ -45,6 +46,15 @@ export const herdLevelFor = (leaderPoints: number, current = 1) => Math.min(HERD
 
 /** Nectar per hour a tended herd makes, at world speed 1 (× the gathering multiplier). */
 export const herdNectarPerHour = (level: number) => HERDS.nectarPerHour[Math.min(Math.max(1, level), HERD_MAX_LEVEL) - 1] * GATHER_MULTIPLIER;
+
+/**
+ * Aphid Husbandry (the tender's research) boosts the honeydew each delivery brings home by the same nectarPct it gives
+ * the Aphid Pasture (docs/24-npcs.md § Aphid herds). The herd makes and holds the same; the tenders milk more from it.
+ */
+export const herdDeliveryFactor = (research?: ResearchLevels): number => researchFactor(research, 'nectarPct');
+
+/** Aphid Husbandry's bonus on herd deliveries, in percent (0 without it). */
+export const herdBonusPct = (research?: ResearchLevels): number => Math.max(0, researchSum(research, 'nectarPct'));
 
 /** Most honeydew a herd holds before the aphids stop being milked. */
 export const herdStoreCap = (level: number) => herdNectarPerHour(level) * HERDS.storeHours;
