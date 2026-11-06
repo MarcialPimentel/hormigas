@@ -86,7 +86,8 @@ function BattleCard({ b, onAgain, onClose }: { b: BattleView; onAgain: () => voi
 }
 
 export function Yard({ go }: { go: Nav }) {
-  const { state, colony, now, selectColony } = useGame();
+  const { state, colony, now, selectColony, act } = useGame();
+  const [renaming, setRenaming] = useState<string | null>(null);
   const { reduced } = useMotion();
   const host = useRef<HTMLDivElement>(null);
   const labels = useRef<HTMLDivElement>(null);
@@ -263,6 +264,7 @@ export function Yard({ go }: { go: Nav }) {
     const list = state.colonies;
     const i = list.findIndex((c) => c.id === colony.id);
     const next = list[(i + dir + list.length) % list.length];
+    setRenaming(null);
     selectColony(next.id);
     if (!nest) sceneRef.current?.flyTo(next.coords, 'patch');
   };
@@ -292,9 +294,26 @@ export function Yard({ go }: { go: Nav }) {
       {state.colonies.length > 1 && (
         <button type="button" className="btn ghost small" onClick={() => cycle(-1)} aria-label="Previous colony">‹</button>
       )}
-      <span>
-        <b>{colony.name}</b> <span className="muted small">{fmtCoords(colony.coords)}</span>
-      </span>
+      {renaming !== null ? (
+        <form
+          className="rename yard-rename"
+          onSubmit={async (e) => {
+            e.preventDefault();
+            if (await act(() => api.patch(`/api/colonies/${colony.id}`, { name: renaming }), 'Colony renamed.')) setRenaming(null);
+          }}
+        >
+          <input value={renaming} onChange={(e) => setRenaming(e.target.value)} maxLength={30} autoFocus aria-label="Colony name" />
+          <button className="btn primary small">Save</button>
+          <button type="button" className="btn ghost small" onClick={() => setRenaming(null)}>Cancel</button>
+        </form>
+      ) : (
+        <span>
+          <b>{colony.name}</b> <span className="muted small">{fmtCoords(colony.coords)}</span>{' '}
+          <button type="button" className="btn ghost small" onClick={() => setRenaming(colony.name)} title="Rename this colony">
+            Rename
+          </button>
+        </span>
+      )}
       {state.colonies.length > 1 && (
         <button type="button" className="btn ghost small" onClick={() => cycle(1)} aria-label="Next colony">›</button>
       )}

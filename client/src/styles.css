@@ -992,6 +992,8 @@ pre.report-body { white-space: pre-wrap; overflow-x: auto; }
 .yard-panel-head { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; padding: 0.5rem 0.6rem 0.5rem 0.9rem; border-bottom: 1px solid var(--seam); }
 .yard-panel-body { overflow: auto; padding: 0.75rem; min-height: 0; flex: 1; }
 .yard-cycle { display: flex; align-items: center; gap: 0.4rem; min-width: 0; }
+.yard-rename { flex: 1 1 auto; min-width: 0; gap: 0.4rem; }
+.yard-rename input { flex: 1 1 120px; min-width: 0; }
 .yard-top { position: absolute; right: 12px; top: 12px; z-index: 5; display: flex; gap: 6px; align-items: center; }
 .yard-top .btn { box-shadow: var(--float-shadow); background: var(--wall); }
 .yard-top .btn.primary { background: var(--honey); color: #2B1D13; }
