@@ -101,7 +101,7 @@ export function Yard({ go }: { go: Nav }) {
   const [panel, setPanel] = useState<PanelId | null>(() => (state?.quests && !state.quests.finished ? 'missions' : null));
   const [nest, setNest] = useState(false);
   const [sel, setSel] = useState<Coords | null>(null);
-  const [deploy, setDeploy] = useState<{ type: MissionType; target: Coords } | null>(null);
+  const [deploy, setDeploy] = useState<{ type: MissionType; target: Coords; meet?: number } | null>(null);
   const [look, setLook] = useState<{ region: number; patch: number } | null>(null);
   const [spots, setSpots] = useState<Record<string, Spot[]>>({});
   // a battle report being acted out on the map (Watch the battle, from Reports), and that report to watch again
@@ -252,7 +252,7 @@ export function Yard({ go }: { go: Nav }) {
       sceneRef.current?.flyTo(at, 'patch');
       if (p.target) {
         handlers.current.pick(p.target);
-        if (p.type) setDeploy({ type: p.type, target: p.target });
+        if (p.type) setDeploy({ type: p.type, target: p.target, meet: p.meet });
       }
       return;
     }
@@ -418,6 +418,7 @@ export function Yard({ go }: { go: Nav }) {
                 setType={(t) => setDeploy((d) => (d ? { ...d, type: t } : d))}
                 target={deploy.target}
                 setTarget={(t) => setDeploy((d) => (d ? { ...d, target: t } : d))}
+                meet={deploy.meet}
                 onClose={() => setDeploy(null)}
                 onSent={() => setDeploy(null)}
               />
