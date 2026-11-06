@@ -10,7 +10,7 @@ import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js
 import { WILDS_SPOT, WORLD } from '@hormigas/shared';
 import propsUrl from './props.json?url';
 import { CHITIN, antUniforms, createAnts, type Ants } from '../nest3d/ants3d';
-import { colonyMoundHeights, createColonyMounds, createGrasshoppers, createTermiteMounds } from '../three/toonModel';
+import { colonyMoundHeights, createColonyMounds, createGrasshoppers, createPicnics, createTermiteMounds } from '../three/toonModel';
 import { createAphidHerds } from '../three/aphidHerd';
 import { tripProgress } from '../UnderWay';
 import { TIMING, drawnFor, momentAt, planBattle, replayLength, type BattlePlan, type ReplayMoment } from '../patch3d/battle';
@@ -182,7 +182,8 @@ export async function createYardScene(host: HTMLElement, labels: HTMLElement, da
     return m;
   }
   const hoppers = createGrasshoppers(fogify), termites = createTermiteMounds(fogify), colonyMounds = createColonyMounds(fogify);
-  disposables.push(hoppers, termites, colonyMounds);
+  const picnics = createPicnics(fogify);
+  disposables.push(hoppers, termites, colonyMounds, picnics);
   const herds = createAphidHerds(fogify);
   disposables.push(herds);
   const mats = new Map<string, THREE.MeshStandardMaterial>();
@@ -695,9 +696,11 @@ export async function createYardScene(host: HTMLElement, labels: HTMLElement, da
         return g;
       }
       if (k === 'picnic') {
-        // picnic crumbs: a chunk of bread and a slice of tomato
-        const b = new THREE.Mesh(new THREE.BoxGeometry(10, 4.5, 7), mat('#D9A55A')); b.position.y = 2.3; b.rotation.y = 0.3; b.castShadow = true; g.add(b);
-        const t = new THREE.Mesh(new THREE.CylinderGeometry(3.2, 3.2, 0.8, 12), mat('#C8452F')); t.position.set(7, 0.5, 3); g.add(t);
+        // the Meshy sandwich corner, bitten, with crumbs by the bite
+        const s = picnics.make();
+        s.scale.setScalar(13);
+        s.rotation.y = 0.5;
+        g.add(s);
         return g;
       }
       const m = k === 'fig' ? new THREE.Mesh(new THREE.SphereGeometry(4, 8, 6), mat('#7A3F6E'))
