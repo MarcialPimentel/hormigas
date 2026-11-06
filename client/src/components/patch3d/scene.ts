@@ -11,7 +11,7 @@ import type { ServerColony, ServerState } from '../../game';
 import type { Caste } from '../../art/ants';
 import { fmtDuration } from '../../format';
 import { CHITIN, antUniforms, createAnts, type CargoKind } from '../nest3d/ants3d';
-import { colonyMoundHeights, createColonyMounds, createGrasshoppers, createTermiteMounds } from '../three/toonModel';
+import { colonyMoundHeights, createColonyMounds, createGrasshoppers, createPicnics, createTermiteMounds } from '../three/toonModel';
 import { createAphidHerds } from '../three/aphidHerd';
 import { leftOf } from '../nestScene';
 import type { Spot, SpotColony } from '../Patch';
@@ -132,10 +132,10 @@ export async function createPatchScene(
   scene.fog = new THREE.Fog('#B8DCEA', 70, 190);
   const camera = new THREE.PerspectiveCamera(40, 1, 0.05, 600);
   const disposables: { dispose(): void }[] = [];
-  const hoppers = createGrasshoppers(), termites = createTermiteMounds();
+  const hoppers = createGrasshoppers(), termites = createTermiteMounds(), picnics = createPicnics();
   // colony mounds by owner: your own a touch lighter (fresh-dug), wild ones a touch darker
   const moundTones = { mine: createColonyMounds(undefined, 0.03), other: createColonyMounds(), wild: createColonyMounds(undefined, -0.04) };
-  disposables.push(hoppers, termites, moundTones.mine, moundTones.other, moundTones.wild);
+  disposables.push(hoppers, termites, picnics, moundTones.mine, moundTones.other, moundTones.wild);
   const herds = createAphidHerds();
   disposables.push(herds);
   const keep = <T extends { dispose(): void }>(x: T) => (disposables.push(x), x);
@@ -702,23 +702,17 @@ uniform vec3 uSpots[SIGHT_SPOTS];
         spotGroup.add(shadow(c));
       }
     } else if (w.kind === 'picnic') {
-      // picnic crumbs: a chunk of bread, a slice of tomato and crumbs all round
-      const bread = new THREE.Mesh(sk(new THREE.BoxGeometry(2.8, 1.3, 2)), mat('#D9A55A', { roughness: 0.8 }));
-      bread.position.set(x - 0.6, y + 0.65, z);
-      bread.rotation.y = 0.3;
-      spotGroup.add(shadow(bread));
-      const crumb = new THREE.Mesh(sk(new THREE.BoxGeometry(2.4, 0.2, 1.6)), mat('#F0D9A8'));
-      crumb.position.set(x - 0.6, y + 1.35, z);
-      crumb.rotation.y = 0.3;
-      spotGroup.add(crumb);
-      const tomato = new THREE.Mesh(sk(new THREE.CylinderGeometry(0.9, 0.9, 0.25, 14)), mat('#C8452F', { roughness: 0.4 }));
-      tomato.position.set(x + 1.8, y + 0.15, z + 0.8);
-      spotGroup.add(shadow(tomato));
-      const bit = sk(new THREE.BoxGeometry(0.35, 0.3, 0.35));
-      for (let i = 0; i < 10; i++) {
-        const b = new THREE.Mesh(bit, mat(i % 3 ? '#E3BD7A' : '#F0D9A8'));
-        const a = i * 2.4, r = 2.2 + (i % 3) * 0.5;
-        b.position.set(x + Math.cos(a) * r, y + 0.15, z + Math.sin(a) * r);
+      // picnic crumbs: the Meshy sandwich corner, bitten, and more crumbs strewn further out
+      const sw = picnics.make(!coarse);
+      sw.scale.setScalar(5);
+      sw.position.set(x, y, z);
+      sw.rotation.y = 0.3;
+      spotGroup.add(sw);
+      const bit = sk(new THREE.BoxGeometry(0.3, 0.25, 0.3));
+      for (let i = 0; i < 8; i++) {
+        const b = new THREE.Mesh(bit, mat(i % 3 ? '#F3D9A2' : '#D08A3E'));
+        const a = i * 2.4, r = 3 + (i % 3) * 0.6;
+        b.position.set(x + Math.cos(a) * r, y + 0.13, z + Math.sin(a) * r);
         b.rotation.y = a;
         spotGroup.add(b);
       }

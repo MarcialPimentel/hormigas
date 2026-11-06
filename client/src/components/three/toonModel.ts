@@ -5,9 +5,11 @@
 //  - the termite mound (docs/24-npcs.md): a tall clay spire with buttress ridges and arched entrances
 //  - the colony mound (docs/art/whole-yard.md): a low dome of cocoa soil clods round a crater, three growth stages
 //  - the aphid herd (docs/24-npcs.md) builds on the helpers here in aphidHerd.ts: a poppy with aphids on it
+//  - the picnic crumbs windfall (docs/25-windfalls.md): a bitten sandwich corner with crumbs by the bite
 import * as THREE from 'three';
 import grasshopper from './grasshopper.json';
 import termiteMound from './termite-mound.json';
+import picnicCrumbs from './picnic-crumbs.json';
 import colonyMound from './colony-mound.json';
 import { antUniforms, toonBands } from '../nest3d/ants3d';
 
@@ -118,6 +120,8 @@ function createToonModel(data: ModelData, wrap: Wrap) {
 export const createGrasshoppers = (wrap: Wrap = (m) => m) => createToonModel(grasshopper as ModelData, wrap);
 /** The termite mound: 1 unit tall, about 1.15 across its base. */
 export const createTermiteMounds = (wrap: Wrap = (m) => m) => createToonModel(termiteMound as ModelData, wrap);
+/** The picnic crumbs: a sandwich corner 1 unit across its longest side and about 0.57 tall, the square corner towards -x/+z. */
+export const createPicnics = (wrap: Wrap = (m) => m) => createToonModel(picnicCrumbs as ModelData, wrap);
 
 /** The colony mound's growth stages (small, medium, big): each 1 unit tall and 1 unit in radius, the entrance at the
  *  origin. Bigger stages carry more pebbles round the foot. Scenes stretch a stage to its radius and height. */
