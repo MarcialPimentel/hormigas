@@ -1,0 +1,52 @@
+{
+ "source": "C:\\Users\\marci\\Documents\\GameDev\\hormigas\\art\\meshy\\garden-flower\\ref\\old_flower.blend",
+ "triangles": 54,
+ "dimensions_m": [
+  14.06,
+  8.03,
+  27.39
+ ],
+ "bbox_min": [
+  -6.46,
+  -3.81,
+  -0.01
+ ],
+ "bbox_max": [
+  7.6,
+  4.22,
+  27.38
+ ],
+ "pivot_note": "world origin (0,0,0) is the model's pivot in game",
+ "pivot_vs_bbox": {
+  "x_center": 0.57,
+  "y_center": 0.205,
+  "z_min": -0.01
+ },
+ "objects": [
+  {
+   "name": "flower_stem",
+   "type": "MESH",
+   "depth": 0
+  },
+  {
+   "name": "flower_petals",
+   "type": "MESH",
+   "depth": 0
+  }
+ ],
+ "mesh_count": 2,
+ "materials": [
+  "flower_petals",
+  "flower_stem"
+ ],
+ "images": [
+  {
+   "name": "Viewer Node",
+   "w": 256,
+   "h": 256
+  }
+ ],
+ "vertex_colors": true,
+ "armatures": [],
+ "actions": []
+}

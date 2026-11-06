@@ -10,6 +10,9 @@ _Current as of Build 20 (2026-11-06)._ Newest first. One entry per build, in pla
 - **Trophallaxis** (Harvest). Your trade trails stay open one more day per level: up to 5 days and 20 deliveries. The trade send card shows the extra deliveries.
 - **Aphid Husbandry now helps wild herds too.** Its +5% Nectar per level also goes on the honeydew your tenders bring home from aphid herds, not only on your Aphid Pastures.
 
+## Between builds (unreleased)
+- **New garden flowers.** The flowers in the Old Garden and on the 3D Patch's meadow are now chunky cartoon daisies drawn like the ants, in pink, yellow, white, lilac and orange, instead of the old flat stem-and-star flowers.
+
 ## Build 19: Stronger together (unreleased)
 - **Scout any raid coming at you, not just swarms.** A raid from a wild nest or another player, or wild ants coming for your windfall, now hides its size ("?") until your Scouts go out and meet it. Its card under Under way has a **Scout the raid** button with the same odds as scouting a swarm. If any Scout gets back, the card shows exactly what's coming and your win / draw / lose odds with the ants you have at home.
 - **Trade caravans step faster in the Whole Yard.** A caravan walks its trail to and fro in seconds, much faster than a march, so its legs moved at the march pace and the ants seemed to slide. Their legs now step more than twice as fast (a new "Trade caravan leg speed" slider in the test scene).
