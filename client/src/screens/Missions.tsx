@@ -655,6 +655,12 @@ export function SendMission({ type, setType, target, setTarget, onClose, onSent 
   );
 }
 
+/** "2 h", "24 min", "1 h 36 min": a landing-time choice, without the seconds */
+const leadLabel = (ms: number) => {
+  const m = Math.round(ms / 60_000);
+  return m < 60 ? `${m} min` : m % 60 ? `${Math.floor(m / 60)} h ${m % 60} min` : `${m / 60} h`;
+};
+
 /**
  * Raid alone, open a joint raid, or join one your supercolony has open on this target (docs/23-supercolonies.md
  * § Joint raids). Spider dens only fight joint raids, so "alone" is off there.
@@ -707,7 +713,7 @@ function JointRaidChoice({ pick, setPick, lead, setLead, openHere, playersNeeded
           <div className="tabs" role="radiogroup" aria-label="Lands in">
             {JOINT_RAID.leadOptions.map((h) => (
               <button key={h} role="radio" aria-checked={lead === h} className={lead === h ? 'on' : ''} onClick={() => setLead(h)}>
-                {fmtDuration(jointLeadOptionMs(h, speed))}
+                {leadLabel(jointLeadOptionMs(h, speed))}
               </button>
             ))}
           </div>
