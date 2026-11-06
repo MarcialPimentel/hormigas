@@ -6,13 +6,16 @@ import type { DefenseCounts, UnitCounts } from './economy';
 import { nestTargets, type NestSpecies } from './nests';
 import { total } from './resources';
 
-const T = (NPC_DATA as unknown as { tuning: { nestArmies: Record<string, UnitCounts>; moundArmies: UnitCounts[]; denArmies: UnitCounts[] } }).tuning;
+const T = (NPC_DATA as unknown as { tuning: { nestArmies: Record<string, UnitCounts>; moundArmies: UnitCounts[]; denArmies: UnitCounts[]; bigArmy: UnitCounts } }).tuning;
 /** Fair army per wild-nest level (1–6). */
 export const FAIR_NEST_ARMIES: Record<number, UnitCounts> = Object.fromEntries(Object.entries(T.nestArmies).map(([k, v]) => [Number(k), v]));
 /** Fair army per termite mound tier (index 0 = tier 1). */
 export const FAIR_MOUND_ARMIES: UnitCounts[] = T.moundArmies;
-/** Fair army per spider den tier (index 0 = tier 1). */
+/** The joint army that should take each spider den tier (index 0 = tier 1): several players' big armies together. */
 export const FAIR_DEN_ARMIES: UnitCounts[] = T.denArmies;
+/** One strong late-game solo army: a spider den tier 1 takes about 3 of these, tier 2 about 4. */
+export const BIG_ARMY: UnitCounts = T.bigArmy;
+export const timesArmy = (u: UnitCounts, k: number): UnitCounts => Object.fromEntries(Object.entries(u).map(([id, n]) => [id, Math.round((n ?? 0) * k)]));
 
 export const halfArmy = (u: UnitCounts): UnitCounts => Object.fromEntries(Object.entries(u).map(([k, n]) => [k, Math.floor((n ?? 0) / 2)]));
 

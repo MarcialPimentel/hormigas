@@ -5,7 +5,7 @@
 //   nests     the fair armies against every wild nest, termite mound and spider den
 // Re-run after changing castes.json, defenses.json, npc.json or combat.ts.
 import {
-  CASTES, NEST_SPECIES, FAIR_NEST_ARMIES, FAIR_MOUND_ARMIES, FAIR_DEN_ARMIES, PLAYER_SOLDIERS,
+  CASTES, NEST_SPECIES, FAIR_NEST_ARMIES, FAIR_MOUND_ARMIES, FAIR_DEN_ARMIES, BIG_ARMY, timesArmy, PLAYER_SOLDIERS,
   casteMatrix, defenseMatrix, evenMix, matchup, nestCheck, speciesOfKind, buyCaste, type Matchup, type NestCheck,
 } from '../src';
 
@@ -53,7 +53,9 @@ if (mode === 'nests' || mode === 'all') {
   const mound = speciesOfKind('mound');
   const den = speciesOfKind('den');
   console.log(`${'mound'.padEnd(10)} ${FAIR_MOUND_ARMIES.map((a, i) => line(nestCheck(mound, i + 1, a, runs))).join(' | ')}`);
-  console.log(`${'den'.padEnd(10)} ${FAIR_DEN_ARMIES.map((a, i) => line(nestCheck(den, i + 1, a, runs))).join(' | ')}`);
+  console.log(`${'den'.padEnd(10)} ${FAIR_DEN_ARMIES.map((a, i) => line(nestCheck(den, i + 1, a, runs))).join(' | ')}   (joint armies: 3 and 4 big armies)`);
+  const solo = (k: number, lvl: number) => `${k} big ${pct(nestCheck(den, lvl, timesArmy(BIG_ARMY, k), runs).fair.winRate).trim()}`;
+  console.log(`${'den solo'.padEnd(10)} tier 1: ${[1, 2, 3].map((k) => solo(k, 1)).join(', ')} | tier 2: ${[2, 3, 4].map((k) => solo(k, 2)).join(', ')}   (a big army = ${Object.entries(BIG_ARMY).map(([id, n]) => `${n} ${CASTES[id as keyof typeof CASTES].name}`).join(' + ')})`);
 }
 
 if (!['castes', 'defenses', 'nests', 'all'].includes(mode)) console.log('Usage: npm run combat [-- castes | defenses | nests | all] [--budget 44000] [--runs 100]');
