@@ -450,6 +450,35 @@ export function rescuedUnits(lost: UnitCounts, enemy: UnitCounts, won: boolean):
   return out;
 }
 
+/**
+ * Rescue research (docs/08-combat.md § Rescue): after the battle, never inside it, each attacking player's rescuePct of
+ * their own fallen come home alive (5% a level, up to 15%), rounded down per caste. Someone has to carry them, so a group
+ * wiped out to the last ant saves nobody. Counts on top of the Matabele Ants' own rescue (which runs inside
+ * simulateBattle). Changes `result` in place: the saved ants move from lost to survivors, so they leave no corpses and
+ * carry loot home. Returns who was saved: `main` for attacker.units, `allies[i]` for joint-raid group i.
+ */
+export function applyRescueResearch(result: BattleResult, attacker: CombatSide): { main: UnitCounts; allies: UnitCounts[] } {
+  const save = (lost: UnitCounts, survivors: UnitCounts, research: ResearchLevels): UnitCounts => {
+    const out: UnitCounts = {};
+    const pct = researchSum(research, 'rescuePct');
+    if (pct <= 0 || !Object.values(survivors).some((n) => (n ?? 0) > 0)) return out;
+    for (const [id, k] of Object.entries(lost)) {
+      const n = Math.floor(((k ?? 0) * pct) / 100);
+      if (n <= 0) continue;
+      const c = id as CasteId;
+      out[c] = n;
+      survivors[c] = (survivors[c] ?? 0) + n;
+      if ((k ?? 0) - n > 0) lost[c] = (k ?? 0) - n;
+      else delete lost[c];
+    }
+    return out;
+  };
+  return {
+    main: save(result.attackerLost, result.attackerSurvivors, attacker.research),
+    allies: (attacker.allies ?? []).map((g, i) => save(result.attackerAlliesLost[i] ?? {}, result.attackerAlliesSurvivors[i] ?? {}, g.research)),
+  };
+}
+
 /** Protein left as corpses: 30% of Foliage+Protein value of destroyed units (both sides). */
 export function corpseProtein(...lost: UnitCounts[]): number {
   let v = 0;
@@ -560,14 +589,27 @@ export function previewBattle(
   };
 }
 
-/** Current size of a corpse field: decays by decay.pctPerHour (of the original) per hour after startAfterHours. */
-export function corpseFieldAmount(protein: number, createdAt: number, t: number): number {
-  return Math.floor(protein * corpseDecayFactor(createdAt, t));
+/**
+ * Current size of a corpse field: decays by decay.pctPerHour (of the original) per hour after startAfterHours, plus
+ * `delayHours` from Necrophoresis (corpseRotDelayHours).
+ */
+export function corpseFieldAmount(protein: number, createdAt: number, t: number, delayHours = 0): number {
+  return Math.floor(protein * corpseDecayFactor(createdAt, t, delayHours));
 }
 
 /** How much of a corpse field is left (1 = all, 0 = gone). Also used to store a remaining amount without resetting the decay clock. */
-export function corpseDecayFactor(createdAt: number, t: number): number {
+export function corpseDecayFactor(createdAt: number, t: number, delayHours = 0): number {
   const d = C.corpseDecay;
   const hours = (t - createdAt) / 3600_000;
-  return Math.max(0, Math.min(1, 1 - (d.pctPerHour / 100) * Math.max(0, hours - d.startAfterHours)));
+  return Math.max(0, Math.min(1, 1 - (d.pctPerHour / 100) * Math.max(0, hours - d.startAfterHours - delayHours)));
 }
+
+/**
+ * Necrophoresis (docs/08-combat.md § Corpses): extra hours before a battle's corpse field starts to rot. A field belongs to
+ * the battle, so it takes the best level among everyone whose ants fought there (raiders, defenders, allies on either side).
+ */
+export const corpseRotDelayHours = (...research: (ResearchLevels | undefined)[]): number =>
+  Math.max(0, ...research.map((r) => researchSum(r, 'corpseRotDelayHours')));
+
+/** When a corpse field starts to rot (ms). */
+export const corpseRotStartsAt = (createdAt: number, delayHours = 0): number => createdAt + (C.corpseDecay.startAfterHours + delayHours) * 3600_000;

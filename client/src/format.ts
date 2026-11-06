@@ -9,6 +9,14 @@ export function fmtNum(n: number): string {
 
 export const fmtFull = (n: number) => Math.floor(n).toLocaleString('en-US');
 
+/** A number of (game) hours as words: "2 hours", "1 hour", "1 h 48 min". */
+export function fmtHours(h: number): string {
+  const whole = Math.floor(h + 1e-9);
+  const min = Math.round((h - whole) * 60);
+  if (min === 0 || min === 60) return `${whole + (min === 60 ? 1 : 0)} ${whole === 1 && min === 0 ? 'hour' : 'hours'}`;
+  return whole > 0 ? `${whole} h ${min} min` : `${min} min`;
+}
+
 export function fmtDuration(ms: number): string {
   const s = Math.max(0, Math.ceil(ms / 1000));
   const d = Math.floor(s / 86400);

@@ -6,7 +6,7 @@
 // scheduled delivery event at a time, like aphid herds.
 import { RESOURCE_IDS, TRADE_DATA, type CasteId, type ResourceId, type Resources, type TerrainId } from './data';
 import { res } from './resources';
-import type { ResearchLevels } from './economy';
+import { researchSum, type ResearchLevels } from './economy';
 import type { Relation } from './diplomacy';
 
 const T = TRADE_DATA;
@@ -41,7 +41,14 @@ export const tradeKeepsGoing = (relation: Relation | null | undefined): boolean 
 export const tradeSlots = (_research?: ResearchLevels): number => T.trailsPerColony;
 
 export const tradeEveryMs = (worldSpeed: number) => (T.deliverEveryHours * 3600_000) / Math.max(1, worldSpeed);
-export const tradeTrailMs = (worldSpeed: number) => TRADE.deliveries * tradeEveryMs(worldSpeed);
+
+/** Hours a trail stays open: trailHours, plus a day a level of the sender's Trophallaxis (docs/23-supercolonies.md § Trade trails). */
+export const tradeTrailHours = (research?: ResearchLevels): number => T.trailHours + researchSum(research, 'tradeTrailHours');
+
+/** Deliveries in one trail for this sender (the last one sends the caravan home). Fixed when the trail opens. */
+export const tradeDeliveries = (research?: ResearchLevels): number => Math.max(1, Math.round(tradeTrailHours(research) / T.deliverEveryHours));
+
+export const tradeTrailMs = (worldSpeed: number, research?: ResearchLevels) => tradeDeliveries(research) * tradeEveryMs(worldSpeed);
 
 /** What a trail to this ground brings back: the weight on each resource. */
 export const tradeGoods = (terrain: TerrainId): Partial<Resources> => (T.goods as Record<TerrainId, Partial<Resources>>)[terrain] ?? {};

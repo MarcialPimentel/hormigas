@@ -54,7 +54,7 @@ Real ants lay pheromone trails between nests and walk them for days, carrying fo
 
 - **A new mission, Trade trail.** Send a caravan of **Workers, Media Workers or Haulers** to another colony: **one of yours**, or a **player's** you have met (scouted) and have a **truce** or a **shared scent** with. A truce in its notice period or a fading scent opens no new trails.
 - **One trail per colony,** a slot pool of its own like forage parties: it doesn't use a mission slot. A caravan walking home still holds the slot. More trails from research later (`trade.json` → `trailsPerColony`).
-- **The caravan stays 3 days** (`trailHours` 72) at the far end; its ants are away from home the whole time (no defending, foraging or fighting). Fuel is paid once, as for any mission.
+- **The caravan stays 3 days** (`trailHours` 72) at the far end, one more day per level of the sender's **Trophallaxis** research (Build 20, max 2: up to 5 days, 20 deliveries; fixed when the trail opens); its ants are away from home the whole time (no defending, foraging or fighting). Fuel is paid once, as for any mission.
 - **Every 6 hours** (`deliverEveryHours`) one scheduled event brings home goods, 12 deliveries in all, then the caravan walks home on its own and the colony can open a new trail. Computed, not ticked, like aphid herds: it runs offline.
 - **What comes back depends on the destination's ground** (`trade.json` → `goods`):
 
@@ -98,6 +98,8 @@ Real ant colonies of one supercolony gang up on what no single nest could take. 
 - **Leaving early:** Recall takes your army out; the joint raid goes on for the others. The opener can **Call off** the raid before it lands: everyone turns back. A member who leaves the supercolony before the landing turns back too.
 - **Too few:** a spider den only fights a joint raid of at least 2 players (tier 1) or 3 (tier 2) ([24-npcs](24-npcs.md#spider-den-boss)). With fewer at the landing, the raid is called off: nobody fights and everyone walks home.
 - **Not built:** joint raids on players; a Hall of Fame entry for the alliance (#144 is not built yet).
+
+- **Rescue research** (Build 20) works in joint raids: each member's own level brings home some of their own army's fallen, after the battle ([08-combat](08-combat.md#rescue-build-20)). Necrophoresis from any member (or the defender) keeps the corpse field fresh longer.
 
 ### The members' board
 Each supercolony's page in **Allies**: its open joint raids (who's in, when it lands, Join, and Call off for the opener) and short posts from members, newest first. The game posts there too when a joint raid opens, is called off, or lands. Posts are up to 280 characters; the newest 50 are kept (`diplomacy.json` → `board`). Only current members see it.

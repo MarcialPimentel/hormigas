@@ -10,7 +10,7 @@ import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js
 import { WILDS_SPOT, WORLD } from '@hormigas/shared';
 import propsUrl from './props.json?url';
 import { CHITIN, antUniforms, createAnts, type Ants } from '../nest3d/ants3d';
-import { colonyMoundHeights, createColonyMounds, createGrasshoppers, createSpiderDens, createTermiteMounds } from '../three/toonModel';
+import { colonyMoundHeights, createColonyMounds, createGrasshoppers, createPicnics, createSpiderDens, createTermiteMounds } from '../three/toonModel';
 import { createAphidHerds } from '../three/aphidHerd';
 import { tripProgress } from '../UnderWay';
 import { TIMING, drawnFor, momentAt, planBattle, replayLength, type BattlePlan, type ReplayMoment } from '../patch3d/battle';
@@ -182,7 +182,8 @@ export async function createYardScene(host: HTMLElement, labels: HTMLElement, da
     return m;
   }
   const hoppers = createGrasshoppers(fogify), termites = createTermiteMounds(fogify), spiders = createSpiderDens(fogify), colonyMounds = createColonyMounds(fogify);
-  disposables.push(hoppers, termites, spiders, colonyMounds);
+  const picnics = createPicnics(fogify);
+  disposables.push(hoppers, termites, spiders, colonyMounds, picnics);
   const herds = createAphidHerds(fogify);
   disposables.push(herds);
   const mats = new Map<string, THREE.MeshStandardMaterial>();
@@ -698,9 +699,11 @@ export async function createYardScene(host: HTMLElement, labels: HTMLElement, da
         return g;
       }
       if (k === 'picnic') {
-        // picnic crumbs: a chunk of bread and a slice of tomato
-        const b = new THREE.Mesh(new THREE.BoxGeometry(10, 4.5, 7), mat('#D9A55A')); b.position.y = 2.3; b.rotation.y = 0.3; b.castShadow = true; g.add(b);
-        const t = new THREE.Mesh(new THREE.CylinderGeometry(3.2, 3.2, 0.8, 12), mat('#C8452F')); t.position.set(7, 0.5, 3); g.add(t);
+        // the Meshy sandwich corner, bitten, with crumbs by the bite
+        const s = picnics.make();
+        s.scale.setScalar(13);
+        s.rotation.y = 0.5;
+        g.add(s);
         return g;
       }
       const m = k === 'fig' ? new THREE.Mesh(new THREE.SphereGeometry(4, 8, 6), mat('#7A3F6E'))
@@ -855,7 +858,7 @@ export async function createYardScene(host: HTMLElement, labels: HTMLElement, da
   // ---------- parties: columns of real ants up close, a thread far out
   // room for several busy columns, a swarm's (up to 400 army ants) and a battle replay (140 a side) at once
   const ants: Ants = createAnts(world, { worker: 2400, soldier: 1600, army: 900, army_major: 30, queen: 4, alate: 10 }, true);
-  interface Column { key: string; from: THREE.Vector3; to: THREE.Vector3; path: Path; len: number; thread: THREE.Line; rib: THREE.Mesh; color: string; caste: 'worker' | 'soldier' | 'army'; /** ants really in the party: the column draws many more (march.json) */ units: number; el: HTMLDivElement; prog: (now: number) => { d: number; back: boolean } | null; cargo?: string }
+  interface Column { key: string; from: THREE.Vector3; to: THREE.Vector3; path: Path; len: number; thread: THREE.Line; rib: THREE.Mesh; color: string; caste: 'worker' | 'soldier' | 'army'; /** ants really in the party: the column draws many more (march.json) */ units: number; el: HTMLDivElement; prog: (now: number) => { d: number; back: boolean } | null; cargo?: string; /** a trade caravan walking its trail: steps faster (march.json tradeLegSpeed) */ trading?: boolean }
   const columns = new Map<string, Column>();
   const TRADE_GOODS = '#E0B54A'; // what a trade caravan carries home: a honey-gold load
   const colP = new THREE.Vector3(), colT = new THREE.Vector3(); // scratch: where an ant stands, and which way it faces
@@ -879,6 +882,7 @@ export async function createYardScene(host: HTMLElement, labels: HTMLElement, da
           ? (now) => { const t = (now / (MARCH.yard.tradeLeg * 1000)) % 2; return t < 1 ? { d: t, back: false } : { d: 2 - t, back: true }; }
           : (now) => { const p = tripProgress(m, now); return p.oneWay ? { d: p.x, back: false } : { d: p.x <= 0.5 ? p.x * 2 : 2 - p.x * 2, back: p.x > 0.5 }; },
         cargo: trading ? TRADE_GOODS : m.cargo && sumUnits(m.cargo) > 0 ? '#7FC24A' : undefined,
+        trading,
       });
     }
     for (const i of (st.incoming ?? []) as any[]) {
@@ -888,13 +892,13 @@ export async function createYardScene(host: HTMLElement, labels: HTMLElement, da
       want.set(`i${i.id}`, {
         key: `i${i.id}`, from: spotAt(i.origin), to: spotAt(target), color: swarm ? CHITIN.army : i.hostile ? CHITIN.raider : CHITIN.worker,
         caste: swarm ? 'army' : i.hostile ? 'soldier' : 'worker', units: i.unitCount ?? 30,
-        label: swarm ? `Army ants · ${i.scouted ? (i.unitCount ?? 0).toLocaleString('en') : '?'}` : i.hostile ? `${i.type === 'claim' && i.wild ? 'Wild ants' : i.type === 'raid' || i.type === 'claim' ? 'Raid' : 'Scouts'} from ${i.from}` : `${i.type === 'trade' ? 'Trade caravan' : 'Delivery'} from ${i.from}`,
+        label: swarm ? `Army ants · ${i.scouted ? (i.unitCount ?? 0).toLocaleString('en') : '?'}` : i.hostile ? `${i.type === 'claim' && i.wild ? 'Wild ants' : i.type === 'raid' || i.type === 'claim' ? 'Raid' : 'Scouts'} from ${i.from}${i.scouted ? ` · ${(i.unitCount ?? 0).toLocaleString('en')}` : ''}` : `${i.type === 'trade' ? 'Trade caravan' : 'Delivery'} from ${i.from}`,
         prog: (now) => ({ d: clamp((now - i.departAt) / Math.max(1, i.arriveAt - i.departAt), 0, 1), back: false }),
       });
     }
     for (const [k, c] of columns) if (!want.has(k)) { world.remove(c.thread, c.rib); c.thread.geometry.dispose(); c.rib.geometry.dispose(); c.el.remove(); columns.delete(k); }
     for (const [k, w] of want) {
-      if (columns.has(k)) { Object.assign(columns.get(k)!, { prog: w.prog }); continue; }
+      if (columns.has(k)) { Object.assign(columns.get(k)!, { prog: w.prog, trading: w.trading }); continue; }
       const a = w.from, b = w.to;
       const mid = a.clone().lerp(b, 0.5);
       const dist = Math.max(1, a.distanceTo(b));
@@ -1296,7 +1300,7 @@ export async function createYardScene(host: HTMLElement, labels: HTMLElement, da
         // nose up out of the crater and over the rim, down the far slope
         const ahead = footY(x + tg.x * 0.3, z + tg.z * 0.3);
         const pitch = y > 0 || ahead > 0 ? pitchAhead(footY, x, z, tg.x, tg.z, 0.3, 1.2) : 0;
-        ants.ant(c.caste, x, y, z, { pitch, scale: (c.caste === 'soldier' ? M.soldierSize : M.workerSize) * antGrow, yaw: Math.atan2(-tg.z, tg.x), step: reduced ? 0 : M.legSpeed, color: c.color, cargo: pr.back && c.cargo ? { kind: 'leaf', color: c.cargo } : null });
+        ants.ant(c.caste, x, y, z, { pitch, scale: (c.caste === 'soldier' ? M.soldierSize : M.workerSize) * antGrow, yaw: Math.atan2(-tg.z, tg.x), step: reduced ? 0 : c.trading ? M.tradeLegSpeed : M.legSpeed, color: c.color, cargo: pr.back && c.cargo ? { kind: 'leaf', color: c.cargo } : null });
       }
     }
     drawBattle(dt, antGrow, showAnts);

@@ -33,6 +33,8 @@ This is real ant behaviour (pillar 4). Ants from neighbouring colonies race to l
 - **Everyone nearby hears of it.** Players with a colony within 1 patch get a report ("Dead grasshopper in the wilds"). Everyone sees windfalls on the map **without scouting**: what it is, how much is left, when it rots, and who holds it. How many ants hold it takes a scout.
 - **It rots after 12 h** (`lastsHours`). Whoever holds it carries one last load home; the rest is lost.
 
+- **Recruitment Trails** (Build 20, Harvest, max 3): the holder's loads come home **10% sooner per level** (every 2 h → 1 h 24 min at level 3). It is read as each load sets off, so a level learned while holding counts from the next load. Wild ants have no research. The windfall card, the send card and the "Your ants hold it" report show the holder's pace.
+
 ### Claiming it
 - **Claim windfall** is a new mission. Send any ants: soldiers to win, carriers to haul.
 - On arrival, if **nobody** is there, the party holds it.

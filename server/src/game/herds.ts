@@ -13,6 +13,8 @@ import {
   groupCargo,
   groupSpeed,
   herdNectarPerHour,
+  herdBonusPct,
+  herdDeliveryFactor,
   isHerdState,
   isHeldState,
   nearbyPatches,
@@ -122,9 +124,11 @@ defineMission('tend', {
       await bump(q, m.playerId, 'herds_claimed');
     }
     const home = await getColony(q, m.originColonyId);
+    const bonusPct = herdBonusPct((await getPlayer(q, m.playerId)).research);
     await addReport(q, m.worldId, m.playerId, 'herd', fresh ? `Your ants now tend ${herd.name} (${coordsKey(m.target)})` : `More tenders reached ${herd.name}`, {
       herd: herd.name, coords: m.target, colony: home.name, units: m.units, tenders: herd.units, claimed: fresh,
       nectarPerHour: herdNectarPerHour(herd.npc && isHerdState(herd.npc) ? herd.npc.level : 1), deliverEveryHours: HERDS.deliverEveryHours,
+      ...(bonusPct > 0 ? { bonusPct } : {}),
     }, at);
     m.result = { tending: true, claimed: fresh };
     m.units = {};
@@ -177,10 +181,13 @@ onEvent('herd_deliver', async (q, ev) => {
   if (!npc?.tender || npc.tender.since !== ev.payload.since) return; // the tenders changed: their own delivery runs
   const amount = Math.floor(herd.resources.nectar);
   if (amount > 0) {
+    // Aphid Husbandry: the tenders milk more from what the herd made (docs/24-npcs.md § Aphid herds)
+    const tender = await getPlayer(q, npc.tender.playerId);
+    const delivered = Math.floor(amount * herdDeliveryFactor(tender.research));
     let home = advance(await lockColony(q, npc.tender.colonyId), t);
-    home.resources = { ...home.resources, nectar: home.resources.nectar + amount };
+    home.resources = { ...home.resources, nectar: home.resources.nectar + delivered };
     await saveColony(q, home);
-    await bumpAll(q, npc.tender.playerId, { herd_nectar: amount, food_home: amount });
+    await bumpAll(q, npc.tender.playerId, { herd_nectar: delivered, food_home: delivered });
     herd.resources = { ...herd.resources, nectar: herd.resources.nectar - amount };
   }
   await saveColony(q, herd);

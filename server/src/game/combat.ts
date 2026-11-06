@@ -3,7 +3,10 @@ import {
   BLOCK_MESSAGES,
   BASH_LIMIT_PER_24H,
   canRaid,
+  applyRescueResearch,
   corpseDecayFactor,
+  corpseRotDelayHours,
+  corpseRotStartsAt,
   corpseFieldAmount,
   corpseProtein,
   corpseCarry,
@@ -64,17 +67,22 @@ export function pvpState(p: Player) {
   return { points: p.points.total, protectedUntil: p.protectedUntil, lastActive: p.lastActive };
 }
 
-/** Add Protein to the corpse field at `c`, keeping the existing remainder's decay. */
-export async function addCorpses(q: Q, worldId: number, c: Coords, protein: number, t: number) {
+/**
+ * Add Protein to the corpse field at `c`. What is left of an older field joins the new one, and the whole field starts
+ * its rot clock again. `delayHours` is Necrophoresis (corpseRotDelayHours): the field keeps the longer of its old and new delay.
+ */
+export async function addCorpses(q: Q, worldId: number, c: Coords, protein: number, t: number, delayHours = 0) {
   if (protein <= 0) return;
-  const r = await q.query('SELECT protein, created_at FROM corpse_fields WHERE world_id=$1 AND region=$2 AND patch=$3 AND spot=$4 FOR UPDATE', [
+  const r = await q.query('SELECT protein, created_at, rot_delay_hours FROM corpse_fields WHERE world_id=$1 AND region=$2 AND patch=$3 AND spot=$4 FOR UPDATE', [
     worldId, c.region, c.patch, c.spot,
   ]);
-  const existing = r.rows[0] ? corpseFieldAmount(r.rows[0].protein, r.rows[0].created_at, t) : 0;
+  const old = r.rows[0];
+  const existing = old ? corpseFieldAmount(old.protein, old.created_at, t, Number(old.rot_delay_hours)) : 0;
+  const delay = Math.max(delayHours, existing > 0 ? Number(old.rot_delay_hours) : 0);
   await q.query(
-    `INSERT INTO corpse_fields (world_id, region, patch, spot, protein, created_at) VALUES ($1,$2,$3,$4,$5,$6)
-     ON CONFLICT (world_id, region, patch, spot) DO UPDATE SET protein = EXCLUDED.protein, created_at = EXCLUDED.created_at`,
-    [worldId, c.region, c.patch, c.spot, existing + protein, t],
+    `INSERT INTO corpse_fields (world_id, region, patch, spot, protein, created_at, rot_delay_hours) VALUES ($1,$2,$3,$4,$5,$6,$7)
+     ON CONFLICT (world_id, region, patch, spot) DO UPDATE SET protein = EXCLUDED.protein, created_at = EXCLUDED.created_at, rot_delay_hours = EXCLUDED.rot_delay_hours`,
+    [worldId, c.region, c.patch, c.spot, existing + protein, t, delay],
   );
 }
 
@@ -178,14 +186,17 @@ export async function resolveRaid(q: Tx, m: Mission, at: number, opts: { attacke
   const garrisons = target.npc ? [] : await lockGarrisons(q, target.id);
   const allyPlayers = await Promise.all(garrisons.map((g) => getPlayer(q, g.playerId)));
   const allyStart = garrisons.map((g) => nonZero(g.units));
+  // only player raids carry a fall-back order; wild nests and swarms fight to the end
+  const attackerSide = { units: startAttacker, research: attacker.research, retreatPct: m.retreatPct ?? 0 };
   const result = simulateBattle(
-    // only player raids carry a fall-back order; wild nests and swarms fight to the end
-    { units: startAttacker, research: attacker.research, retreatPct: m.retreatPct ?? 0 },
+    attackerSide,
     // a player colony's ground can weaken or strengthen its defenses (Sandy Soil); wild nests keep their own tuning
     { units: startDefender, defenses: target.defenses, groundDefensePct: target.npc ? 0 : groundDefensePct(target.terrain), research: defender.research, allies: garrisons.map((g, i) => ({ units: allyStart[i], research: allyPlayers[i].research })) },
     rng,
   );
   const rebuilt = rebuildDefenses(result.defensesDestroyed, rng);
+  // Rescue research: some of the raiders' fallen come home, after the battle and never inside it (docs/08-combat.md § Rescue)
+  const carriedHome = nonZero(applyRescueResearch(result, attackerSide).main);
 
   m.units = nonZero(result.attackerSurvivors);
   target.units = nonZero(result.defenderSurvivors);
@@ -212,7 +223,9 @@ export async function resolveRaid(q: Tx, m: Mission, at: number, opts: { attacke
   // Slave-makers carry the dead home at once after a won raid; the rest stay on the field (docs/05-castes-units.md)
   const carried = result.winner === 'attacker' ? Math.min(corpses, corpseCarry(m.units)) : 0;
   if (carried > 0) m.cargo = { ...(m.cargo ?? res()), protein: (m.cargo?.protein ?? 0) + carried };
-  await addCorpses(q, m.worldId, m.target, corpses - carried, at);
+  // Necrophoresis: the field rots later if anyone who fought here knows it (docs/08-combat.md § Corpses)
+  const rotDelay = corpseRotDelayHours(attacker.research, defender.research, ...allyPlayers.map((p) => p.research));
+  await addCorpses(q, m.worldId, m.target, corpses - carried, at, rotDelay);
   await q.query('INSERT INTO raid_log (world_id, attacker_id, colony_id, winner, at) VALUES ($1,$2,$3,$4,$5)', [
     m.worldId, attacker.id, target.id, result.winner, at,
   ]);
@@ -249,6 +262,8 @@ export async function resolveRaid(q: Tx, m: Mission, at: number, opts: { attacke
     corpses,
     ...(carried > 0 ? { corpsesCarried: carried } : {}),
     ...(result.rescued ? { rescued: result.rescued } : {}),
+    ...(Object.keys(carriedHome).length ? { carriedHome, rescueLevel: attacker.research.rescue ?? 0 } : {}),
+    ...(corpses - carried > 0 ? { corpsesRotAt: corpseRotStartsAt(at, rotDelay), ...(rotDelay > 0 ? { rotDelayHours: rotDelay } : {}) } : {}),
   };
   m.result = { winner: result.winner, loot, corpses };
   const verb = result.retreatedAfterRound != null ? 'fell back' : result.winner === 'attacker' ? 'won' : result.winner === 'defender' ? 'lost' : 'drew';
@@ -287,15 +302,16 @@ defineMission('haul', {
     if (groupCargo(units, { corpses: true }) <= 0) throw new GameError('no_cargo', 'Send units that can carry, like Workers or Haulers.');
   },
   async arrive(q: Tx, m, at) {
-    const r = await q.query('SELECT protein, created_at FROM corpse_fields WHERE world_id=$1 AND region=$2 AND patch=$3 AND spot=$4 FOR UPDATE', [
+    const r = await q.query('SELECT protein, created_at, rot_delay_hours FROM corpse_fields WHERE world_id=$1 AND region=$2 AND patch=$3 AND spot=$4 FOR UPDATE', [
       m.worldId, m.target.region, m.target.patch, m.target.spot,
     ]);
     const row = r.rows[0];
-    const available = row ? corpseFieldAmount(row.protein, row.created_at, at) : 0;
+    const delay = row ? Number(row.rot_delay_hours) : 0;
+    const available = row ? corpseFieldAmount(row.protein, row.created_at, at, delay) : 0;
     const take = Math.min(available, groupCargo(m.units, { corpses: true }));
     if (row) {
       const left = available - take;
-      const factor = corpseDecayFactor(row.created_at, at);
+      const factor = corpseDecayFactor(row.created_at, at, delay);
       if (left <= 0 || factor <= 0)
         await q.query('DELETE FROM corpse_fields WHERE world_id=$1 AND region=$2 AND patch=$3 AND spot=$4', [m.worldId, m.target.region, m.target.patch, m.target.spot]);
       else

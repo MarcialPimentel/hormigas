@@ -10,7 +10,7 @@ import { useMotion } from '../motion';
 import { incomingName, pactNote } from '../incoming';
 import type { Caste } from '../art/ants';
 import type { Nav } from '../nav';
-import { SWARM_ADVICE, SwarmIntel } from './SwarmIntel';
+import { SWARM_ADVICE, SwarmIntel, scoutable } from './SwarmIntel';
 
 type Coords = { region: number; patch: number; spot: number };
 /** A row was clicked: show its column. `key` is the patch scene's party key ('m12', 'i7'). */
@@ -116,9 +116,9 @@ export function UnderWay({ onFocus, compact, limit, go: nav }: { onFocus?: Focus
                   </p>
                 )}
                 <p className="uw-sub">
-                  {i.from}{pactNote(i)}{i.type === 'swarm' ? ` · ${i.scouted ? fmtFull(i.unitCount) : '?'} ants` : i.unitCount && i.type !== 'scout' ? ` · ${fmtFull(i.unitCount)} units` : ''} → {i.windfall ? 'your windfall' : i.herd ? 'your aphid herd' : homes.get(i.targetColonyId)?.name ?? 'you'}
+                  {i.from}{pactNote(i)}{scoutable(i) ? ` · ${i.scouted ? fmtFull(i.unitCount) : '?'} ants` : i.unitCount && i.type !== 'scout' ? ` · ${fmtFull(i.unitCount)} units` : ''} → {i.windfall ? 'your windfall' : i.herd ? 'your aphid herd' : homes.get(i.targetColonyId)?.name ?? 'you'}
                 </p>
-                {i.type === 'swarm' && <SwarmIntel i={i} go={nav} />}
+                {scoutable(i) && <SwarmIntel i={i} go={nav} />}
               </li>
             );
           }

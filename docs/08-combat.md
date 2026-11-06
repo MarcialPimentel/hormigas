@@ -48,11 +48,15 @@ Loot is taken evenly across resource types where possible (fill cargo by thirds,
 ## Several players on one side (Build 19)
 A side can be made of several players' groups, each fighting with its own owner's research and counted on its own in the result: on defense, allies holding position at the colony; on attack, the members of a supercolony's **joint raid** ([23-supercolonies](23-supercolonies.md#joint-raids-build-19)). The battle itself treats them as one army (the same rounds, targeting and outnumbered rule), so a joint army of players with the same research fights exactly like one big army. The opener's fall-back order holds for the whole joint army. A joint raid's loot is split by each army's worth when it set out, each capped by what its survivors can carry.
 
+## Rescue (Build 20)
+The **Rescue** research (Jaws, max 3; [21-tech-tree](21-tech-tree.md#research-for-the-missions-you-run-build-20)) brings **5% per level** of an attacker's fallen home alive, after every attack the player sends, joint raids included (each member with their own level). It runs **after** the battle and never inside it: the rounds, the winner, the preview and the `npm run combat` tables are exactly as without it. Rounded down per caste; on top of the Matabele Ants' own rescue; works on lost fights and fall-backs, but an army wiped out to the last ant saves nobody (no one is left to carry them). Saved ants count as survivors, so they leave no corpses and carry loot. Defenders don't get it: the fight is at their door, and wounded defenders are already home.
+
 ## Corpses (debris)
 - **30%** of the Foliage + Protein value of every destroyed **unit** (both sides) becomes a **corpse field** at that coordinate.
 - Corpses are **converted entirely to Protein** — ants eat the dead. This makes Protein the war resource.
 - Anyone can send Workers (or v1 Carrion Beetles) to haul corpses. Defenders often get there first.
 - Corpse fields decay: −10% per hour after 24 h (encourages quick hauling, prevents permanent clutter).
+- **Necrophoresis** (Build 20, Nest, max 2) starts the rot 12 h later per level. A field belongs to the battle, so it uses the best level among everyone whose ants fought there (both sides, allies and joint-raid members). When more corpses land on a field, it keeps the longer delay. The map's corpse line and the battle report say when it starts to rot.
 
 ### Why corpses are Protein, and why loot is the main profit (Marz, 30 Oct 2026)
 Corpses are the ant version of OGame's debris field. They are all Protein because ants eat the dead (pillar 4), and only 30% comes back, so war shrinks the world economy instead of growing it.

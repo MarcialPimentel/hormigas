@@ -70,6 +70,8 @@ describe('scouting and raiding a nest', () => {
 
   beforeAll(async () => {
     await setColony(c.id, { foliage: 1e5, protein: 1e5, nectar: 1e5, last_updated: clock.t, units: { scout: 2, minor_soldier: 40, worker: 10 } });
+    // no windfalls here: a random drop would send the nest's ants out for it, and the counts below would wobble
+    await getPool().query("UPDATE events SET done = true WHERE type IN ('windfall_drop', 'windfall_wild') AND NOT done");
   });
 
   it('scouting names the species and counts for the founding task', async () => {

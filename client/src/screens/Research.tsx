@@ -39,6 +39,7 @@ export const RESEARCH_BLURB: Record<string, string> = {
   formic_acid: 'Guards spray acid from the gaster. Defenses get +10% attack, guard and health per level.',
   raiding_columns: 'March in long columns like army ants. Winning raids carry off +5% more of unprotected stores per level (up to 65%).',
   nest_plugging: 'Big-headed doorkeepers plug the entrances. +25% protected storage per level.',
+  rescue: 'Raiders carry their wounded home, like Matabele Ants. After every attack you send, 5% of your fallen per level come home alive (up to 15%), if anyone is left to carry them. Joint raids too.',
   // Instincts: each sharpens one caste (+5% attack and health per level, up to 10)
   swarm_raiding: 'Minor Soldiers learn to mob intruders. +5% attack and health per level, for Minor Soldiers only.',
   armoured_heads: 'Thicker head capsules for Major Soldiers. +5% attack and health per level, for Major Soldiers only.',
@@ -49,9 +50,11 @@ export const RESEARCH_BLURB: Record<string, string> = {
   // Harvest
   foraging_instinct: 'Better luck on forage expeditions. +1 forage slot in every colony every 2 levels. Level 2 unlocks the Desert Ant.',
   group_hunting: 'Recruit nestmates to bring down big prey. +5% Protein from Hunting Grounds per level.',
-  aphid_husbandry: 'Tend and guard aphid herds. +5% Nectar from Aphid Pastures per level.',
+  aphid_husbandry: 'Tend and guard aphid herds. +5% Nectar per level from Aphid Pastures and from the honeydew your tenders bring home from wild herds.',
   fungus_farming: 'Grow fungus on chewed leaves, like leafcutter ants. +5% Foliage from Leaf Gardens per level. Level 1 unlocks the Gardener Minim.',
   repletes: 'Living storage jars: workers that swell with food. +10% storage for every resource per level.',
+  recruitment_trails: 'Scouts lay a trail to food and call the rest. Windfall holders carry a load home 10% sooner per level (up to 30%), from the next load on.',
+  trophallaxis: 'Ants share food mouth to mouth along a trail. Trade trails stay open one more day per level (3 days, up to 5). Counts for trails opened after you learn it.',
   symbiosis: 'Other insects come to live with the colony. Level 1: Carrion Beetle. 2: Assassin Bug. 3: Bullet Ant. 4: Rhinoceros Beetle (Brood Hall 6).',
   // Nest
   brood_science: 'Unlocks Major Soldiers and Acid Sprayers (level 1) and Haulers (level 2, Brood Hall 4).',
@@ -60,6 +63,7 @@ export const RESEARCH_BLURB: Record<string, string> = {
   tunnel_engineering: 'Shore up tunnels with packed soil. Chambers are dug 5% faster per level (up to 30%).',
   digging_crews: 'Workers at home lend a mandible. Each one cuts dig time by 0.5%, up to 5 Workers per Excavation Works level (25% at Excavation Works 10). Workers out on missions don’t help.',
   nuptial_flight: 'Unlocks the Winged Queen (Brood Hall 4). Rule one more colony with every level.',
+  necrophoresis: 'Undertaker ants keep the dead clean and stacked. Corpse fields from fights you are in start rotting 12 hours later per level (24 hours, up to 48).',
   supercolony: 'Lets you found or join a supercolony: up to 6 players who share one scent, never raid each other and can hold position at each other\'s nests.',
   // Scent
   pheromone_trails: 'Clearer trails. +10% travel speed per level.',
@@ -67,6 +71,7 @@ export const RESEARCH_BLURB: Record<string, string> = {
   scent_reading: 'Read more from a scout trip, and hide more from enemy scouts.',
   tandem_running: 'Experienced ants lead others step by step. Research is 5% faster per level (up to 30%).',
   chemical_mimicry: "Scouts wear the target's colony smell. Each level halves the chance they are spotted.",
+  social_stomach: 'Ants carry Nectar in a shared crop and sip only what the trip needs. Every mission burns 5% less Nectar fuel per level (up to 25%).',
 };
 
 export function Research() {
