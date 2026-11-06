@@ -6,7 +6,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { FastifyInstance } from 'fastify';
 import { DIPLOMACY_MESSAGES, SUPERCOLONY_MAX_MEMBERS, scentFadeMs, truceNoticeMs } from '@hormigas/shared';
 import { getPool } from '../src/db';
-import { setupTest, teardownTest, newPlayer, newPlayerBeside, setColony, setPlayer, calmWildNests, type Client } from './helpers';
+import { setupTest, teardownTest, newPlayer, newPlayerBeside, setColony, setPlayer, calmWildNests, calmNestEvents, type Client } from './helpers';
 
 let app: FastifyInstance;
 let clock: Awaited<ReturnType<typeof setupTest>>['clock'];
@@ -42,6 +42,7 @@ beforeAll(async () => {
   [ida, idb, idc, idd] = states.map((s) => s.player.id);
   speed = states[0].world.speed;
   await calmWildNests();
+  await calmNestEvents(); // random nest events would land among the reports these tests read
   for (const id of [ida, idb, idc, idd]) await setPlayer(id, { protected_until: 0 });
   await rearm();
 });
@@ -251,7 +252,8 @@ describe('the slow break-up', () => {
     await clock.advance(scentFadeMs(speed) - 60_000);
     expect((await raid(a, ca, cb)).error?.code).toBe('pact_fading');
     await clock.advance(120_000);
-    expect((await b.get('/api/reports')).reports[0].title).toBe('The Argentine Line scent has faded from your colonies');
+    // look for the report by title, not "the newest": a random nest event can land in the same two minutes
+    expect((await b.get('/api/reports')).reports.map((x: any) => x.title)).toContain('The Argentine Line scent has faded from your colonies');
     const r = await raid(a, ca, cb);
     expect(r.error).toBeUndefined();
     await a.post(`/api/missions/${r.mission.id}/recall`);
