@@ -12,7 +12,8 @@
     "trailShare":  { "value": 0.6,  "min": 0.1, "max": 1,   "step": 0.05, "unit": "of the trail", "label": "Longest column", "note": "A column never covers more than this share of its trail, so far out, where ants are drawn big, it shows fewer." },
     "growPatch":   { "value": 6,    "min": 0,   "max": 20,  "step": 0.5,  "unit": "×", "label": "Grow at Patch zoom", "note": "How much bigger ants get as the camera pulls back to a whole patch, so a column still reads." },
     "growRegion":  { "value": 18,   "min": 0,   "max": 40,  "step": 1,    "unit": "×", "label": "Grow at Region zoom", "note": "Extra growth further out, at the Region zoom." },
-    "tradeLeg":    { "value": 40,   "min": 5,   "max": 180, "step": 5,    "unit": "s", "label": "Trade caravan leg", "note": "A trade caravan keeping its trail open walks to and fro along it: seconds for one leg, out or home (Build 16). Home-bound ants carry goods." }
+    "tradeLeg":    { "value": 40,   "min": 5,   "max": 180, "step": 5,    "unit": "s", "label": "Trade caravan leg", "note": "A trade caravan keeping its trail open walks to and fro along it: seconds for one leg, out or home (Build 16). Home-bound ants carry goods." },
+    "tradeLegSpeed": { "value": 28, "min": 0, "max": 40, "step": 0.5, "unit": "rad/s", "label": "Trade caravan leg speed", "note": "How fast a trade caravan steps while it walks to and fro on its trail. It covers the trail in seconds, far faster than a march, so legs at the march pace looked like sliding (Marz, 6 Nov 2026). Was the march leg speed, 12." }
   },
   "patch": {
     "gap":         { "value": 0.46, "min": 0.15, "max": 1.5, "step": 0.01, "unit": "units", "label": "Gap between rows", "note": "Distance between rows of ants in a 3D Patch column (an ant is 0.36 long)." },
