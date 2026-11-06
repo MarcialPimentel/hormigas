@@ -86,8 +86,10 @@ They follow every wild-nest rule (levels 1–6, 24 h regrowth, gentle raids back
 - **Can't be worn down.** She recovers fully between fights, so only one big enough army wins. A small raid draws and loses ants for nothing.
 - **Regrows over a week** (168 h). Rich in Protein: tier 1 holds 10k Foliage, 40k Protein and 8k Nectar.
 - **Never raids.**
-- **For the Alliances build:** tier 2 is out of reach for one day-30 army. It's meant for joint raids, which come in alliances stage B ([23-supercolonies](23-supercolonies.md)). A joint raid can target the same colony row; nothing here needs to change.
-- **Planned: an alliance raid only** ([#207](https://github.com/MarcialPimentel/hormigas/issues/207), decided 5 Nov 2026). Both tiers get retuned so **no single player's army can win**, at any stage. Tier 1 needs about 3 players' big armies; tier 2 needs a full supercolony (placeholders). It ships with joint raids (Build 19, [#98](https://github.com/MarcialPimentel/hormigas/issues/98)) or right after, so spiders are never unbeatable with no way to try. The store is split by each player's share of the army, every member who took part gets the Spider-slayer page and title, and the alliance gets a Hall of Fame entry once it exists ([27-living-world](27-living-world.md#3-the-hall-of-fame)). Holding the empty burrow afterwards is an idea for later, alongside landmarks.
+- **An alliance raid only** (Build 19, [#207](https://github.com/MarcialPimentel/hormigas/issues/207), Marz 5 Nov 2026). A den is now a **cluster of trapdoor-spider burrows** (real trapdoor spiders dig in clusters): tier 1 is 9 spiders and 1,000 young, tier 2 is 12 spiders and 1,500 young. **No single army wins:** a den refuses solo raids and only fights a supercolony's [joint raid](23-supercolonies.md#joint-raids-build-19) of at least **2 players (tier 1) or 3 (tier 2)** (`minPlayers` in `npc.json`). With fewer at the landing the joint raid is called off.
+- **What it takes:** about **3 big armies** for tier 1 and **4** for tier 2, a big army being 450 Minor + 220 Major Soldiers (`tuning.bigArmy`). One or two big armies never take tier 1; three never take tier 2. The fight is all or nothing: just past the threshold the joint army wins cleanly, losing about 13–15%.
+- **Rewards:** a bigger store (tier 1 30,000 Foliage / 150,000 Protein / 25,000 Nectar, tier 2 twice that), split by each player's share of the army's worth; every member who took part gets the Spider-slayer page and title. A Hall of Fame entry for the alliance comes once the Hall exists ([27-living-world](27-living-world.md#3-the-hall-of-fame)). Holding the empty burrow afterwards is an idea for later, alongside landmarks.
+- **On the live world:** existing dens regrow to the new size over a week (they grow like any wild thing); they refuse solo raids from the moment Build 19 is live.
 
 ### Aphid herds
 - **Scout it first.** Then send a **Tend aphids** mission with any ants. When they arrive they **stay with the herd** (the mission ends there, like Relocate), and the herd is yours while they're there.
@@ -134,13 +136,13 @@ The armies are the fair armies from [17-wild-nests](17-wild-nests.md#tuning-chec
 | Termite mound, tier 1 | 120 Minor + 40 Major (around day 10) | 100% / 43% | 0% (wiped out) |
 | Termite mound, tier 2 | 250 Minor + 110 Major | 100% / 37% | 0% |
 | Termite mound, tier 3 | 450 Minor + 220 Major | 100% / 37% | 0% |
-| Spider den, tier 1 | 250 Minor + 100 Major (day 30) | 100% / 21% | 0%, loses 59% |
-| Spider den, tier 2 | 450 Minor + 220 Major | 100% / 25% | 0%, loses 63% |
+| Spider den, tier 1 (joint) | 3 big armies: 1,350 Minor + 660 Major | 100% / 13% | 0% (1.5 armies) |
+| Spider den, tier 2 (joint) | 4 big armies: 1,800 Minor + 880 Major | 97% / 14% | 0% (2 armies) |
 
 Re-checked for Build 10 (Pit Traps catch Minors, the Soil Wall shields): tier 1 mounds have 2 Pit Traps instead of 4, and early Trap-jaw nests (levels 1–2) have no pits.
 
-- A day-14 army (150 Minor + 40 Major) never beats the tier-1 spider and loses 57% of itself.
-- A day-30 army never beats tier 2.
+- One big army (450 Minor + 220 Major) never beats tier 1, nor do two; three never beat tier 2 (`npm run combat -- nests`, the "den solo" line).
+- And solo raids are refused anyway, so a huge late army can't take a den alone either.
 - `shared/test/nests.test.ts` guards all of this. Re-check after changing `data/npc.json`, castes or combat.
 
 ## Implementation notes

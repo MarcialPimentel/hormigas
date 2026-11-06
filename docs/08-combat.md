@@ -45,6 +45,9 @@ Real raiding ants break off when a fight goes badly. On the raid screen the play
 
 Loot is taken evenly across resource types where possible (fill cargo by thirds, then fill remaining space with whatever is left).
 
+## Several players on one side (Build 19)
+A side can be made of several players' groups, each fighting with its own owner's research and counted on its own in the result: on defense, allies holding position at the colony; on attack, the members of a supercolony's **joint raid** ([23-supercolonies](23-supercolonies.md#joint-raids-build-19)). The battle itself treats them as one army (the same rounds, targeting and outnumbered rule), so a joint army of players with the same research fights exactly like one big army. The opener's fall-back order holds for the whole joint army. A joint raid's loot is split by each army's worth when it set out, each capped by what its survivors can carry.
+
 ## Corpses (debris)
 - **30%** of the Foliage + Protein value of every destroyed **unit** (both sides) becomes a **corpse field** at that coordinate.
 - Corpses are **converted entirely to Protein** — ants eat the dead. This makes Protein the war resource.
