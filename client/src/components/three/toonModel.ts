@@ -7,11 +7,13 @@
 //  - the colony mound (docs/art/whole-yard.md): a low dome of cocoa soil clods round a crater, three growth stages
 //  - the aphid herd (docs/24-npcs.md) builds on the helpers here in aphidHerd.ts: a poppy with aphids on it
 //  - the picnic crumbs windfall (docs/25-windfalls.md): a bitten sandwich corner with crumbs by the bite
+//  - the dead lizard windfall (docs/25-windfalls.md): a sandy lizard on its back, legs up, tail curled, X eyes, tongue out
 import * as THREE from 'three';
 import grasshopper from './grasshopper.json';
 import termiteMound from './termite-mound.json';
 import spiderDen from './spider-den.json';
 import picnicCrumbs from './picnic-crumbs.json';
+import deadLizard from './dead-lizard.json';
 import colonyMound from './colony-mound.json';
 import { antUniforms, toonBands } from '../nest3d/ants3d';
 
@@ -126,6 +128,8 @@ export const createTermiteMounds = (wrap: Wrap = (m) => m) => createToonModel(te
 export const createSpiderDens = (wrap: Wrap = (m) => m) => createToonModel(spiderDen as ModelData, wrap);
 /** The picnic crumbs: a sandwich corner 1 unit across its longest side and about 0.57 tall, the square corner towards -x/+z. */
 export const createPicnics = (wrap: Wrap = (m) => m) => createToonModel(picnicCrumbs as ModelData, wrap);
+/** The dead lizard: 1 unit nose to tail, about 0.53 wide and 0.41 tall (legs up), head towards +z, tail curling to +x. */
+export const createLizards = (wrap: Wrap = (m) => m) => createToonModel(deadLizard as ModelData, wrap);
 
 /** The colony mound's growth stages (small, medium, big): each 1 unit tall and 1 unit in radius, the entrance at the
  *  origin. Bigger stages carry more pebbles round the foot. Scenes stretch a stage to its radius and height. */

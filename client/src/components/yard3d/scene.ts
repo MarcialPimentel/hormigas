@@ -10,7 +10,7 @@ import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js
 import { WILDS_SPOT, WORLD } from '@hormigas/shared';
 import propsUrl from './props.json?url';
 import { CHITIN, antUniforms, createAnts, type Ants } from '../nest3d/ants3d';
-import { colonyMoundHeights, createColonyMounds, createGrasshoppers, createPicnics, createSpiderDens, createTermiteMounds } from '../three/toonModel';
+import { colonyMoundHeights, createColonyMounds, createGrasshoppers, createLizards, createPicnics, createSpiderDens, createTermiteMounds } from '../three/toonModel';
 import { createAphidHerds } from '../three/aphidHerd';
 import { createGardenFlowers, FLOWER_COLOURS } from '../three/gardenFlower';
 import { tripProgress } from '../UnderWay';
@@ -185,8 +185,8 @@ export async function createYardScene(host: HTMLElement, labels: HTMLElement, da
     return m;
   }
   const hoppers = createGrasshoppers(fogify), termites = createTermiteMounds(fogify), spiders = createSpiderDens(fogify), colonyMounds = createColonyMounds(fogify);
-  const picnics = createPicnics(fogify);
-  disposables.push(hoppers, termites, spiders, colonyMounds, picnics);
+  const picnics = createPicnics(fogify), lizards = createLizards(fogify);
+  disposables.push(hoppers, termites, spiders, colonyMounds, picnics, lizards);
   const herds = createAphidHerds(fogify);
   const flowers = createGardenFlowers(fogify);
   disposables.push(herds, flowers);
@@ -708,9 +708,17 @@ export async function createYardScene(host: HTMLElement, labels: HTMLElement, da
         g.add(s);
         return g;
       }
+      if (k === 'lizard') {
+        // the Meshy lizard, on its back with its legs in the air: the biggest windfall
+        const l = lizards.make();
+        l.scale.setScalar(18);
+        l.rotation.y = 0.5 - Math.PI / 2;
+        g.add(l);
+        return g;
+      }
+      // the fallen fig and the leafy branch
       const m = k === 'fig' ? new THREE.Mesh(new THREE.SphereGeometry(4, 8, 6), mat('#7A3F6E'))
-        : k === 'branch' ? new THREE.Mesh(new THREE.CylinderGeometry(1, 1.4, 30, 6), mat('#7A5536'))
-        : new THREE.Mesh(new THREE.CapsuleGeometry(2.5, 16, 3, 8), mat('#6E8F3A'));
+        : new THREE.Mesh(new THREE.CylinderGeometry(1, 1.4, 30, 6), mat('#7A5536'));
       if (k !== 'fig') m.rotation.z = Math.PI / 2;
       m.position.y = 2.5; m.castShadow = true; g.add(m);
     }

@@ -52,7 +52,7 @@ This is real ant behaviour (pillar 4). Ants from neighbouring colonies race to l
 - The holders are warned when someone is coming to fight them for it ("Raid incoming on your windfall").
 
 ## How players see it
-- **Map (2D and 3D patch):** a grasshopper (in 3D a cartoon dead grasshopper on its back, legs up, like the ants), fig, branch or lizard on spot 17, with a flag in your colour, another player's, or wild red when guarded. Empty sites show nothing.
+- **Map (2D and 3D patch):** a grasshopper (in 3D a cartoon dead grasshopper on its back, legs up, like the ants), fig, branch or lizard (in 3D a sandy cartoon lizard on its back, legs up, X eyes) on spot 17, with a flag in your colour, another player's, or wild red when guarded. Empty sites show nothing.
 - **Card:** what it is, food left, time until it rots, who holds it. **Claim** / **Fight for it** / **Send more ants**, **Call ants home**, **Raid**, **Scout**.
 - **Reports:** a windfall dropped nearby (with **Show on the map**), your ants hold it, it was stripped clean, it rotted.
 - **Battle reports** read "Fight for Dead grasshopper", and "your ants were driven off" for the side that lost it.

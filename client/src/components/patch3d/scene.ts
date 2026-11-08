@@ -11,7 +11,7 @@ import type { ServerColony, ServerState } from '../../game';
 import type { Caste } from '../../art/ants';
 import { fmtDuration } from '../../format';
 import { CHITIN, antUniforms, createAnts, type CargoKind } from '../nest3d/ants3d';
-import { colonyMoundHeights, createColonyMounds, createGrasshoppers, createPicnics, createSpiderDens, createTermiteMounds } from '../three/toonModel';
+import { colonyMoundHeights, createColonyMounds, createGrasshoppers, createLizards, createPicnics, createSpiderDens, createTermiteMounds } from '../three/toonModel';
 import { createAphidHerds } from '../three/aphidHerd';
 import { createGardenFlowers, FLOWER_COLOURS } from '../three/gardenFlower';
 import { leftOf } from '../nestScene';
@@ -133,10 +133,10 @@ export async function createPatchScene(
   scene.fog = new THREE.Fog('#B8DCEA', 70, 190);
   const camera = new THREE.PerspectiveCamera(40, 1, 0.05, 600);
   const disposables: { dispose(): void }[] = [];
-  const hoppers = createGrasshoppers(), termites = createTermiteMounds(), spiders = createSpiderDens(), picnics = createPicnics();
+  const hoppers = createGrasshoppers(), termites = createTermiteMounds(), spiders = createSpiderDens(), picnics = createPicnics(), lizards = createLizards();
   // colony mounds by owner: your own a touch lighter (fresh-dug), wild ones a touch darker
   const moundTones = { mine: createColonyMounds(undefined, 0.03), other: createColonyMounds(), wild: createColonyMounds(undefined, -0.04) };
-  disposables.push(hoppers, termites, spiders, picnics, moundTones.mine, moundTones.other, moundTones.wild);
+  disposables.push(hoppers, termites, spiders, picnics, lizards, moundTones.mine, moundTones.other, moundTones.wild);
   const herds = createAphidHerds();
   const flowers = createGardenFlowers();
   disposables.push(herds, flowers);
@@ -706,27 +706,12 @@ uniform vec3 uSpots[SIGHT_SPOTS];
       h.rotation.y = 0.3 - Math.PI / 2;
       spotGroup.add(h);
     } else {
-      // a dead lizard on its side: long body, legs in the air
-      const lizard = w.kind === 'lizard';
-      const len = lizard ? 7 : 4;
-      const body = new THREE.Mesh(sk(new THREE.CapsuleGeometry(lizard ? 0.55 : 0.45, len, 6, 12)), mat(lizard ? '#8C8A4E' : '#9DAA45', { roughness: 0.7 }));
-      body.position.set(x, y + 0.5, z);
-      body.rotation.set(0, 0.3, Math.PI / 2);
-      spotGroup.add(shadow(body));
-      const leg = sk(new THREE.CylinderGeometry(0.05, 0.05, lizard ? 1.2 : 2, 4));
-      for (let i = 0; i < (lizard ? 4 : 6); i++) {
-        const l = new THREE.Mesh(leg, mat('#3A2A1C'));
-        const along = (i / (lizard ? 3 : 5) - 0.5) * len * 0.7;
-        l.position.set(x + Math.cos(0.3) * along, y + 1.2, z - Math.sin(0.3) * along);
-        l.rotation.set(0.3 * (i % 2 ? 1 : -1), 0, 0.2);
-        spotGroup.add(l);
-      }
-      if (lizard) {
-        const tail = new THREE.Mesh(sk(new THREE.ConeGeometry(0.45, 5, 8)), mat('#8C8A4E', { roughness: 0.7 }));
-        tail.position.set(x - Math.cos(0.3) * (len / 2 + 2.4), y + 0.4, z + Math.sin(0.3) * (len / 2 + 2.4));
-        tail.rotation.set(0, 0.3, Math.PI / 2);
-        spotGroup.add(shadow(tail));
-      }
+      // the Meshy lizard, on its back with its legs in the air: the biggest windfall
+      const l = lizards.make(!coarse);
+      l.scale.setScalar(9);
+      l.position.set(x - 0.6, y, z + 0.4);
+      l.rotation.y = 0.3 - Math.PI / 2;
+      spotGroup.add(l);
     }
     const flag = w.yours ? FLAG.mine : w.held ? FLAG.other : w.guarded ? FLAG.wild : null;
     if (flag) {
