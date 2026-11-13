@@ -17,7 +17,7 @@ This is real ant behaviour (pillar 4). Ants from neighbouring colonies race to l
 
 ## Rules
 - **Where:** every patch within 2 of a player gets a **windfall site** (spot 17, in the wilds next to the herd, mound and den sites). It's empty until something drops.
-- **How often:** each site rolls every **8–16 h** (`everyHours`, ÷ world speed). It skips the roll if the last windfall is still there, or if no active player has a colony within **1 patch** (`announceRange`). A brand-new site gets its first drop within **0.5–3 h**, so a new area gets one quickly.
+- **How often:** each site rolls every **16–32 h** (`everyHours`, ÷ world speed; 8–16 h until 13 Nov 2026). It skips the roll if the last windfall is still there, or if no active player has a colony within **1 patch** (`announceRange`). A brand-new site gets its first drop within **0.5–3 h**, so a new area gets one quickly.
 - **What drops:**
 
   | Kind | Chance | Food | Size |
@@ -90,7 +90,7 @@ Before this, wild ants only guarded a windfall when it dropped, so in a quiet ar
 Each has a Journal page: Dead beetle (*Shell-cracker*), Sugar spill (*Sweet-tooth*), and a hidden oddity for Picnic crumbs (*Picnic-raider*).
 
 ## Open Questions
-- Is 8–16 h per site too many? With 5 sites in reach, an active player sees a few drops a day. Watch whether reports feel like noise.
+- ~~Is 8–16 h per site too many?~~ Decided (13 Nov 2026): yes, a player back after a few days found 70+ reports. Now 16–32 h, so about one or two drops a day from the sites in reach.
 - ~~Should wild nests send parties to windfalls that are already held?~~ Decided (5 Nov 2026): yes, built in Build 18 (above).
 - Are the wild-party numbers right? Watch whether players feel they lose too many windfalls to the wild, or that quiet areas are still quiet. The dials are `wildParties.chance`, `repeatChance` and `partyShare`.
 - Should the 3D patch show the holders' column walking loads home every 2 h? (Today only the party going out and coming back is drawn.)
