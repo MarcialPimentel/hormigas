@@ -38,6 +38,7 @@ _Current as of Build 20 (2026-11-06)._ Hormigas has no GitHub milestones: each b
 | — | Counters strike first, outnumbered sides bite less ([08-combat](08-combat.md#resolution)) | in review |
 | — | Mission fuel ignores speed and costs ×2 a full-speed trip ([03-economy](03-economy.md#mission-fuel)) | done (live) |
 | — | New players get their own patch, next to the active players ([11-world](11-world.md#starting-placement)) | in review |
+| — | Fewer random events: nest events, windfalls and wild-nest raids about half as often ([04-colony](04-colony.md#nest-events)) | in review |
 | — | A better-looking ant: the 3D ant rebuilt in Blender from a Meshy concept ([18-art-direction](18-art-direction.md#in-3d-the-sunlit-microcosm)) | in review |
 | — | Aphid herds are a poppy with aphids on it, more aphids for a bigger herd (Meshy, [18-art-direction](18-art-direction.md#in-3d-the-sunlit-microcosm)) | in review |
 | v1 | More defenses | later |

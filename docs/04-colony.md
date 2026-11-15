@@ -84,7 +84,7 @@ Choosing where to found a colony is a meaningful strategic choice.
 ## Nest events
 Small surprises inside the nest, so a check-in isn't always exactly what you left (pillars 1 and 4). Numbers in [`data/nest-events.json`](data/nest-events.json).
 
-- **Two to four a day** per colony (every 6–12 h at world speed ×1, ÷ world speed), offline too. Was every 16–32 h until 1 Nov 2026 (more action, [00-vision](00-vision.md#decision-log)). Each colony has one pending `nest_event` in the event queue; it re-arms itself after firing.
+- **About one a day** per colony (every 18–30 h at world speed ×1, ÷ world speed), offline too. Was every 16–32 h until 1 Nov 2026, then every 6–12 h until 13 Nov 2026 (too many reports for a player back after a few days away, [00-vision](00-vision.md#decision-log)). Each colony has one pending `nest_event` in the event queue; it re-arms itself after firing.
 - **Only good or harmless.** Risk stays in forage, where the player chose it; a random loss with no counterplay feels bad in an idle game (pillar 2).
   - Gifts: a lost beetle (Protein), an aphid boom (Nectar), a gust of leaves (Foliage). Each is **about two hours of that colony's production of that resource** (so it follows the gathering multiplier, [03-economy](03-economy.md#production)), at least 40 × the multiplier (80 now), never into full storage: a full resource's gifts are skipped, and a gift is capped to what fits (the report says so). A young colony's gifts are small because its production is.
   - Harmless moments: rain drumming on the soil, a neighbouring nest's nuptial flight, diggers breaking into an old empty tunnel. Flavour only, and only 15% of events (85% are gifts).

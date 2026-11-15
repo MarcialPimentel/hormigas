@@ -11,6 +11,7 @@ _Current as of Build 20 (2026-11-06)._ Newest first. One entry per build, in pla
 - **Aphid Husbandry now helps wild herds too.** Its +5% Nectar per level also goes on the honeydew your tenders bring home from aphid herds, not only on your Aphid Pastures.
 
 ## Between builds (unreleased)
+- **Fewer random reports.** Nest events (gifts and little moments) now come about once a day instead of two to four times, windfalls drop about half as often, and wild nests raid you about half as often (and never twice within a day). Coming back after a few days no longer means 70+ reports. Army-ant swarms are unchanged.
 - **The dead lizard looks like a lizard.** The rarest windfall is now a sandy desert lizard on its back, belly up, legs in the air, tail curled, X eyes and tongue out, drawn like the ants, in the Whole Yard and up close, instead of a green pickle.
 - **New garden flowers.** The flowers in the Old Garden and on the 3D Patch's meadow are now chunky cartoon daisies drawn like the ants, in pink, yellow, white, lilac and orange, instead of the old flat stem-and-star flowers.
 

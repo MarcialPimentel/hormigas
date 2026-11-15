@@ -116,7 +116,7 @@
   "windfalls": {
     "_note": "Windfalls (docs/25-windfalls.md): contested food that drops on the patch's windfall site. Every site rolls a new one every everyHours (skipped while one is still there, or when no active player lives within announceRange patches). It lasts lastsHours, then rots. pile: food by level (levels follow the area leader like herds), times the kind's size, split by the kind's mix; not affected by the gathering multiplier. guardChance: how often wild ants get there first (guards by level). Ants that claim it fight whoever is there, then hold it and carry a load home every deliverEveryHours (as much as they can carry). Players with a colony within announceRange patches get a report when one drops. kinds[].eaters: the wild species that come for it (wildParties); lastsHours on a kind overrides lastsHours; carryPct: share of a holder's cargo it can strip per load (a beetle's shell); parties: how many wild parties it draws. Hours at world speed 1.",
     "name": "Windfall",
-    "everyHours": [8, 16],
+    "everyHours": [16, 32],
     "firstDropHours": [0.5, 3],
     "lastsHours": 12,
     "deliverEveryHours": 2,
@@ -155,13 +155,13 @@
   "regrowHours": 12,
   "raids": {
     "_note": "Raids by wild nests on players in their patch. Gentle: a fraction (partyShare) of the nest's soldiers (castes with attack >= soldierMinAttack; Workers stay home), slow so players see them coming. The party is worth at most maxPartyValuePctOfTargetPoints % of the target's points, counted in resources (formulas.json points.resourcesPerPoint).",
-    "everyHours": [8, 16],
+    "everyHours": [16, 32],
     "partyShare": 0.3,
     "soldierMinAttack": 25,
     "minParty": {"minor_soldier": 2},
     "maxPartyValuePctOfTargetPoints": 10,
     "speedPct": 10,
-    "perPlayerCooldownHours": 12,
+    "perPlayerCooldownHours": 24,
     "revengeWeight": 2
   },
   "tuning": {
