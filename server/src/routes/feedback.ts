@@ -84,7 +84,7 @@ export async function feedbackRoutes(app: FastifyInstance) {
   });
 }
 
-async function requireAdmin(playerId: number) {
+export async function requireAdmin(playerId: number, message = 'Only admins can see feedback.') {
   const p = await getPlayer(getPool(), playerId);
-  if (!p.isAdmin) throw new GameError('forbidden', 'Only admins can see feedback.', 403);
+  if (!p.isAdmin) throw new GameError('forbidden', message, 403);
 }

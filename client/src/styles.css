@@ -642,6 +642,11 @@ pre.report-body { white-space: pre-wrap; overflow-x: auto; }
 .sheet-foot { display: flex; justify-content: space-between; align-items: center; gap: 1rem; }
 @media (min-width: 640px) { .sheet-backdrop { align-items: center; } .sheet { border-radius: var(--r-md); } }
 
+.reset-code-form { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: end; }
+.reset-code-form label { display: grid; gap: 0.25rem; }
+.reset-code-result { margin-top: 0.75rem; display: grid; gap: 0.35rem; }
+.reset-code { font-size: 1.25rem; letter-spacing: 0.1em; padding: 0.1rem 0.4rem; background: var(--soil); border-radius: var(--r-sm); user-select: all; }
+
 .feedback-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.5rem; }
 .feedback-list li { background: var(--soil); border-radius: var(--r-sm); padding: 0.75rem; display: grid; gap: 0.35rem; justify-items: start; border-left: 3px solid var(--honey); }
 .feedback-list li.handled { border-left-color: var(--seam); opacity: 0.7; }
