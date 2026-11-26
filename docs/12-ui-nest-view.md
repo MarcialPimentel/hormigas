@@ -31,6 +31,13 @@ A **Feedback** button sits in the top bar of every screen (icon only on phones).
 
 Feedback is read on the admin-only **Feedback** screen. Admins are players with `is_admin` set in the database (see [DEPLOY.md](DEPLOY.md)).
 
+## Forgot your password
+The game keeps no emails, so there is no reset link. Instead an admin hands out a code:
+- At the top of the admin **Feedback** screen, **Reset a player's password** takes a player name and makes a one-time code like `ABCD-2345` (no 0/O or 1/I/L, so it survives being read out over chat). The admin sends it to the player however they already talk.
+- On the login screen, **Return to your colony → Forgot your password?** asks for the name, the code and a new password (8+ characters), then logs the player in.
+- A code works once, for 72 hours, and is void after 5 wrong guesses. Making a new code cancels the old one. Using it ends every other login of that player. Only a hash of the code is stored. The route shares the 10-a-minute limit of the other login routes.
+- If no admin can log in, a code can be made by hand on the server (see [DEPLOY.md](DEPLOY.md)).
+
 ## The 3D slab (computers)
 On computers the nest is a block of earth cut open at the front, like an ant farm on a plinth (approved from [art/3d-exploration.md](art/3d-exploration.md)). Built with Three.js in `client/src/components/nest3d/`, loaded only when shown.
 - **Everything is 3D, and the chambers show what they hold.** Hollows and tunnels are carved into a face painted in coloured soil horizons; each hollow's back wall is lit warm from inside, and the hollow holds its contents in 3D (`nest3d/contents.ts`): stores heap up as they fill (empty stores are bare), brood follows the unit queue, research motes drift only while research runs, and the rest grows with level. The 2D chamber pictures no longer hang on the back walls, since their drawn piles would contradict the real amounts. Ants are real 3D ants, one per ant up to a cap, walking at different depths and carrying loads down to the stores. Look and numbers: [18-art-direction.md](18-art-direction.md) § In 3D. This slab is the Nest level of the scale ladder ([art/sunlit-microcosm.md](art/sunlit-microcosm.md)).

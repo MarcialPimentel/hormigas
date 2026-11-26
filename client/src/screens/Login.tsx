@@ -4,9 +4,10 @@ import { useGame } from '../game';
 
 export function Login() {
   const { refresh, setLoggedIn } = useGame();
-  const [mode, setMode] = useState<'login' | 'register'>('register');
+  const [mode, setMode] = useState<'login' | 'register' | 'reset'>('register');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [code, setCode] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
 
@@ -15,7 +16,7 @@ export function Login() {
     setBusy(true);
     setError('');
     try {
-      await api.post(`/api/auth/${mode}`, { username, password });
+      await api.post(`/api/auth/${mode}`, mode === 'reset' ? { username, code, password } : { username, password });
       setLoggedIn(true);
       await refresh();
     } catch (err) {
@@ -43,24 +44,43 @@ export function Login() {
           <button role="tab" aria-selected={mode === 'register'} className={mode === 'register' ? 'on' : ''} onClick={() => setMode('register')}>
             Found a colony
           </button>
-          <button role="tab" aria-selected={mode === 'login'} className={mode === 'login' ? 'on' : ''} onClick={() => setMode('login')}>
+          <button role="tab" aria-selected={mode !== 'register'} className={mode !== 'register' ? 'on' : ''} onClick={() => setMode('login')}>
             Return to your colony
           </button>
         </div>
         <form onSubmit={submit}>
+          {mode === 'reset' && (
+            <p className="hint">Forgot your password? Ask the game’s keeper for a reset code, then pick a new password here.</p>
+          )}
           <label>
             Name
             <input value={username} onChange={(e) => setUsername(e.target.value)} autoComplete="username" required minLength={3} maxLength={20} pattern="[A-Za-z0-9_]+" />
           </label>
+          {mode === 'reset' && (
+            <label>
+              Reset code
+              <input value={code} onChange={(e) => setCode(e.target.value)} autoComplete="one-time-code" placeholder="ABCD-2345" required minLength={8} maxLength={12} spellCheck={false} autoCapitalize="characters" />
+            </label>
+          )}
           <label>
-            Password
+            {mode === 'reset' ? 'New password' : 'Password'}
             <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete={mode === 'login' ? 'current-password' : 'new-password'} required minLength={8} />
           </label>
           {error && <p className="form-error" role="alert">{error}</p>}
           <button className="btn primary wide" disabled={busy}>
-            {mode === 'register' ? 'Found my colony' : 'Log in'}
+            {mode === 'register' ? 'Found my colony' : mode === 'reset' ? 'Set password and log in' : 'Log in'}
           </button>
-          {mode === 'register' && <p className="hint">Names use letters, numbers and underscores. Passwords need 8+ characters.</p>}
+          {mode !== 'login' && <p className="hint">Names use letters, numbers and underscores. Passwords need 8+ characters.</p>}
+          {mode === 'login' && (
+            <button type="button" className="btn ghost small wide" onClick={() => { setMode('reset'); setError(''); }}>
+              Forgot your password?
+            </button>
+          )}
+          {mode === 'reset' && (
+            <button type="button" className="btn ghost small wide" onClick={() => { setMode('login'); setError(''); }}>
+              Back to log in
+            </button>
+          )}
         </form>
       </div>
     </main>

@@ -1,5 +1,5 @@
 // Admin-only list of player feedback (docs/12-ui-nest-view.md).
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { api } from '../api';
 import { useGame } from '../game';
 import { fmtClock } from '../format';
@@ -38,6 +38,8 @@ export function FeedbackAdmin({ onCount }: { onCount: (n: number) => void }) {
   }
 
   return (
+    <>
+    <PasswordReset />
     <Panel
       title="Player feedback"
       actions={
@@ -77,6 +79,54 @@ export function FeedbackAdmin({ onCount }: { onCount: (n: number) => void }) {
             </li>
           ))}
         </ul>
+      )}
+    </Panel>
+    </>
+  );
+}
+
+/** Admin: make a one-time code so a player who forgot their password can pick a new one (no emails in this game). */
+function PasswordReset() {
+  const [name, setName] = useState('');
+  const [result, setResult] = useState<{ username: string; code: string; expiresAt: number } | null>(null);
+  const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  async function make(e: FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    setError('');
+    setResult(null);
+    try {
+      setResult(await api.post('/api/admin/reset-code', { username: name }));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Something went wrong.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <Panel title="Reset a player’s password">
+      <form className="reset-code-form" onSubmit={make}>
+        <label>
+          Player name
+          <input value={name} onChange={(e) => setName(e.target.value)} required minLength={3} maxLength={20} />
+        </label>
+        <button className="btn primary small" disabled={busy}>Make reset code</button>
+      </form>
+      {error && <p className="form-error">{error}</p>}
+      {result && (
+        <div className="reset-code-result">
+          <p>
+            Code for <strong>{result.username}</strong>: <code className="reset-code">{result.code}</code>
+          </p>
+          <p className="muted small">
+            Send it to them. On the login screen they pick “Return to your colony”, then “Forgot your password?”, and type
+            their name, this code and a new password. Works once, until {fmtClock(result.expiresAt)}. Making a new code
+            cancels this one; their old logins end when they use it.
+          </p>
+        </div>
       )}
     </Panel>
   );
